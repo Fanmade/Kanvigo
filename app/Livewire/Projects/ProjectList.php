@@ -6,7 +6,6 @@ use App\Models\Project;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -34,9 +33,19 @@ class ProjectList extends Component
         return Auth::user()->projects()->orderBy('title')->get();
     }
 
+    /**
+     * Suggest a short name from the title while the user hasn't set one.
+     */
+    public function updatedTitle(): void
+    {
+        if (trim($this->short_name) === '') {
+            $this->short_name = Project::shortNameFromTitle($this->title);
+        }
+    }
+
     public function createProject(): void
     {
-        Gate::authorize('create-projects');
+        $this->authorize('create-projects');
 
         $this->short_name = strtoupper($this->short_name);
 
@@ -53,7 +62,7 @@ class ProjectList extends Component
         $project = Project::create($validated);
         $project->members()->attach(Auth::id());
 
-        Flux::toast(variant: 'success', text: __('Project created.'));
+        Flux::toast(text: __('Project created.'), variant: 'success');
 
         $this->redirectRoute('project.show', ['short_name' => $project->short_name], navigate: true);
     }

@@ -35,6 +35,34 @@ class Project extends Model implements Subscribable
     }
 
     /**
+     * Derive a suggested short name from a project title.
+     *
+     * With three or more words, the initials of the first four words are used;
+     * otherwise the first three letters of the title. Non-letters are dropped
+     * and the result is uppercased. The value only pre-fills the field, so it
+     * may fall short of the validated minimum length for very short titles.
+     */
+    public static function shortNameFromTitle(string $title): string
+    {
+        $words = preg_split('/\s+/', trim($title), flags: PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if (count($words) >= 3) {
+            $candidate = implode('', array_map(
+                static fn (string $word): string => mb_substr($word, 0, 1),
+                array_slice($words, 0, 4),
+            ));
+            $limit = 4;
+        } else {
+            $candidate = $title;
+            $limit = 3;
+        }
+
+        $letters = preg_replace('/[^a-zA-Z]/', '', $candidate) ?? '';
+
+        return mb_strtoupper(mb_substr($letters, 0, $limit));
+    }
+
+    /**
      * @return HasMany<Story, $this>
      */
     public function stories(): HasMany
