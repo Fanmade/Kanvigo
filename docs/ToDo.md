@@ -4,12 +4,6 @@
 - Add images to projects, including the logo/icon.
 - Allow setting profile picture.
 
-## Make audit log collapsible
-- Make it collapsed by default.
-
-## Allow collapsing of comments
-- Store the state of collapsed comments as a preference
-
 ## MCP Server
 MCP support at `/mcp`. Agents are authorized by a user via a personal API token
 (read-only or read & write) and act in that user's name, restricted to projects
@@ -56,3 +50,10 @@ Write tools require a token with the `write` ability.
 ## Improve user assignment UI
 - Add a "assign to me" button.
 - Currently, there is a full-width multi-select for selecting users. To see who is assigned to a task, you have to open the multi-select. Consider using a more compact and intuitive UI for displaying assigned users.
+
+## Improve the readme
+- Add the logo.
+- Add a screenshot.
+
+## Improve the seed data
+- Replace the lorem impsum with something more realistic (and fun). Include markdown formatting for the descriptions.
