@@ -1,7 +1,7 @@
 # ToDo
 
 ## Projects
-- Allow setting a color per project.#
+- Allow setting a color per project.
 - Allow setting a logo per project.
 
 ## Users

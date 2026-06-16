@@ -240,6 +240,8 @@
     "Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.": "Die Zwei-Faktor-Authentifizierung ist jetzt aktiviert. Scanne den QR-Code oder gib den Einrichtungsschlüssel in deiner Authenticator-App ein.",
     "Update password": "Passwort aktualisieren",
     "Update your name and email address": "Aktualisiere deinen Namen und deine E-Mail-Adresse",
+    "Upload failed. Please try again.": "Upload fehlgeschlagen. Bitte versuche es erneut.",
+    ":name is too large. The maximum file size is :size.": ":name ist zu groß. Die maximale Dateigröße beträgt :size.",
     "Uploading image…": "Bild wird hochgeladen …",
     "Uploading…": "Wird hochgeladen …",
     "Verify authentication code": "Authentifizierungscode bestätigen",
