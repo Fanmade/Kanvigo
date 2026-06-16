@@ -16,7 +16,7 @@
 
             <flux:radio.group wire:model="accessLevel" :label="__('Access level')" variant="cards" class="max-sm:flex-col">
                 <flux:radio value="read" :label="__('Read-only')" :description="__('Can read data')" />
-                <flux:radio value="write" :label="__('Read & write')" :description="__('Can read and modify data')" />
+                <flux:radio value="write" :label="__('Read and write')" :description="__('Can read and modify data')" />
             </flux:radio.group>
 
             <div class="flex items-center gap-4">

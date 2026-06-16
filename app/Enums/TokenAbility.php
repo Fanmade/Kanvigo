@@ -14,7 +14,7 @@ enum TokenAbility: string
     {
         return match ($this) {
             self::Read => __('Read-only'),
-            self::Write => __('Read & write'),
+            self::Write => __('Read and write'),
         };
     }
 
