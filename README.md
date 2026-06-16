@@ -17,14 +17,16 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Stories grouped on the board**, with completion progress bars on the project
   overview.
 - **Multi-assignee** stories and tasks for pairing and ensemble work.
-- **Comments** with one-level replies, editing, and soft-delete tombstones.
+- **Comments** with one-level replies, editing, and soft-delete tombstones. The
+  whole section can be collapsed, remembered per user.
 - **Attachments** with inline image and PDF thumbnails.
 - **Keywords** on stories and tasks.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
 - **Markdown** descriptions and comments.
 - **Activity log** — polymorphic audit trail of creations, status changes, and
-  assignment changes.
+  assignment changes. Collapsed by default; the open/closed state is remembered
+  per user.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **Authorization** via native Gates (`create-projects`, `invite-users`,
