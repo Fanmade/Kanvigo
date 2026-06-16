@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Enums\Permission;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -38,8 +39,9 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureGates(): void
     {
-        Gate::define('create-projects', static fn (User $user) => $user->can_create_projects);
-        Gate::define('invite-users', static fn (User $user) => $user->can_invite_users);
+        foreach (Permission::cases() as $permission) {
+            Gate::define($permission->value, static fn (User $user): bool => $user->hasPermission($permission));
+        }
     }
 
     /**

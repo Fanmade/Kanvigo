@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Models\Project;
 use App\Models\User;
 
@@ -20,7 +21,7 @@ class ProjectPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can_create_projects;
+        return $user->hasPermission(Permission::CreateProjects);
     }
 
     /**

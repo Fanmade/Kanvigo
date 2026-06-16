@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\Permission;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -29,8 +30,6 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'can_create_projects' => false,
-            'can_invite_users' => false,
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
@@ -43,9 +42,7 @@ class UserFactory extends Factory
      */
     public function canCreateProjects(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'can_create_projects' => true,
-        ]);
+        return $this->withPermission(Permission::CreateProjects);
     }
 
     /**
@@ -53,9 +50,7 @@ class UserFactory extends Factory
      */
     public function canInviteUsers(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'can_invite_users' => true,
-        ]);
+        return $this->withPermission(Permission::InviteUsers);
     }
 
     /**
@@ -63,10 +58,19 @@ class UserFactory extends Factory
      */
     public function admin(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'can_create_projects' => true,
-            'can_invite_users' => true,
-        ]);
+        return $this->withPermission(Permission::CreateProjects, Permission::InviteUsers);
+    }
+
+    /**
+     * Grant the given permissions to the user after it is created.
+     */
+    public function withPermission(Permission ...$permissions): static
+    {
+        return $this->afterCreating(function (User $user) use ($permissions): void {
+            foreach ($permissions as $permission) {
+                $user->permissions()->firstOrCreate(['permission' => $permission]);
+            }
+        });
     }
 
     /**
