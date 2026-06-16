@@ -76,10 +76,20 @@
             "@php artisan config:clear --ansi",
             "@lint:check",
             "@types:check",
-            "@php artisan test --testsuite=Unit,Feature"
+            "@php artisan test --testsuite=Unit,Feature --parallel"
         ],
         "test:browser": [
-            "@php artisan test --testsuite=Browser"
+            "@php artisan test --testsuite=Browser --parallel"
+        ],
+        "test:all": [
+            "@test",
+            "@test:browser"
+        ],
+        "check": [
+            "@php artisan config:clear --ansi",
+            "@lint:check",
+            "@types:check",
+            "@test:all"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
