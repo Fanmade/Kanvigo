@@ -24,6 +24,13 @@
 
             <!-- Password -->
             <div class="relative">
+
+                @if (Route::has('password.request'))
+                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
+                        {{ __('Forgot your password?') }}
+                    </flux:link>
+                @endif
+
                 <flux:input
                     name="password"
                     :label="__('Password')"
@@ -33,12 +40,6 @@
                     :placeholder="__('Password')"
                     viewable
                 />
-
-                @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
-                        {{ __('Forgot your password?') }}
-                    </flux:link>
-                @endif
             </div>
 
             <!-- Remember Me -->
