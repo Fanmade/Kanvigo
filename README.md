@@ -31,9 +31,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   `create-api-tokens`) and Policies that cascade through project membership.
 - **API tokens** — permitted users mint personal Sanctum tokens (read-only or
   read & write) for MCP/API access and revoke them from Settings.
-- **MCP server** — a read-only Model Context Protocol endpoint at `/mcp`, secured
-  by a bearer token, that lets AI agents list and inspect the projects, stories,
-  and tasks the token's owner can access.
+- **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer
+  token, that lets AI agents work with the projects, stories, and tasks the token's
+  owner can access. Read tools (list/inspect) work with any token; write tools
+  (create/update stories & tasks, create projects, add comments) require a token
+  with write access.
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 

@@ -10,16 +10,19 @@ use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\Rules\Enum;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Lists the tasks of a story, identified by its reference (e.g. "PROJ1"), optionally filtered by status. Only stories in projects the authenticated user is a member of are accessible.')]
+#[IsReadOnly]
 class ListTasksTool extends Tool
 {
     /**
      * Handle the tool request.
      */
-    public function handle(Request $request): Response
+    public function handle(Request $request): Response|ResponseFactory
     {
         $statuses = implode('", "', array_map(static fn (Status $status): string => $status->value, Status::cases()));
 
@@ -49,7 +52,7 @@ class ListTasksTool extends Tool
             ])
             ->values();
 
-        return Response::json([
+        return Response::structured([
             'tasks' => $tasks->all(),
         ]);
     }
@@ -69,6 +72,22 @@ class ListTasksTool extends Tool
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
                 ->description('Optional status filter. One of the task statuses.'),
+        ];
+    }
+
+    /**
+     * Get the tool's output schema.
+     *
+     * @return array<string, Type>
+     */
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'tasks' => $schema->array()->items($schema->object([
+                'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
+                'title' => $schema->string()->description('The task title.')->required(),
+                'status' => $schema->string()->description('The task status.')->required(),
+            ]))->description('The tasks in the story.')->required(),
         ];
     }
 }

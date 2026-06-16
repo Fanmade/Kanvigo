@@ -24,7 +24,7 @@ class ReferenceResolver
      */
     public static function story(string $reference): ?Story
     {
-        if (! preg_match('/^('.self::SHORT_NAME.')(\d+)$/', trim($reference), $matches)) {
+        if (! preg_match('/^('.self::SHORT_NAME.')(\d+)$/', strtoupper(trim($reference)), $matches)) {
             return null;
         }
 
@@ -49,7 +49,7 @@ class ReferenceResolver
      */
     public static function task(string $reference): ?Task
     {
-        if (! preg_match('/^('.self::SHORT_NAME.')(\d+)-(\d+)$/', trim($reference), $matches)) {
+        if (! preg_match('/^('.self::SHORT_NAME.')(\d+)-(\d+)$/', strtoupper(trim($reference)), $matches)) {
             return null;
         }
 
@@ -68,5 +68,42 @@ class ReferenceResolver
                 ->where('story_number', (int) $storyNumber))
             ->where('task_number', (int) $taskNumber)
             ->first();
+    }
+
+    /**
+     * Resolve a project reference (its short_name, e.g. "PROJ") into its model.
+     *
+     * Returns null when the reference is malformed or no matching project exists.
+     */
+    public static function project(string $reference): ?Project
+    {
+        $shortName = strtoupper(trim($reference));
+
+        if (! preg_match('/^'.self::SHORT_NAME.'$/', $shortName)) {
+            return null;
+        }
+
+        return Project::query()->where('short_name', $shortName)->first();
+    }
+
+    /**
+     * Resolve any commentable reference into its model: a task ("PROJ1-3"),
+     * a story ("PROJ1") or a project ("PROJ").
+     *
+     * Returns null when the reference is malformed or no matching model exists.
+     */
+    public static function commentable(string $reference): Project|Story|Task|null
+    {
+        $reference = strtoupper(trim($reference));
+
+        if (str_contains($reference, '-')) {
+            return self::task($reference);
+        }
+
+        if (preg_match('/\d/', $reference) === 1) {
+            return self::story($reference);
+        }
+
+        return self::project($reference);
     }
 }
