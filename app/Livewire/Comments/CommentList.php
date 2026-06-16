@@ -14,9 +14,13 @@ use Livewire\Component;
 
 class CommentList extends Component
 {
+    public const string COLLAPSED_PREFERENCE_KEY = 'comments_collapsed';
+
     public string $commentableType;
 
     public int $commentableId;
+
+    public bool $collapsed = false;
 
     public string $body = '';
 
@@ -38,6 +42,18 @@ class CommentList extends Component
         $this->commentableId = $commentable->getKey();
 
         $this->authorize('view', $commentable);
+
+        $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, false);
+    }
+
+    /**
+     * Toggle the comments section and persist the state as a user preference.
+     */
+    public function toggleCollapsed(): void
+    {
+        $this->collapsed = ! $this->collapsed;
+
+        Auth::user()->setPreference(self::COLLAPSED_PREFERENCE_KEY, $this->collapsed);
     }
 
     /**
@@ -69,6 +85,15 @@ class CommentList extends Component
             ->with(['user', 'replies.user'])
             ->latest()
             ->get();
+    }
+
+    /**
+     * Count of top-level comments, used for the collapsed-state badge.
+     */
+    #[Computed]
+    public function commentCount(): int
+    {
+        return $this->commentable()->comments()->whereNull('parent_id')->count();
     }
 
     public function addComment(): void

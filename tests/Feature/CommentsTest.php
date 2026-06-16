@@ -173,3 +173,43 @@ it('forbids non-members from commenting', function () {
         ->test(CommentList::class, ['commentable' => $this->task])
         ->assertForbidden();
 });
+
+it('expands the comments section by default', function () {
+    Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task])
+        ->assertSet('collapsed', false);
+});
+
+it('persists the collapsed state as a user preference when toggled', function () {
+    Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task])
+        ->call('toggleCollapsed')
+        ->assertSet('collapsed', true)
+        ->call('toggleCollapsed')
+        ->assertSet('collapsed', false);
+
+    expect($this->member->fresh()->preference('comments_collapsed'))->toBeFalse();
+});
+
+it('restores the collapsed state from the user preference on mount', function () {
+    $this->member->setPreference('comments_collapsed', true);
+
+    Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task])
+        ->assertSet('collapsed', true);
+});
+
+it('applies the collapsed preference across all commentable types', function () {
+    Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task])
+        ->call('toggleCollapsed')
+        ->assertSet('collapsed', true);
+
+    Livewire::actingAs($this->member->fresh())
+        ->test(CommentList::class, ['commentable' => $this->project])
+        ->assertSet('collapsed', true);
+
+    Livewire::actingAs($this->member->fresh())
+        ->test(CommentList::class, ['commentable' => $this->story])
+        ->assertSet('collapsed', true);
+});
