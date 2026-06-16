@@ -1,0 +1,76 @@
+<div class="flex flex-col gap-6">
+    <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+
+    {{-- Statistics --}}
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <flux:card class="flex flex-col gap-1">
+            <div class="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                <flux:icon.rectangle-stack variant="micro" />
+                <flux:text size="sm">{{ __('Projects') }}</flux:text>
+            </div>
+            <flux:heading size="xl">{{ $this->projectCount }}</flux:heading>
+        </flux:card>
+
+        @foreach ($this->statusCounts as $stat)
+            <flux:card class="flex flex-col gap-1">
+                <flux:badge size="sm" :color="$stat['status']->color()" :icon="$stat['status']->icon()">
+                    {{ $stat['status']->label() }}
+                </flux:badge>
+                <flux:heading size="xl">{{ $stat['count'] }}</flux:heading>
+            </flux:card>
+        @endforeach
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+        {{-- My tasks (in progress first, then to-do) --}}
+        <div class="lg:col-span-1">
+            <flux:heading size="lg" class="mb-2">{{ __('My tasks') }}</flux:heading>
+
+            <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
+                @forelse ($this->activeTasks as $task)
+                    <a
+                        href="{{ route('task.show', ['short_name' => $task->story->project->short_name, 'story_number' => $task->story->story_number, 'task_number' => $task->task_number]) }}"
+                        wire:navigate
+                        class="flex flex-col gap-1.5 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    >
+                        <div class="flex items-center gap-2">
+                            <flux:badge size="sm" color="indigo" variant="pill">{{ $task->story->project->short_name }}</flux:badge>
+                            <flux:text size="xs" class="font-mono text-zinc-400">{{ $task->reference }}</flux:text>
+                        </div>
+                        <span class="text-sm">{{ $task->title }}</span>
+                        <flux:badge size="sm" :color="$task->status->color()" :icon="$task->status->icon()" class="self-start">
+                            {{ $task->status->label() }}
+                        </flux:badge>
+                    </a>
+                @empty
+                    <flux:text size="sm" class="px-4 py-6 text-center text-zinc-400">
+                        {{ __('Nothing in progress or to do. Enjoy the calm!') }}
+                    </flux:text>
+                @endforelse
+            </flux:card>
+        </div>
+
+        {{-- Completion chart for the last two weeks --}}
+        <div class="lg:col-span-2">
+            <flux:heading size="lg" class="mb-2">{{ __('Completed tasks · last 14 days') }}</flux:heading>
+
+            <flux:card>
+                <flux:chart :value="$this->progress" class="aspect-[2/1] w-full">
+                    <flux:chart.svg>
+                        <flux:chart.bar field="count" class="text-indigo-500 dark:text-indigo-400" radius="4" />
+
+                        <flux:chart.axis axis="x" field="label">
+                            <flux:chart.axis.line />
+                            <flux:chart.axis.tick />
+                        </flux:chart.axis>
+
+                        <flux:chart.axis axis="y" position="left" :tick-values="$this->progressTicks">
+                            <flux:chart.axis.grid />
+                            <flux:chart.axis.tick />
+                        </flux:chart.axis>
+                    </flux:chart.svg>
+                </flux:chart>
+            </flux:card>
+        </div>
+    </div>
+</div>

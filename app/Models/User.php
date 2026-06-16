@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -21,6 +23,8 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
+ * @property bool $can_create_projects
+ * @property bool $can_invite_users
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -45,7 +49,63 @@ class User extends Authenticatable implements PasskeyUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'can_create_projects' => 'boolean',
+            'can_invite_users' => 'boolean',
         ];
+    }
+
+    /**
+     * The projects this user has been granted access to.
+     *
+     * @return BelongsToMany<Project, $this>
+     */
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class)->withTimestamps();
+    }
+
+    /**
+     * The tasks assigned to this user.
+     *
+     * @return BelongsToMany<Task, $this>
+     */
+    public function assignedTasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class)->withTimestamps();
+    }
+
+    /**
+     * The activities recorded by this user.
+     *
+     * @return HasMany<Activity, $this>
+     */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
+
+    /**
+     * @return MorphToMany<Project, $this>
+     */
+    public function subscribedProjects(): MorphToMany
+    {
+        return $this->morphedByMany(Project::class, 'subscribable', 'subscriptions')->withTimestamps();
+    }
+
+    /**
+     * @return MorphToMany<Story, $this>
+     */
+    public function subscribedStories(): MorphToMany
+    {
+        return $this->morphedByMany(Story::class, 'subscribable', 'subscriptions')->withTimestamps();
+    }
+
+    /**
+     * @return MorphToMany<Task, $this>
+     */
+    public function subscribedTasks(): MorphToMany
+    {
+        return $this->morphedByMany(Task::class, 'subscribable', 'subscriptions')->withTimestamps();
     }
 
     /**
@@ -56,7 +116,7 @@ class User extends Authenticatable implements PasskeyUser
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(static fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 }

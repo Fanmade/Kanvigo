@@ -1,0 +1,84 @@
+<div class="mx-auto flex w-full max-w-3xl flex-col gap-6">
+    <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 text-sm">
+            <a href="{{ route('project.show', $this->story->project) }}" wire:navigate class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
+                {{ $this->story->project->short_name }}
+            </a>
+            <span class="text-zinc-300">/</span>
+            <span class="font-mono text-zinc-400">{{ $this->story->reference }}</span>
+        </div>
+        <livewire:subscriptions.subscription-toggle :subscribable="$this->story" :wire:key="'sub-story-'.$this->story->id" />
+    </div>
+
+    @php($canUpdate = auth()->user()->can('update', $this->story))
+
+    @if ($editing)
+        <form wire:submit="save" class="flex flex-col gap-4">
+            <flux:input wire:model="title" :label="__('Title')" />
+            <x-attachments.markdown-editor :label="__('Description')" />
+            <x-attachments.upload-button />
+            <flux:input wire:model="keywords" :label="__('Keywords')" :description="__('Optional, comma-separated')" />
+            <div class="flex gap-2">
+                <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
+                <flux:button variant="ghost" wire:click="$set('editing', false)">{{ __('Cancel') }}</flux:button>
+            </div>
+        </form>
+    @else
+        <div class="flex items-start justify-between gap-4">
+            <flux:heading size="xl">{{ $this->story->title }}</flux:heading>
+            @can('update', $this->story)
+                <flux:button size="sm" icon="pencil-square" wire:click="edit">{{ __('Edit') }}</flux:button>
+            @endcan
+        </div>
+
+        <x-keyword-badges :keywords="$this->story->keywords" />
+
+        <x-attachments.dropzone :enabled="$canUpdate">
+            <flux:card>
+                @if ($this->story->description)
+                    <x-markdown :content="$this->story->description" />
+                @else
+                    <flux:text class="italic text-zinc-400">{{ __('No description yet.') }}</flux:text>
+                @endif
+            </flux:card>
+        </x-attachments.dropzone>
+
+        <x-attachments.list :attachments="$this->attachments" />
+    @endif
+
+    @can('update', $this->story)
+        <flux:field>
+            <flux:label>{{ __('Assignees') }}</flux:label>
+            <flux:select variant="listbox" multiple wire:model.live="assigneeIds" :placeholder="__('Assign members')">
+                @foreach ($this->members as $member)
+                    <flux:select.option :value="$member->id">{{ $member->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </flux:field>
+    @endcan
+
+    <div>
+        <flux:heading size="sm" class="mb-2">{{ __('Tasks') }}</flux:heading>
+        <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
+            @forelse ($this->story->tasks as $task)
+                <a
+                    href="{{ route('task.show', ['short_name' => $this->story->project->short_name, 'story_number' => $this->story->story_number, 'task_number' => $task->task_number]) }}"
+                    wire:navigate
+                    class="flex items-center justify-between gap-2 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                >
+                    <div class="flex items-center gap-2">
+                        <flux:text size="xs" class="font-mono text-zinc-400">{{ $task->reference }}</flux:text>
+                        <span class="text-sm">{{ $task->title }}</span>
+                    </div>
+                    <flux:badge size="sm" :color="$task->status->color()" :icon="$task->status->icon()">{{ $task->status->label() }}</flux:badge>
+                </a>
+            @empty
+                <flux:text size="sm" class="px-4 py-3 text-zinc-400">{{ __('No tasks yet.') }}</flux:text>
+            @endforelse
+        </flux:card>
+    </div>
+
+    <livewire:comments.comment-list :commentable="$this->story" :wire:key="'comments-story-'.$this->story->id" />
+
+    <x-activity-feed :activities="$this->story->activities" />
+</div>

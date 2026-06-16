@@ -29,11 +29,44 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'can_create_projects' => false,
+            'can_invite_users' => false,
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ];
+    }
+
+    /**
+     * Indicate that the user can create projects.
+     */
+    public function canCreateProjects(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'can_create_projects' => true,
+        ]);
+    }
+
+    /**
+     * Indicate that the user can invite other users.
+     */
+    public function canInviteUsers(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'can_invite_users' => true,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is an administrator with all capabilities.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'can_create_projects' => true,
+            'can_invite_users' => true,
+        ]);
     }
 
     /**

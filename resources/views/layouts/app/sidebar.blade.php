@@ -15,77 +15,50 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="rectangle-stack" :href="route('projects.index')" :current="request()->routeIs('projects.index')" wire:navigate>
+                        {{ __('Projects') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="view-columns" :href="route('board')" :current="request()->routeIs('board')" wire:navigate>
+                        {{ __('Board') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="bell" :href="route('notifications.index')" :current="request()->routeIs('notifications.index')" wire:navigate>
+                        {{ __('Notifications') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                @if (auth()->user()->projects->isNotEmpty())
+                    <flux:sidebar.group :heading="__('My projects')" class="grid">
+                        @foreach (auth()->user()->projects()->orderBy('title')->get() as $project)
+                            <flux:sidebar.item
+                                icon="folder"
+                                :href="route('project.show', $project)"
+                                :current="request()->fullUrlIs(route('project.show', $project))"
+                                wire:navigate
+                            >
+                                {{ $project->short_name }} · {{ $project->title }}
+                            </flux:sidebar.item>
+                        @endforeach
+                    </flux:sidebar.group>
+                @endif
             </flux:sidebar.nav>
 
             <flux:spacer />
 
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
-
-            <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
+            @can('invite-users')
+                <flux:sidebar.nav>
+                    <flux:sidebar.item icon="user-plus" :href="route('invitations.create')" :current="request()->routeIs('invitations.create')" wire:navigate>
+                        {{ __('Invite user') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.nav>
+            @endcan
         </flux:sidebar>
 
-        <!-- Mobile User Menu -->
-        <flux:header class="lg:hidden">
+        <flux:header class="border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <flux:spacer />
 
-            <flux:dropdown position="top" align="end">
-                <flux:profile
-                    :initials="auth()->user()->initials()"
-                    icon-trailing="chevron-down"
-                />
-
-                <flux:menu>
-                    <flux:menu.radio.group>
-                        <div class="p-0 text-sm font-normal">
-                            <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                                <flux:avatar
-                                    :name="auth()->user()->name"
-                                    :initials="auth()->user()->initials()"
-                                />
-
-                                <div class="grid flex-1 text-start text-sm leading-tight">
-                                    <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
-                                    <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
-                                </div>
-                            </div>
-                        </div>
-                    </flux:menu.radio.group>
-
-                    <flux:menu.separator />
-
-                    <flux:menu.radio.group>
-                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                            {{ __('Settings') }}
-                        </flux:menu.item>
-                    </flux:menu.radio.group>
-
-                    <flux:menu.separator />
-
-                    <form method="POST" action="{{ route('logout') }}" class="w-full">
-                        @csrf
-                        <flux:menu.item
-                            as="button"
-                            type="submit"
-                            icon="arrow-right-start-on-rectangle"
-                            class="w-full cursor-pointer"
-                            data-test="logout-button"
-                        >
-                            {{ __('Log out') }}
-                        </flux:menu.item>
-                    </form>
-                </flux:menu>
-            </flux:dropdown>
+            <livewire:notifications.notifications-menu />
         </flux:header>
 
         {{ $slot }}

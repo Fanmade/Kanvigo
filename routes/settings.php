@@ -5,13 +5,13 @@ use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\Security;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth'])->group(static function () {
     Route::redirect('settings', 'settings/profile');
 
     Route::livewire('settings/profile', Profile::class)->name('profile.edit');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('settings/appearance', Appearance::class)->name('appearance.edit');
 
     Route::livewire('settings/security', Security::class)
@@ -21,7 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('security.edit');
 });
 
-Route::get('.well-known/passkey-endpoints', function () {
+Route::get('.well-known/passkey-endpoints', static function () {
     return response()->json([
         'enroll' => route('security.edit'),
         'manage' => route('security.edit'),

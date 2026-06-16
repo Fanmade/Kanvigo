@@ -126,7 +126,7 @@ class Security extends Component
             ->select(['id', 'name', 'credential', 'created_at', 'last_used_at'])
             ->latest()
             ->get()
-            ->map(fn ($passkey) => [
+            ->map(static fn ($passkey) => [
                 'id' => $passkey->id,
                 'name' => $passkey->name,
                 'authenticator' => $passkey->authenticator,
