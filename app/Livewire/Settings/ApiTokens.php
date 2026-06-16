@@ -5,7 +5,6 @@ namespace App\Livewire\Settings;
 use App\Enums\TokenAbility;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 use Laravel\Sanctum\PersonalAccessToken;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -30,7 +29,7 @@ class ApiTokens extends Component
      */
     public function mount(): void
     {
-        Gate::authorize('create-api-tokens');
+        $this->authorize('create-api-tokens');
     }
 
     /**
