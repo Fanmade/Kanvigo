@@ -23,10 +23,6 @@
 ## Boards
 - Make the drag-and-drop prettier with nice animations.
 
-## Misc
-- Add @mentions in comments, stories and tasks.
-- Add functionality for tagging tasks and stories in descriptions and comments (What's the syntax in other project management tools? A backslash followed by a tag name? Research this!)
-
 ## Design
 - The system doesn't look very good yet.
 - Maybe Claude Design can help?
@@ -49,3 +45,10 @@
 
 ## Tech
 - Use Mago
+
+## Misc
+- Add @mentions in comments, stories and tasks.
+- Add functionality for tagging tasks and stories in descriptions and comments (What's the syntax in other project management tools? A backslash followed by a tag name? Research this!)
+- Add API
+- Add SSO-options
+- Add code coverage metrics
