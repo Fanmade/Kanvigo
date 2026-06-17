@@ -10,16 +10,17 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
+        "ext-gd": "*",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",
         "laravel/framework": "^13.7",
+        "laravel/mcp": "^0.8.1",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "livewire/blaze": "^1.0",
         "livewire/flux": "^2.13.1",
         "livewire/flux-pro": "^2.14",
-        "livewire/livewire": "^4.1",
-        "ext-gd": "*"
+        "livewire/livewire": "^4.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
