@@ -52,3 +52,5 @@
 - Add API
 - Add SSO-options
 - Add code coverage metrics
+- Add optional priority levels (with colors)
+- Add optional dependencies between stories, and tasks
