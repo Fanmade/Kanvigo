@@ -24,9 +24,16 @@ trait HasScopedNumber
             }
 
             DB::transaction(static function () use ($model): void {
-                $next = (int) $model->scopedNumberQuery()->lockForUpdate()->max($model->scopedNumberColumn) + 1;
+                // Lock the highest sibling row and derive the next number from it.
+                // We deliberately avoid combining lockForUpdate() with an aggregate
+                // (e.g. max()), which PostgreSQL rejects: "FOR UPDATE is not allowed
+                // with aggregate functions". A row-level locked lookup is portable.
+                $highest = (int) $model->scopedNumberQuery()
+                    ->lockForUpdate()
+                    ->orderByDesc($model->scopedNumberColumn)
+                    ->value($model->scopedNumberColumn);
 
-                $model->{$model->scopedNumberColumn} = $next;
+                $model->{$model->scopedNumberColumn} = $highest + 1;
             });
         });
     }

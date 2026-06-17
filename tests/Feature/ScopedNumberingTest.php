@@ -5,8 +5,30 @@ use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
+
+it('derives the next number without a Postgres-incompatible aggregate lock', function () {
+    $project = Project::factory()->create();
+    Story::factory()->for($project)->create(); // seed an existing sibling
+
+    DB::enableQueryLog();
+    Story::factory()->for($project)->create();
+    $queries = collect(DB::getQueryLog())->pluck('query');
+    DB::disableQueryLog();
+
+    // PostgreSQL rejects "FOR UPDATE ... aggregate" (SQLSTATE 0A000). The lookup that
+    // assigns the scoped number must therefore not be an aggregate query. SQLite drops
+    // the lock clause but keeps the `max(...) as "aggregate"` projection, so its absence
+    // is a reliable, driver-agnostic guard against reintroducing the bug.
+    $numbering = $queries->first(static fn (string $sql): bool => str_contains($sql, 'story_number')
+        && ! str_starts_with($sql, 'insert'));
+
+    expect($numbering)->not->toBeNull()
+        ->and($numbering)->not->toContain('as "aggregate"')
+        ->and($numbering)->toContain('order by');
+});
 
 it('numbers stories sequentially within a project starting at 1', function () {
     $project = Project::factory()->create();
