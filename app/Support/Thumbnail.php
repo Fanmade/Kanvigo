@@ -12,7 +12,7 @@ class Thumbnail
     /**
      * The maximum width or height, in pixels, of a generated thumbnail.
      */
-    public const MAX_DIMENSION = 256;
+    public const int MAX_DIMENSION = 256;
 
     /**
      * Generate a small PNG thumbnail for an uploaded file, picking the right
