@@ -131,7 +131,7 @@ class Thumbnail
             $png = (string) file_get_contents($output);
 
             return $png === '' ? null : $png;
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             dd($e->getMessage());
             return null;
         } finally {
