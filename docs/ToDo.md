@@ -15,8 +15,7 @@
   - Support for attachments.
 
 ## Command palette
-- Add a command palette with keyboard shortcuts and quick access.
-- Include search functionality.
+- Make the "New project" command not only go to the project list page, but actually show the form to create a new project.
 
 ## Stories and tasks
 - Add optional types to stories and tasks (e.g. bug, feature, etc.).
