@@ -255,5 +255,8 @@
     "login using a recovery code": "mit einem Wiederherstellungscode anmelden",
     "login using an authentication code": "mit einem Authentifizierungscode anmelden",
     "or you can": "oder du kannst",
-    "or, enter the code manually": "oder gib den Code manuell ein"
+    "or, enter the code manually": "oder gib den Code manuell ein",
+    "No results": "Keine Ergebnisse",
+    "Search…": "Suchen…",
+    "Search projects, stories, tasks…": "Projekte, Stories, Aufgaben durchsuchen…"
 }

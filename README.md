@@ -12,6 +12,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   numbers and story-scoped task numbers.
 - **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}{n}` for a story,
   `/{SHORT}{n}-{m}` for a task (e.g. `/ABC`, `/ABC1`, `/ABC1-3`).
+- **Command palette** (`⌘K` / `Ctrl+K`) — search projects, stories and tasks by
+  title or keyword, jump straight to a typed reference, and run quick actions.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
   In progress, Done), per project or globally across every project you can see.
 - **Stories grouped on the board**, with completion progress bars on the project
@@ -19,7 +21,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Multi-assignee** stories and tasks for pairing and ensemble work.
 - **Comments** with one-level replies, editing, and soft-delete tombstones. The
   whole section can be collapsed, remembered per user.
-- **Attachments** with inline image and PDF thumbnails.
+- **Attachments** — drag files onto a description to upload them, with inline
+  image and PDF thumbnails. Files above the size limit are rejected with a
+  clear message.
 - **Keywords** on stories and tasks.
 - **Due dates** on stories and tasks, highlighted on the board when overdue.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),

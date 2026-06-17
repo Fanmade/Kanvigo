@@ -9,7 +9,7 @@ it('auto-fills the short name from the title in the new project modal', function
 
     $page = visit('/projects');
 
-    $page->click('New project')
+    $page->click('@create-project')
         ->fill('@project-title', 'My Cool Project')
         ->click('@project-short-name') // blur the title to fire wire:model.blur.live
         ->assertValue('@project-short-name', 'MCP')

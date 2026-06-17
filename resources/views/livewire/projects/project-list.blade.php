@@ -4,7 +4,7 @@
             <flux:heading size="xl">{{ __('Projects') }}</flux:heading>
 
             @can('create-projects')
-                <flux:button variant="primary" icon="plus" wire:click="$set('showCreate', true)">
+                <flux:button variant="primary" icon="plus" wire:click="$set('showCreate', true)" data-test="create-project">
                     {{ __('New project') }}
                 </flux:button>
             @endcan

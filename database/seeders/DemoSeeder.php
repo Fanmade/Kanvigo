@@ -67,7 +67,7 @@ class DemoSeeder extends Seeder
      * Backdate a handful of "completed" activities, so the dashboard chart
      * shows progress over the last two weeks.
      *
-     * @param Collection<int, Task> $tasks
+     * @param  Collection<int, Task>  $tasks
      */
     private function seedCompletionActivity(User $admin, Collection $tasks): void
     {
