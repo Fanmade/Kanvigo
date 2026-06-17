@@ -8,7 +8,13 @@
         <div class="flex items-center justify-between">
             <flux:heading size="xl">{{ __('Board') }}</flux:heading>
 
-            <div class="flex gap-2">
+            <div class="flex items-center gap-2">
+                <flux:select wire:model.live="priorityFilter" size="sm" class="max-w-44" data-test="priority-filter">
+                    <flux:select.option value="">{{ __('All priorities') }}</flux:select.option>
+                    @foreach (\App\Enums\Priority::ordered() as $priority)
+                        <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                    @endforeach
+                </flux:select>
                 <flux:button icon="plus" wire:click="$set('showStoryModal', true)">{{ __('New story') }}</flux:button>
                 <flux:button variant="primary" icon="plus" wire:click="openTaskModal">{{ __('New task') }}</flux:button>
             </div>

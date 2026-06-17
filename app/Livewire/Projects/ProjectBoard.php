@@ -20,6 +20,9 @@ class ProjectBoard extends Component
 
     public string $shortName;
 
+    // Board filters.
+    public ?int $priorityFilter = null;
+
     // Create-story modal state.
     public bool $showStoryModal = false;
 
@@ -85,6 +88,10 @@ class ProjectBoard extends Component
 
             return $story->tasks->each(static fn (Task $task) => $task->setRelation('story', $story));
         });
+
+        if ($this->priorityFilter) {
+            $tasks = $tasks->filter(fn (Task $task): bool => $task->priority->value === $this->priorityFilter);
+        }
 
         return $this->buildColumns($tasks);
     }

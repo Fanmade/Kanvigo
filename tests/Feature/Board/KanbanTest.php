@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Livewire\Projects\ProjectBoard;
 use App\Models\Project;
@@ -60,6 +61,43 @@ it('groups consecutive tasks of the same story in a column', function () {
     expect($planned['groups'])->toHaveCount(1)
         ->and($planned['groups'][0]['tasks'])->toHaveCount(2)
         ->and($planned['groups'][0]['story']->id)->toBe($this->story->id);
+});
+
+it('orders tasks within a column by priority, highest first', function () {
+    $this->task->update(['priority' => Priority::Medium]);
+
+    $story = Story::factory()->for($this->project)->create();
+    Task::factory()->for($story)->status(Status::Planned)->priority(Priority::Low)->create();
+    Task::factory()->for($story)->status(Status::Planned)->priority(Priority::Highest)->create();
+
+    $columns = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->instance()->columns();
+
+    $priorities = collect(collect($columns)->firstWhere('status', Status::Planned)['groups'])
+        ->flatMap(fn ($group) => $group['tasks'])
+        ->map(fn (Task $task) => $task->priority->value)
+        ->all();
+
+    expect($priorities)->toBe([5, 3, 2]); // Highest, Medium, Low
+});
+
+it('filters the board by priority', function () {
+    $this->task->update(['priority' => Priority::Low]);
+
+    $story = Story::factory()->for($this->project)->create();
+    Task::factory()->for($story)->status(Status::Planned)->priority(Priority::Highest)->create();
+    Task::factory()->for($story)->status(Status::ToDo)->priority(Priority::Low)->create();
+
+    $columns = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('priorityFilter', Priority::Highest->value)
+        ->instance()->columns();
+
+    $tasks = collect($columns)->flatMap(fn ($column) => collect($column['groups'])->flatMap(fn ($group) => $group['tasks']));
+
+    expect($tasks)->toHaveCount(1)
+        ->and($tasks->first()->priority)->toBe(Priority::Highest);
 });
 
 it('creates a story from the board', function () {

@@ -10,8 +10,10 @@ use Illuminate\Support\Collection;
 trait BuildsKanbanColumns
 {
     /**
-     * Group an ordered set of tasks into board columns. Consecutive tasks that
-     * belong to the same story collapse into a single story group.
+     * Group an ordered set of tasks into board columns. Within each status the
+     * tasks are ordered by priority (highest first); equal priorities keep the
+     * incoming order, so consecutive tasks of the same story collapse into a
+     * single story group.
      *
      * @param  Collection<int, Task>  $tasks  tasks ordered so same-story tasks are adjacent
      * @return array<int, array{status: Status, groups: array<int, array{story: Story, tasks: Collection<int, Task>}>}>
@@ -23,7 +25,10 @@ trait BuildsKanbanColumns
         foreach (Status::columns() as $status) {
             $groups = [];
 
-            foreach ($tasks->where('status', $status) as $task) {
+            $statusTasks = $tasks->where('status', $status)
+                ->sortByDesc(static fn (Task $task): int => $task->priority->value);
+
+            foreach ($statusTasks as $task) {
                 $index = count($groups) - 1;
 
                 if ($index >= 0 && $groups[$index]['story']->id === $task->story_id) {
