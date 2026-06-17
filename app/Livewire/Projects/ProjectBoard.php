@@ -3,12 +3,14 @@
 namespace App\Livewire\Projects;
 
 use App\Concerns\BuildsKanbanColumns;
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Story;
 use App\Models\Task;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -27,6 +29,8 @@ class ProjectBoard extends Component
 
     public string $storyDueDate = '';
 
+    public int $storyPriority;
+
     // Create-task modal state.
     public bool $showTaskModal = false;
 
@@ -40,9 +44,13 @@ class ProjectBoard extends Component
 
     public string $taskStatus = Status::Planned->value;
 
+    public int $taskPriority;
+
     public function mount(string $short_name): void
     {
         $this->shortName = $short_name;
+        $this->storyPriority = Priority::default()->value;
+        $this->taskPriority = Priority::default()->value;
 
         $this->authorize('view', $this->project());
     }
@@ -98,12 +106,14 @@ class ProjectBoard extends Component
         $validated = $this->validate([
             'storyTitle' => ['required', 'string', 'max:255'],
             'storyDescription' => ['nullable', 'string'],
+            'storyPriority' => ['required', new Enum(Priority::class)],
             'storyDueDate' => ['nullable', 'date'],
         ]);
 
         $this->project()->stories()->create([
             'title' => $validated['storyTitle'],
             'description' => $validated['storyDescription'] ?? null,
+            'priority' => Priority::from($validated['storyPriority']),
             'due_date' => $validated['storyDueDate'] ?: null,
         ]);
 
@@ -118,7 +128,25 @@ class ProjectBoard extends Component
         $this->reset('taskTitle', 'taskDescription', 'taskDueDate');
         $this->taskStoryId = $storyId ?? $this->stories()->first()?->id;
         $this->taskStatus = $status ?? Status::Planned->value;
+        $this->taskPriority = $this->priorityForStory($this->taskStoryId);
         $this->showTaskModal = true;
+    }
+
+    /**
+     * Keep the task priority in sync with the selected story — tasks inherit it.
+     */
+    public function updatedTaskStoryId(mixed $value): void
+    {
+        $this->taskPriority = $this->priorityForStory((int) $value);
+    }
+
+    /**
+     * The priority a new task should default to, inherited from its story.
+     */
+    protected function priorityForStory(?int $storyId): int
+    {
+        return $this->stories()->firstWhere('id', $storyId)?->priority->value
+            ?? Priority::default()->value;
     }
 
     public function createTask(): void
@@ -129,6 +157,7 @@ class ProjectBoard extends Component
             'taskStoryId' => ['required', 'integer'],
             'taskTitle' => ['required', 'string', 'max:255'],
             'taskDescription' => ['nullable', 'string'],
+            'taskPriority' => ['required', new Enum(Priority::class)],
             'taskDueDate' => ['nullable', 'date'],
             'taskStatus' => ['required', 'string', 'in:'.collect(Status::cases())->map->value->implode(',')],
         ]);
@@ -140,6 +169,7 @@ class ProjectBoard extends Component
             'description' => $validated['taskDescription'] ?? null,
             'due_date' => $validated['taskDueDate'] ?: null,
         ]);
+        $task->priority = Priority::from($validated['taskPriority']);
         $task->status = Status::from($validated['taskStatus']);
         $task->save();
 

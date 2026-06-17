@@ -23,6 +23,11 @@
             <flux:heading size="lg">{{ __('New story') }}</flux:heading>
             <flux:input wire:model="storyTitle" :label="__('Title')" />
             <flux:textarea wire:model="storyDescription" :label="__('Description')" rows="3" />
+            <flux:select wire:model="storyPriority" :label="__('Priority')" data-test="story-priority">
+                @foreach (\App\Enums\Priority::ordered() as $priority)
+                    <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
             <flux:input type="date" wire:model="storyDueDate" :label="__('Due date')" :description="__('Optional')" />
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
@@ -43,7 +48,7 @@
                     {{ __('Create a story first before adding tasks.') }}
                 </flux:callout>
             @else
-                <flux:select wire:model="taskStoryId" :label="__('Story')">
+                <flux:select wire:model.live="taskStoryId" :label="__('Story')">
                     @foreach ($this->stories as $story)
                         <flux:select.option :value="$story->id">{{ $story->reference }} · {{ $story->title }}</flux:select.option>
                     @endforeach
@@ -51,6 +56,13 @@
 
                 <flux:input wire:model="taskTitle" :label="__('Title')" />
                 <flux:textarea wire:model="taskDescription" :label="__('Description')" rows="3" />
+
+                <flux:select wire:model="taskPriority" :label="__('Priority')" data-test="task-priority">
+                    @foreach (\App\Enums\Priority::ordered() as $priority)
+                        <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+
                 <flux:input type="date" wire:model="taskDueDate" :label="__('Due date')" :description="__('Optional')" />
 
                 <flux:select wire:model="taskStatus" :label="__('Status')">

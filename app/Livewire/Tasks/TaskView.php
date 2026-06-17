@@ -3,6 +3,7 @@
 namespace App\Livewire\Tasks;
 
 use App\Concerns\HandlesAttachments;
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Story;
@@ -35,6 +36,8 @@ class TaskView extends Component
 
     public string $status = Status::Planned->value;
 
+    public int $priority;
+
     /** @var array<int, int> */
     public array $assigneeIds = [];
 
@@ -48,6 +51,7 @@ class TaskView extends Component
         $this->authorize('view', $task);
 
         $this->status = $task->status->value;
+        $this->priority = $task->priority->value;
         $this->assigneeIds = $task->assignees->pluck('id')->all();
     }
 
@@ -99,6 +103,26 @@ class TaskView extends Component
 
         unset($this->task);
         Flux::toast(variant: 'success', text: __('Status updated.'));
+    }
+
+    public function updatedPriority(string|int $value): void
+    {
+        $task = $this->task();
+        $this->authorize('update', $task);
+
+        $new = Priority::tryFrom((int) $value);
+
+        if ($new === null || $task->priority === $new) {
+            return;
+        }
+
+        $old = $task->priority;
+        $task->priority = $new;
+        $task->save();
+        $task->recordActivity('priority_changed', 'priority', (string) $old->value, (string) $new->value);
+
+        unset($this->task);
+        Flux::toast(variant: 'success', text: __('Priority updated.'));
     }
 
     public function updatedAssigneeIds(): void

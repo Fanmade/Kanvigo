@@ -44,11 +44,13 @@
 
     "Status": "Status",
     "Status updated.": "Status aktualisiert.",
+    "Priority updated.": "Priorität aktualisiert.",
     "Planned": "Geplant",
     "To do": "Zu erledigen",
     "In progress": "In Bearbeitung",
     "Done": "Erledigt",
 
+    "Priority": "Priorität",
     "Lowest": "Niedrigste",
     "Low": "Niedrig",
     "Medium": "Mittel",
@@ -88,6 +90,7 @@
     "Stories": "Stories",
     "created": "erstellte",
     "changed the status of": "änderte den Status von",
+    "changed the priority of": "änderte die Priorität von",
     "updated the assignees of": "änderte die Zuständigen von",
     "updated the keywords of": "änderte die Schlagwörter von",
     "commented on": "kommentierte",
@@ -97,6 +100,7 @@
     "System": "System",
     "created this": "hat dies erstellt",
     "changed status from :old to :new": "hat den Status von :old auf :new geändert",
+    "changed priority from :old to :new": "hat die Priorität von :old auf :new geändert",
     "updated the assignees": "hat die Zuständigen aktualisiert",
 
     "Invite a user": "Benutzer einladen",

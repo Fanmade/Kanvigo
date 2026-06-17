@@ -70,6 +70,18 @@
         </flux:field>
 
         <flux:field>
+            <div class="flex items-center gap-2">
+                <flux:label>{{ __('Priority') }}</flux:label>
+                <x-priority-badge :priority="$this->task->priority" />
+            </div>
+            <flux:select wire:model.live="priority" :disabled="! $canUpdate">
+                @foreach (\App\Enums\Priority::ordered() as $priority)
+                    <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </flux:field>
+
+        <flux:field>
             <flux:label>{{ __('Assignees') }}</flux:label>
             <flux:select variant="listbox" multiple wire:model.live="assigneeIds" :placeholder="__('Assign members')" :disabled="! $canUpdate">
                 @foreach ($this->members as $member)

@@ -17,9 +17,12 @@
                 @php
                     $old = \App\Enums\Status::tryFrom((string) $activity->old_value)?->label() ?? $activity->old_value;
                     $new = \App\Enums\Status::tryFrom((string) $activity->new_value)?->label() ?? $activity->new_value;
+                    $oldPriority = \App\Enums\Priority::tryFrom((int) $activity->old_value)?->label() ?? $activity->old_value;
+                    $newPriority = \App\Enums\Priority::tryFrom((int) $activity->new_value)?->label() ?? $activity->new_value;
                     $description = match ($activity->action) {
                         'created' => __('created this'),
                         'status_changed' => __('changed status from :old to :new', ['old' => $old, 'new' => $new]),
+                        'priority_changed' => __('changed priority from :old to :new', ['old' => $oldPriority, 'new' => $newPriority]),
                         'assignee_changed' => __('updated the assignees'),
                         'keywords_changed' => __('updated the keywords'),
                         'commented' => __('added a comment'),

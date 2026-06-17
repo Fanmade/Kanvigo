@@ -3,6 +3,7 @@
 namespace App\Livewire\Stories;
 
 use App\Concerns\HandlesAttachments;
+use App\Enums\Priority;
 use App\Models\Project;
 use App\Models\Story;
 use App\Models\Task;
@@ -30,6 +31,8 @@ class StoryView extends Component
 
     public string $keywords = '';
 
+    public int $priority;
+
     /** @var array<int, int> */
     public array $assigneeIds = [];
 
@@ -41,6 +44,7 @@ class StoryView extends Component
         $story = $this->story();
         $this->authorize('view', $story);
 
+        $this->priority = $story->priority->value;
         $this->assigneeIds = $story->assignees->pluck('id')->all();
     }
 
@@ -69,6 +73,26 @@ class StoryView extends Component
     public function members(): Collection
     {
         return $this->story()->project->members()->orderBy('name')->get();
+    }
+
+    public function updatedPriority(string|int $value): void
+    {
+        $story = $this->story();
+        $this->authorize('update', $story);
+
+        $new = Priority::tryFrom((int) $value);
+
+        if ($new === null || $story->priority === $new) {
+            return;
+        }
+
+        $old = $story->priority;
+        $story->priority = $new;
+        $story->save();
+        $story->recordActivity('priority_changed', 'priority', (string) $old->value, (string) $new->value);
+
+        unset($this->story);
+        Flux::toast(variant: 'success', text: __('Priority updated.'));
     }
 
     public function updatedAssigneeIds(): void

@@ -33,6 +33,7 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-1">
+            <x-priority-badge :priority="$this->story->priority" />
             <x-due-date-badge :date="$this->story->due_date" />
             <x-keyword-badges :keywords="$this->story->keywords" />
         </div>
@@ -51,6 +52,15 @@
     @endif
 
     @can('update', $this->story)
+        <flux:field>
+            <flux:label>{{ __('Priority') }}</flux:label>
+            <flux:select wire:model.live="priority">
+                @foreach (\App\Enums\Priority::ordered() as $priority)
+                    <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </flux:field>
+
         <flux:field>
             <flux:label>{{ __('Assignees') }}</flux:label>
             <flux:select variant="listbox" multiple wire:model.live="assigneeIds" :placeholder="__('Assign members')">

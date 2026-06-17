@@ -28,6 +28,7 @@
                 @php($label = match ($data['action'] ?? '') {
                     'created' => __('created'),
                     'status_changed' => __('changed the status of'),
+                    'priority_changed' => __('changed the priority of'),
                     'assignee_changed' => __('updated the assignees of'),
                     'keywords_changed' => __('updated the keywords of'),
                     'commented' => __('commented on'),
