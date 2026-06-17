@@ -124,7 +124,7 @@ class Thumbnail
             ]);
 
             if (! $result->successful()) {
-                dd($result->errorOutput());
+                dump($result->errorOutput());
                 return null;
             }
 
@@ -132,7 +132,7 @@ class Thumbnail
 
             return $png === '' ? null : $png;
         } catch (Throwable $e) {
-            dd($e->getMessage());
+            dump($e->getMessage());
             return null;
         } finally {
             @unlink($input);
