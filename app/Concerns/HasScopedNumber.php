@@ -3,8 +3,7 @@
 namespace App\Concerns;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
  * Assigns a per-parent sequential number (starting at 1) on creation.
@@ -12,30 +11,61 @@ use Illuminate\Support\Facades\DB;
  * Implementing models must define:
  *  - protected string $scopedNumberColumn (e.g. 'story_number')
  *  - public function scopedNumberQuery(): Builder  (siblings sharing the same parent)
+ *
+ * The owning table must carry a unique `(parent_id, number)` constraint — it is the
+ * source of truth that makes the optimistic retry below safe.
  */
 trait HasScopedNumber
 {
-    public static function bootHasScopedNumber(): void
+    /**
+     * How many times to re-derive the number after losing a concurrent race before
+     * giving up and surfacing the unique-constraint violation.
+     */
+    protected static int $scopedNumberMaxAttempts = 5;
+
+    /**
+     * Derive the scoped number and insert in the same call, retrying if a concurrent
+     * creation grabbed the same number first.
+     *
+     * The previous implementation derived the number inside a self-contained
+     * `DB::transaction` in the `creating` hook, which committed — releasing its
+     * `lockForUpdate` row lock — before Eloquent ran the INSERT. Two concurrent
+     * creations could then read the same max sibling and collide on the unique
+     * `(parent, number)` constraint, surfacing a 500. We instead let that constraint
+     * arbitrate and re-derive on collision. Notifications fired in the `created`
+     * event are left outside any added transaction, so a row lock is never held
+     * across the subscriber notification fan-out.
+     *
+     * @param  Builder<static>  $query
+     */
+    protected function performInsert(Builder $query): bool
     {
-        static::creating(static function (Model $model): void {
-            /** @var Model&self $model */
-            if (! empty($model->{$model->scopedNumberColumn})) {
-                return;
+        // A number explicitly provided (e.g. by a seeder) is left untouched.
+        if (! empty($this->{$this->scopedNumberColumn})) {
+            return parent::performInsert($query);
+        }
+
+        for ($attempt = 1; ; $attempt++) {
+            $this->{$this->scopedNumberColumn} = $this->nextScopedNumber();
+
+            try {
+                return parent::performInsert($query);
+            } catch (UniqueConstraintViolationException $e) {
+                if ($attempt >= static::$scopedNumberMaxAttempts) {
+                    throw $e;
+                }
             }
+        }
+    }
 
-            DB::transaction(static function () use ($model): void {
-                // Lock the highest sibling row and derive the next number from it.
-                // We deliberately avoid combining lockForUpdate() with an aggregate
-                // (e.g. max()), which PostgreSQL rejects: "FOR UPDATE is not allowed
-                // with aggregate functions". A row-level locked lookup is portable.
-                $highest = (int) $model->scopedNumberQuery()
-                    ->lockForUpdate()
-                    ->orderByDesc($model->scopedNumberColumn)
-                    ->value($model->scopedNumberColumn);
-
-                $model->{$model->scopedNumberColumn} = $highest + 1;
-            });
-        });
+    /**
+     * The next sequential number for this model's parent scope.
+     */
+    protected function nextScopedNumber(): int
+    {
+        return (int) $this->scopedNumberQuery()
+            ->orderByDesc($this->scopedNumberColumn)
+            ->value($this->scopedNumberColumn) + 1;
     }
 
     /**
