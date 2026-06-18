@@ -22,9 +22,15 @@ class ManageNotifications extends Component
 
         $notifications = $user->notifications()->get();
         $key = static fn ($notification) => ($notification->data['subject_type'] ?? '').':'.($notification->data['subject_id'] ?? '');
-        $total = $notifications->groupBy($key)->map->count();
-        $unread = $notifications->whereNull('read_at')->groupBy($key)->map->count();
-
+        $total = $notifications
+            ->groupBy($key)
+            ->map(fn ($notifications) => $notifications->count())
+            ->all();
+        $unread = $notifications
+            ->whereNull('read_at')
+            ->groupBy($key)
+            ->map(fn ($notifications) => $notifications->count())
+            ->all();
         $rows = [];
 
         foreach ($user->subscribedProjects()->orderBy('title')->get() as $project) {
