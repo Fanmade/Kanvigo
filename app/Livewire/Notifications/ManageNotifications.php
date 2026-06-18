@@ -2,9 +2,6 @@
 
 namespace App\Livewire\Notifications;
 
-use App\Models\Project;
-use App\Models\Story;
-use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -71,14 +68,18 @@ class ManageNotifications extends Component
 
     public function unsubscribe(string $type, int $id): void
     {
+        $user = Auth::user();
+
+        // Scope the lookup to the caller's own subscriptions so a tampered id can
+        // never resolve — and act on — an item the user isn't subscribed to.
         $model = match ($type) {
-            'project' => Project::find($id),
-            'story' => Story::find($id),
-            'task' => Task::find($id),
+            'project' => $user->subscribedProjects()->whereKey($id)->first(),
+            'story' => $user->subscribedStories()->whereKey($id)->first(),
+            'task' => $user->subscribedTasks()->whereKey($id)->first(),
             default => null,
         };
 
-        $model?->unsubscribe(Auth::user());
+        $model?->unsubscribe($user);
 
         unset($this->rows);
     }

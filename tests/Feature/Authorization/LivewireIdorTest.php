@@ -5,6 +5,7 @@ use App\Livewire\Comments\CommentList;
 use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Stories\StoryView;
+use App\Livewire\Subscriptions\SubscriptionToggle;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
 use App\Models\Story;
@@ -98,6 +99,12 @@ it('locks the ActivityFeed identifiers', function () {
         ->set('subjectId', $this->foreignTask->id);
 })->throws(CannotUpdateLockedPropertyException::class);
 
+it('locks the SubscriptionToggle identifiers', function () {
+    Livewire::actingAs($this->member)
+        ->test(SubscriptionToggle::class, ['subscribable' => $this->task])
+        ->set('subscribableId', $this->foreignTask->id);
+})->throws(CannotUpdateLockedPropertyException::class);
+
 // ---------------------------------------------------------------------------
 // Layer 2 — defence in depth: read computeds re-authorize, so even a tampered
 // identifier (bypassing the lock) cannot disclose foreign data.
@@ -169,4 +176,13 @@ it('re-authorizes ActivityFeed reads against tampered identifiers', function () 
     );
 
     expect(fn () => $instance->subject())->toThrow(AuthorizationException::class);
+});
+
+it('re-authorizes SubscriptionToggle reads against tampered identifiers', function () {
+    $instance = tamper(
+        Livewire::actingAs($this->member)->test(SubscriptionToggle::class, ['subscribable' => $this->task]),
+        ['subscribableId' => $this->foreignTask->id],
+    );
+
+    expect(fn () => $instance->subscribable())->toThrow(AuthorizationException::class);
 });

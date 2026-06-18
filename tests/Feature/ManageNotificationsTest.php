@@ -55,3 +55,20 @@ it('unsubscribes from an item on the spot', function () {
     expect($this->task->fresh()->isSubscribedBy($this->user))->toBeFalse()
         ->and($this->project->fresh()->isSubscribedBy($this->user))->toBeTrue();
 });
+
+it('ignores an unsubscribe for an item the user is not subscribed to', function () {
+    $stranger = User::factory()->create();
+    $otherProject = Project::factory()->create();
+    $otherProject->members()->attach($stranger);
+    $otherTask = Task::factory()->for(Story::factory()->for($otherProject))->create();
+    $otherTask->subscribe($stranger);
+
+    // A tampered id the caller has no subscription to is scoped out — a no-op
+    // that cannot remove another user's subscription pivot.
+    Livewire::actingAs($this->user)
+        ->test(ManageNotifications::class)
+        ->call('unsubscribe', 'task', $otherTask->id);
+
+    expect($otherTask->fresh()->isSubscribedBy($stranger))->toBeTrue()
+        ->and($this->task->fresh()->isSubscribedBy($this->user))->toBeTrue();
+});
