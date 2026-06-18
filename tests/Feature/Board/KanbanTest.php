@@ -108,3 +108,24 @@ it('creates a story from the board', function () {
 
     expect($this->project->stories()->where('title', 'New Story')->exists())->toBeTrue();
 });
+
+it('requires a title to create a story from the board', function () {
+    $before = $this->project->stories()->count();
+
+    Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('storyTitle', '')
+        ->call('createStory')
+        ->assertHasErrors(['storyTitle' => 'required']);
+
+    expect($this->project->stories()->count())->toBe($before);
+});
+
+it('requires a title to create a task from the board', function () {
+    Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->call('openTaskModal', $this->story->id)
+        ->set('taskTitle', '')
+        ->call('createTask')
+        ->assertHasErrors(['taskTitle' => 'required']);
+});
