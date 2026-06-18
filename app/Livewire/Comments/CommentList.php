@@ -2,26 +2,21 @@
 
 namespace App\Livewire\Comments;
 
+use App\Concerns\ResolvesMorphSubject;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class CommentList extends Component
 {
+    use ResolvesMorphSubject;
+
     public const string COLLAPSED_PREFERENCE_KEY = 'comments_collapsed';
-
-    #[Locked]
-    public string $commentableType;
-
-    #[Locked]
-    public int $commentableId;
 
     public bool $collapsed = false;
 
@@ -41,10 +36,7 @@ class CommentList extends Component
 
     public function mount(Project|Story|Task $commentable): void
     {
-        $this->commentableType = $commentable->getMorphClass();
-        $this->commentableId = $commentable->getKey();
-
-        $this->authorize('view', $commentable);
+        $this->initMorphSubject($commentable);
 
         $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, false);
     }
@@ -65,18 +57,7 @@ class CommentList extends Component
     #[Computed]
     public function commentable(): Project|Story|Task
     {
-        $class = Relation::getMorphedModel($this->commentableType) ?? $this->commentableType;
-
-        $commentable = match ($class) {
-            Project::class => Project::findOrFail($this->commentableId),
-            Story::class => Story::findOrFail($this->commentableId),
-            Task::class => Task::findOrFail($this->commentableId),
-            default => abort(404),
-        };
-
-        $this->authorize('view', $commentable);
-
-        return $commentable;
+        return $this->resolveMorphSubject();
     }
 
     /**

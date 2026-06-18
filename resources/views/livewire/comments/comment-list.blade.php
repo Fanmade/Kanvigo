@@ -4,7 +4,7 @@
         wire:click="toggleCollapsed"
         class="flex items-center gap-2 text-start"
         aria-expanded="{{ $collapsed ? 'false' : 'true' }}"
-        aria-controls="comments-body-{{ $commentableId }}"
+        aria-controls="comments-body-{{ $morphSubjectId }}"
     >
         <flux:icon :name="$collapsed ? 'chevron-right' : 'chevron-down'" variant="micro" class="text-zinc-400" />
         <flux:heading size="sm">{{ __('Comments') }}</flux:heading>
@@ -12,7 +12,7 @@
     </button>
 
     @unless ($collapsed)
-        <div id="comments-body-{{ $commentableId }}" class="flex flex-col gap-3">
+        <div id="comments-body-{{ $morphSubjectId }}" class="flex flex-col gap-3">
             <form wire:submit="addComment" class="flex flex-col gap-2">
                 <flux:textarea wire:model="body" rows="3" :placeholder="__('Write a comment…')" />
                 <div class="flex justify-end">

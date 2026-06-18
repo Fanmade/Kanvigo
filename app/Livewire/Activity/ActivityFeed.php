@@ -2,35 +2,27 @@
 
 namespace App\Livewire\Activity;
 
+use App\Concerns\ResolvesMorphSubject;
 use App\Models\Activity;
 use App\Models\Project;
 use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class ActivityFeed extends Component
 {
+    use ResolvesMorphSubject;
+
     public const string COLLAPSED_PREFERENCE_KEY = 'activities_collapsed';
-
-    #[Locked]
-    public string $subjectType;
-
-    #[Locked]
-    public int $subjectId;
 
     public bool $collapsed = true;
 
     public function mount(Project|Story|Task $subject): void
     {
-        $this->subjectType = $subject->getMorphClass();
-        $this->subjectId = $subject->getKey();
-
-        $this->authorize('view', $subject);
+        $this->initMorphSubject($subject);
 
         $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, true);
     }
@@ -51,18 +43,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function subject(): Project|Story|Task
     {
-        $class = Relation::getMorphedModel($this->subjectType) ?? $this->subjectType;
-
-        $subject = match ($class) {
-            Project::class => Project::findOrFail($this->subjectId),
-            Story::class => Story::findOrFail($this->subjectId),
-            Task::class => Task::findOrFail($this->subjectId),
-            default => abort(404),
-        };
-
-        $this->authorize('view', $subject);
-
-        return $subject;
+        return $this->resolveMorphSubject();
     }
 
     /**

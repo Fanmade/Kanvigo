@@ -2,46 +2,27 @@
 
 namespace App\Livewire\Subscriptions;
 
+use App\Concerns\ResolvesMorphSubject;
 use App\Models\Project;
 use App\Models\Story;
 use App\Models\Task;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class SubscriptionToggle extends Component
 {
-    #[Locked]
-    public string $subscribableType;
-
-    #[Locked]
-    public int $subscribableId;
+    use ResolvesMorphSubject;
 
     public function mount(Project|Story|Task $subscribable): void
     {
-        $this->subscribableType = $subscribable->getMorphClass();
-        $this->subscribableId = $subscribable->getKey();
-
-        $this->authorize('view', $subscribable);
+        $this->initMorphSubject($subscribable);
     }
 
     #[Computed]
     public function subscribable(): Project|Story|Task
     {
-        $class = Relation::getMorphedModel($this->subscribableType) ?? $this->subscribableType;
-
-        $subscribable = match ($class) {
-            Project::class => Project::findOrFail($this->subscribableId),
-            Story::class => Story::findOrFail($this->subscribableId),
-            Task::class => Task::findOrFail($this->subscribableId),
-            default => abort(404),
-        };
-
-        $this->authorize('view', $subscribable);
-
-        return $subscribable;
+        return $this->resolveMorphSubject();
     }
 
     #[Computed]

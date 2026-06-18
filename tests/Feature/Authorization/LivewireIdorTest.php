@@ -90,19 +90,19 @@ it('locks the TaskView identifiers', function () {
 it('locks the CommentList identifiers', function () {
     Livewire::actingAs($this->member)
         ->test(CommentList::class, ['commentable' => $this->task])
-        ->set('commentableId', $this->foreignTask->id);
+        ->set('morphSubjectId', $this->foreignTask->id);
 })->throws(CannotUpdateLockedPropertyException::class);
 
 it('locks the ActivityFeed identifiers', function () {
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
-        ->set('subjectId', $this->foreignTask->id);
+        ->set('morphSubjectId', $this->foreignTask->id);
 })->throws(CannotUpdateLockedPropertyException::class);
 
 it('locks the SubscriptionToggle identifiers', function () {
     Livewire::actingAs($this->member)
         ->test(SubscriptionToggle::class, ['subscribable' => $this->task])
-        ->set('subscribableId', $this->foreignTask->id);
+        ->set('morphSubjectId', $this->foreignTask->id);
 })->throws(CannotUpdateLockedPropertyException::class);
 
 // ---------------------------------------------------------------------------
@@ -163,7 +163,7 @@ it('re-authorizes TaskView reads against tampered identifiers', function () {
 it('re-authorizes CommentList reads against tampered identifiers', function () {
     $instance = tamper(
         Livewire::actingAs($this->member)->test(CommentList::class, ['commentable' => $this->task]),
-        ['commentableId' => $this->foreignTask->id],
+        ['morphSubjectId' => $this->foreignTask->id],
     );
 
     expect(fn () => $instance->commentable())->toThrow(AuthorizationException::class);
@@ -172,7 +172,7 @@ it('re-authorizes CommentList reads against tampered identifiers', function () {
 it('re-authorizes ActivityFeed reads against tampered identifiers', function () {
     $instance = tamper(
         Livewire::actingAs($this->member)->test(ActivityFeed::class, ['subject' => $this->task]),
-        ['subjectId' => $this->foreignTask->id],
+        ['morphSubjectId' => $this->foreignTask->id],
     );
 
     expect(fn () => $instance->subject())->toThrow(AuthorizationException::class);
@@ -181,7 +181,7 @@ it('re-authorizes ActivityFeed reads against tampered identifiers', function () 
 it('re-authorizes SubscriptionToggle reads against tampered identifiers', function () {
     $instance = tamper(
         Livewire::actingAs($this->member)->test(SubscriptionToggle::class, ['subscribable' => $this->task]),
-        ['subscribableId' => $this->foreignTask->id],
+        ['morphSubjectId' => $this->foreignTask->id],
     );
 
     expect(fn () => $instance->subscribable())->toThrow(AuthorizationException::class);

@@ -4,7 +4,7 @@
         wire:click="toggleCollapsed"
         class="flex items-center gap-2 text-start"
         aria-expanded="{{ $collapsed ? 'false' : 'true' }}"
-        aria-controls="activity-body-{{ $subjectId }}"
+        aria-controls="activity-body-{{ $morphSubjectId }}"
     >
         <flux:icon :name="$collapsed ? 'chevron-right' : 'chevron-down'" variant="micro" class="text-zinc-400" />
         <flux:heading size="sm">{{ __('Activity') }}</flux:heading>
@@ -12,7 +12,7 @@
     </button>
 
     @unless ($collapsed)
-        <ul id="activity-body-{{ $subjectId }}" class="mt-3 flex flex-col gap-3">
+        <ul id="activity-body-{{ $morphSubjectId }}" class="mt-3 flex flex-col gap-3">
             @forelse ($this->activities as $activity)
                 @php
                     $old = \App\Enums\Status::tryFrom((string) $activity->old_value)?->label() ?? $activity->old_value;
