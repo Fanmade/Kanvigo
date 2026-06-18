@@ -10,14 +10,17 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class CommentList extends Component
 {
     public const string COLLAPSED_PREFERENCE_KEY = 'comments_collapsed';
 
+    #[Locked]
     public string $commentableType;
 
+    #[Locked]
     public int $commentableId;
 
     public bool $collapsed = false;
@@ -64,12 +67,16 @@ class CommentList extends Component
     {
         $class = Relation::getMorphedModel($this->commentableType) ?? $this->commentableType;
 
-        return match ($class) {
+        $commentable = match ($class) {
             Project::class => Project::findOrFail($this->commentableId),
             Story::class => Story::findOrFail($this->commentableId),
             Task::class => Task::findOrFail($this->commentableId),
             default => abort(404),
         };
+
+        $this->authorize('view', $commentable);
+
+        return $commentable;
     }
 
     /**

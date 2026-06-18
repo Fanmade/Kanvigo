@@ -12,12 +12,14 @@ use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class ProjectBoard extends Component
 {
     use BuildsKanbanColumns;
 
+    #[Locked]
     public string $shortName;
 
     // Board filters.
@@ -61,7 +63,11 @@ class ProjectBoard extends Component
     #[Computed]
     public function project(): Project
     {
-        return Project::where('short_name', $this->shortName)->firstOrFail();
+        $project = Project::where('short_name', $this->shortName)->firstOrFail();
+
+        $this->authorize('view', $project);
+
+        return $project;
     }
 
     /**

@@ -13,14 +13,17 @@ use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class StoryView extends Component
 {
     use HandlesAttachments;
 
+    #[Locked]
     public string $shortName;
 
+    #[Locked]
     public int $storyNumber;
 
     public bool $editing = false;
@@ -69,10 +72,14 @@ class StoryView extends Component
     {
         $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
-        return $project->stories()
+        $story = $project->stories()
             ->with(['assignees', 'keywords', 'tasks.assignees', 'project'])
             ->where('story_number', $this->storyNumber)
             ->firstOrFail();
+
+        $this->authorize('view', $story);
+
+        return $story;
     }
 
     protected function attachable(): Project|Story|Task

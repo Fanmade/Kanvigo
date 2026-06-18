@@ -12,16 +12,20 @@ use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class TaskView extends Component
 {
     use HandlesAttachments;
 
+    #[Locked]
     public string $shortName;
 
+    #[Locked]
     public int $storyNumber;
 
+    #[Locked]
     public int $taskNumber;
 
     public bool $editing = false;
@@ -60,13 +64,17 @@ class TaskView extends Component
     {
         $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
-        return Task::query()
+        $task = Task::query()
             ->with(['assignees', 'keywords', 'story.project'])
             ->whereHas('story', fn ($q) => $q
                 ->where('project_id', $project->id)
                 ->where('story_number', $this->storyNumber))
             ->where('task_number', $this->taskNumber)
             ->firstOrFail();
+
+        $this->authorize('view', $task);
+
+        return $task;
     }
 
     protected function attachable(): Project|Story|Task

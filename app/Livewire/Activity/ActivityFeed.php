@@ -10,14 +10,17 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class ActivityFeed extends Component
 {
     public const string COLLAPSED_PREFERENCE_KEY = 'activities_collapsed';
 
+    #[Locked]
     public string $subjectType;
 
+    #[Locked]
     public int $subjectId;
 
     public bool $collapsed = true;
@@ -50,12 +53,16 @@ class ActivityFeed extends Component
     {
         $class = Relation::getMorphedModel($this->subjectType) ?? $this->subjectType;
 
-        return match ($class) {
+        $subject = match ($class) {
             Project::class => Project::findOrFail($this->subjectId),
             Story::class => Story::findOrFail($this->subjectId),
             Task::class => Task::findOrFail($this->subjectId),
             default => abort(404),
         };
+
+        $this->authorize('view', $subject);
+
+        return $subject;
     }
 
     /**

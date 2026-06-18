@@ -11,12 +11,14 @@ use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class ProjectShow extends Component
 {
     use HandlesAttachments;
 
+    #[Locked]
     public string $shortName;
 
     public bool $editing = false;
@@ -43,9 +45,13 @@ class ProjectShow extends Component
     #[Computed]
     public function project(): Project
     {
-        return Project::where('short_name', $this->shortName)
+        $project = Project::where('short_name', $this->shortName)
             ->with(['stories.keywords', 'stories.tasks.assignees'])
             ->firstOrFail();
+
+        $this->authorize('view', $project);
+
+        return $project;
     }
 
     protected function attachable(): Project|Story|Task
