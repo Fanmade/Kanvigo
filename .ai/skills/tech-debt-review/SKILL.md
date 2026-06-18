@@ -1,19 +1,21 @@
 ---
-description: Monthly technical-debt review — deterministic metrics + LLM smell/security review, proposed into Kanbrio as triage tasks. Propose-only; never auto-fixes or deletes.
-argument-hint: "[--slice=<name>] (optional: force a specific rotation slice)"
+name: tech-debt-review
+description: Run the recurring technical-debt review for this project. Activate when asked to run the tech-debt review, the monthly code-health/code-quality review, to detect code smells and improvement opportunities across stability/maintainability/security, to find removable/dead code, or to record code-health metrics (coverage, mutation score, hotspots). Combines deterministic checks (composer/npm audit, Larastan, Pint, line/type coverage, mutation testing, churn×complexity hotspots) with an LLM review across a rotating code slice, then PROPOSES findings as triage tasks on the Kanbrio board — it never edits, fixes, or deletes code. State and metrics history live in docs/TECH_DEBT.md.
 ---
 
 # Tech-Debt Review Playbook
 
 A recurring review that hunts code smells and improvement opportunities across
 **stability, maintainability, and security**, and tracks honest health metrics
-over time. It **proposes** — you triage. It never edits, fixes, or deletes code.
+over time. It **proposes** — the user triages. It never edits, fixes, or deletes code.
 
 State lives in `docs/TECH_DEBT.md` (the ledger): `last_review_head`,
 `slice_pointer`, the wont-fix suppression list, and the metrics history table.
 
-> Coverage/mutation need Xdebug with `XDEBUG_MODE=coverage`. These runs are slow
-> and must **not** use `--parallel`. Run them separately from `composer test`.
+> Coverage & mutation use **PCOV** (`php8.5-pcov`), the active coverage driver since
+> Xdebug's `mode` is empty — so run them with **no `XDEBUG_MODE`** and use
+> `php -d pcov.directory=app …`. Run them **non-parallel** and separately from
+> `composer test`. If PCOV is absent, fall back to an `XDEBUG_MODE=coverage` prefix (slow).
 
 ---
 
@@ -25,8 +27,8 @@ Read `docs/TECH_DEBT.md`. Extract from the frontmatter:
 - `slice_pointer` — index into the rotation list below; this cycle reviews that slice.
 - The **wont-fix** list (accepted debt — never re-propose) and its fingerprints.
 
-If `$ARGUMENTS` contains `--slice=<name>`, use that slice instead of the pointer
-(don't advance the pointer in that case).
+If the invocation requests a specific slice (e.g. "slice=mcp"), review that slice
+instead of the pointer and **don't** advance the pointer this cycle.
 
 **Rotation slices** (one per cycle; full legacy coverage every 5 cycles):
 
@@ -147,8 +149,8 @@ Review the union of both.
 ## Step 5 — Review across three dimensions
 
 For each file in scope, review for the dimensions below. For a thorough pass you
-**may** fan out one agent per dimension via a Workflow — but the dimensions and
-their checks are fixed here so the process is deterministic.
+**may** fan out one agent per dimension — but the dimensions and their checks are
+fixed here so the process is deterministic.
 
 **Stability**
 - Driver-specific SQL / behavior that passes on local SQLite but breaks on prod
@@ -200,7 +202,7 @@ Via the Kanbrio MCP:
      `[security] StoryPolicy missing update authz check`.
    - Body: the finding, the file/symbol, why it matters, a proposed fix, and the
      fingerprint (for future dedup).
-   - **Priority** by severity (your `Priority` enum):
+   - **Priority** by severity (the `Priority` enum):
 
      | Severity | Priority | Examples |
      |----------|----------|----------|
@@ -210,6 +212,9 @@ Via the Kanbrio MCP:
      | Minor smell / cosmetic | `Low` | naming, small dead branch, convention drift |
      | Trivial / nice-to-have | `Lowest` | doc nits, micro-cleanups |
 
+   Group near-identical findings that share one root cause and one fix into a single
+   task (with all locations listed) rather than one task per file — keep the backlog
+   actionable.
 3. Also file metric-driven findings as tasks where warranted, e.g. "diff-coverage
    dropped on `X`", "new danger-quadrant hotspot `Y`", "mutation survivors in `Z`".
 
@@ -234,16 +239,16 @@ Health = round( 0.45·MSI + 0.25·TypeCov + 0.20·LineCov + 0.10·HotspotPressur
 
 The composite is **secondary** — weighted toward mutation score because test
 *quality* is the honest signal; line coverage is low-weighted and trend-framed so
-it can't be gamed into a target.
+it can't be gamed into a target. If MSI is scoped/sampled (danger classes), note that.
 
 **Update `docs/TECH_DEBT.md`:**
 
 1. Append a row to the **Metrics history** table: date, slice reviewed, MSI,
    type cov, line cov, danger-quadrant count, Health, and Δ vs the previous row.
 2. Set `last_review_head` to the current `HEAD` (`git rev-parse HEAD`).
-3. Advance `slice_pointer` to `(slice_pointer + 1) mod 5` — unless `--slice` was forced.
-4. Leave the **wont-fix** list untouched. (You move rejected findings there by hand,
-   one line + reason + fingerprint, to silence them permanently.)
+3. Advance `slice_pointer` to `(slice_pointer + 1) mod 5` — unless a slice was forced.
+4. Leave the **wont-fix** list untouched. (The user moves rejected findings there by
+   hand, one line + reason + fingerprint, to silence them permanently.)
 
 **Report** to the user: the scorecard with deltas, count of findings filed by
 dimension and priority, anything notable from the prechecks (CVEs, larastan drift,
@@ -254,6 +259,8 @@ failing tests), and which slice was reviewed.
 ## Guardrails
 
 - **Propose only.** No edits, no fixes, no deletions in this run — ever.
+- **Never commit.** The user reviews and commits manually; finalize edits to the
+  ledger and stop.
 - **No vanity metrics.** Coverage % is never a gate or target; only its trend and
   diff-coverage matter. Don't add LOC/commit-count/grade metrics.
 - **Suppression is sacred.** If a fingerprint is in wont-fix or already filed, it
