@@ -60,21 +60,49 @@ A growing larastan baseline is itself a finding.
 
 ## Step 2 — Collect metrics
 
-Run separately, **non-parallel**, with Xdebug coverage enabled:
+Run separately, **non-parallel**. **PCOV** (`php8.5-pcov`) is installed and is the
+active coverage driver (Xdebug's `mode` is empty), so coverage/mutation run at near-
+native speed with **no `XDEBUG_MODE`**. Pass `-d pcov.directory=app` to limit
+instrumentation to source. (Xdebug remains for step-debugging via `XDEBUG_MODE=debug`.)
+If PCOV is ever absent, prefix the coverage/mutation commands with `XDEBUG_MODE=coverage`
+as a slow fallback.
+
+> **Reading metric output (important).** A global hook in this environment compacts
+> tool stdout into `{"tool":"pest",…,"raw":[…]}` when read via Bash, so the human
+> tables/scores are hidden from a normal Bash result. **Always redirect each metric
+> command to a file and open it with the Read tool** (not `cat`/`grep`/`tail` — those
+> are Bash and get compacted too). The real numbers are in the `raw` array: type
+> coverage ends with `Total: NN.N %`; mutation ends with `Mutations: a untested, b
+> tested` and `Score: NN.NN%`.
 
 ```bash
-# Line coverage (whole suite) + per-file table
-XDEBUG_MODE=coverage php artisan test --testsuite=Unit,Feature --coverage
+# Line coverage — emit machine-readable clover, exclude the Browser suite
+php -d pcov.directory=app artisan test --testsuite=Unit,Feature \
+  --coverage-clover=/tmp/td-clover.xml > /tmp/td-line.txt 2>&1
 
-# Type coverage (no driver needed, but fine to run here)
-vendor/bin/pest --type-coverage
+# Type coverage (plugin: pestphp/pest-plugin-type-coverage). Read /tmp/td-typecov.txt → "Total: NN.N %"
+vendor/bin/pest --type-coverage > /tmp/td-typecov.txt 2>&1
 
-# Mutation score — scoped to the current slice's paths (slow; do NOT run whole repo)
-XDEBUG_MODE=coverage vendor/bin/pest --mutate --covered-only --path=<slice paths>
+# Mutation score — MUST pass --testsuite=Unit,Feature (Browser tests time out and break the
+# baseline). Pass classes COMMA-SEPARATED in one --class (repeated --class flags only honor the
+# last). Scope to the diff + danger-quadrant classes, NOT the whole slice. Read → "Score: NN.NN%".
+php -d pcov.directory=app vendor/bin/pest --mutate --covered-only --testsuite=Unit,Feature \
+  --class="App\\Foo\\Bar,App\\Foo\\Baz" > /tmp/td-mutate.txt 2>&1
 
 # Architecture fitness functions (pass/fail) — only if arch tests exist
 php artisan test --filter=Arch    # skip if none defined yet
 ```
+
+Then parse overall + per-file line coverage from the clover XML (statements covered /
+total), e.g. with a short `php -r` over `/tmp/td-clover.xml`'s `<metrics>` nodes.
+
+> **Mutation scoping & speed.** With PCOV, the 3 danger-quadrant classes mutate in
+> ~160s (204 mutants); whole Livewire slices are still many minutes, so keep `--class`
+> scoped to the **diff** plus the **danger-quadrant** classes (from Hotspots below).
+> If it still can't finish in budget, record MSI as a sampled value (note which
+> classes) rather than blocking the cycle. Note: line coverage and mutation score
+> diverge sharply — high line coverage with low MSI means tests execute but don't
+> assert; that gap is itself a finding worth filing.
 
 **Diff-coverage**: from the per-file coverage table, read the coverage of files
 changed since `last_review_head` (`git diff --name-only <last_review_head>...HEAD`).
