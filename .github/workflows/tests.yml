@@ -62,7 +62,19 @@ jobs:
         run: php artisan key:generate
 
       - name: Build Assets
-        run: npm run build
+        # Retry: the laravel:fonts plugin fetches remote fonts at build time,
+        # which occasionally fails with a transient network error (ECONNRESET).
+        run: |
+          for attempt in 1 2 3; do
+            echo "Build attempt ${attempt}..."
+            if npm run build; then
+              exit 0
+            fi
+            echo "Build attempt ${attempt} failed, retrying in 5s..." >&2
+            sleep 5
+          done
+          echo "Build failed after 3 attempts" >&2
+          exit 1
 
       - name: Run Type Analysis
         run: composer types:check
@@ -73,9 +85,9 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     env:
-      # Minimum required line coverage. Seeded low; raise to just under the
-      # actual level (shown by the badge / job summary) after the first run.
-      COVERAGE_MIN: '50'
+      # Minimum required line coverage; CI fails below this. Current level is
+      # ~95% (see the coverage badge / job summary), leaving some headroom.
+      COVERAGE_MIN: '90'
 
     steps:
       - name: Checkout code
@@ -115,7 +127,19 @@ jobs:
         run: php artisan key:generate
 
       - name: Build Assets
-        run: npm run build
+        # Retry: the laravel:fonts plugin fetches remote fonts at build time,
+        # which occasionally fails with a transient network error (ECONNRESET).
+        run: |
+          for attempt in 1 2 3; do
+            echo "Build attempt ${attempt}..."
+            if npm run build; then
+              exit 0
+            fi
+            echo "Build attempt ${attempt} failed, retrying in 5s..." >&2
+            sleep 5
+          done
+          echo "Build failed after 3 attempts" >&2
+          exit 1
 
       - name: Run Tests With Coverage
         run: php artisan test --testsuite=Unit,Feature --coverage --coverage-clover=coverage/clover.xml --min=${{ env.COVERAGE_MIN }}
