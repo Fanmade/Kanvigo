@@ -7,7 +7,7 @@
 @endphp
 
 <div class="flex items-center gap-2">
-    <flux:avatar size="xs" :name="$authorName" />
+    <x-user-avatar :user="$comment->user" :name="$authorName" />
     <span class="text-sm font-medium text-zinc-800 dark:text-zinc-100">{{ $authorName }}</span>
     <flux:text size="xs" class="text-zinc-400">· {{ $comment->created_at?->diffForHumans() }}</flux:text>
 </div>

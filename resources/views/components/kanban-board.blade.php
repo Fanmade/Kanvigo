@@ -95,7 +95,7 @@
                             <div class="mt-2 flex items-center">
                                 <flux:avatar.group>
                                     @foreach ($task->assignees as $assignee)
-                                        <flux:avatar size="xs" :name="$assignee->name" />
+                                        <x-user-avatar :user="$assignee" :tooltip="$assignee->name" />
                                     @endforeach
                                 </flux:avatar.group>
                             </div>

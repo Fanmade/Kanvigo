@@ -33,6 +33,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   tasks plus unassigned to-do tasks across your projects (work assigned to others
   is hidden), in-progress first.
 - **Multi-assignee** stories and tasks for pairing and ensemble work.
+- **Profile avatars** — upload a profile picture (cropped to a square) from
+  profile settings; it shows wherever you appear — assignees, comment authors and
+  member lists — with your initials as the fallback when you have none.
 - **Comments** with one-level replies, editing, and soft-delete tombstones. The
   whole section can be collapsed, remembered per user.
 - **Attachments** — drag files onto a description to upload them, with inline

@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
@@ -27,6 +28,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $avatar_path
  * @property Carbon|null $email_verified_at
  * @property Carbon|null $deactivated_at
  * @property Carbon|null $deleted_at
@@ -57,6 +59,8 @@ class User extends Authenticatable implements PasskeyUser
     {
         static::deleting(static function (User $user): void {
             if ($user->isForceDeleting()) {
+                $user->deleteAvatar();
+
                 return;
             }
 
@@ -257,6 +261,49 @@ class User extends Authenticatable implements PasskeyUser
     public function subscribedTasks(): MorphToMany
     {
         return $this->morphedByMany(Task::class, 'subscribable', 'subscriptions')->withTimestamps();
+    }
+
+    /**
+     * The private storage disk that holds user avatar images. Avatars are not
+     * publicly accessible; they are streamed to authenticated viewers through
+     * the named "avatar" route instead.
+     */
+    public const string AVATAR_DISK = 'local';
+
+    /**
+     * Determine whether the user has uploaded an avatar image.
+     */
+    public function hasAvatar(): bool
+    {
+        return $this->avatar_path !== null;
+    }
+
+    /**
+     * The URL of the user's avatar, served through the authorized avatar route,
+     * or null when they have none and their initials should be shown as the
+     * fallback instead. The cache-busting query updates when the image changes.
+     */
+    public function avatarUrl(): ?string
+    {
+        if ($this->avatar_path === null) {
+            return null;
+        }
+
+        return route('avatar', ['user' => $this, 'v' => $this->updated_at?->timestamp]);
+    }
+
+    /**
+     * Remove the user's stored avatar file and clear the reference to it.
+     */
+    public function deleteAvatar(): void
+    {
+        if ($this->avatar_path === null) {
+            return;
+        }
+
+        Storage::disk(self::AVATAR_DISK)->delete($this->avatar_path);
+
+        $this->avatar_path = null;
     }
 
     /**

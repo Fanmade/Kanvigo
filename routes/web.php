@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttachmentDownloadController;
 use App\Http\Controllers\AttachmentThumbnailController;
 use App\Http\Controllers\AttachmentViewController;
+use App\Http\Controllers\AvatarController;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
 use App\Livewire\Dashboard;
@@ -36,6 +37,9 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('notifications', ManageNotifications::class)->name('notifications.index');
     Route::livewire('invite', InviteUser::class)->name('invitations.create');
     Route::livewire('admin/users', UserManagement::class)->name('admin.users');
+
+    // Avatars are stored privately and streamed only to authenticated viewers.
+    Route::get('users/{user}/avatar', AvatarController::class)->name('avatar');
 
     /*
      * Attachment delivery is scoped under the owning project's short name and

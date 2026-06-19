@@ -30,7 +30,7 @@
                     };
                 @endphp
                 <li class="flex items-start gap-2 text-sm">
-                    <flux:avatar size="xs" :name="$activity->user?->name ?? __('System')" />
+                    <x-user-avatar :user="$activity->user" :name="$activity->user?->name ?? __('System')" />
                     <div class="text-zinc-600 dark:text-zinc-300">
                         <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $activity->user?->name ?? __('System') }}</span>
                         {{ $description }}

@@ -17,7 +17,7 @@
             <flux:card class="flex flex-col gap-4" wire:key="user-{{ $user->id }}" data-test="user-row-{{ $user->id }}">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <flux:avatar size="sm" :name="$user->name" />
+                        <x-user-avatar :user="$user" size="sm" />
                         <div class="flex flex-col">
                             <span class="font-medium text-zinc-800 dark:text-zinc-100">
                                 {{ $user->name }}
