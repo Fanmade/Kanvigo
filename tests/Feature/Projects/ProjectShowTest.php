@@ -18,6 +18,12 @@ beforeEach(function () {
     $this->project->members()->attach($this->user);
 });
 
+it('caps and scrolls the project description', function () {
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->assertSeeHtml('max-h-96 overflow-y-auto');
+});
+
 it('shows the description and open story tasks', function () {
     $story = Story::factory()->for($this->project)->create();
     Task::factory()->for($story)->status(Status::ToDo)->create(['title' => 'Open task']);

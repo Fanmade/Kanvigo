@@ -24,6 +24,12 @@ beforeEach(function () {
         ->test(StoryView::class, ['short_name' => 'ABC', 'story_number' => $this->story->story_number]);
 });
 
+it('caps and scrolls the story description', function () {
+    $this->story->update(['description' => 'A story description.']);
+
+    ($this->mountStory)()->assertSeeHtml('max-h-96 overflow-y-auto');
+});
+
 it('shows story completeness based on its subtasks', function () {
     Task::factory()->for($this->story)->status(Status::Done)->create();
     Task::factory()->for($this->story)->status(Status::ToDo)->count(2)->create();

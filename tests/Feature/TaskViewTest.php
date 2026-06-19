@@ -28,6 +28,13 @@ beforeEach(function () {
         ]);
 });
 
+it('caps and scrolls the task description', function () {
+    $this->task->update(['description' => 'A task description.']);
+
+    ($this->mountTask)()
+        ->assertSeeHtml('max-h-96 overflow-y-auto');
+});
+
 it('changes the task status inline and logs the transition', function () {
     ($this->mountTask)()
         ->set('status', Status::Done->value);

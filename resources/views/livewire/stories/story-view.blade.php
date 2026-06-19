@@ -44,7 +44,7 @@
         <x-attachments.dropzone :enabled="$canUpdate">
             <flux:card>
                 @if ($this->story->description)
-                    <x-markdown :content="$this->story->description" />
+                    <x-markdown :content="$this->story->description" class="max-h-96 overflow-y-auto" />
                 @else
                     <flux:text class="italic text-zinc-400">{{ __('No description yet.') }}</flux:text>
                 @endif
