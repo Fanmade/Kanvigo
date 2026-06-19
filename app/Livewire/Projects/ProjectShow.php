@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Actions\CreateStory;
 use App\Concerns\HandlesAttachments;
 use App\Enums\Status;
 use App\Models\Project;
@@ -139,10 +140,11 @@ class ProjectShow extends Component
             'storyDescription' => ['nullable', 'string'],
         ]);
 
-        $this->project()->stories()->create([
-            'title' => $validated['storyTitle'],
-            'description' => $validated['storyDescription'] ?? null,
-        ]);
+        app(CreateStory::class)->handle(
+            $this->project(),
+            $validated['storyTitle'],
+            $validated['storyDescription'] ?? null,
+        );
 
         $this->reset('storyTitle', 'storyDescription', 'showStoryModal');
         unset($this->project);

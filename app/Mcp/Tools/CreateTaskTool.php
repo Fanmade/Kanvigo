@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\CreateTask;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Concerns\RequiresWriteAccess;
@@ -53,18 +54,14 @@ class CreateTaskTool extends Tool
             return Response::error('No story with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1".');
         }
 
-        $task = $story->tasks()->make([
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'due_date' => $validated['due_date'] ?? null,
-        ]);
-
-        if (isset($validated['priority'])) {
-            $task->priority = Priority::fromName($validated['priority']);
-        }
-
-        $task->status = isset($validated['status']) ? Status::from($validated['status']) : Status::Planned;
-        $task->save();
+        $task = app(CreateTask::class)->handle(
+            $story,
+            $validated['title'],
+            $validated['description'] ?? null,
+            isset($validated['priority']) ? Priority::fromName($validated['priority']) : null,
+            isset($validated['status']) ? Status::from($validated['status']) : null,
+            $validated['due_date'] ?? null,
+        );
 
         $task->setRelation('story', $story);
 

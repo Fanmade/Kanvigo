@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Livewire\Projects\ProjectShow;
 use App\Models\Project;
@@ -74,13 +75,18 @@ it('excludes empty and fully-finished stories from the open list', function () {
         ->not->toContain($done->id);
 });
 
-it('creates a story from the overview', function () {
+it('creates a story from the overview with the default priority', function () {
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
         ->set('storyTitle', 'Brand new story')
         ->call('createStory');
 
-    expect($this->project->stories()->where('title', 'Brand new story')->exists())->toBeTrue();
+    $story = $this->project->stories()->where('title', 'Brand new story')->first();
+
+    // The project page shares the creation action with the board, so a story made
+    // here gets the same default priority as one made on the board.
+    expect($story)->not->toBeNull()
+        ->and($story->priority)->toBe(Priority::default());
 });
 
 it('renames the short name and redirects to the new url', function () {

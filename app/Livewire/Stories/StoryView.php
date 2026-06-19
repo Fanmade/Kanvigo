@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Stories;
 
+use App\Actions\CreateTask;
 use App\Concerns\HandlesAttachments;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -200,14 +201,14 @@ class StoryView extends Component
             'taskStatus' => ['required', 'string', 'in:'.collect(Status::cases())->map->value->implode(',')],
         ]);
 
-        $task = $story->tasks()->make([
-            'title' => $validated['taskTitle'],
-            'description' => $validated['taskDescription'] ?? null,
-            'due_date' => $validated['taskDueDate'] ?: null,
-        ]);
-        $task->priority = Priority::from($validated['taskPriority']);
-        $task->status = Status::from($validated['taskStatus']);
-        $task->save();
+        app(CreateTask::class)->handle(
+            $story,
+            $validated['taskTitle'],
+            $validated['taskDescription'] ?? null,
+            Priority::from($validated['taskPriority']),
+            Status::from($validated['taskStatus']),
+            $validated['taskDueDate'],
+        );
 
         $this->reset('taskTitle', 'taskDescription', 'taskDueDate', 'showTaskModal');
         unset($this->story);

@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Projects;
 
+use App\Actions\CreateStory;
+use App\Actions\CreateTask;
 use App\Concerns\BuildsKanbanColumns;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -123,12 +125,13 @@ class ProjectBoard extends Component
             'storyDueDate' => ['nullable', 'date'],
         ]);
 
-        $this->project()->stories()->create([
-            'title' => $validated['storyTitle'],
-            'description' => $validated['storyDescription'] ?? null,
-            'priority' => Priority::from($validated['storyPriority']),
-            'due_date' => $validated['storyDueDate'] ?: null,
-        ]);
+        app(CreateStory::class)->handle(
+            $this->project(),
+            $validated['storyTitle'],
+            $validated['storyDescription'] ?? null,
+            Priority::from($validated['storyPriority']),
+            $validated['storyDueDate'],
+        );
 
         $this->reset('storyTitle', 'storyDescription', 'storyDueDate', 'showStoryModal');
         unset($this->stories, $this->columns);
@@ -177,14 +180,14 @@ class ProjectBoard extends Component
 
         $story = $this->project()->stories()->whereKey($validated['taskStoryId'])->firstOrFail();
 
-        $task = $story->tasks()->make([
-            'title' => $validated['taskTitle'],
-            'description' => $validated['taskDescription'] ?? null,
-            'due_date' => $validated['taskDueDate'] ?: null,
-        ]);
-        $task->priority = Priority::from($validated['taskPriority']);
-        $task->status = Status::from($validated['taskStatus']);
-        $task->save();
+        app(CreateTask::class)->handle(
+            $story,
+            $validated['taskTitle'],
+            $validated['taskDescription'] ?? null,
+            Priority::from($validated['taskPriority']),
+            Status::from($validated['taskStatus']),
+            $validated['taskDueDate'],
+        );
 
         $this->reset('taskTitle', 'taskDescription', 'taskDueDate', 'showTaskModal');
         unset($this->stories, $this->columns);

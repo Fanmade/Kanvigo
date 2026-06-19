@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\CreateStory;
 use App\Enums\Priority;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
@@ -47,14 +48,13 @@ class CreateStoryTool extends Tool
             return Response::error('No project named "'.$validated['short_name'].'" exists, or you do not have access to it.');
         }
 
-        $story = $project->stories()->create([
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'priority' => isset($validated['priority'])
-                ? Priority::fromName($validated['priority'])
-                : Priority::default(),
-            'due_date' => $validated['due_date'] ?? null,
-        ]);
+        $story = app(CreateStory::class)->handle(
+            $project,
+            $validated['title'],
+            $validated['description'] ?? null,
+            isset($validated['priority']) ? Priority::fromName($validated['priority']) : null,
+            $validated['due_date'] ?? null,
+        );
 
         $story->setRelation('project', $project);
 
