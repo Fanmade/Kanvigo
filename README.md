@@ -1,5 +1,8 @@
 # Kanbrio
 
+![Tests](https://github.com/Fanmade/kanbrio/actions/workflows/tests.yml/badge.svg)
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Fanmade/89b10cbc79557b748b8f50d2955dd9f6/raw/coverage.json)
+
 A minimalist, invitation-only Kanban project-management tool. Organize work as
 **Projects → Stories → Tasks**, with human-readable scoped URLs, a drag-and-drop
 board, comments, attachments, an audit trail, and per-project notifications.
@@ -121,10 +124,14 @@ composer test
 Individual checks:
 
 ```bash
-composer lint        # Pint (apply fixes)
-composer types:check # Larastan / PHPStan
-php artisan test     # Pest
+composer lint          # Pint (apply fixes)
+composer types:check   # Larastan / PHPStan
+php artisan test       # Pest
+composer test:coverage # Pest with line coverage + minimum threshold
 ```
+
+CI measures line coverage on every run, fails if it drops below the configured
+threshold, and publishes the current level to the coverage badge above.
 
 Browser tests (Pest 4 + Playwright) live in `tests/Browser` and run as a
 separate suite so the default gate stays fast and Playwright-free:

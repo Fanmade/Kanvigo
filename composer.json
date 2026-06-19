@@ -87,7 +87,7 @@
         ],
         "test:coverage": [
             "@putenv XDEBUG_MODE=coverage",
-            "@php artisan test --testsuite=Unit,Feature --coverage"
+            "@php artisan test --testsuite=Unit,Feature --coverage --min=50"
         ],
         "test:all": [
             "@test",
