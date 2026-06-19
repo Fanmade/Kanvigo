@@ -49,7 +49,7 @@ class CommandPalette extends Component
         ]);
 
         if ($user->hasPermission(Permission::CreateProjects)) {
-            $actions->push(new SearchResult(type: 'action', title: __('New project'), url: route('projects.index'), icon: 'folder-plus'));
+            $actions->push(new SearchResult(type: 'action', title: __('New project'), url: route('projects.index', ['create' => 1]), icon: 'folder-plus'));
         }
 
         if ($user->hasPermission(Permission::InviteUsers)) {

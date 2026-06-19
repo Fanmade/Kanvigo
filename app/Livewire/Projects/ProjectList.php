@@ -9,11 +9,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Title('Projects')]
 class ProjectList extends Component
 {
+    /**
+     * Whether the create-project modal is open. URL-bound (aliased to `create`)
+     * so the command palette can deep-link straight to the open form.
+     */
+    #[Url(as: 'create')]
     public bool $showCreate = false;
 
     public string $title = '';

@@ -170,6 +170,18 @@ it('shows the New project action only to permitted users', function () {
         ->assertSee('New project');
 });
 
+it('deep-links the New project action to the open create form', function () {
+    $creator = User::factory()->canCreateProjects()->create();
+
+    $action = Livewire::actingAs($creator)
+        ->test(CommandPalette::class)
+        ->instance()
+        ->actions()
+        ->firstWhere('title', 'New project');
+
+    expect($action->url)->toContain('create=1');
+});
+
 it('clears its query when closed', function () {
     Livewire::actingAs($this->user)
         ->test(CommandPalette::class)

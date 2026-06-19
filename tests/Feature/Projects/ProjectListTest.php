@@ -41,6 +41,26 @@ it('lists only the projects the user belongs to, ordered by title', function () 
     expect($projects->pluck('title')->all())->toBe(['Alpha', 'Beta']);
 });
 
+it('opens the create form when deep-linked with the create flag', function () {
+    Livewire::actingAs(User::factory()->canCreateProjects()->create())
+        ->withQueryParams(['create' => true])
+        ->test(ProjectList::class)
+        ->assertSet('showCreate', true);
+});
+
+it('keeps the create form closed without the flag', function () {
+    Livewire::actingAs(User::factory()->canCreateProjects()->create())
+        ->test(ProjectList::class)
+        ->assertSet('showCreate', false);
+});
+
+it('does not render the create form for users who cannot create projects', function () {
+    Livewire::actingAs(User::factory()->create())
+        ->withQueryParams(['create' => true])
+        ->test(ProjectList::class)
+        ->assertDontSee('Short name');
+});
+
 it('creates a project, attaches the creator and redirects to it', function () {
     $user = User::factory()->canCreateProjects()->create();
 

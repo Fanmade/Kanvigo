@@ -14,9 +14,6 @@
 - Add stories from e-mails.
   - Support for attachments.
 
-## Command palette
-- Make the "New project" command not only go to the project list page, but actually show the form to create a new project.
-
 ## Stories and tasks
 - Add optional types to stories and tasks (e.g. bug, feature, etc.).
 

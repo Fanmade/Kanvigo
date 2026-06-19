@@ -33,6 +33,7 @@
         @endif
     </div>
 
+    @can('create-projects')
     <flux:modal wire:model="showCreate" class="md:w-96">
         <form wire:submit="createProject" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ __('New project') }}</flux:heading>
@@ -58,4 +59,5 @@
             </div>
         </form>
     </flux:modal>
+    @endcan
 </div>
