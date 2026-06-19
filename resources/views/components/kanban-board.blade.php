@@ -55,30 +55,15 @@
                                     <x-tag-badges :tags="$task->tags" />
                                 </div>
 
-                                <div class="mt-2 flex items-center justify-between">
-                                    @if ($task->assignees->isNotEmpty())
+                                @if ($task->assignees->isNotEmpty())
+                                    <div class="mt-2 flex items-center">
                                         <flux:avatar.group>
                                             @foreach ($task->assignees as $assignee)
                                                 <flux:avatar size="xs" :name="$assignee->name" />
                                             @endforeach
                                         </flux:avatar.group>
-                                    @else
-                                        <span></span>
-                                    @endif
-
-                                    {{-- Touch / no-drag fallback for moving the task --}}
-                                    <select
-                                        aria-label="{{ __('Move task') }}"
-                                        @change="$wire.moveTask({{ $task->id }}, $event.target.value)"
-                                        class="rounded border border-zinc-200 bg-transparent py-0.5 pe-6 ps-1 text-xs text-zinc-500 dark:border-zinc-700"
-                                    >
-                                        @foreach (\App\Enums\Status::columns() as $status)
-                                            <option value="{{ $status->value }}" @selected($status === $task->status)>
-                                                {{ $status->label() }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
