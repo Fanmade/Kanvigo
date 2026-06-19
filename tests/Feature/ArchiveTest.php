@@ -64,8 +64,8 @@ test('the notArchived and archived scopes filter by archive state', function () 
     $active = Task::factory()->for($this->story)->create();
     $archived = Task::factory()->for($this->story)->archived()->create();
 
-    expect(Task::notArchived()->pluck('id'))->toContain($active->id)->not->toContain($archived->id)
-        ->and(Task::archived()->pluck('id'))->toContain($archived->id)->not->toContain($active->id);
+    expect(Task::query()->notArchived()->pluck('id'))->toContain($active->id)->not->toContain($archived->id)
+        ->and(Task::query()->archived()->pluck('id'))->toContain($archived->id)->not->toContain($active->id);
 });
 
 /*
