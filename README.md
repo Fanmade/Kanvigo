@@ -6,6 +6,10 @@ board, comments, attachments, an audit trail, and per-project notifications.
 
 Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
+> ⚠️ **Early development** — Kanbrio is still under active development and is **not
+> yet considered production ready**. Expect breaking changes, and use it in
+> production at your own risk.
+
 ## Features
 
 - **Projects, Stories & Tasks** — three-level hierarchy with project-scoped story
