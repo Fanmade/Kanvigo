@@ -89,6 +89,10 @@
             "@putenv XDEBUG_MODE=coverage",
             "@php artisan test --testsuite=Unit,Feature --coverage --min=90"
         ],
+        "test:coverage:clover": [
+            "@putenv XDEBUG_MODE=coverage",
+            "@php artisan test --testsuite=Unit,Feature --coverage-clover build/coverage/clover.xml"
+        ],
         "test:all": [
             "@test",
             "@test:browser"
