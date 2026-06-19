@@ -57,6 +57,19 @@ it('counts assigned tasks per status and projects', function () {
         ->and($component->instance()->projectCount())->toBe(1);
 });
 
+it('caps the active task list at the render limit', function () {
+    Task::factory()
+        ->count(55)
+        ->for($this->story)
+        ->status(Status::ToDo)
+        ->create()
+        ->each(fn (Task $task) => $task->assignees()->attach($this->user));
+
+    $active = Livewire::actingAs($this->user)->test(Dashboard::class)->instance()->activeTasks();
+
+    expect($active)->toHaveCount(50);
+});
+
 it('builds a 14-day completion series from the user activity', function () {
     $task = Task::factory()->for($this->story)->create();
 
