@@ -45,6 +45,24 @@ it('lists subscriptions grouped with notification counts', function () {
         ->and($task['unread'])->toBe(1);
 });
 
+it('includes subscribed stories as their own group', function () {
+    $this->story->subscribe($this->user);
+
+    $rows = Livewire::actingAs($this->user)
+        ->test(ManageNotifications::class)
+        ->instance()
+        ->rows();
+
+    $story = collect($rows)->firstWhere('type', 'story');
+
+    expect($story)->not->toBeNull()
+        ->and($story['group'])->toBe('Stories')
+        ->and($story['id'])->toBe($this->story->id)
+        ->and($story['label'])->toBe($this->story->reference.' · '.$this->story->title)
+        ->and($story['total'])->toBe(0)
+        ->and($story['unread'])->toBe(0);
+});
+
 it('unsubscribes from an item on the spot', function () {
     expect($this->task->isSubscribedBy($this->user))->toBeTrue();
 

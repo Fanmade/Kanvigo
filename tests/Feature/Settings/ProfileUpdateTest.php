@@ -32,6 +32,15 @@ test('profile information can be updated', function () {
         ->and($user->email_verified_at)->toBeNull();
 });
 
+test('the delete-user section is shown and the email is treated as verified', function () {
+    $this->actingAs(User::factory()->create());
+
+    $component = Livewire::test(Profile::class)->instance();
+
+    expect($component->hasUnverifiedEmail())->toBeFalse()
+        ->and($component->showDeleteUser())->toBeTrue();
+});
+
 test('email verification status is unchanged when email address is unchanged', function () {
     $user = User::factory()->create();
 

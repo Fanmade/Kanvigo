@@ -93,3 +93,23 @@ test('correct password must be provided to update password', function () {
 
     $response->assertHasErrors(['current_password']);
 });
+
+test('the password fields are cleared and the password is unchanged when validation fails', function () {
+    $user = User::factory()->create([
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(Security::class)
+        ->set('current_password', 'wrong-password')
+        ->set('password', 'new-password')
+        ->set('password_confirmation', 'new-password')
+        ->call('updatePassword')
+        ->assertHasErrors(['current_password'])
+        ->assertSet('current_password', '')
+        ->assertSet('password', '')
+        ->assertSet('password_confirmation', '');
+
+    expect(Hash::check('password', $user->refresh()->password))->toBeTrue();
+});
