@@ -17,6 +17,22 @@ class NotificationsMenu extends Component
     }
 
     /**
+     * The unread-count label shown on the menu badge, capped at "9+", or null
+     * when there is nothing unread and the badge should be hidden.
+     */
+    #[Computed]
+    public function unreadBadge(): ?string
+    {
+        $count = $this->unreadCount();
+
+        if ($count === 0) {
+            return null;
+        }
+
+        return $count > 9 ? '9+' : (string) $count;
+    }
+
+    /**
      * @return Collection<int, DatabaseNotification>
      */
     #[Computed]
@@ -29,7 +45,7 @@ class NotificationsMenu extends Component
     {
         Auth::user()->unreadNotifications->markAsRead();
 
-        unset($this->unreadCount, $this->notifications);
+        unset($this->unreadCount, $this->unreadBadge, $this->notifications);
     }
 
     public function open(string $id): void
@@ -39,7 +55,7 @@ class NotificationsMenu extends Component
 
         $url = $notification?->data['url'] ?? null;
 
-        unset($this->unreadCount, $this->notifications);
+        unset($this->unreadCount, $this->unreadBadge, $this->notifications);
 
         if (is_string($url)) {
             $this->redirect($url, navigate: true);

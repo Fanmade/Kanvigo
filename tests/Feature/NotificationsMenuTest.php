@@ -8,6 +8,7 @@ use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -33,6 +34,28 @@ it('shows the unread count and lists notifications', function () {
     expect($component->instance()->unreadCount())->toBe(1)
         ->and($component->instance()->notifications())->toHaveCount(1);
 });
+
+it('formats the unread badge, hiding it at zero and capping it at "9+"', function (int $unread, ?string $expected) {
+    $user = User::factory()->create();
+
+    for ($i = 0; $i < $unread; $i++) {
+        $user->notifications()->create([
+            'id' => (string) Str::uuid(),
+            'type' => 'test',
+            'data' => ['url' => null, 'reference' => 'ABC1-1'],
+            'read_at' => null,
+        ]);
+    }
+
+    $component = Livewire::actingAs($user)->test(NotificationsMenu::class);
+
+    expect($component->instance()->unreadBadge())->toBe($expected);
+})->with([
+    'none' => [0, null],
+    'a few' => [3, '3'],
+    'exactly nine' => [9, '9'],
+    'capped' => [12, '9+'],
+]);
 
 it('marks all notifications as read', function () {
     Livewire::actingAs($this->watcher)

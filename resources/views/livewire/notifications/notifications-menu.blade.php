@@ -8,7 +8,7 @@
                 :name="auth()->user()->name"
                 :src="auth()->user()->avatarUrl()"
                 :initials="auth()->user()->initials()"
-                :badge="$count > 0 ? ($count > 9 ? '9+' : (string) $count) : null"
+                :badge="$this->unreadBadge"
                 badge:color="red"
                 badge:circle
             />
