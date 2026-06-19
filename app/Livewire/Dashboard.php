@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Enums\Status;
 use App\Models\Activity;
 use App\Models\Task;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -20,17 +21,29 @@ class Dashboard extends Component
     private const ACTIVE_TASKS_LIMIT = 50;
 
     /**
-     * The user's actionable tasks: in progress first, then to-do.
+     * The user's actionable tasks across their projects, in progress first then
+     * to-do. Includes tasks assigned to the user plus unassigned to-do tasks
+     * they can pick up; tasks assigned to other people are excluded.
      *
      * @return Collection<int, Task>
      */
     #[Computed]
     public function activeTasks(): Collection
     {
-        return Auth::user()->assignedTasks()
-            ->whereIn('tasks.status', [Status::InProgress, Status::ToDo])
+        $userId = Auth::id();
+        $projectIds = Auth::user()->projects()->pluck('projects.id');
+
+        return Task::query()
             ->join('stories', 'stories.id', '=', 'tasks.story_id')
             ->join('projects', 'projects.id', '=', 'stories.project_id')
+            ->whereIn('stories.project_id', $projectIds)
+            ->whereIn('tasks.status', [Status::InProgress, Status::ToDo])
+            ->where(static function (Builder $query) use ($userId): void {
+                $query->whereHas('assignees', static fn (Builder $assignees): Builder => $assignees->whereKey($userId))
+                    ->orWhere(static fn (Builder $unassigned): Builder => $unassigned
+                        ->where('tasks.status', Status::ToDo)
+                        ->whereDoesntHave('assignees'));
+            })
             ->orderByRaw('case when tasks.status = ? then 0 else 1 end', [Status::InProgress->value])
             ->orderBy('projects.short_name')
             ->orderBy('stories.story_number')

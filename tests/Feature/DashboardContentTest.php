@@ -32,6 +32,46 @@ it('lists in-progress and to-do tasks before completed ones', function () {
         ->assertDontSee('Finished work');
 });
 
+it('lists unassigned to-do tasks in the user projects so they can be picked up', function () {
+    Task::factory()->for($this->story)->status(Status::ToDo)->create(['title' => 'Up for grabs']);
+
+    Livewire::actingAs($this->user)
+        ->test(Dashboard::class)
+        ->assertOk()
+        ->assertSee('Up for grabs');
+});
+
+it('hides unassigned in-progress tasks', function () {
+    Task::factory()->for($this->story)->status(Status::InProgress)->create(['title' => 'Someone is on it']);
+
+    Livewire::actingAs($this->user)
+        ->test(Dashboard::class)
+        ->assertOk()
+        ->assertDontSee('Someone is on it');
+});
+
+it('hides to-do tasks assigned to other people', function () {
+    $other = User::factory()->create();
+    Task::factory()->for($this->story)->status(Status::ToDo)->create(['title' => 'Taken work'])
+        ->assignees()->attach($other);
+
+    Livewire::actingAs($this->user)
+        ->test(Dashboard::class)
+        ->assertOk()
+        ->assertDontSee('Taken work');
+});
+
+it('hides tasks from projects the user is not a member of', function () {
+    $foreignProject = Project::factory()->create();
+    $foreignStory = Story::factory()->for($foreignProject)->create();
+    Task::factory()->for($foreignStory)->status(Status::ToDo)->create(['title' => 'Not my project']);
+
+    Livewire::actingAs($this->user)
+        ->test(Dashboard::class)
+        ->assertOk()
+        ->assertDontSee('Not my project');
+});
+
 it('orders active tasks with in-progress first, then to-do', function () {
     Task::factory()->for($this->story)->status(Status::ToDo)->create()->assignees()->attach($this->user);
     Task::factory()->for($this->story)->status(Status::InProgress)->create()->assignees()->attach($this->user);

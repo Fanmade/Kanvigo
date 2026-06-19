@@ -19,6 +19,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Stories grouped on the board**, with completion progress bars on the project
   overview, in the story header, and on story search results — each based on the
   share of its tasks done.
+- **Dashboard** — per-status task counts, a 14-day completion chart, and a "My
+  tasks" list for picking the next thing to work on: your in-progress and to-do
+  tasks plus unassigned to-do tasks across your projects (work assigned to others
+  is hidden), in-progress first.
 - **Multi-assignee** stories and tasks for pairing and ensemble work.
 - **Comments** with one-level replies, editing, and soft-delete tombstones. The
   whole section can be collapsed, remembered per user.
