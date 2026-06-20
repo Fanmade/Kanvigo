@@ -63,7 +63,7 @@ it('lists only unfinished tasks within open stories', function () {
         ->assertDontSee('Hide me away');
 });
 
-it('excludes empty and fully-finished stories from the open list', function () {
+it('keeps empty stories in the open list but excludes fully-finished ones', function () {
     $empty = Story::factory()->for($this->project)->create();
 
     $done = Story::factory()->for($this->project)->create();
@@ -77,8 +77,22 @@ it('excludes empty and fully-finished stories from the open list', function () {
         ->instance()->openStories()->pluck('id');
 
     expect($ids)->toContain($open->id)
-        ->not->toContain($empty->id)
+        ->toContain($empty->id)
         ->not->toContain($done->id);
+});
+
+it('shows a freshly created task-less story on the board', function () {
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('storyTitle', 'Test story')
+        ->call('createStory')
+        ->assertSee('Test story');
+
+    $ids = Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->instance()->openStories()->pluck('title');
+
+    expect($ids)->toContain('Test story');
 });
 
 it('creates a story from the overview with the default priority', function () {

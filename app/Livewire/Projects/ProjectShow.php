@@ -63,7 +63,8 @@ class ProjectShow extends Component
     }
 
     /**
-     * Active (non-archived) stories that have at least one unfinished task.
+     * Active (non-archived) stories that are not yet fully completed. A story
+     * with no tasks counts as open so it stays visible until work is added.
      *
      * @return Collection<int, Story>
      */
@@ -72,7 +73,8 @@ class ProjectShow extends Component
     {
         return $this->project()->stories
             ->reject(static fn (Story $story) => $story->isArchived())
-            ->filter(static fn (Story $story) => $story->tasks->contains(static fn ($task) => $task->status !== Status::Done))
+            ->reject(static fn (Story $story) => $story->tasks->isNotEmpty()
+                && $story->tasks->every(static fn ($task) => $task->status === Status::Done))
             ->values();
     }
 
