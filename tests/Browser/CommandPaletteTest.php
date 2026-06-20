@@ -37,3 +37,18 @@ it('jumps to a typed reference', function () {
         ->assertPathIs('/'.$this->task->reference)
         ->assertNoJavascriptErrors();
 });
+
+it('opens the create-project form from the New project action', function () {
+    $user = User::factory()->canCreateProjects()->create();
+
+    $this->actingAs($user);
+
+    $page = visit('/dashboard');
+
+    $page->click('@command-palette-trigger')
+        ->fill('@command-palette-input', 'New project')
+        ->click('@palette-item-new-project')
+        ->assertPathIs('/projects')
+        ->assertVisible('@project-title')
+        ->assertNoJavascriptErrors();
+});
