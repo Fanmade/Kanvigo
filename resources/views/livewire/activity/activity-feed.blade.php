@@ -68,6 +68,9 @@
                         <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $activity->user?->name ?? __('System') }}</span>
                         {{ $description }}
                         <span class="text-zinc-400">· {{ $activity->created_at?->diffForHumans() }}</span>
+                        @if ($activity->token_name)
+                            <span class="text-zinc-400" data-test="activity-source">· {{ __('via token “:name”', ['name' => $activity->token_name]) }}</span>
+                        @endif
                     </div>
                 </li>
             @empty

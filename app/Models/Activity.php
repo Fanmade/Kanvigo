@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int|null $user_id
+ * @property string|null $token_name
  * @property string $subject_type
  * @property int $subject_id
  * @property string $action
@@ -20,7 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property-read User|null $user
  */
-#[Fillable(['user_id', 'action', 'field', 'old_value', 'new_value'])]
+#[Fillable(['user_id', 'token_name', 'action', 'field', 'old_value', 'new_value'])]
 class Activity extends Model
 {
     public const UPDATED_AT = null;

@@ -153,6 +153,32 @@ it('falls back to generic lines for legacy tag and dependency entries', function
         ->assertSee('updated the dependencies');
 });
 
+it('shows the token attribution for a token-driven action', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->activities()->create([
+        'user_id' => $this->member->id,
+        'token_name' => 'Claude',
+        'action' => 'status_changed',
+        'field' => 'status',
+        'old_value' => 'todo',
+        'new_value' => 'done',
+    ]);
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('via token')
+        ->assertSee('Claude');
+});
+
+it('shows no token attribution for a web-session action', function () {
+    $this->member->setPreference('activities_collapsed', false);
+
+    // The factory-created task already logged a web-session "created" activity.
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertDontSee('via token');
+});
+
 it('forbids non-members from viewing the feed', function () {
     Livewire::actingAs(User::factory()->create())
         ->test(ActivityFeed::class, ['subject' => $this->task])

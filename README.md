@@ -65,8 +65,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Markdown** descriptions and comments.
 - **Activity log** — polymorphic audit trail of creations, status, priority,
   assignment, tag and dependency changes, naming what was added or removed (which
-  assignees, which tags, which dependency). Collapsed by default; the open/closed
-  state is remembered per user.
+  assignees, which tags, which dependency) and noting when an action was performed
+  via an API/MCP token (showing the token name). Collapsed by default; the
+  open/closed state is remembered per user.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`

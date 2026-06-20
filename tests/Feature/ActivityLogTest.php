@@ -42,6 +42,34 @@ it('logs assignee changes with the acting user', function () {
         ->and($activity->user_id)->toBe($member->id);
 });
 
+it('attributes a web-session action to no token', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    $project->members()->attach($user);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->create();
+
+    $this->actingAs($user);
+    $task->recordActivity('status_changed', 'status', 'todo', 'done');
+
+    expect($task->activities()->where('action', 'status_changed')->first()->token_name)->toBeNull();
+});
+
+it('attributes a token-driven action to the token name', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    $project->members()->attach($user);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->create();
+
+    $user->withAccessToken($user->createToken('Claude')->accessToken);
+    $this->actingAs($user);
+
+    $task->recordActivity('status_changed', 'status', 'todo', 'done');
+
+    expect($task->activities()->where('action', 'status_changed')->first()->token_name)->toBe('Claude');
+});
+
 it('records the names of added and removed task assignees', function () {
     $actor = User::factory()->create();
     $alice = User::factory()->create(['name' => 'Alice']);

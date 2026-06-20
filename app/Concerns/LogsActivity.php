@@ -9,6 +9,7 @@ use App\Notifications\ItemActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
 trait LogsActivity
 {
@@ -38,6 +39,7 @@ trait LogsActivity
     {
         $activity = $this->activities()->create([
             'user_id' => Auth::id(),
+            'token_name' => $this->currentTokenName(),
             'action' => $action,
             'field' => $field,
             'old_value' => $oldValue,
@@ -47,6 +49,19 @@ trait LogsActivity
         $this->notifySubscribers($activity);
 
         return $activity;
+    }
+
+    /**
+     * The name of the API/MCP token the current action is being performed with,
+     * or null when it is a direct web-session action. A transient (session)
+     * token has no name, so only real personal access tokens are attributed.
+     */
+    protected function currentTokenName(): ?string
+    {
+        $user = Auth::user();
+        $token = $user instanceof User ? $user->currentAccessToken() : null;
+
+        return $token instanceof PersonalAccessToken ? $token->name : null;
     }
 
     /**
