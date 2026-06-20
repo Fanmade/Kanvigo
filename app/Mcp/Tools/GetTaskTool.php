@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\ExposesDependencies;
 use App\Models\Attachment;
 use App\Models\User;
 use App\Support\ReferenceResolver;
@@ -18,6 +19,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class GetTaskTool extends Tool
 {
+    use ExposesDependencies;
+
     /**
      * Handle the tool request.
      */
@@ -47,6 +50,7 @@ class GetTaskTool extends Tool
             'tags' => $task->tags->pluck('name')->all(),
             'story' => $task->story->reference,
             'project' => $task->story->project->short_name,
+            ...$this->dependencyPayload($task),
             'assignees' => $task->assignees->map(static fn (User $user): array => [
                 'name' => $user->name,
                 'email' => $user->email,
@@ -91,6 +95,9 @@ class GetTaskTool extends Tool
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
             'story' => $schema->string()->description('The reference of the story the task belongs to, e.g. "PROJ1".')->required(),
             'project' => $schema->string()->description('The short name of the project the task belongs to.')->required(),
+            'blocked_by' => $schema->array()->items($schema->string())->description('References of the stories and tasks that block this task; it should not be started until they are complete.')->required(),
+            'blocks' => $schema->array()->items($schema->string())->description('References of the stories and tasks that this task blocks.')->required(),
+            'is_blocked' => $schema->boolean()->description('Whether any of this task\'s blockers is not yet complete.')->required(),
             'assignees' => $schema->array()->items($schema->object([
                 'name' => $schema->string()->description('The assignee name.')->required(),
                 'email' => $schema->string()->description('The assignee email address.')->required(),

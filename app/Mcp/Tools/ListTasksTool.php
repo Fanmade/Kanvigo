@@ -3,9 +3,11 @@
 namespace App\Mcp\Tools;
 
 use App\Enums\Status;
+use App\Models\Story;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\Rules\Enum;
 use Laravel\Mcp\Request;
@@ -40,7 +42,15 @@ class ListTasksTool extends Tool
             return Response::error('No story with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1".');
         }
 
-        $story->loadMissing('tasks.tags');
+        $story->loadMissing([
+            'tasks.tags',
+            // Eager-load each task's blockers (a story blocker also needs its
+            // tasks to know whether it is complete) so isBlocked() stays N+1-free.
+            'tasks.dependencyLinks.blocker' => static fn (MorphTo $morphTo) => $morphTo->morphWith([
+                Story::class => ['tasks'],
+                Task::class => [],
+            ]),
+        ]);
 
         $tasks = $story->tasks
             ->when(
@@ -54,6 +64,7 @@ class ListTasksTool extends Tool
                 'due_date' => $task->due_date?->format('Y-m-d'),
                 'status' => $task->status->value,
                 'tags' => $task->tags->pluck('name')->all(),
+                'is_blocked' => $task->isBlocked(),
             ])
             ->values();
 
@@ -95,6 +106,7 @@ class ListTasksTool extends Tool
                 'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
                 'status' => $schema->string()->description('The task status.')->required(),
                 'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
+                'is_blocked' => $schema->boolean()->description('Whether the task has a blocker that is not yet complete. Use the get-task tool for the specific blocking/blocked references.')->required(),
             ]))->description('The tasks in the story.')->required(),
         ];
     }

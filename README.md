@@ -59,7 +59,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Dependencies** — mark a story or task as blocked by, or blocking, another
   item (by reference). Blockers and blocked items are listed on the item view,
   and a card is flagged "Blocked" on the board while any blocker is unfinished.
-  Self-links and cycles are rejected.
+  Self-links and cycles are rejected. Available in the UI and through the MCP tools.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
 - **Markdown** descriptions and comments.
@@ -80,10 +80,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   read & write) for MCP/API access and revoke them from Settings.
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer
   token, that lets AI agents work with the projects, stories, and tasks the token's
-  owner can access. Read tools (list/inspect) work with any token; write tools
-  (create/update stories & tasks, create projects, add comments) require a token
-  with write access. Agents can also read attachments — including inline
-  description images — by their id.
+  owner can access. Read tools (list/inspect) work with any token and surface each
+  item's dependencies (what blocks it, what it blocks, and whether it is currently
+  blocked); write tools (create/update stories & tasks, create projects, add
+  comments, link/unlink dependencies) require a token with write access. Agents can
+  also read attachments — including inline description images — by their id.
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 

@@ -4,7 +4,9 @@ namespace App\Mcp\Tools;
 
 use App\Models\Project;
 use App\Models\Story;
+use App\Models\Task;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -39,6 +41,16 @@ class ListStoriesTool extends Tool
             return Response::error('No project named "'.$validated['short_name'].'" exists, or you do not have access to it.');
         }
 
+        // Eager-load each story's blockers (a story blocker also needs its tasks
+        // to know whether it is complete) so isBlocked() stays N+1-free across
+        // the listed stories.
+        $project->loadMissing([
+            'stories.dependencyLinks.blocker' => static fn (MorphTo $morphTo) => $morphTo->morphWith([
+                Story::class => ['tasks'],
+                Task::class => [],
+            ]),
+        ]);
+
         return Response::structured([
             'stories' => $project->stories->map(static fn (Story $story): array => [
                 'reference' => $story->reference,
@@ -47,6 +59,7 @@ class ListStoriesTool extends Tool
                 'priority' => $story->priority->name,
                 'due_date' => $story->due_date?->format('Y-m-d'),
                 'tags' => $story->tags->pluck('name')->all(),
+                'is_blocked' => $story->isBlocked(),
             ])->all(),
         ]);
     }
@@ -80,6 +93,7 @@ class ListStoriesTool extends Tool
                 'priority' => $schema->string()->description('The story priority: Lowest, Low, Medium, High or Highest.')->required(),
                 'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
                 'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the story.')->required(),
+                'is_blocked' => $schema->boolean()->description('Whether the story has a blocker that is not yet complete. Use the get-story tool for the specific blocking/blocked references.')->required(),
             ]))->description('The stories in the project.')->required(),
         ];
     }

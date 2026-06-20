@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\AddCommentTool;
+use App\Mcp\Tools\AddDependencyTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateStoryTool;
 use App\Mcp\Tools\CreateTaskTool;
@@ -13,6 +14,7 @@ use App\Mcp\Tools\GetTaskTool;
 use App\Mcp\Tools\ListProjectsTool;
 use App\Mcp\Tools\ListStoriesTool;
 use App\Mcp\Tools\ListTasksTool;
+use App\Mcp\Tools\RemoveDependencyTool;
 use App\Mcp\Tools\UpdateStoryTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use Laravel\Mcp\Server;
@@ -37,14 +39,22 @@ use Laravel\Mcp\Server\Tool;
     is a member of; stories and tasks inherit access from their project. If a project, story or
     task does not exist or the user cannot access it, the tool returns an error.
 
+    Stories and tasks can depend on each other: an item may be "blocked by" the items it depends
+    on (its blockers) and may itself "block" others. The get tools report an item's "blocked_by"
+    and "blocks" references plus an "is_blocked" flag (true while a blocker is not yet complete);
+    the list tools include the "is_blocked" flag. Use the add-dependency tool to link items
+    (direction "blocked_by": reference is blocked by related_reference; "blocks": reference blocks
+    related_reference) and the remove-dependency tool to unlink them. Self-dependencies and cycles
+    are rejected.
+
     Projects, stories and tasks may have file attachments, including images embedded inline in
     their descriptions. The get tools list each attachment's id; pass that id to the
     get-attachment tool to retrieve the file's content (images and audio are returned as
     viewable content).
 
-    Read tools (list/get) are available to any token. Write tools (create/update/comment) require
-    a token with write access and return an error for read-only tokens. Creating a project also
-    requires the "create-projects" permission.
+    Read tools (list/get) are available to any token. Write tools (create/update/comment, link or
+    unlink dependencies) require a token with write access and return an error for read-only
+    tokens. Creating a project also requires the "create-projects" permission.
     TEXT)]
 class KanbrioServer extends Server
 {
@@ -67,6 +77,8 @@ class KanbrioServer extends Server
         UpdateStoryTool::class,
         UpdateTaskTool::class,
         AddCommentTool::class,
+        AddDependencyTool::class,
+        RemoveDependencyTool::class,
     ];
 
     /**

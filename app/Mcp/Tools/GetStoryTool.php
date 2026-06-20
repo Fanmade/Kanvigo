@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\ExposesDependencies;
 use App\Models\Attachment;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
@@ -18,6 +19,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class GetStoryTool extends Tool
 {
+    use ExposesDependencies;
+
     /**
      * Handle the tool request.
      */
@@ -45,6 +48,7 @@ class GetStoryTool extends Tool
             'due_date' => $story->due_date?->format('Y-m-d'),
             'project' => $story->project->short_name,
             'tags' => $story->tags->pluck('name')->all(),
+            ...$this->dependencyPayload($story),
             'tasks' => $story->tasks->map(static fn (Task $task): array => [
                 'reference' => $task->reference,
                 'title' => $task->title,
@@ -91,6 +95,9 @@ class GetStoryTool extends Tool
             'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
             'project' => $schema->string()->description('The short name of the project the story belongs to.')->required(),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the story.')->required(),
+            'blocked_by' => $schema->array()->items($schema->string())->description('References of the stories and tasks that block this story; it should not be started until they are complete.')->required(),
+            'blocks' => $schema->array()->items($schema->string())->description('References of the stories and tasks that this story blocks.')->required(),
+            'is_blocked' => $schema->boolean()->description('Whether any of this story\'s blockers is not yet complete.')->required(),
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
                 'title' => $schema->string()->description('The task title.')->required(),
