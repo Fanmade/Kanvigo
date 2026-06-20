@@ -10,6 +10,7 @@ use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
 use App\Concerns\HasTags;
 use App\Concerns\LogsActivity;
+use App\Concerns\Nestable;
 use App\Contracts\Dependable;
 use App\Contracts\Subscribable;
 use App\Enums\Priority;
@@ -28,6 +29,7 @@ use Illuminate\Support\Collection;
 /**
  * @property int $id
  * @property int $story_id
+ * @property int|null $parent_id
  * @property int $task_number
  * @property string $title
  * @property string|null $description
@@ -40,12 +42,14 @@ use Illuminate\Support\Collection;
  * @property Carbon|null $updated_at
  * @property-read string $reference
  * @property-read Story $story
+ * @property-read Task|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Task> $children
  */
 #[Fillable(['title', 'description', 'priority', 'due_date'])]
 class Task extends Model implements Dependable, Subscribable
 {
     /** @use HasFactory<TaskFactory> */
-    use Archivable, HasAttachments, HasComments, HasDependencies, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity;
+    use Archivable, HasAttachments, HasComments, HasDependencies, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable;
 
     protected string $scopedNumberColumn = 'task_number';
 

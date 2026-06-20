@@ -24,7 +24,8 @@ class TaskFactory extends Factory
             'story_id' => Story::factory(),
             'title' => fake()->sentence(4),
             'description' => fake()->paragraph(),
-            'status' => fake()->randomElement(Status::cases()),
+            // Default to a working status; the terminal Canceled state is opt-in.
+            'status' => fake()->randomElement(Status::columns()),
             'due_date' => null,
             // task_number is assigned atomically by the HasScopedNumber trait.
         ];
@@ -33,6 +34,17 @@ class TaskFactory extends Factory
     public function status(Status $status): static
     {
         return $this->state(fn () => ['status' => $status]);
+    }
+
+    /**
+     * Nest the task under the given parent, inheriting its story.
+     */
+    public function childOf(Task $parent): static
+    {
+        return $this->state(fn () => [
+            'parent_id' => $parent->getKey(),
+            'story_id' => $parent->story_id,
+        ]);
     }
 
     /**
