@@ -39,13 +39,13 @@ class RemoveDependencyTool extends Tool
             'related_reference.required' => 'You must provide the reference of the related story or task to unlink.',
         ]);
 
-        $resolved = $this->resolveDependencyPair($request, $validated['reference'], $validated['related_reference']);
+        $resolution = $this->resolveDependencyPair($request, $validated['reference'], $validated['related_reference']);
 
-        if ($resolved instanceof Response) {
-            return $resolved;
+        if ($resolution->failed()) {
+            return $resolution->error();
         }
 
-        [$item, $related] = $resolved;
+        [$item, $related] = $resolution->pair();
 
         $deleted = Dependency::query()
             ->where(static fn (Builder $query): Builder => $query

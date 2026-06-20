@@ -41,13 +41,13 @@ class AddDependencyTool extends Tool
             'direction' => 'The direction must be "blocked_by" (reference is blocked by related_reference) or "blocks" (reference blocks related_reference).',
         ]);
 
-        $resolved = $this->resolveDependencyPair($request, $validated['reference'], $validated['related_reference']);
+        $resolution = $this->resolveDependencyPair($request, $validated['reference'], $validated['related_reference']);
 
-        if ($resolved instanceof Response) {
-            return $resolved;
+        if ($resolution->failed()) {
+            return $resolution->error();
         }
 
-        [$item, $related] = $resolved;
+        [$item, $related] = $resolution->pair();
 
         // "blocked_by": the item depends on the related one. "blocks": the
         // related item depends on the item.
