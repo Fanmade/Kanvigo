@@ -43,13 +43,20 @@
                 <flux:select.option value="blocked_by">{{ __('Blocked by') }}</flux:select.option>
                 <flux:select.option value="blocks">{{ __('Blocks') }}</flux:select.option>
             </flux:select>
-            <flux:input
+            <flux:select
+                variant="combobox"
                 wire:model="dependencyReference"
                 :label="__('Reference')"
-                placeholder="ABC1-2"
+                :placeholder="__('Search by reference or title')"
                 size="sm"
                 data-test="dependency-reference"
-            />
+            >
+                @foreach ($this->dependencyCandidates as $candidate)
+                    <flux:select.option :value="$candidate['reference']" wire:key="dep-option-{{ $candidate['reference'] }}">
+                        {{ $candidate['label'] }}
+                    </flux:select.option>
+                @endforeach
+            </flux:select>
             <flux:error name="dependencyReference" />
             <div class="flex justify-end gap-2">
                 <flux:button type="button" size="sm" variant="ghost" x-on:click="adding = false">{{ __('Cancel') }}</flux:button>

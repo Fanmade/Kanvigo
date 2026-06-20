@@ -9,6 +9,7 @@ use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 use Livewire\Attributes\Computed;
@@ -56,10 +57,10 @@ trait ManagesDependencies
     /**
      * The blocker links whose blocking item still exists, ready to render.
      *
-     * @return Collection<int, Dependency>
+     * @return BaseCollection<int, Dependency>
      */
     #[Computed]
-    public function presentBlockerLinks(): Collection
+    public function presentBlockerLinks(): BaseCollection
     {
         return $this->blockerLinks()->filter(static fn (Dependency $link): bool => $link->blocker !== null)->values();
     }
@@ -67,10 +68,10 @@ trait ManagesDependencies
     /**
      * The blocking links whose dependent item still exists, ready to render.
      *
-     * @return Collection<int, Dependency>
+     * @return BaseCollection<int, Dependency>
      */
     #[Computed]
-    public function presentBlockingLinks(): Collection
+    public function presentBlockingLinks(): BaseCollection
     {
         return $this->blockingLinks()->filter(static fn (Dependency $link): bool => $link->dependent !== null)->values();
     }
@@ -84,6 +85,41 @@ trait ManagesDependencies
         return $this->blockerLinks()->contains(
             static fn (Dependency $link): bool => $link->blocker instanceof Dependable && ! $link->blocker->isComplete()
         );
+    }
+
+    /**
+     * The stories and tasks in the same project that can be linked as a
+     * dependency, each as a reference plus a label searchable by reference or
+     * title. Excludes the viewed item itself.
+     *
+     * @return BaseCollection<int, array{reference: string, label: string}>
+     */
+    #[Computed]
+    public function dependencyCandidates(): BaseCollection
+    {
+        $item = $this->dependable();
+        $project = $item instanceof Task ? $item->story->project : $item->project;
+
+        $stories = $project->stories()
+            ->orderBy('story_number')
+            ->get()
+            ->reject(static fn (Story $story): bool => $item instanceof Story && $story->is($item))
+            ->map(static fn (Story $story): array => [
+                'reference' => $story->reference,
+                'label' => $story->reference.' · '.$story->title,
+            ]);
+
+        $tasks = Task::query()
+            ->whereHas('story', static fn ($query) => $query->where('project_id', $project->id))
+            ->with('story.project')
+            ->get()
+            ->reject(static fn (Task $task): bool => $item instanceof Task && $task->is($item))
+            ->map(static fn (Task $task): array => [
+                'reference' => $task->reference,
+                'label' => $task->reference.' · '.$task->title,
+            ]);
+
+        return $stories->concat($tasks)->values();
     }
 
     /**
