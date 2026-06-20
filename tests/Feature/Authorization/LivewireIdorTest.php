@@ -81,7 +81,6 @@ it('locks the TaskView identifiers', function () {
     Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => $this->project->short_name,
-            'story_number' => $this->story->story_number,
             'task_number' => $this->task->task_number,
         ])
         ->set('taskNumber', $this->foreignTask->task_number);
@@ -147,7 +146,6 @@ it('re-authorizes TaskView reads against tampered identifiers', function () {
     $instance = tamper(
         Livewire::actingAs($this->member)->test(TaskView::class, [
             'short_name' => $this->project->short_name,
-            'story_number' => $this->story->story_number,
             'task_number' => $this->task->task_number,
         ]),
         [

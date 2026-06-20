@@ -27,9 +27,6 @@ class TaskView extends Component
     public string $shortName;
 
     #[Locked]
-    public int $storyNumber;
-
-    #[Locked]
     public int $taskNumber;
 
     public bool $editing = false;
@@ -47,10 +44,9 @@ class TaskView extends Component
     /** @var array<int, int> */
     public array $assigneeIds = [];
 
-    public function mount(string $short_name, int $story_number, int $task_number): void
+    public function mount(string $short_name, int $task_number): void
     {
         $this->shortName = $short_name;
-        $this->storyNumber = $story_number;
         $this->taskNumber = $task_number;
 
         $task = $this->task();
@@ -68,9 +64,7 @@ class TaskView extends Component
 
         $task = Task::query()
             ->with(['assignees', 'tags', 'story.project'])
-            ->whereHas('story', fn ($q) => $q
-                ->where('project_id', $project->id)
-                ->where('story_number', $this->storyNumber))
+            ->where('project_id', $project->id)
             ->where('task_number', $this->taskNumber)
             ->firstOrFail();
 

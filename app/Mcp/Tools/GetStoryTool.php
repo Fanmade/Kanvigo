@@ -99,7 +99,7 @@ class GetStoryTool extends Tool
             'blocks' => $schema->array()->items($schema->string())->description('References of the stories and tasks that this story blocks.')->required(),
             'is_blocked' => $schema->boolean()->description('Whether any of this story\'s blockers is not yet complete.')->required(),
             'tasks' => $schema->array()->items($schema->object([
-                'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
+                'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
                 'title' => $schema->string()->description('The task title.')->required(),
                 'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
                 'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),

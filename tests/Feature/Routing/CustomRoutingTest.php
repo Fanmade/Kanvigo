@@ -34,8 +34,8 @@ it('resolves a story at /{short_name}{story_number}', function () {
     actingAs($this->member)->get('/ABC1')->assertOk()->assertSee($this->story->title);
 });
 
-it('resolves a task at /{short_name}{story_number}-{task_number}', function () {
-    actingAs($this->member)->get('/ABC1-1')->assertOk()->assertSee($this->task->title);
+it('resolves a task at /{short_name}-{task_number}', function () {
+    actingAs($this->member)->get('/ABC-1')->assertOk()->assertSee($this->task->title);
 });
 
 it('forbids non-members from viewing a project and its board', function () {
@@ -64,5 +64,5 @@ it('returns 404 for a non-existent story number', function () {
 });
 
 it('returns 404 for a non-existent task number', function () {
-    actingAs($this->member)->get('/ABC1-9')->assertNotFound();
+    actingAs($this->member)->get('/ABC-9')->assertNotFound();
 });

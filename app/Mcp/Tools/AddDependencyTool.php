@@ -36,7 +36,7 @@ class AddDependencyTool extends Tool
             'related_reference' => ['required', 'string'],
             'direction' => ['required', Rule::in(['blocked_by', 'blocks'])],
         ], [
-            'reference.required' => 'You must provide the reference of the story or task whose dependencies you are changing (e.g. "PROJ1" or "PROJ1-3").',
+            'reference.required' => 'You must provide the reference of the story or task whose dependencies you are changing (e.g. "PROJ1" or "PROJ-42").',
             'related_reference.required' => 'You must provide the reference of the related story or task to link.',
             'direction' => 'The direction must be "blocked_by" (reference is blocked by related_reference) or "blocks" (reference blocks related_reference).',
         ]);
@@ -80,11 +80,11 @@ class AddDependencyTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The reference of the story or task whose dependencies you are changing (e.g. "PROJ1" or "PROJ1-3").')
+                ->description('The reference of the story or task whose dependencies you are changing (e.g. "PROJ1" or "PROJ-42").')
                 ->required(),
 
             'related_reference' => $schema->string()
-                ->description('The reference of the related story or task to link (e.g. "PROJ1" or "PROJ1-3").')
+                ->description('The reference of the related story or task to link (e.g. "PROJ1" or "PROJ-42").')
                 ->required(),
 
             'direction' => $schema->string()

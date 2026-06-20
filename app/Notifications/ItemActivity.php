@@ -47,7 +47,6 @@ class ItemActivity extends Notification
         return match (true) {
             $subject instanceof Task => route('task.show', [
                 'short_name' => $subject->story->project->short_name,
-                'story_number' => $subject->story->story_number,
                 'task_number' => $subject->task_number,
             ]),
             $subject instanceof Story => route('story.show', [

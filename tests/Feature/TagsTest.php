@@ -36,7 +36,6 @@ function taskView(User $member, Task $task): Testable
 {
     return Livewire::actingAs($member)->test(TaskView::class, [
         'short_name' => $task->story->project->short_name,
-        'story_number' => $task->story->story_number,
         'task_number' => $task->task_number,
     ]);
 }

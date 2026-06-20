@@ -24,7 +24,6 @@ beforeEach(function () {
     $this->mountTask = fn () => Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $this->story->story_number,
             'task_number' => $this->task->task_number,
         ]);
 });
@@ -90,7 +89,7 @@ it('does not offer items from other projects as candidates', function () {
 
 it('rejects an unknown reference', function () {
     ($this->mountTask)()
-        ->set('dependencyReference', 'ZZZ9-9')
+        ->set('dependencyReference', 'ZZZ-99')
         ->call('addDependency')
         ->assertHasErrors('dependencyReference');
 
@@ -163,7 +162,6 @@ it('does not let a non-member manage dependencies', function () {
     Livewire::actingAs($outsider)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $this->story->story_number,
             'task_number' => $this->task->task_number,
         ])
         ->assertForbidden();

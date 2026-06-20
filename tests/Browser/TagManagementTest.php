@@ -18,7 +18,7 @@ it('adds an existing tag from the suggestion list', function () {
 
     $this->actingAs($user);
 
-    $page = visit("/{$project->short_name}{$story->story_number}-{$task->task_number}");
+    $page = visit("/{$project->short_name}-{$task->task_number}");
 
     $page->assertMissing('@tag-input-field')
         ->click('@toggle-add-tag')
@@ -40,7 +40,7 @@ it('creates a new tag with a chosen color through the modal', function () {
 
     $this->actingAs($user);
 
-    $page = visit("/{$project->short_name}{$story->story_number}-{$task->task_number}");
+    $page = visit("/{$project->short_name}-{$task->task_number}");
 
     $page->click('@toggle-add-tag')
         ->fill('@tag-input-field', 'Design')

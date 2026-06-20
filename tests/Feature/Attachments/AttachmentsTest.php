@@ -216,7 +216,6 @@ it('uploads files onto a task', function () {
     Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => $this->project->short_name,
-            'story_number' => $story->story_number,
             'task_number' => $task->task_number,
         ])
         ->set('newFiles', [UploadedFile::fake()->create('notes.txt', 5)])

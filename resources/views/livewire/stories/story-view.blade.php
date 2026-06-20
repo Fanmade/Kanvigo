@@ -78,7 +78,7 @@
                     <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
                         @forelse ($this->story->tasks as $task)
                             <a
-                                href="{{ route('task.show', ['short_name' => $this->story->project->short_name, 'story_number' => $this->story->story_number, 'task_number' => $task->task_number]) }}"
+                                href="{{ route('task.show', ['short_name' => $this->story->project->short_name, 'task_number' => $task->task_number]) }}"
                                 wire:navigate
                                 class="flex items-center justify-between gap-2 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                             >

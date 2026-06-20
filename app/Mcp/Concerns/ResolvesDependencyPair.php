@@ -29,7 +29,7 @@ trait ResolvesDependencyPair
         $item = ReferenceResolver::commentable($reference);
 
         if (! $item instanceof Story && ! $item instanceof Task) {
-            return DependencyPairResolution::failure(Response::error('No story or task with reference "'.$reference.'" exists. Dependencies link stories and tasks; references look like "PROJ1" or "PROJ1-3".'));
+            return DependencyPairResolution::failure(Response::error('No story or task with reference "'.$reference.'" exists. Dependencies link stories and tasks; references look like "PROJ1" or "PROJ-42".'));
         }
 
         if (! $request->user()->can('update', $item)) {
@@ -39,7 +39,7 @@ trait ResolvesDependencyPair
         $related = ReferenceResolver::commentable($relatedReference);
 
         if (! $related instanceof Story && ! $related instanceof Task) {
-            return DependencyPairResolution::failure(Response::error('No story or task with reference "'.$relatedReference.'" exists. Dependencies link stories and tasks; references look like "PROJ1" or "PROJ1-3".'));
+            return DependencyPairResolution::failure(Response::error('No story or task with reference "'.$relatedReference.'" exists. Dependencies link stories and tasks; references look like "PROJ1" or "PROJ-42".'));
         }
 
         if (! $request->user()->can('view', $related)) {

@@ -13,7 +13,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Adds a comment to a project ("PROJ"), story ("PROJ1") or task ("PROJ1-3"), identified by its reference. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Adds a comment to a project ("PROJ"), story ("PROJ1") or task ("PROJ-42"), identified by its reference. Requires a write-access token; the user must be a member of the project.')]
 class AddCommentTool extends Tool
 {
     use RequiresWriteAccess;
@@ -31,7 +31,7 @@ class AddCommentTool extends Tool
             'reference' => ['required', 'string'],
             'body' => ['required', 'string', 'max:5000'],
         ], [
-            'reference.required' => 'You must provide the reference of the project ("PROJ"), story ("PROJ1") or task ("PROJ1-3") to comment on.',
+            'reference.required' => 'You must provide the reference of the project ("PROJ"), story ("PROJ1") or task ("PROJ-42") to comment on.',
             'body.required' => 'You must provide the comment body.',
         ]);
 
@@ -64,7 +64,7 @@ class AddCommentTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The reference of the item to comment on: a project ("PROJ"), story ("PROJ1") or task ("PROJ1-3").')
+                ->description('The reference of the item to comment on: a project ("PROJ"), story ("PROJ1") or task ("PROJ-42").')
                 ->required(),
 
             'body' => $schema->string()

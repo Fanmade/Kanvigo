@@ -116,30 +116,30 @@ it('shows which tags were added and removed', function () {
 
 it('describes an added dependency with its direction and reference', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC1-2']));
+    $this->task->recordActivity('dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC-2']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
-        ->assertSee('is now blocked by ABC1-2');
+        ->assertSee('is now blocked by ABC-2');
 });
 
 it('describes a removed dependency', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('dependency_changed', 'dependencies', json_encode(['direction' => 'blocks', 'reference' => 'ABC1-3']), null);
+    $this->task->recordActivity('dependency_changed', 'dependencies', json_encode(['direction' => 'blocks', 'reference' => 'ABC-3']), null);
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
-        ->assertSee('no longer blocks ABC1-3');
+        ->assertSee('no longer blocks ABC-3');
 });
 
 it('localizes a dependency change in German', function () {
     app()->setLocale('de');
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC1-2']));
+    $this->task->recordActivity('dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC-2']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
-        ->assertSee('wird jetzt von ABC1-2 blockiert');
+        ->assertSee('wird jetzt von ABC-2 blockiert');
 });
 
 it('falls back to generic lines for legacy tag and dependency entries', function () {

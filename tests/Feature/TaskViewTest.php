@@ -23,7 +23,6 @@ beforeEach(function () {
     $this->mountTask = fn () => Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $this->story->story_number,
             'task_number' => $this->task->task_number,
         ]);
 });

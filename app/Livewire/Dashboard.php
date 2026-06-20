@@ -46,7 +46,6 @@ class Dashboard extends Component
             })
             ->orderByRaw('case when tasks.status = ? then 0 else 1 end', [Status::InProgress->value])
             ->orderBy('projects.short_name')
-            ->orderBy('stories.story_number')
             ->orderBy('tasks.task_number')
             ->with('story.project')
             ->select('tasks.*')

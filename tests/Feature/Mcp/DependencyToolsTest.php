@@ -172,7 +172,7 @@ it('returns an error for an unknown related reference', function () {
 
     KanbrioServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
-        'related_reference' => 'ABC9-9',
+        'related_reference' => 'ABC-99',
         'direction' => 'blocked_by',
     ])->assertHasErrors();
 });

@@ -46,9 +46,8 @@ class Board extends Component
             ->with(['story.project', 'assignees', 'tags'])
             ->get()
             ->sortBy(static fn (Task $task) => sprintf(
-                '%s-%05d-%05d',
+                '%s-%05d',
                 $task->story->project->short_name,
-                $task->story->story_number,
                 $task->task_number,
             ))
             ->values();

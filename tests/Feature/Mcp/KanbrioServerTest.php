@@ -89,7 +89,7 @@ it('gets a story by reference including its tasks', function () {
         ->tool(GetStoryTool::class, ['reference' => 'ABC1'])
         ->assertOk()
         ->assertSee('First story')
-        ->assertSee('ABC1-1')
+        ->assertSee('ABC-1')
         ->assertSee('First task');
 });
 
@@ -113,7 +113,7 @@ it('lists the tasks of a story', function () {
         ->tool(ListTasksTool::class, ['reference' => 'ABC1'])
         ->assertOk()
         ->assertSee('First task')
-        ->assertSee('ABC1-1');
+        ->assertSee('ABC-1');
 });
 
 it('filters tasks by status', function () {
@@ -136,7 +136,7 @@ it('gets a task by reference', function () {
     $this->task->assignees()->attach($this->member);
 
     KanbrioServer::actingAs($this->member)
-        ->tool(GetTaskTool::class, ['reference' => 'ABC1-1'])
+        ->tool(GetTaskTool::class, ['reference' => 'ABC-1'])
         ->assertOk()
         ->assertSee('First task')
         ->assertSee('ToDo')
@@ -149,7 +149,7 @@ it('errors getting a task the user cannot view', function () {
     Task::factory()->for($story)->create();
 
     KanbrioServer::actingAs($this->member)
-        ->tool(GetTaskTool::class, ['reference' => 'XYZ1-1'])
+        ->tool(GetTaskTool::class, ['reference' => 'XYZ-1'])
         ->assertHasErrors();
 });
 

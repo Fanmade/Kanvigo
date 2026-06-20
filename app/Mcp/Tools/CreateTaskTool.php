@@ -126,7 +126,7 @@ class CreateTaskTool extends Tool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'reference' => $schema->string()->description('The created task reference, e.g. "PROJ1-3".')->required(),
+            'reference' => $schema->string()->description('The created task reference, e.g. "PROJ-42".')->required(),
             'title' => $schema->string()->description('The created task title.')->required(),
             'description' => $schema->string()->description('The task description; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),

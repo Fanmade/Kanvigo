@@ -99,7 +99,7 @@
                         </div>
 
                         <a
-                            href="{{ route('task.show', ['short_name' => $story->project->short_name, 'story_number' => $story->story_number, 'task_number' => $task->task_number]) }}"
+                            href="{{ route('task.show', ['short_name' => $story->project->short_name, 'task_number' => $task->task_number]) }}"
                             wire:navigate
                             class="block"
                         >

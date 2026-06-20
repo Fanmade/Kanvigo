@@ -55,12 +55,12 @@
         <div class="divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-700 dark:border-zinc-700">
             @foreach ($visibleTasks as $task)
                 <a
-                    href="{{ route('task.show', ['short_name' => $shortName, 'story_number' => $story->story_number, 'task_number' => $task->task_number]) }}"
+                    href="{{ route('task.show', ['short_name' => $shortName, 'task_number' => $task->task_number]) }}"
                     wire:navigate
                     class="flex items-center justify-between gap-2 px-4 py-2 ps-9 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 >
                     <div class="flex min-w-0 items-center gap-2">
-                        <span class="font-mono text-xs text-zinc-400">-{{ $task->task_number }}</span>
+                        <span class="font-mono text-xs text-zinc-400">{{ $task->reference }}</span>
                         <span class="truncate text-sm">{{ $task->title }}</span>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">

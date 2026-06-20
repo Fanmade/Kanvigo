@@ -77,7 +77,7 @@ class ManageNotifications extends Component
                 'type' => 'task',
                 'id' => $task->id,
                 'label' => $task->reference.' · '.$task->title,
-                'url' => route('task.show', ['short_name' => $task->story->project->short_name, 'story_number' => $task->story->story_number, 'task_number' => $task->task_number]),
+                'url' => route('task.show', ['short_name' => $task->story->project->short_name, 'task_number' => $task->task_number]),
                 'total' => $total['Task:'.$task->id] ?? 0,
                 'unread' => $unread['Task:'.$task->id] ?? 0,
             ];

@@ -9,7 +9,6 @@
     $url = $isTask
         ? route('task.show', [
             'short_name' => $item->story->project->short_name,
-            'story_number' => $item->story->story_number,
             'task_number' => $item->task_number,
         ])
         : route('story.show', [

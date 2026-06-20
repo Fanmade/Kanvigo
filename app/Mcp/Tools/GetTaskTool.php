@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets a single task by its reference (e.g. "PROJ1-3"), including status, priority, description, tags, assignees and its story/project references. Only tasks in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets a single task by its reference (e.g. "PROJ-42"), including status, priority, description, tags, assignees and its story/project references. Only tasks in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetTaskTool extends Tool
 {
@@ -29,13 +29,13 @@ class GetTaskTool extends Tool
         $validated = $request->validate([
             'reference' => ['required', 'string'],
         ], [
-            'reference.required' => 'You must provide the task reference, formed from the story reference and the task number (e.g. "PROJ1-3").',
+            'reference.required' => 'You must provide the task reference, formed from the project short name and the task number (e.g. "PROJ-42").',
         ]);
 
         $task = ReferenceResolver::task($validated['reference']);
 
         if ($task === null || ! $request->user()->can('view', $task)) {
-            return Response::error('No task with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1-3".');
+            return Response::error('No task with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ-42".');
         }
 
         $task->loadMissing('attachments');
@@ -73,7 +73,7 @@ class GetTaskTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The task reference: the story reference followed by a dash and the task number (e.g. "PROJ1-3").')
+                ->description('The task reference: the project short name, a dash and the task number (e.g. "PROJ-42").')
                 ->required(),
         ];
     }
@@ -86,7 +86,7 @@ class GetTaskTool extends Tool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
+            'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
             'title' => $schema->string()->description('The task title.')->required(),
             'description' => $schema->string()->description('The task description; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),

@@ -47,7 +47,6 @@ it('clears a due date through the task view', function () {
     Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $this->story->story_number,
             'task_number' => $this->task->task_number,
         ])
         ->call('edit')
@@ -61,7 +60,6 @@ it('rejects an invalid due date in the task view', function () {
     Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $this->story->story_number,
             'task_number' => $this->task->task_number,
         ])
         ->call('edit')

@@ -7,7 +7,7 @@ use App\Models\Story;
 use App\Models\Task;
 
 /**
- * Resolves public references (e.g. "PROJ1" or "PROJ1-3") into models, mirroring
+ * Resolves public references (e.g. "PROJ1" or "PROJ-42") into models, mirroring
  * the URL resolution rules used by the scoped web routes in routes/web.php.
  */
 class ReferenceResolver
@@ -43,17 +43,17 @@ class ReferenceResolver
     }
 
     /**
-     * Resolve a task reference (e.g. "PROJ1-3") into its model.
+     * Resolve a task reference (e.g. "PROJ-42") into its model.
      *
      * Returns null when the reference is malformed or no matching task exists.
      */
     public static function task(string $reference): ?Task
     {
-        if (! preg_match('/^('.self::SHORT_NAME.')(\d+)-(\d+)$/', strtoupper(trim($reference)), $matches)) {
+        if (! preg_match('/^('.self::SHORT_NAME.')-(\d+)$/', strtoupper(trim($reference)), $matches)) {
             return null;
         }
 
-        [, $shortName, $storyNumber, $taskNumber] = $matches;
+        [, $shortName, $taskNumber] = $matches;
 
         $project = Project::query()->where('short_name', $shortName)->first();
 
@@ -63,9 +63,7 @@ class ReferenceResolver
 
         return Task::query()
             ->with(['assignees', 'story.project'])
-            ->whereHas('story', static fn ($query) => $query
-                ->where('project_id', $project->id)
-                ->where('story_number', (int) $storyNumber))
+            ->where('project_id', $project->id)
             ->where('task_number', (int) $taskNumber)
             ->first();
     }
@@ -87,7 +85,7 @@ class ReferenceResolver
     }
 
     /**
-     * Resolve any commentable reference into its model: a task ("PROJ1-3"),
+     * Resolve any commentable reference into its model: a task ("PROJ-42"),
      * a story ("PROJ1") or a project ("PROJ").
      *
      * Returns null when the reference is malformed or no matching model exists.

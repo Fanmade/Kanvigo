@@ -63,7 +63,6 @@ it('updates a task priority inline from the task view and logs it', function () 
     Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $this->story->story_number,
             'task_number' => $task->task_number,
         ])
         ->set('priority', Priority::Highest->value);

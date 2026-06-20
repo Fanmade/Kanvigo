@@ -42,7 +42,7 @@ it('formats the unread badge, hiding it at zero and capping it at "9+"', functio
         $user->notifications()->create([
             'id' => (string) Str::uuid(),
             'type' => 'test',
-            'data' => ['url' => null, 'reference' => 'ABC1-1'],
+            'data' => ['url' => null, 'reference' => 'ABC-1'],
             'read_at' => null,
         ]);
     }

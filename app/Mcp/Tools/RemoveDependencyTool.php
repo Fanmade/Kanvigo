@@ -35,7 +35,7 @@ class RemoveDependencyTool extends Tool
             'reference' => ['required', 'string'],
             'related_reference' => ['required', 'string'],
         ], [
-            'reference.required' => 'You must provide the reference of the story or task whose dependency you are removing (e.g. "PROJ1" or "PROJ1-3").',
+            'reference.required' => 'You must provide the reference of the story or task whose dependency you are removing (e.g. "PROJ1" or "PROJ-42").',
             'related_reference.required' => 'You must provide the reference of the related story or task to unlink.',
         ]);
 
@@ -87,11 +87,11 @@ class RemoveDependencyTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The reference of the story or task whose dependency you are removing (e.g. "PROJ1" or "PROJ1-3").')
+                ->description('The reference of the story or task whose dependency you are removing (e.g. "PROJ1" or "PROJ-42").')
                 ->required(),
 
             'related_reference' => $schema->string()
-                ->description('The reference of the related story or task to unlink (e.g. "PROJ1" or "PROJ1-3").')
+                ->description('The reference of the related story or task to unlink (e.g. "PROJ1" or "PROJ-42").')
                 ->required(),
         ];
     }

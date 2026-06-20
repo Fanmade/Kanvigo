@@ -17,7 +17,7 @@ use Livewire\Attributes\Computed;
 /**
  * Adds dependency management to a Story or Task view component: listing an
  * item's blockers and the items it blocks, and adding or removing links by
- * reference (e.g. "ABC1-3").
+ * reference (e.g. "ABC-42").
  */
 trait ManagesDependencies
 {

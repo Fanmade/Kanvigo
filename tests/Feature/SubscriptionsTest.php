@@ -40,7 +40,6 @@ it('auto-subscribes a user when they are assigned to a task', function () {
     Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $this->story->story_number,
             'task_number' => $this->task->task_number,
         ])
         ->set('assigneeIds', [$this->member->id]);

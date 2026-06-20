@@ -17,7 +17,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Updates a task\'s title, description, priority and/or status, identified by its reference (e.g. "PROJ1-3"). Status changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Updates a task\'s title, description, priority and/or status, identified by its reference (e.g. "PROJ-42"). Status changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
 class UpdateTaskTool extends Tool
 {
     use RecordsTagChanges;
@@ -44,7 +44,7 @@ class UpdateTaskTool extends Tool
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
         ], [
-            'reference.required' => 'You must provide the task reference (e.g. "PROJ1-3").',
+            'reference.required' => 'You must provide the task reference (e.g. "PROJ-42").',
             'priority' => 'The priority must be one of: '.implode(', ', Priority::names()).'.',
             'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format. Pass null to clear it.',
             'status' => 'The status must be one of "'.$statuses.'".',
@@ -53,7 +53,7 @@ class UpdateTaskTool extends Tool
         $task = ReferenceResolver::task($validated['reference']);
 
         if ($task === null || ! $request->user()->can('update', $task)) {
-            return Response::error('No task with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1-3".');
+            return Response::error('No task with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ-42".');
         }
 
         $updates = [];
@@ -121,7 +121,7 @@ class UpdateTaskTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The reference of the task to update (e.g. "PROJ1-3").')
+                ->description('The reference of the task to update (e.g. "PROJ-42").')
                 ->required(),
 
             'title' => $schema->string()
@@ -155,7 +155,7 @@ class UpdateTaskTool extends Tool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
+            'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
             'title' => $schema->string()->description('The updated task title.')->required(),
             'description' => $schema->string()->description('The updated task description; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),

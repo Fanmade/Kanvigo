@@ -30,7 +30,6 @@ it('logs assignee changes with the acting user', function () {
     Livewire::actingAs($member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $story->story_number,
             'task_number' => $task->task_number,
         ])
         ->set('assigneeIds', [$member->id]);
@@ -83,7 +82,6 @@ it('records the names of added and removed task assignees', function () {
     Livewire::actingAs($actor)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $story->story_number,
             'task_number' => $task->task_number,
         ])
         ->set('assigneeIds', [$bob->id]);

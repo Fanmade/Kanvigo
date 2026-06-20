@@ -51,14 +51,27 @@ it('scopes story numbering independently per project', function () {
         ->and($storyB->story_number)->toBe(1);
 });
 
-it('numbers tasks sequentially within a story starting at 1', function () {
-    $story = Story::factory()->create();
+it('numbers tasks sequentially within a project starting at 1, across stories', function () {
+    $project = Project::factory()->create();
+    $storyA = Story::factory()->for($project)->create();
+    $storyB = Story::factory()->for($project)->create();
 
-    $first = Task::factory()->for($story)->create();
-    $second = Task::factory()->for($story)->create();
+    $first = Task::factory()->for($storyA)->create();
+    $second = Task::factory()->for($storyB)->create();
 
     expect($first->task_number)->toBe(1)
         ->and($second->task_number)->toBe(2);
+});
+
+it('scopes task numbering independently per project', function () {
+    $storyA = Story::factory()->for(Project::factory())->create();
+    $storyB = Story::factory()->for(Project::factory())->create();
+
+    $taskA = Task::factory()->for($storyA)->create();
+    $taskB = Task::factory()->for($storyB)->create();
+
+    expect($taskA->task_number)->toBe(1)
+        ->and($taskB->task_number)->toBe(1);
 });
 
 it('assigns the next number as max + 1, not preserving middle gaps', function () {
@@ -86,11 +99,14 @@ it('enforces unique story numbers per project', function () {
     Story::factory()->for($project)->create(['story_number' => 1]);
 })->throws(QueryException::class);
 
-it('enforces unique task numbers per story', function () {
-    $story = Story::factory()->create();
-    Task::factory()->for($story)->create(); // task_number 1
+it('enforces unique task numbers per project', function () {
+    $project = Project::factory()->create();
+    $storyA = Story::factory()->for($project)->create();
+    $storyB = Story::factory()->for($project)->create();
+    Task::factory()->for($storyA)->create(); // task_number 1
 
-    Task::factory()->for($story)->create(['task_number' => 1]);
+    // A different story in the same project cannot reuse the project-wide number.
+    Task::factory()->for($storyB)->create(['task_number' => 1]);
 })->throws(QueryException::class);
 
 it('builds the public reference strings', function () {
@@ -99,5 +115,5 @@ it('builds the public reference strings', function () {
     $task = Task::factory()->for($story)->create();
 
     expect($story->reference)->toBe('XYZ1')
-        ->and($task->reference)->toBe('XYZ1-1');
+        ->and($task->reference)->toBe('XYZ-1');
 });

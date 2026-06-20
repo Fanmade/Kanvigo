@@ -125,7 +125,7 @@ trait LogsActivity
     /**
      * Record a dependency link being added or removed. The direction and the
      * related reference are captured from this item's perspective, so the trail
-     * can read "is now blocked by KAN1-3" or "no longer blocks KAN2".
+     * can read "is now blocked by KAN-3" or "no longer blocks KAN2".
      *
      * @param  bool  $linked  true when the link was added, false when removed
      * @param  'blocked_by'|'blocks'  $direction  the relationship from this item

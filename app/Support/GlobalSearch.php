@@ -34,7 +34,7 @@ class GlobalSearch
     /**
      * Search the user's accessible projects, stories and tasks.
      *
-     * A query that parses as a reference (e.g. "PROJ1-3") yields a pinned
+     * A query that parses as a reference (e.g. "PROJ-42") yields a pinned
      * "jump to" result at the top, followed by text/tag matches.
      *
      * @return Collection<int, SearchResult>
@@ -154,7 +154,6 @@ class GlobalSearch
                 title: $model->title,
                 url: route('task.show', [
                     'short_name' => $model->story->project->short_name,
-                    'story_number' => $model->story->story_number,
                     'task_number' => $model->task_number,
                 ]),
                 icon: $model->status->icon(),

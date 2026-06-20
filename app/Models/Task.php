@@ -29,6 +29,7 @@ use Illuminate\Support\Collection;
 /**
  * @property int $id
  * @property int $story_id
+ * @property int $project_id
  * @property int|null $parent_id
  * @property int $task_number
  * @property string $title
@@ -59,6 +60,10 @@ class Task extends Model implements Dependable, Subscribable
     protected static function booted(): void
     {
         static::creating(static function (Task $task): void {
+            // A task belongs to its story's project; the flat reference and the
+            // per-project number ({@see scopedNumberQuery()}) hang off it.
+            $task->project_id = $task->story->project_id;
+
             // priority is non-null once settled, but unset before save — guard the transient null.
             // @phpstan-ignore identical.alwaysFalse
             if ($task->priority === null) {
@@ -88,11 +93,14 @@ class Task extends Model implements Dependable, Subscribable
     }
 
     /**
+     * Task numbers run as a single sequence per project, so the reference is flat
+     * (e.g. "ABC-42") and survives re-parenting.
+     *
      * @return Builder<static>
      */
     public function scopedNumberQuery(): Builder
     {
-        return static::query()->where('story_id', $this->story_id);
+        return static::query()->where('project_id', $this->story->project_id);
     }
 
     /**
@@ -144,12 +152,12 @@ class Task extends Model implements Dependable, Subscribable
     }
 
     /**
-     * The public reference, e.g. "ABC1-3".
+     * The public, flat per-project reference, e.g. "ABC-42".
      *
      * @return Attribute<non-falsy-string, never>
      */
     protected function reference(): Attribute
     {
-        return Attribute::get(fn (): string => $this->story->reference.'-'.$this->task_number);
+        return Attribute::get(fn (): string => $this->story->project->short_name.'-'.$this->task_number);
     }
 }

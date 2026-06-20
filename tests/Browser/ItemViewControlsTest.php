@@ -15,7 +15,7 @@ it('changes a task status from the badge dropdown', function () {
 
     $this->actingAs($user);
 
-    $page = visit("/{$project->short_name}{$story->story_number}-{$task->task_number}");
+    $page = visit("/{$project->short_name}-{$task->task_number}");
 
     $page->assertSee('Planned')
         ->click('@status-control')
@@ -35,7 +35,7 @@ it('reveals the dependency form only when adding', function () {
 
     $this->actingAs($user);
 
-    $page = visit("/{$project->short_name}{$story->story_number}-{$task->task_number}");
+    $page = visit("/{$project->short_name}-{$task->task_number}");
 
     // The reference input is hidden until the user opts into adding a dependency.
     $page->assertMissing('@dependency-reference')

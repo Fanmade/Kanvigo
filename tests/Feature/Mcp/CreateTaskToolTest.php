@@ -26,7 +26,7 @@ it('creates a task in a story the user can access', function () {
         'status' => Status::ToDo->value,
     ])
         ->assertOk()
-        ->assertSee($story->reference.'-')
+        ->assertSee($project->short_name.'-')
         ->assertSee(Status::ToDo->value);
 
     assertDatabaseHas('tasks', ['story_id' => $story->id, 'title' => 'A task', 'status' => Status::ToDo->value]);

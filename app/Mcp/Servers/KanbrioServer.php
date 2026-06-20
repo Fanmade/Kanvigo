@@ -32,8 +32,9 @@ use Laravel\Mcp\Server\Tool;
     - A project groups work and has a short_name (2-4 uppercase letters), title and description.
     - A project contains stories. A story is referenced by its project short_name plus its
       number, e.g. "PROJ1".
-    - A story contains tasks. A task is referenced by its story reference plus its number,
-      e.g. "PROJ1-3". Each task has a status: one of "Planned", "ToDo", "In progress" or "Done".
+    - A story contains tasks. A task belongs to a story but is referenced by its project's
+      short_name plus a project-wide task number, e.g. "PROJ-42". Each task has a status: one of
+      "Planned", "ToDo", "In progress" or "Done".
 
     You act as the authenticated user and can only ever see or change data for projects the user
     is a member of; stories and tasks inherit access from their project. If a project, story or

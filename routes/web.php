@@ -66,8 +66,8 @@ Route::middleware(['auth', 'verified'])->group(static function () {
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.board');
 
-    Route::livewire('/{short_name}{story_number}-{task_number}', TaskView::class)
-        ->where(['short_name' => '[A-Z]{2,4}', 'story_number' => '\d+', 'task_number' => '\d+'])
+    Route::livewire('/{short_name}-{task_number}', TaskView::class)
+        ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])
         ->name('task.show');
 
     Route::livewire('/{short_name}{story_number}', StoryView::class)
