@@ -8,6 +8,7 @@ use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -62,18 +63,58 @@ it('renders the drag-and-drop wiring and keyboard move options', function () {
         ->not->toContain('data-test="move-'.$this->task->id.'-'.Status::Planned->value.'"');
 });
 
-it('shows the story reference badge with its title, plus the full task reference', function () {
-    $this->story->update(['title' => 'Polished board drag-and-drop']);
+it('shows a root task as a single breadcrumb badge of its own reference', function () {
+    $this->task->update(['title' => 'Polished board drag-and-drop']);
 
     $html = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
         ->html();
 
     expect($html)
-        ->toContain('data-test="story-badge-'.$this->task->id.'"')
-        ->toContain($this->story->reference)          // badge label
-        ->toContain('Polished board drag-and-drop')   // story title, surfaced on hover
-        ->toContain($this->task->reference);          // full task id
+        ->toContain('data-test="crumb-'.$this->task->id.'-self"')
+        ->toContain($this->task->reference)           // flat id, e.g. ABC-1
+        ->toContain('Polished board drag-and-drop');  // task title, surfaced on hover
+});
+
+it('shows a nested task as a breadcrumb from its root ancestor down to itself', function () {
+    $this->task->update(['title' => 'Parent task']);
+    $child = Task::factory()->for($this->story)->childOf($this->task)->create(['title' => 'Child task']);
+
+    $html = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->html();
+
+    expect($html)
+        ->toContain('data-test="crumb-'.$child->id.'-'.$this->task->id.'"') // ancestor badge links to the parent
+        ->toContain('data-test="crumb-'.$child->id.'-self"')                // the task's own badge
+        ->toContain($this->task->reference)                                 // parent flat id, e.g. ABC-1
+        ->toContain($child->reference)                                      // child flat id, e.g. ABC-2
+        ->toContain('Parent task');                                         // ancestor title, surfaced on hover
+});
+
+it('eager-loads breadcrumb ancestors instead of one recursive query per nested card', function () {
+    $chains = 6;
+
+    // Independent three-level chains: root -> child -> grandchild.
+    foreach (range(1, $chains) as $ignored) {
+        $root = Task::factory()->for($this->story)->create();
+        $child = Task::factory()->for($this->story)->childOf($root)->create();
+        Task::factory()->for($this->story)->childOf($child)->create();
+    }
+
+    DB::enableQueryLog();
+    Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->html();
+    $recursive = collect(DB::getQueryLog())
+        ->filter(static fn (array $entry): bool => str_contains(strtolower((string) $entry['query']), 'recursive'))
+        ->count();
+    DB::disableQueryLog();
+
+    // There are 2 * $chains nested (non-root) cards; a per-card lazy ancestor
+    // lookup would issue at least that many recursive queries. Eager loading
+    // keeps it to a handful of batched queries.
+    expect($recursive)->toBeLessThan(2 * $chains);
 });
 
 it('ignores an invalid status', function () {

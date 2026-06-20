@@ -31,21 +31,11 @@
                         ])
                     >
                         <div class="mb-1.5 flex items-start justify-between gap-2">
-                            {{-- Story badge — hover (or focus) reveals the full story title --}}
-                            <flux:tooltip :content="$story->title">
-                                <a
-                                    href="{{ route('story.show', ['short_name' => $story->project->short_name, 'story_number' => $story->story_number]) }}"
-                                    wire:navigate
-                                    class="w-fit"
-                                    data-test="story-badge-{{ $task->id }}"
-                                >
-                                    <flux:badge size="sm" color="zinc" icon="book-open">{{ $story->reference }}</flux:badge>
-                                </a>
-                            </flux:tooltip>
+                            {{-- Breadcrumb: ancestor tasks down to this one, each badge linking
+                                 to its detail page and revealing its title on hover. --}}
+                            <x-task-breadcrumb :task="$task" />
 
                             <div class="flex items-center gap-1">
-                                <flux:text size="xs" class="font-mono text-zinc-400">{{ $task->reference }}</flux:text>
-
                                 {{-- Accessible, keyboard-operable alternative to dragging --}}
                                 <flux:dropdown
                                     position="bottom"

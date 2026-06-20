@@ -5,6 +5,7 @@ namespace App\Concerns;
 use App\Actions\ChangeTaskStatus;
 use App\Enums\Status;
 use App\Models\Task;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 trait BuildsKanbanColumns
@@ -20,6 +21,11 @@ trait BuildsKanbanColumns
      */
     protected function buildColumns(Collection $tasks): array
     {
+        // Eager-load each visible card's breadcrumb ancestors in one batched pass
+        // (the relation hydrates onto the same instances rendered below), so deep
+        // cards never trigger a per-card ancestor lookup.
+        EloquentCollection::make($tasks->all())->load('ancestors');
+
         $columns = [];
 
         foreach (Status::columns() as $status) {
