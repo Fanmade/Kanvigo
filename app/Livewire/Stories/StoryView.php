@@ -5,6 +5,7 @@ namespace App\Livewire\Stories;
 use App\Actions\CreateTask;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ManagesDependencies;
+use App\Concerns\ManagesTags;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
@@ -22,6 +23,7 @@ class StoryView extends Component
 {
     use HandlesAttachments;
     use ManagesDependencies;
+    use ManagesTags;
 
     #[Locked]
     public string $shortName;
@@ -36,8 +38,6 @@ class StoryView extends Component
     public string $description = '';
 
     public string $dueDate = '';
-
-    public string $tags = '';
 
     public int $priority;
 
@@ -93,6 +93,16 @@ class StoryView extends Component
     protected function dependable(): Story|Task
     {
         return $this->story();
+    }
+
+    protected function taggable(): Story|Task
+    {
+        return $this->story();
+    }
+
+    protected function forgetTaggable(): void
+    {
+        unset($this->story);
     }
 
     /**
@@ -152,7 +162,6 @@ class StoryView extends Component
         $this->title = $this->story()->title;
         $this->description = (string) $this->story()->description;
         $this->dueDate = $this->story()->due_date?->format('Y-m-d') ?? '';
-        $this->tags = $this->story()->tagList();
         $this->editing = true;
     }
 
@@ -173,11 +182,6 @@ class StoryView extends Component
             'description' => $validated['description'],
             'due_date' => $validated['dueDate'] ?: null,
         ]);
-
-        $changes = $story->syncTags($this->tags);
-        if ($changes['attached'] !== [] || $changes['detached'] !== []) {
-            $story->recordActivity('tags_changed', 'tags');
-        }
 
         $this->editing = false;
         unset($this->story);

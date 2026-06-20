@@ -1,0 +1,59 @@
+<?php
+
+use App\Models\Project;
+use App\Models\Story;
+use App\Models\Tag;
+use App\Models\Task;
+use App\Models\User;
+
+it('adds an existing tag from the suggestion list', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $project->members()->attach($user);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->create();
+
+    // An existing tag so it shows up as a suggestion.
+    Tag::factory()->color('sky')->create(['name' => 'frontend']);
+
+    $this->actingAs($user);
+
+    $page = visit("/{$project->short_name}{$story->story_number}-{$task->task_number}");
+
+    $page->assertMissing('@tag-input-field')
+        ->click('@toggle-add-tag')
+        ->assertVisible('@tag-input-field')
+        ->fill('@tag-input-field', 'front')
+        ->click('@tag-suggestion-frontend')
+        ->waitForText('frontend')
+        ->assertNoJavascriptErrors();
+
+    expect($task->fresh()->tags->pluck('name')->all())->toBe(['frontend']);
+});
+
+it('creates a new tag with a chosen color through the modal', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $project->members()->attach($user);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->create();
+
+    $this->actingAs($user);
+
+    $page = visit("/{$project->short_name}{$story->story_number}-{$task->task_number}");
+
+    $page->click('@toggle-add-tag')
+        ->fill('@tag-input-field', 'Design')
+        ->click('@tag-input-create')
+        ->waitForText('New tag')
+        ->assertValue('@new-tag-name', 'Design')
+        ->click('@tag-color-violet')
+        ->click('@create-tag')
+        ->waitForText('Design')
+        ->assertNoJavascriptErrors();
+
+    $tag = Tag::where('name', 'Design')->sole();
+
+    expect($tag->color)->toBe('violet')
+        ->and($task->fresh()->tags->pluck('name')->all())->toBe(['Design']);
+});

@@ -76,4 +76,113 @@ document.addEventListener('alpine:init', () => {
             this.sortable = null;
         },
     }));
+
+    /**
+     * Tag input widget.
+     *
+     * Backs the "Add tag" control on the story and task views. It keeps a local
+     * `query`, filters the server-provided `suggestions` (most-used tags not yet
+     * applied) and tracks a `highlighted` row so Up/Down/Enter navigate the list
+     * with the keyboard. Picking a suggestion calls `$wire.addTag(name)`; when
+     * the typed text matches no existing tag, the last row creates it by opening
+     * the create-tag modal via `$wire.openTagModal(name)`.
+     *
+     * The server dispatches `tags-updated` after every change so the suggestion
+     * list refreshes without closing the open input.
+     */
+    window.Alpine.data('tagInput', ({ suggestions, createPrefix }) => ({
+        adding: false,
+        query: '',
+        highlighted: 0,
+        suggestions,
+        createPrefix,
+
+        open() {
+            this.adding = true;
+            this.reset();
+            this.$nextTick(() => this.$refs.input?.focus());
+        },
+
+        reset() {
+            this.query = '';
+            this.highlighted = 0;
+        },
+
+        normalized() {
+            return this.query.trim().toLowerCase();
+        },
+
+        filtered() {
+            const q = this.normalized();
+
+            return this.suggestions.filter((tag) => tag.name.toLowerCase().includes(q));
+        },
+
+        canCreate() {
+            const q = this.normalized();
+
+            return q !== '' && !this.suggestions.some((tag) => tag.name.toLowerCase() === q);
+        },
+
+        rowCount() {
+            return this.filtered().length + (this.canCreate() ? 1 : 0);
+        },
+
+        createLabel() {
+            return `${this.createPrefix} “${this.query.trim()}”`;
+        },
+
+        move(direction) {
+            const max = this.rowCount() - 1;
+
+            if (max < 0) {
+                return;
+            }
+
+            this.highlighted = Math.min(Math.max(this.highlighted + direction, 0), max);
+        },
+
+        choose() {
+            const list = this.filtered();
+
+            if (this.highlighted < list.length) {
+                this.add(list[this.highlighted].name);
+            } else if (this.canCreate()) {
+                this.createNew();
+            }
+        },
+
+        add(name) {
+            this.$wire.addTag(name);
+            this.reset();
+            this.$nextTick(() => this.$refs.input?.focus());
+        },
+
+        createNew() {
+            this.$wire.openTagModal(this.query.trim());
+            this.adding = false;
+        },
+
+        dotClass(color) {
+            return {
+                red: 'bg-red-500',
+                orange: 'bg-orange-500',
+                amber: 'bg-amber-500',
+                yellow: 'bg-yellow-500',
+                lime: 'bg-lime-500',
+                green: 'bg-green-500',
+                emerald: 'bg-emerald-500',
+                teal: 'bg-teal-500',
+                cyan: 'bg-cyan-500',
+                sky: 'bg-sky-500',
+                blue: 'bg-blue-500',
+                indigo: 'bg-indigo-500',
+                violet: 'bg-violet-500',
+                purple: 'bg-purple-500',
+                fuchsia: 'bg-fuchsia-500',
+                pink: 'bg-pink-500',
+                rose: 'bg-rose-500',
+            }[color] ?? 'bg-zinc-400';
+        },
+    }));
 });

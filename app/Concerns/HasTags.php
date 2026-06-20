@@ -33,12 +33,4 @@ trait HasTags
 
         return $this->tags()->sync($ids);
     }
-
-    /**
-     * The attached tag names as a comma-separated string.
-     */
-    public function tagList(): string
-    {
-        return $this->tags->pluck('name')->implode(', ');
-    }
 }

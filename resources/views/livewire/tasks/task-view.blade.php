@@ -22,7 +22,6 @@
             <x-attachments.markdown-editor :label="__('Description')" />
             <x-attachments.upload-button />
             <flux:input type="date" wire:model="dueDate" :label="__('Due date')" :description="__('Optional')" />
-            <flux:input wire:model="tags" :label="__('Tags')" :description="__('Optional, comma-separated')" />
             <div class="flex gap-2">
                 <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
                 <flux:button variant="ghost" wire:click="$set('editing', false)">{{ __('Cancel') }}</flux:button>
@@ -41,7 +40,6 @@
 
                 <div class="flex flex-wrap items-center gap-1">
                     <x-due-date-badge :date="$this->task->due_date" />
-                    <x-tag-badges :tags="$this->task->tags" />
                 </div>
 
                 <x-attachments.dropzone :enabled="$canUpdate">
@@ -104,6 +102,10 @@
                     <flux:separator variant="subtle" />
 
                     @include('partials.dependencies')
+
+                    <flux:separator variant="subtle" />
+
+                    @include('partials.tags')
 
                     <flux:separator variant="subtle" />
 

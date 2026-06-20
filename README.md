@@ -49,7 +49,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails. Files above the size limit are rejected with a
   clear message.
-- **Tags** on stories and tasks.
+- **Tags** — label stories and tasks with color-coded tags, shown as badges with
+  a colored dot. Add one from a searchable list of your most-used tags, or create
+  a new tag on the spot and pick its color.
 - **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
   default) on stories and tasks, with new tasks inheriting their story's priority.
   Board columns are ordered by priority and can be filtered to a single level.

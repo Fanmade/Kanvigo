@@ -333,5 +333,14 @@
     "That would make an item depend on itself or create a cycle.": "Das würde ein Element von sich selbst abhängig machen oder einen Zyklus erzeugen.",
     "Dependency added.": "Abhängigkeit hinzugefügt.",
     "Dependency removed.": "Abhängigkeit entfernt.",
-    "updated the dependencies": "hat die Abhängigkeiten aktualisiert"
+    "updated the dependencies": "hat die Abhängigkeiten aktualisiert",
+    "No tags yet.": "Noch keine Schlagwörter.",
+    "Find or create a tag": "Schlagwort finden oder erstellen",
+    "New tag": "Neues Schlagwort",
+    "Color": "Farbe",
+    "Preview": "Vorschau",
+    "tag": "Schlagwort",
+    "Create tag": "Schlagwort erstellen",
+    "Remove tag": "Schlagwort entfernen",
+    "Tag created.": "Schlagwort erstellt."
 }

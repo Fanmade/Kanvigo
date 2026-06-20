@@ -63,17 +63,14 @@ it('enters edit mode and populates the form from the story', function () {
         ->assertSet('description', 'Some description');
 });
 
-it('saves story changes, records a tag change, and leaves edit mode', function () {
+it('saves story changes and leaves edit mode', function () {
     ($this->mountStory)()
         ->call('edit')
         ->set('title', 'Renamed story')
-        ->set('tags', 'alpha, beta')
         ->call('save')
         ->assertSet('editing', false);
 
-    expect($this->story->fresh()->title)->toBe('Renamed story')
-        ->and($this->story->tags()->pluck('name')->all())->toBe(['alpha', 'beta'])
-        ->and($this->story->activities()->where('action', 'tags_changed')->count())->toBe(1);
+    expect($this->story->fresh()->title)->toBe('Renamed story');
 });
 
 it('rejects an empty story title', function () {

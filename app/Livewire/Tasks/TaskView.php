@@ -4,6 +4,7 @@ namespace App\Livewire\Tasks;
 
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ManagesDependencies;
+use App\Concerns\ManagesTags;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
@@ -20,6 +21,7 @@ class TaskView extends Component
 {
     use HandlesAttachments;
     use ManagesDependencies;
+    use ManagesTags;
 
     #[Locked]
     public string $shortName;
@@ -37,8 +39,6 @@ class TaskView extends Component
     public string $description = '';
 
     public string $dueDate = '';
-
-    public string $tags = '';
 
     public string $status = Status::Planned->value;
 
@@ -87,6 +87,16 @@ class TaskView extends Component
     protected function dependable(): Story|Task
     {
         return $this->task();
+    }
+
+    protected function taggable(): Story|Task
+    {
+        return $this->task();
+    }
+
+    protected function forgetTaggable(): void
+    {
+        unset($this->task);
     }
 
     /**
@@ -167,7 +177,6 @@ class TaskView extends Component
         $this->title = $task->title;
         $this->description = (string) $task->description;
         $this->dueDate = $task->due_date?->format('Y-m-d') ?? '';
-        $this->tags = $task->tagList();
         $this->editing = true;
     }
 
@@ -187,11 +196,6 @@ class TaskView extends Component
             'description' => $validated['description'],
             'due_date' => $validated['dueDate'] ?: null,
         ]);
-
-        $changes = $task->syncTags($this->tags);
-        if ($changes['attached'] !== [] || $changes['detached'] !== []) {
-            $task->recordActivity('tags_changed', 'tags');
-        }
 
         $this->editing = false;
         unset($this->task);
