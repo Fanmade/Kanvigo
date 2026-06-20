@@ -1,0 +1,49 @@
+<?php
+
+use App\Enums\Status;
+use App\Models\Project;
+use App\Models\Story;
+use App\Models\Task;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+it('creates a subtask from the task detail page and shows it in the list', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $project->members()->attach($user);
+    $story = Story::factory()->for($project)->create();
+    $parent = Task::factory()->for($story)->create(['title' => 'Parent task']);
+
+    $this->actingAs($user);
+
+    $page = visit('/'.$parent->reference);
+
+    $page->assertNoJavascriptErrors()
+        ->assertSee('Subtasks')
+        ->click('@new-subtask')
+        ->fill('@subtask-title', 'Build the thing')
+        ->click('@create-subtask')
+        ->assertSee('Build the thing')
+        ->assertNoJavascriptErrors();
+
+    expect($parent->children()->count())->toBe(1)
+        ->and($parent->children()->first()->title)->toBe('Build the thing');
+});
+
+it('shows the subtree progress rollup on the detail page', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $project->members()->attach($user);
+    $story = Story::factory()->for($project)->create();
+    $parent = Task::factory()->for($story)->create();
+    Task::factory()->for($story)->childOf($parent)->status(Status::Done)->create();
+    Task::factory()->for($story)->childOf($parent)->status(Status::ToDo)->create();
+
+    $this->actingAs($user);
+
+    visit('/'.$parent->reference)
+        ->assertNoJavascriptErrors()
+        ->assertSee('1 / 2');
+});

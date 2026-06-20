@@ -15,6 +15,7 @@ use App\Contracts\Dependable;
 use App\Contracts\Subscribable;
 use App\Enums\Priority;
 use App\Enums\Status;
+use App\Support\StoryProgress;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -149,6 +150,27 @@ class Task extends Model implements Dependable, Subscribable
     public function isComplete(): bool
     {
         return $this->status === Status::Done;
+    }
+
+    /**
+     * Completeness rolled up from this task's subtree: how many of its descendant
+     * tasks are done out of the total. A leaf task has no subtree and so reports an
+     * empty progress. Prefers an already-loaded {@see descendants()} relation,
+     * falling back to two count queries.
+     */
+    public function progress(): StoryProgress
+    {
+        if ($this->relationLoaded('descendants')) {
+            return new StoryProgress(
+                done: $this->descendants->where('status', Status::Done)->count(),
+                total: $this->descendants->count(),
+            );
+        }
+
+        return new StoryProgress(
+            done: $this->descendants()->where('status', Status::Done)->count(),
+            total: $this->descendants()->count(),
+        );
     }
 
     /**

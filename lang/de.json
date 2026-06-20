@@ -82,6 +82,10 @@
     "Ask each time": "Jedes Mal fragen",
     "Always apply to subtasks": "Immer auf Teilaufgaben anwenden",
     "Never apply to subtasks": "Nie auf Teilaufgaben anwenden",
+    "Subtasks": "Teilaufgaben",
+    "New subtask": "Neue Teilaufgabe",
+    "No subtasks yet.": "Noch keine Teilaufgaben.",
+    "Subtask created.": "Teilaufgabe erstellt.",
 
     "Priority": "Priorität",
     "All priorities": "Alle Prioritäten",

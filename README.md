@@ -17,6 +17,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
 - **Projects, Stories & Tasks** — three-level hierarchy with project-scoped story
   numbers and flat per-project task numbers.
+- **Nestable subtasks** — break a task into subtasks (up to three levels deep). A
+  task page shows its place in the tree, its subtasks, and a progress rollup over
+  the whole subtree. Closing a parent can cascade to its open subtasks (ask /
+  always / never), and starting a subtask pulls the parent into progress.
 - **Focused item views** — the project, story and task pages keep the description
   front and centre, with metadata (status, priority, assignees, dependencies,
   dates) gathered in a compact side rail. Status and priority are badges that open

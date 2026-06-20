@@ -1,13 +1,22 @@
 <div class="mx-auto flex w-full max-w-5xl flex-col gap-6">
     <div class="flex items-center justify-between gap-2">
-        <div class="flex min-w-0 items-center gap-2 text-sm">
+        @php($shortName = $this->task->story->project->short_name)
+        <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
             <a href="{{ route('project.show', $this->task->story->project) }}" wire:navigate class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
-                {{ $this->task->story->project->short_name }}
+                {{ $shortName }}
             </a>
-            <span class="text-zinc-300">/</span>
-            <a href="{{ route('story.show', ['short_name' => $this->task->story->project->short_name, 'story_number' => $this->task->story->story_number]) }}" wire:navigate class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
-                {{ $this->task->story->reference }}
-            </a>
+            {{-- The task's place in the tree: each open ancestor, root first. --}}
+            @foreach ($this->task->ancestors->sortBy($this->task->getDepthName()) as $ancestor)
+                <span class="text-zinc-300">/</span>
+                <a
+                    href="{{ route('task.show', ['short_name' => $shortName, 'task_number' => $ancestor->task_number]) }}"
+                    wire:navigate
+                    class="font-mono text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    data-test="ancestor-{{ $ancestor->id }}"
+                >
+                    {{ $shortName }}-{{ $ancestor->task_number }}
+                </a>
+            @endforeach
             <span class="text-zinc-300">/</span>
             <span class="font-mono text-zinc-400">{{ $this->task->reference }}</span>
         </div>
@@ -66,6 +75,38 @@
                 </x-attachments.dropzone>
 
                 <x-attachments.list :attachments="$this->attachments" />
+
+                {{-- Subtasks: the direct children, with a progress rollup over the whole subtree --}}
+                <div>
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <flux:heading size="sm">{{ __('Subtasks') }}</flux:heading>
+                        <div class="flex items-center gap-3">
+                            <x-story-progress :progress="$this->task->progress()" />
+                            @if ($canUpdate && $this->canAddSubtask)
+                                <flux:button size="sm" icon="plus" wire:click="openSubtaskModal" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
+                            @endif
+                        </div>
+                    </div>
+
+                    <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
+                        @forelse ($this->task->children as $child)
+                            <a
+                                href="{{ route('task.show', ['short_name' => $shortName, 'task_number' => $child->task_number]) }}"
+                                wire:navigate
+                                class="flex items-center justify-between gap-2 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                data-test="subtask-{{ $child->id }}"
+                            >
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <flux:text size="xs" class="font-mono text-zinc-400">{{ $shortName }}-{{ $child->task_number }}</flux:text>
+                                    <span @class(['text-sm', 'truncate text-zinc-400' => $child->isArchived()])>{{ $child->title }}</span>
+                                </div>
+                                <flux:badge size="sm" :color="$child->status->color()" :icon="$child->status->icon()">{{ $child->status->label() }}</flux:badge>
+                            </a>
+                        @empty
+                            <flux:text size="sm" class="px-4 py-3 text-zinc-400">{{ __('No subtasks yet.') }}</flux:text>
+                        @endforelse
+                    </flux:card>
+                </div>
 
                 <livewire:comments.comment-list :commentable="$this->task" :wire:key="'comments-task-'.$this->task->id" />
 
@@ -136,6 +177,32 @@
             </aside>
         </div>
     @endif
+
+    {{-- Create subtask --}}
+    <flux:modal wire:model="showSubtaskModal" class="md:w-96">
+        <form wire:submit="createSubtask" class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('New subtask') }}</flux:heading>
+            <flux:input wire:model="subtaskTitle" :label="__('Title')" data-test="subtask-title" />
+            <flux:textarea wire:model="subtaskDescription" :label="__('Description')" rows="3" />
+            <flux:select wire:model="subtaskPriority" :label="__('Priority')" data-test="subtask-priority">
+                @foreach (\App\Enums\Priority::ordered() as $priority)
+                    <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:input type="date" wire:model="subtaskDueDate" :label="__('Due date')" :description="__('Optional')" />
+            <flux:select wire:model="subtaskStatus" :label="__('Status')">
+                @foreach (\App\Enums\Status::columns() as $status)
+                    <flux:select.option :value="$status->value">{{ $status->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary" data-test="create-subtask">{{ __('Create') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
 
     <flux:modal wire:model.self="confirmingCascade" wire:close="abortCascade" class="md:w-96" data-test="cascade-modal">
         @php($canceling = $this->pendingStatusEnum === \App\Enums\Status::Canceled)
