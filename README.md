@@ -17,6 +17,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
 - **Projects, Stories & Tasks** — three-level hierarchy with project-scoped story
   numbers and story-scoped task numbers.
+- **Focused item views** — the project, story and task pages keep the description
+  front and centre, with metadata (status, priority, assignees, dependencies,
+  dates) gathered in a compact side rail. Status and priority are badges that open
+  a dropdown to change them, and editing controls stay tucked away until needed.
 - **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}{n}` for a story,
   `/{SHORT}{n}-{m}` for a task (e.g. `/ABC`, `/ABC1`, `/ABC1-3`).
 - **Command palette** (`⌘K` / `Ctrl+K`) — search projects, stories and tasks by

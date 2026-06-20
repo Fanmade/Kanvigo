@@ -1,0 +1,33 @@
+@props([
+    'priority',
+    'model' => 'priority',
+    'canEdit' => false,
+    'size' => 'sm',
+])
+
+@if ($canEdit)
+    <flux:dropdown align="end" data-test="priority-control">
+        <flux:badge
+            as="button"
+            :size="$size"
+            :color="$priority->color()"
+            :icon="$priority->icon()"
+            icon:trailing="chevron-down"
+            class="cursor-pointer"
+        >
+            {{ $priority->label() }}
+        </flux:badge>
+
+        <flux:menu>
+            <flux:menu.radio.group wire:model.live="{{ $model }}">
+                @foreach (\App\Enums\Priority::ordered() as $option)
+                    <flux:menu.radio :value="$option->value" :icon="$option->icon()" data-test="priority-option-{{ $option->value }}">
+                        {{ $option->label() }}
+                    </flux:menu.radio>
+                @endforeach
+            </flux:menu.radio.group>
+        </flux:menu>
+    </flux:dropdown>
+@else
+    <x-priority-badge :priority="$priority" :size="$size" />
+@endif

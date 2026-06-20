@@ -57,6 +57,31 @@ it('records a dependency activity when a link is added', function () {
     expect($this->task->activities()->where('action', 'dependency_changed')->exists())->toBeTrue();
 });
 
+it('offers same-project stories and tasks as candidates, searchable by reference and title, excluding itself', function () {
+    $this->other->update(['title' => 'Database migration']);
+    $this->story->update(['title' => 'Backend setup']);
+
+    $candidates = ($this->mountTask)()->instance()->dependencyCandidates;
+
+    $references = $candidates->pluck('reference')->all();
+
+    expect($references)->toContain($this->other->reference)
+        ->toContain($this->story->reference)
+        ->not->toContain($this->task->reference);
+
+    // The label combines reference and title so the combobox can match either.
+    $otherLabel = $candidates->firstWhere('reference', $this->other->reference)['label'];
+    expect($otherLabel)->toContain($this->other->reference)->toContain('Database migration');
+});
+
+it('does not offer items from other projects as candidates', function () {
+    $hidden = Task::factory()->for(Story::factory()->for(Project::factory()))->create();
+
+    $candidates = ($this->mountTask)()->instance()->dependencyCandidates;
+
+    expect($candidates->pluck('reference')->all())->not->toContain($hidden->reference);
+});
+
 it('rejects an unknown reference', function () {
     ($this->mountTask)()
         ->set('dependencyReference', 'ZZZ9-9')

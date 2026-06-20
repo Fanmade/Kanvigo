@@ -8,12 +8,17 @@
 
         <div class="flex shrink-0 items-center gap-2">
             <livewire:subscriptions.subscription-toggle :subscribable="$this->project" :wire:key="'sub-project-'.$this->project->id" />
-            @can('update', $this->project)
-                <flux:button size="sm" icon="pencil-square" wire:click="edit">{{ __('Edit') }}</flux:button>
-            @endcan
             <flux:button size="sm" variant="primary" icon="view-columns" :href="route('project.board', $this->project)" wire:navigate>
                 {{ __('Board') }}
             </flux:button>
+            @can('update', $this->project)
+                <flux:dropdown align="end">
+                    <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')" data-test="project-actions" />
+                    <flux:menu>
+                        <flux:menu.item icon="pencil-square" wire:click="edit" data-test="edit-project">{{ __('Edit') }}</flux:menu.item>
+                    </flux:menu>
+                </flux:dropdown>
+            @endcan
         </div>
     </div>
 
