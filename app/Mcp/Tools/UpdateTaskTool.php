@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Enums\Priority;
 use App\Enums\Status;
+use App\Mcp\Concerns\RecordsTagChanges;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -19,6 +20,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Updates a task\'s title, description, priority and/or status, identified by its reference (e.g. "PROJ1-3"). Status changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
 class UpdateTaskTool extends Tool
 {
+    use RecordsTagChanges;
     use RequiresWriteAccess;
 
     /**
@@ -96,11 +98,7 @@ class UpdateTaskTool extends Tool
         }
 
         if ($tagsProvided) {
-            $changes = $task->syncTags($validated['tags'] ?? []);
-
-            if ($changes['attached'] !== [] || $changes['detached'] !== []) {
-                $task->recordActivity('tags_changed', 'tags');
-            }
+            $this->recordTagSync($task, $task->syncTags($validated['tags'] ?? []));
         }
 
         return Response::structured([

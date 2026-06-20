@@ -109,7 +109,7 @@ trait ManagesTags
         }
 
         $item->tags()->attach($tag);
-        $item->recordActivity('tags_changed', 'tags');
+        $item->recordTagChange([$tag->name], []);
 
         $this->refreshTags();
     }
@@ -122,12 +122,14 @@ trait ManagesTags
         $item = $this->taggable();
         $this->authorize('update', $item);
 
-        if (! $item->tags()->whereKey($tagId)->exists()) {
+        $tag = $item->tags()->whereKey($tagId)->first();
+
+        if ($tag === null) {
             return;
         }
 
         $item->tags()->detach($tagId);
-        $item->recordActivity('tags_changed', 'tags');
+        $item->recordTagChange([], [$tag->name]);
 
         $this->refreshTags();
     }
@@ -171,7 +173,7 @@ trait ManagesTags
 
         if (! $item->tags()->whereKey($tag->getKey())->exists()) {
             $item->tags()->attach($tag);
-            $item->recordActivity('tags_changed', 'tags');
+            $item->recordTagChange([$tag->name], []);
         }
 
         $this->reset('showTagModal', 'newTagName');

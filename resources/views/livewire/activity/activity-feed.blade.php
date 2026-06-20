@@ -30,13 +30,32 @@
                         $assigneesRemoved !== [] => __('unassigned :users', ['users' => $removedList]),
                         default => __('updated the assignees'),
                     };
+                    $tagsAdded = json_decode((string) $activity->new_value, true) ?: [];
+                    $tagsRemoved = json_decode((string) $activity->old_value, true) ?: [];
+                    $tagsAddedList = \Illuminate\Support\Arr::join($tagsAdded, ', ', $conjunction);
+                    $tagsRemovedList = \Illuminate\Support\Arr::join($tagsRemoved, ', ', $conjunction);
+                    $tagDescription = match (true) {
+                        $tagsAdded !== [] && $tagsRemoved !== [] => __('added the tags :added, removed :removed', ['added' => $tagsAddedList, 'removed' => $tagsRemovedList]),
+                        $tagsAdded !== [] => __('added the tags :tags', ['tags' => $tagsAddedList]),
+                        $tagsRemoved !== [] => __('removed the tags :tags', ['tags' => $tagsRemovedList]),
+                        default => __('updated the tags'),
+                    };
+                    $depAdded = json_decode((string) $activity->new_value, true);
+                    $depRemoved = json_decode((string) $activity->old_value, true);
+                    $dependencyDescription = match (true) {
+                        is_array($depAdded) && ($depAdded['direction'] ?? null) === 'blocked_by' => __('is now blocked by :ref', ['ref' => $depAdded['reference']]),
+                        is_array($depAdded) && ($depAdded['direction'] ?? null) === 'blocks' => __('now blocks :ref', ['ref' => $depAdded['reference']]),
+                        is_array($depRemoved) && ($depRemoved['direction'] ?? null) === 'blocked_by' => __('is no longer blocked by :ref', ['ref' => $depRemoved['reference']]),
+                        is_array($depRemoved) && ($depRemoved['direction'] ?? null) === 'blocks' => __('no longer blocks :ref', ['ref' => $depRemoved['reference']]),
+                        default => __('updated the dependencies'),
+                    };
                     $description = match ($activity->action) {
                         'created' => __('created this'),
                         'status_changed' => __('changed status from :old to :new', ['old' => $old, 'new' => $new]),
                         'priority_changed' => __('changed priority from :old to :new', ['old' => $oldPriority, 'new' => $newPriority]),
                         'assignee_changed' => $assigneeDescription,
-                        'dependency_changed' => __('updated the dependencies'),
-                        'tags_changed' => __('updated the tags'),
+                        'dependency_changed' => $dependencyDescription,
+                        'tags_changed' => $tagDescription,
                         'archived' => __('archived this'),
                         'unarchived' => __('restored this from the archive'),
                         'commented' => __('added a comment'),

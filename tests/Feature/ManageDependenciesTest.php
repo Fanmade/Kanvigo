@@ -49,12 +49,18 @@ it('adds a blocks dependency by reference', function () {
     expect($this->task->fresh()->blocking()->pluck('id'))->toContain($this->other->id);
 });
 
-it('records a dependency activity when a link is added', function () {
+it('records a dependency activity capturing the direction and related reference', function () {
     ($this->mountTask)()
+        ->set('dependencyDirection', 'blocked_by')
         ->set('dependencyReference', $this->other->reference)
         ->call('addDependency');
 
-    expect($this->task->activities()->where('action', 'dependency_changed')->exists())->toBeTrue();
+    $activity = $this->task->activities()->where('action', 'dependency_changed')->first();
+
+    expect($activity)->not->toBeNull()
+        ->and(json_decode((string) $activity->new_value, true))
+        ->toBe(['direction' => 'blocked_by', 'reference' => $this->other->reference])
+        ->and($activity->old_value)->toBeNull();
 });
 
 it('offers same-project stories and tasks as candidates, searchable by reference and title, excluding itself', function () {
@@ -126,7 +132,12 @@ it('removes a dependency', function () {
         ->call('removeDependency', $link->id)
         ->assertHasNoErrors();
 
-    expect($this->task->fresh()->blockers())->toHaveCount(0);
+    $activity = $this->task->activities()->where('action', 'dependency_changed')->first();
+
+    expect($this->task->fresh()->blockers())->toHaveCount(0)
+        ->and(json_decode((string) $activity->old_value, true))
+        ->toBe(['direction' => 'blocked_by', 'reference' => $this->other->reference])
+        ->and($activity->new_value)->toBeNull();
 });
 
 it('shows the blocked badge while a blocker is unfinished', function () {

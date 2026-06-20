@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Enums\Priority;
+use App\Mcp\Concerns\RecordsTagChanges;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -17,6 +18,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Updates a story\'s title, description, priority and/or due date, identified by its reference (e.g. "PROJ1"). Requires a write-access token; the user must be a member of the project.')]
 class UpdateStoryTool extends Tool
 {
+    use RecordsTagChanges;
     use RequiresWriteAccess;
 
     /**
@@ -77,11 +79,7 @@ class UpdateStoryTool extends Tool
         }
 
         if ($tagsProvided) {
-            $changes = $story->syncTags($validated['tags'] ?? []);
-
-            if ($changes['attached'] !== [] || $changes['detached'] !== []) {
-                $story->recordActivity('tags_changed', 'tags');
-            }
+            $this->recordTagSync($story, $story->syncTags($validated['tags'] ?? []));
         }
 
         return Response::structured([

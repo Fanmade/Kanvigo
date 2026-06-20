@@ -116,4 +116,8 @@ it('replaces a task\'s tags and records the activity via MCP', function () {
         'subject_id' => $task->id,
         'action' => 'tags_changed',
     ]);
+
+    $activity = $task->activities()->where('action', 'tags_changed')->first();
+    expect(json_decode((string) $activity->new_value, true))->toBe(['design'])
+        ->and(json_decode((string) $activity->old_value, true))->toBe(['old']);
 });

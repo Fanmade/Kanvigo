@@ -47,21 +47,29 @@ class RemoveDependencyTool extends Tool
 
         [$item, $related] = $resolution->pair();
 
-        $deleted = Dependency::query()
+        $dependency = Dependency::query()
             ->where(static fn (Builder $query): Builder => $query
                 ->where('dependent_type', $item->getMorphClass())->where('dependent_id', $item->getKey())
                 ->where('blocker_type', $related->getMorphClass())->where('blocker_id', $related->getKey()))
             ->orWhere(static fn (Builder $query): Builder => $query
                 ->where('dependent_type', $related->getMorphClass())->where('dependent_id', $related->getKey())
                 ->where('blocker_type', $item->getMorphClass())->where('blocker_id', $item->getKey()))
-            ->delete();
+            ->first();
 
-        if ($deleted === 0) {
+        if ($dependency === null) {
             return Response::error('No dependency exists between "'.$item->reference.'" and "'.$related->reference.'".');
         }
 
+        // Direction from the item's perspective: as the dependent it is
+        // "blocked_by" the related item, otherwise it "blocks" it.
+        $direction = $dependency->dependent_type === $item->getMorphClass() && $dependency->dependent_id === $item->getKey()
+            ? 'blocked_by'
+            : 'blocks';
+
+        $dependency->delete();
+
         $item->unsetRelation('dependencyLinks');
-        $item->recordActivity('dependency_changed', 'dependencies');
+        $item->recordDependencyChange(false, $direction, $related->reference);
 
         return Response::structured([
             'reference' => $item->reference,

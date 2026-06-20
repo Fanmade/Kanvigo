@@ -116,6 +116,10 @@ it('links a blocked_by dependency and records the activity', function () {
         'subject_type' => $task->getMorphClass(),
         'subject_id' => $task->id,
     ]);
+
+    $activity = $task->activities()->where('action', 'dependency_changed')->first();
+    expect(json_decode((string) $activity->new_value, true))
+        ->toBe(['direction' => 'blocked_by', 'reference' => $blocker->reference]);
 });
 
 it('links a blocks dependency in the reverse direction', function () {
@@ -224,6 +228,10 @@ it('removes an existing dependency in either direction', function () {
         'action' => 'dependency_changed',
         'subject_id' => $task->id,
     ]);
+
+    $activity = $task->activities()->where('action', 'dependency_changed')->first();
+    expect(json_decode((string) $activity->old_value, true))
+        ->toBe(['direction' => 'blocked_by', 'reference' => $blocker->reference]);
 });
 
 it('returns an error when removing a dependency that does not exist', function () {

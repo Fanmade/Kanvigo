@@ -63,9 +63,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
 - **Markdown** descriptions and comments.
-- **Activity log** — polymorphic audit trail of creations, status changes, and
-  assignment changes, naming the assignees added or removed. Collapsed by
-  default; the open/closed state is remembered per user.
+- **Activity log** — polymorphic audit trail of creations, status, priority,
+  assignment, tag and dependency changes, naming what was added or removed (which
+  assignees, which tags, which dependency). Collapsed by default; the open/closed
+  state is remembered per user.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`

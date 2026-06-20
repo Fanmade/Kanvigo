@@ -86,6 +86,49 @@ trait LogsActivity
     }
 
     /**
+     * Record a tag change, capturing the names of the tags added and removed as
+     * a JSON snapshot (added in new_value, removed in old_value). Returns null
+     * when nothing actually changed.
+     *
+     * @param  array<int, string>  $addedNames
+     * @param  array<int, string>  $removedNames
+     */
+    public function recordTagChange(array $addedNames, array $removedNames): ?Activity
+    {
+        if ($addedNames === [] && $removedNames === []) {
+            return null;
+        }
+
+        return $this->recordActivity(
+            'tags_changed',
+            'tags',
+            $removedNames === [] ? null : json_encode(array_values($removedNames), JSON_THROW_ON_ERROR),
+            $addedNames === [] ? null : json_encode(array_values($addedNames), JSON_THROW_ON_ERROR),
+        );
+    }
+
+    /**
+     * Record a dependency link being added or removed. The direction and the
+     * related reference are captured from this item's perspective, so the trail
+     * can read "is now blocked by KAN1-3" or "no longer blocks KAN2".
+     *
+     * @param  bool  $linked  true when the link was added, false when removed
+     * @param  'blocked_by'|'blocks'  $direction  the relationship from this item
+     * @param  string  $reference  the related item's reference
+     */
+    public function recordDependencyChange(bool $linked, string $direction, string $reference): Activity
+    {
+        $payload = json_encode(['direction' => $direction, 'reference' => $reference], JSON_THROW_ON_ERROR);
+
+        return $this->recordActivity(
+            'dependency_changed',
+            'dependencies',
+            $linked ? null : $payload,
+            $linked ? $payload : null,
+        );
+    }
+
+    /**
      * Notify the item's subscribers (excluding the actor) about an update.
      */
     protected function notifySubscribers(Activity $activity): void

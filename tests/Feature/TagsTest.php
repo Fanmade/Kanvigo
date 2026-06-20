@@ -105,8 +105,12 @@ it('adds a tag to a task and logs the change', function () {
 
     taskView($member, $task)->call('addTag', 'urgent');
 
+    $activity = $task->activities()->where('action', 'tags_changed')->first();
+
     expect($task->fresh()->tags->pluck('name')->all())->toBe(['urgent'])
-        ->and($task->activities()->where('action', 'tags_changed')->count())->toBe(1);
+        ->and($task->activities()->where('action', 'tags_changed')->count())->toBe(1)
+        ->and(json_decode((string) $activity->new_value, true))->toBe(['urgent'])
+        ->and($activity->old_value)->toBeNull();
 });
 
 it('does not duplicate an already-applied tag', function () {
@@ -127,8 +131,12 @@ it('removes a tag from a task and logs the change', function () {
 
     taskView($member, $task)->call('removeTag', $tag->id);
 
+    $activity = $task->activities()->where('action', 'tags_changed')->first();
+
     expect($task->fresh()->tags()->count())->toBe(0)
-        ->and($task->activities()->where('action', 'tags_changed')->count())->toBe(1);
+        ->and($task->activities()->where('action', 'tags_changed')->count())->toBe(1)
+        ->and(json_decode((string) $activity->old_value, true))->toBe(['stale'])
+        ->and($activity->new_value)->toBeNull();
 });
 
 it('creates a tag with the chosen color through the modal and applies it', function () {

@@ -172,7 +172,8 @@ trait ManagesDependencies
             return;
         }
 
-        $item->recordActivity('dependency_changed', 'dependencies');
+        $direction = $this->dependencyDirection === 'blocks' ? 'blocks' : 'blocked_by';
+        $item->recordDependencyChange(true, $direction, $related->reference);
 
         $this->reset('dependencyReference');
         unset($this->blockerLinks, $this->blockingLinks, $this->presentBlockerLinks, $this->presentBlockingLinks, $this->isBlocked);
@@ -191,14 +192,21 @@ trait ManagesDependencies
         $dependency = Dependency::findOrFail($dependencyId);
 
         $morph = $item->getMorphClass();
-        $involvesItem = ($dependency->dependent_type === $morph && $dependency->dependent_id === $item->getKey())
-            || ($dependency->blocker_type === $morph && $dependency->blocker_id === $item->getKey());
+        $itemIsDependent = $dependency->dependent_type === $morph && $dependency->dependent_id === $item->getKey();
+        $itemIsBlocker = $dependency->blocker_type === $morph && $dependency->blocker_id === $item->getKey();
 
-        abort_unless($involvesItem, 404);
+        abort_unless($itemIsDependent || $itemIsBlocker, 404);
+
+        // From the item's perspective: as the dependent it is "blocked_by" its
+        // blocker; as the blocker it "blocks" its dependent.
+        $direction = $itemIsDependent ? 'blocked_by' : 'blocks';
+        $related = $itemIsDependent ? $dependency->blocker : $dependency->dependent;
+
+        abort_unless($related instanceof Story || $related instanceof Task, 404);
 
         $dependency->delete();
 
-        $item->recordActivity('dependency_changed', 'dependencies');
+        $item->recordDependencyChange(false, $direction, $related->reference);
 
         unset($this->blockerLinks, $this->blockingLinks, $this->presentBlockerLinks, $this->presentBlockingLinks, $this->isBlocked);
 

@@ -61,7 +61,7 @@ class AddDependencyTool extends Tool
             return Response::error('That dependency would make an item depend on itself or create a cycle.');
         }
 
-        $item->recordActivity('dependency_changed', 'dependencies');
+        $item->recordDependencyChange(true, $validated['direction'], $related->reference);
 
         return Response::structured([
             'reference' => $item->reference,

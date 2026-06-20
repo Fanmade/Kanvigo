@@ -105,6 +105,54 @@ it('falls back to a generic line for legacy assignee entries without detail', fu
         ->assertSee('updated the assignees');
 });
 
+it('shows which tags were added and removed', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('tags_changed', 'tags', json_encode(['stale']), json_encode(['urgent', 'bug']));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('added the tags urgent and bug, removed stale');
+});
+
+it('describes an added dependency with its direction and reference', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC1-2']));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('is now blocked by ABC1-2');
+});
+
+it('describes a removed dependency', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('dependency_changed', 'dependencies', json_encode(['direction' => 'blocks', 'reference' => 'ABC1-3']), null);
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('no longer blocks ABC1-3');
+});
+
+it('localizes a dependency change in German', function () {
+    app()->setLocale('de');
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC1-2']));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('wird jetzt von ABC1-2 blockiert');
+});
+
+it('falls back to generic lines for legacy tag and dependency entries', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('tags_changed', 'tags');
+    $this->task->recordActivity('dependency_changed', 'dependencies');
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('updated the tags')
+        ->assertSee('updated the dependencies');
+});
+
 it('forbids non-members from viewing the feed', function () {
     Livewire::actingAs(User::factory()->create())
         ->test(ActivityFeed::class, ['subject' => $this->task])

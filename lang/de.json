@@ -123,6 +123,13 @@
     "assigned :users": "wies :users zu",
     "unassigned :users": "entfernte :users aus den Zuständigen",
     "assigned :added, unassigned :removed": "wies :added zu und entfernte :removed aus den Zuständigen",
+    "added the tags :tags": "fügte die Tags :tags hinzu",
+    "removed the tags :tags": "entfernte die Tags :tags",
+    "added the tags :added, removed :removed": "fügte die Tags :added hinzu und entfernte :removed",
+    "is now blocked by :ref": "wird jetzt von :ref blockiert",
+    "now blocks :ref": "blockiert jetzt :ref",
+    "is no longer blocked by :ref": "wird nicht mehr von :ref blockiert",
+    "no longer blocks :ref": "blockiert :ref nicht mehr",
 
     "Invite a user": "Benutzer einladen",
     "Invite user": "Benutzer einladen",
