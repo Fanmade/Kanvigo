@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Models\Attachment;
 use App\Models\User;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -34,6 +35,8 @@ class GetTaskTool extends Tool
             return Response::error('No task with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1-3".');
         }
 
+        $task->loadMissing('attachments');
+
         return Response::structured([
             'reference' => $task->reference,
             'title' => $task->title,
@@ -47,6 +50,12 @@ class GetTaskTool extends Tool
             'assignees' => $task->assignees->map(static fn (User $user): array => [
                 'name' => $user->name,
                 'email' => $user->email,
+            ])->all(),
+            'attachments' => $task->attachments->map(static fn (Attachment $attachment): array => [
+                'id' => $attachment->id,
+                'name' => $attachment->name,
+                'mime_type' => $attachment->mime_type,
+                'is_inline' => $attachment->is_inline,
             ])->all(),
         ]);
     }
@@ -86,6 +95,12 @@ class GetTaskTool extends Tool
                 'name' => $schema->string()->description('The assignee name.')->required(),
                 'email' => $schema->string()->description('The assignee email address.')->required(),
             ]))->description('The users assigned to the task.')->required(),
+            'attachments' => $schema->array()->items($schema->object([
+                'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),
+                'name' => $schema->string()->description('The attachment file name.')->required(),
+                'mime_type' => $schema->string()->description('The attachment MIME type; may be null.'),
+                'is_inline' => $schema->boolean()->description('Whether the attachment is embedded inline in the description.')->required(),
+            ]))->description('The files attached to the task, including inline description images.')->required(),
         ];
     }
 }

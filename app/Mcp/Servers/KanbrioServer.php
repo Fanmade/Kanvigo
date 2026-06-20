@@ -6,6 +6,7 @@ use App\Mcp\Tools\AddCommentTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateStoryTool;
 use App\Mcp\Tools\CreateTaskTool;
+use App\Mcp\Tools\GetAttachmentTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetStoryTool;
 use App\Mcp\Tools\GetTaskTool;
@@ -36,6 +37,11 @@ use Laravel\Mcp\Server\Tool;
     is a member of; stories and tasks inherit access from their project. If a project, story or
     task does not exist or the user cannot access it, the tool returns an error.
 
+    Projects, stories and tasks may have file attachments, including images embedded inline in
+    their descriptions. The get tools list each attachment's id; pass that id to the
+    get-attachment tool to retrieve the file's content (images and audio are returned as
+    viewable content).
+
     Read tools (list/get) are available to any token. Write tools (create/update/comment) require
     a token with write access and return an error for read-only tokens. Creating a project also
     requires the "create-projects" permission.
@@ -54,6 +60,7 @@ class KanbrioServer extends Server
         GetStoryTool::class,
         ListTasksTool::class,
         GetTaskTool::class,
+        GetAttachmentTool::class,
         CreateProjectTool::class,
         CreateStoryTool::class,
         CreateTaskTool::class,

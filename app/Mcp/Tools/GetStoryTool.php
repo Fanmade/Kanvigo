@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Models\Attachment;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -34,7 +35,7 @@ class GetStoryTool extends Tool
             return Response::error('No story with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1".');
         }
 
-        $story->loadMissing(['tags', 'tasks.tags']);
+        $story->loadMissing(['tags', 'tasks.tags', 'attachments']);
 
         return Response::structured([
             'reference' => $story->reference,
@@ -51,6 +52,12 @@ class GetStoryTool extends Tool
                 'due_date' => $task->due_date?->format('Y-m-d'),
                 'status' => $task->status->value,
                 'tags' => $task->tags->pluck('name')->all(),
+            ])->all(),
+            'attachments' => $story->attachments->map(static fn (Attachment $attachment): array => [
+                'id' => $attachment->id,
+                'name' => $attachment->name,
+                'mime_type' => $attachment->mime_type,
+                'is_inline' => $attachment->is_inline,
             ])->all(),
         ]);
     }
@@ -92,6 +99,12 @@ class GetStoryTool extends Tool
                 'status' => $schema->string()->description('The task status.')->required(),
                 'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
             ]))->description('The tasks in the story.')->required(),
+            'attachments' => $schema->array()->items($schema->object([
+                'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),
+                'name' => $schema->string()->description('The attachment file name.')->required(),
+                'mime_type' => $schema->string()->description('The attachment MIME type; may be null.'),
+                'is_inline' => $schema->boolean()->description('Whether the attachment is embedded inline in the description.')->required(),
+            ]))->description('The files attached to the story, including inline description images.')->required(),
         ];
     }
 }

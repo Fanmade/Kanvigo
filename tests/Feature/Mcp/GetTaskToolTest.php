@@ -2,6 +2,7 @@
 
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\GetTaskTool;
+use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Story;
 use App\Models\Task;
@@ -49,4 +50,26 @@ it('includes the task tags', function () {
     KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertSee('design');
+});
+
+it('lists the task attachments with their ids', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->create();
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $task->id,
+        'attachable_type' => $task->getMorphClass(),
+        'name' => 'diagram.png',
+        'is_inline' => true,
+    ]);
+
+    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($attachment) {
+            $json->where('attachments.0.id', $attachment->id)
+                ->where('attachments.0.name', 'diagram.png')
+                ->where('attachments.0.is_inline', true)
+                ->etc();
+        });
 });

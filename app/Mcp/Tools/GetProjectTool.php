@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Story;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -32,7 +33,7 @@ class GetProjectTool extends Tool
 
         $project = Project::query()
             ->where('short_name', $validated['short_name'])
-            ->with(['stories.project'])
+            ->with(['stories.project', 'attachments'])
             ->first();
 
         if ($project === null || ! $user->can('view', $project)) {
@@ -46,6 +47,12 @@ class GetProjectTool extends Tool
             'stories' => $project->stories->map(static fn (Story $story): array => [
                 'reference' => $story->reference,
                 'title' => $story->title,
+            ])->all(),
+            'attachments' => $project->attachments->map(static fn (Attachment $attachment): array => [
+                'id' => $attachment->id,
+                'name' => $attachment->name,
+                'mime_type' => $attachment->mime_type,
+                'is_inline' => $attachment->is_inline,
             ])->all(),
         ]);
     }
@@ -79,6 +86,12 @@ class GetProjectTool extends Tool
                 'reference' => $schema->string()->description('The story reference, e.g. "PROJ1".')->required(),
                 'title' => $schema->string()->description('The story title.')->required(),
             ]))->description('The stories in the project.')->required(),
+            'attachments' => $schema->array()->items($schema->object([
+                'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),
+                'name' => $schema->string()->description('The attachment file name.')->required(),
+                'mime_type' => $schema->string()->description('The attachment MIME type; may be null.'),
+                'is_inline' => $schema->boolean()->description('Whether the attachment is embedded inline in the description.')->required(),
+            ]))->description('The files attached to the project, including inline description images.')->required(),
         ];
     }
 }

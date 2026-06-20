@@ -76,7 +76,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   token, that lets AI agents work with the projects, stories, and tasks the token's
   owner can access. Read tools (list/inspect) work with any token; write tools
   (create/update stories & tasks, create projects, add comments) require a token
-  with write access.
+  with write access. Agents can also read attachments — including inline
+  description images — by their id.
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 
