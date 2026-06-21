@@ -85,7 +85,7 @@
             "@php artisan test --testsuite=Unit,Feature --parallel"
         ],
         "test:browser": [
-            "@php artisan test --testsuite=Browser --parallel"
+            "@php artisan test --testsuite=Browser --parallel; s=$?; pgrep -f 'mode launchServer' | grep -vx \"$$\" | xargs -r kill 2>/dev/null; exit $s"
         ],
         "test:coverage": [
             "@putenv XDEBUG_MODE=coverage",
