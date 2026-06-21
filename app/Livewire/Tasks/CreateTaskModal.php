@@ -580,7 +580,7 @@ class CreateTaskModal extends Component
     {
         $cache = [];
 
-        $resolve = function (int $id) use (&$resolve, &$cache, $byId): int {
+        return static function (int $id) use (&$resolve, &$cache, $byId): int {
             if (isset($cache[$id])) {
                 return $cache[$id];
             }
@@ -590,7 +590,5 @@ class CreateTaskModal extends Component
 
             return $cache[$id] = $parentId === null ? 1 : $resolve($parentId) + 1;
         };
-
-        return $resolve;
     }
 }
