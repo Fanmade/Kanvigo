@@ -57,6 +57,44 @@ function loadStoryMigration(): object
     return require database_path('migrations/2026_06_20_233915_migrate_stories_into_root_tasks.php');
 }
 
+it('migrates several stories in one project into separate root trees, renumbering cleanly', function () {
+    rebuildStorySchema();
+
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $now = now();
+
+    // Two stories in one project. Their tasks are already flat-numbered per project
+    // (1..4) — the state after the convert-tasks migration — so this also guards the
+    // root-insertion + offset renumber against a multi-story collision.
+    $storyA = DB::table('stories')->insertGetId(['project_id' => $project->id, 'story_number' => 1, 'title' => 'Story A', 'priority' => Priority::default()->value, 'created_at' => $now, 'updated_at' => $now]);
+    $storyB = DB::table('stories')->insertGetId(['project_id' => $project->id, 'story_number' => 2, 'title' => 'Story B', 'priority' => Priority::default()->value, 'created_at' => $now, 'updated_at' => $now]);
+
+    $a1 = DB::table('tasks')->insertGetId(taskRow($project->id, $storyA, 1, 'A1', Status::ToDo, $now));
+    $a2 = DB::table('tasks')->insertGetId(taskRow($project->id, $storyA, 2, 'A2', Status::Done, $now));
+    $b1 = DB::table('tasks')->insertGetId(taskRow($project->id, $storyB, 3, 'B1', Status::ToDo, $now));
+    $b2 = DB::table('tasks')->insertGetId(taskRow($project->id, $storyB, 4, 'B2', Status::ToDo, $now));
+
+    loadStoryMigration()->up();
+
+    $rootA = DB::table('tasks')->where('project_id', $project->id)->whereNull('parent_id')->where('title', 'Story A')->first();
+    $rootB = DB::table('tasks')->where('project_id', $project->id)->whereNull('parent_id')->where('title', 'Story B')->first();
+
+    expect($rootA)->not->toBeNull()->and($rootB)->not->toBeNull();
+
+    // Each story's tasks hang off the correct root — no cross-wiring.
+    expect(DB::table('tasks')->where('id', $a1)->value('parent_id'))->toBe($rootA->id)
+        ->and(DB::table('tasks')->where('id', $a2)->value('parent_id'))->toBe($rootA->id)
+        ->and(DB::table('tasks')->where('id', $b1)->value('parent_id'))->toBe($rootB->id)
+        ->and(DB::table('tasks')->where('id', $b2)->value('parent_id'))->toBe($rootB->id);
+
+    // Six tasks now (4 originals + 2 roots), flat-numbered 1..6, unique per project.
+    $numbers = DB::table('tasks')->where('project_id', $project->id)->pluck('task_number');
+    expect($numbers)->toHaveCount(6)
+        ->and($numbers->unique())->toHaveCount(6)
+        ->and($numbers->min())->toBe(1)
+        ->and($numbers->max())->toBe(6);
+});
+
 it('migrates a story and its tasks into a correct task tree with relations intact', function () {
     rebuildStorySchema();
 
