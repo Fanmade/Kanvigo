@@ -38,6 +38,35 @@
 
     @php($canUpdate = auth()->user()->can('update', $this->task))
 
+    @if ($this->task->isCanceled())
+        <div
+            class="flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm dark:border-red-400/20 dark:bg-red-400/10"
+            data-test="canceled-banner"
+        >
+            <div class="flex min-w-0 flex-col gap-1.5">
+                <div class="flex flex-wrap items-center gap-2">
+                    <flux:badge
+                        size="sm"
+                        :color="$this->task->cancel_reason->color()"
+                        :icon="$this->task->cancel_reason->icon()"
+                        data-test="cancel-reason-badge"
+                    >
+                        {{ $this->task->cancel_reason->label() }}
+                    </flux:badge>
+                    <flux:text size="sm" class="font-medium">{{ __('This task was canceled.') }}</flux:text>
+                </div>
+                @if ($this->task->cancel_message)
+                    <flux:text size="sm" class="text-zinc-600 dark:text-zinc-300">{{ $this->task->cancel_message }}</flux:text>
+                @endif
+            </div>
+            @if ($canUpdate)
+                <flux:button size="xs" variant="ghost" icon="arrow-uturn-left" wire:click="reopenTask" data-test="reopen-task">
+                    {{ __('Reopen') }}
+                </flux:button>
+            @endif
+        </div>
+    @endif
+
     @if ($editing)
         <form wire:submit="save" class="flex flex-col gap-4">
             <flux:input wire:model="title" :label="__('Title')" />
@@ -56,7 +85,12 @@
                 <div class="flex items-start justify-between gap-4">
                     <flux:heading size="xl">{{ $this->task->title }}</flux:heading>
                     @can('update', $this->task)
-                        <flux:button size="sm" icon="pencil-square" variant="ghost" wire:click="edit" data-test="edit-task">{{ __('Edit') }}</flux:button>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <flux:button size="sm" icon="pencil-square" variant="ghost" wire:click="edit" data-test="edit-task">{{ __('Edit') }}</flux:button>
+                            @unless ($this->task->isCanceled())
+                                <flux:button size="sm" icon="x-circle" variant="ghost" wire:click="confirmCancel" data-test="cancel-task">{{ __('Cancel task') }}</flux:button>
+                            @endunless
+                        </div>
                     @endcan
                 </div>
 
@@ -123,7 +157,7 @@
                     <x-rail-row :label="__('Status')">
                         <x-status-control
                             :status="$this->task->status"
-                            :can-edit="auth()->user()->can('updateStatus', $this->task)"
+                            :can-edit="auth()->user()->can('updateStatus', $this->task) && ! $this->task->isCanceled()"
                         />
                     </x-rail-row>
 
@@ -234,5 +268,36 @@
                 @endif
             </div>
         </div>
+    </flux:modal>
+
+    <flux:modal wire:model.self="confirmingCancel" wire:close="abortCancel" class="md:w-96" data-test="cancel-modal">
+        <form wire:submit="cancelTask" class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('Cancel this task?') }}</flux:heading>
+            <flux:text>{{ __('Canceling abandons the task but keeps it on the record. You can reopen it later.') }}</flux:text>
+
+            @if ($this->openSubtaskCount > 0)
+                <div
+                    class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-400/20 dark:bg-amber-400/10"
+                    data-test="cancel-subtree-warning"
+                >
+                    <flux:icon name="exclamation-triangle" variant="micro" class="mt-0.5 shrink-0 text-amber-500" />
+                    <flux:text size="sm">{{ __('This will also cancel :count open subtask(s) below it.', ['count' => $this->openSubtaskCount]) }}</flux:text>
+                </div>
+            @endif
+
+            <flux:select wire:model="cancelReason" :label="__('Reason')" :placeholder="__('Choose a reason')" data-test="cancel-reason">
+                @foreach (\App\Enums\CancelReason::cases() as $reason)
+                    <flux:select.option :value="$reason->value">{{ $reason->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:error name="cancelReason" />
+
+            <flux:textarea wire:model="cancelMessage" :label="__('Message')" :description="__('Optional')" rows="3" data-test="cancel-message" />
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="abortCancel">{{ __('Keep task') }}</flux:button>
+                <flux:button type="submit" variant="danger" icon="x-circle" data-test="confirm-cancel">{{ __('Cancel task') }}</flux:button>
+            </div>
+        </form>
     </flux:modal>
 </div>

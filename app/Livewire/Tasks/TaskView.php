@@ -2,11 +2,13 @@
 
 namespace App\Livewire\Tasks;
 
+use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
 use App\Actions\CreateTask;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ManagesDependencies;
 use App\Concerns\ManagesTags;
+use App\Enums\CancelReason;
 use App\Enums\CascadePreference;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -68,6 +70,16 @@ class TaskView extends Component
      * bump can be undone. Empty when there is nothing to undo.
      */
     public string $parentBumpUndoStatus = '';
+
+    /**
+     * Cancel-confirmation state: the reason (a {@see CancelReason} value) and an
+     * optional message captured before the task is canceled.
+     */
+    public bool $confirmingCancel = false;
+
+    public string $cancelReason = '';
+
+    public string $cancelMessage = '';
 
     public bool $showSubtaskModal = false;
 
@@ -277,6 +289,69 @@ class TaskView extends Component
     }
 
     /**
+     * Open the cancel confirmation, which captures a reason and optional message.
+     */
+    public function confirmCancel(): void
+    {
+        $this->authorize('update', $this->task());
+
+        $this->reset('cancelReason', 'cancelMessage');
+        $this->resetValidation();
+        $this->confirmingCancel = true;
+    }
+
+    /**
+     * Dismiss the cancel confirmation without changing anything.
+     */
+    public function abortCancel(): void
+    {
+        $this->reset('confirmingCancel', 'cancelReason', 'cancelMessage');
+    }
+
+    /**
+     * Cancel the task — and its open subtree — with the chosen reason and an
+     * optional message, then surface how many subtasks were also canceled.
+     */
+    public function cancelTask(): void
+    {
+        $task = $this->task();
+        $this->authorize('update', $task);
+
+        $validated = $this->validate([
+            'cancelReason' => ['required', new Enum(CancelReason::class)],
+            'cancelMessage' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $cascaded = app(CancelTask::class)->cancel(
+            $task,
+            CancelReason::from($validated['cancelReason']),
+            $validated['cancelMessage'] ?: null,
+        );
+
+        $this->reset('confirmingCancel', 'cancelReason', 'cancelMessage');
+        unset($this->task);
+
+        Flux::toast(variant: 'success', text: $cascaded > 0
+            ? __('Task and :count subtask(s) canceled.', ['count' => $cascaded])
+            : __('Task canceled.'));
+    }
+
+    /**
+     * Reopen the canceled task, returning it to Planned.
+     */
+    public function reopenTask(): void
+    {
+        $task = $this->task();
+        $this->authorize('update', $task);
+
+        app(CancelTask::class)->reopen($task);
+
+        unset($this->task);
+
+        Flux::toast(variant: 'success', text: __('Task reopened.'));
+    }
+
+    /**
      * The number of open (non-terminal) tasks anywhere under this task.
      */
     #[Computed]
@@ -337,10 +412,10 @@ class TaskView extends Component
         $this->parentBumpUndoStatus = $result->parentBumped ? (string) $result->parentPreviousStatus : '';
 
         Flux::toast(
-            variant: 'success',
             text: $result->parentBumped
                 ? __('Status updated. Parent task moved to In progress.')
                 : __('Status updated.'),
+            variant: 'success',
         );
     }
 
