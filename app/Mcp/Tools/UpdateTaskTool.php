@@ -2,7 +2,9 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
+use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Concerns\RecordsTagChanges;
@@ -11,14 +13,13 @@ use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Updates a task\'s title, description, priority and/or status, identified by its reference (e.g. "PROJ-42"). Status changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Updates a task\'s title, description, priority, status and/or tags, identified by its reference (e.g. "PROJ-42"). Can also cancel the task with a reason (cancel_reason, optionally cancel_message) — which cancels its open subtasks too — or reopen a canceled task (reopen=true). Status, cancellation and tag changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
 class UpdateTaskTool extends Tool
 {
     use RecordsTagChanges;
@@ -33,7 +34,7 @@ class UpdateTaskTool extends Tool
             return $denied;
         }
 
-        $statuses = implode('", "', array_map(static fn (Status $status): string => $status->value, Status::cases()));
+        $workingStatuses = array_map(static fn (Status $status): string => $status->value, Status::columns());
 
         $validated = $request->validate([
             'reference' => ['required', 'string'],
@@ -41,14 +42,18 @@ class UpdateTaskTool extends Tool
             'description' => ['nullable', 'string'],
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
-            'status' => ['nullable', new Enum(Status::class)],
+            'status' => ['nullable', Rule::in($workingStatuses)],
+            'cancel_reason' => ['nullable', Rule::in(CancelReason::names())],
+            'cancel_message' => ['nullable', 'string', 'max:1000'],
+            'reopen' => ['nullable', 'boolean'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
         ], [
             'reference.required' => 'You must provide the task reference (e.g. "PROJ-42").',
             'priority' => 'The priority must be one of: '.implode(', ', Priority::names()).'.',
             'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format. Pass null to clear it.',
-            'status' => 'The status must be one of "'.$statuses.'".',
+            'status' => 'The status must be one of "'.implode('", "', $workingStatuses).'". To cancel a task, pass cancel_reason instead; to reopen a canceled task, pass reopen=true.',
+            'cancel_reason' => 'The cancel reason must be one of: '.implode(', ', CancelReason::names()).'.',
         ]);
 
         $task = ReferenceResolver::task($validated['reference']);
@@ -76,17 +81,43 @@ class UpdateTaskTool extends Tool
         }
 
         $statusProvided = $request->has('status') && isset($validated['status']);
+        $cancelProvided = $request->has('cancel_reason') && isset($validated['cancel_reason']);
+        $reopenRequested = $request->has('reopen') && (bool) $validated['reopen'];
+        $messageProvided = $request->has('cancel_message') && isset($validated['cancel_message']);
         $tagsProvided = $request->has('tags');
 
-        if ($updates === [] && ! $statusProvided && ! $tagsProvided) {
-            return Response::error('Provide a title, description, priority, due date, status and/or tags to update.');
+        // status, cancel_reason and reopen are mutually exclusive lifecycle moves.
+        if ((int) $statusProvided + (int) $cancelProvided + (int) $reopenRequested > 1) {
+            return Response::error('Provide only one of status, cancel_reason or reopen in a single update.');
+        }
+
+        if ($messageProvided && ! $cancelProvided) {
+            return Response::error('cancel_message can only be used together with cancel_reason.');
+        }
+
+        if ($updates === [] && ! $statusProvided && ! $cancelProvided && ! $reopenRequested && ! $tagsProvided) {
+            return Response::error('Provide a title, description, priority, due date, status, tags, a cancel_reason or reopen to update.');
+        }
+
+        if ($statusProvided && $task->isCanceled()) {
+            return Response::error('This task is canceled. Pass reopen=true to reopen it before changing its status.');
         }
 
         if ($updates !== []) {
             $task->update($updates);
         }
 
-        if ($statusProvided) {
+        if ($cancelProvided) {
+            // Cancels the task and its open subtree, recording history and notifying
+            // subscribers exactly like the UI.
+            app(CancelTask::class)->cancel(
+                $task,
+                CancelReason::fromName($validated['cancel_reason']),
+                $messageProvided ? $validated['cancel_message'] : null,
+            );
+        } elseif ($reopenRequested) {
+            app(CancelTask::class)->reopen($task);
+        } elseif ($statusProvided) {
             $new = Status::from($validated['status']);
 
             if ($task->status !== $new) {
@@ -100,6 +131,8 @@ class UpdateTaskTool extends Tool
             $this->recordTagSync($task, $task->syncTags($validated['tags'] ?? []));
         }
 
+        $task->refresh();
+
         return Response::structured([
             'reference' => $task->reference,
             'title' => $task->title,
@@ -107,6 +140,8 @@ class UpdateTaskTool extends Tool
             'priority' => $task->priority->name,
             'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
+            'cancel_reason' => $task->cancel_reason?->name,
+            'cancel_message' => $task->cancel_message,
             'tags' => $task->tags()->pluck('name')->all(),
         ]);
     }
@@ -137,8 +172,18 @@ class UpdateTaskTool extends Tool
                 ->description('New due date in "YYYY-MM-DD" format. Pass null to clear it.'),
 
             'status' => $schema->string()
-                ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
-                ->description('New status for the task.'),
+                ->enum(array_map(static fn (Status $status): string => $status->value, Status::columns()))
+                ->description('New working status for the task (Planned, ToDo, In progress or Done). To cancel a task use cancel_reason; to reopen a canceled task use reopen.'),
+
+            'cancel_reason' => $schema->string()
+                ->enum(CancelReason::names())
+                ->description('Cancel the task (and its open subtasks) with this reason: one of WontFix, Duplicate or Deprecated. Recorded in history and notified like a UI cancellation.'),
+
+            'cancel_message' => $schema->string()
+                ->description('An optional note explaining the cancellation. Only used together with cancel_reason.'),
+
+            'reopen' => $schema->boolean()
+                ->description('Set to true to reopen a canceled task, returning it to Planned and clearing its cancellation.'),
 
             'tags' => $schema->array()
                 ->items($schema->string())
@@ -160,6 +205,8 @@ class UpdateTaskTool extends Tool
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
+            'cancel_reason' => $schema->string()->description('The cancellation reason (WontFix, Duplicate or Deprecated) when the task is canceled; null otherwise.'),
+            'cancel_message' => $schema->string()->description('The optional note left when the task was canceled; null otherwise.'),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
         ];
     }

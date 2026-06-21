@@ -37,6 +37,13 @@ use Laravel\Mcp\Server\Tool;
     is a member of; tasks inherit access from their project. If a project or task does not exist
     or the user cannot access it, the tool returns an error.
 
+    A task can be canceled (abandoned with a reason) rather than deleted. The update-task tool
+    accepts a "cancel_reason" (one of "WontFix", "Duplicate", "Deprecated") with an optional
+    "cancel_message" to cancel a task — which also cancels its open subtasks — and "reopen": true
+    to reopen a canceled task back to "Planned". Cancellation is a terminal state distinct from the
+    working statuses, so it is not set through the "status" field. The get-task and list-tasks tools
+    report a canceled task's "cancel_reason" (and get-task its "cancel_message").
+
     Tasks can depend on each other: a task may be "blocked by" the tasks it depends on (its
     blockers) and may itself "block" others. The get-task tool reports a task's "blocked_by" and
     "blocks" references plus an "is_blocked" flag (true while a blocker is not yet complete); the
