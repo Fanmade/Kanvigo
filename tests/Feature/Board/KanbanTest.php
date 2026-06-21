@@ -243,3 +243,17 @@ it('requires a title to create a task from the board', function () {
         ->call('createTask')
         ->assertHasErrors(['taskTitle' => 'required']);
 });
+
+it('keeps canceled tasks off the project board lanes', function () {
+    $canceled = Task::factory()->for($this->project)->canceled()->create(['title' => 'Abandoned work']);
+
+    $component = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->assertDontSee('Abandoned work');
+
+    $ids = collect($component->instance()->columns())
+        ->flatMap(static fn (array $column) => $column['tasks']->pluck('id'))
+        ->all();
+
+    expect($ids)->not->toContain($canceled->id);
+});

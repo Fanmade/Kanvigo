@@ -53,3 +53,17 @@ it('forbids moving a task in a project the user cannot access', function () {
 
     expect($task->fresh()->status)->toBe(Status::Planned);
 });
+
+it('keeps canceled tasks off the global board', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    $project->members()->attach($user);
+    Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Active work']);
+    Task::factory()->for($project)->canceled()->create(['title' => 'Abandoned work']);
+
+    Livewire::actingAs($user)
+        ->test(Board::class)
+        ->assertOk()
+        ->assertSee('Active work')
+        ->assertDontSee('Abandoned work');
+});

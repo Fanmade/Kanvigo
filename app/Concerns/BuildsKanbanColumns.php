@@ -21,6 +21,11 @@ trait BuildsKanbanColumns
      */
     protected function buildColumns(Collection $tasks): array
     {
+        // Canceled tasks are terminal and never belong on an active board lane, so
+        // drop them up front. (Done tasks keep their Done column; only the
+        // abandoned ones disappear — they remain on the project overview.)
+        $tasks = $tasks->reject(static fn (Task $task): bool => $task->status === Status::Canceled)->values();
+
         // Eager-load each visible card's breadcrumb ancestors in one batched pass
         // (the relation hydrates onto the same instances rendered below), so deep
         // cards never trigger a per-card ancestor lookup.

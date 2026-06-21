@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\CancelTask;
+use App\Enums\CancelReason;
 use App\Enums\Status;
 use App\Livewire\Dashboard;
 use App\Models\Project;
@@ -122,4 +124,28 @@ it('builds a 14-day completion series from the user activity', function () {
     expect($progress)->toHaveCount(14)
         ->and(collect($progress)->last()['count'])->toBe(2)
         ->and(collect($progress)->firstWhere('date', now()->subDays(7)->toDateString())['count'])->toBe(1);
+});
+
+it('ignores canceled tasks in the active list and status counts', function () {
+    $canceled = Task::factory()->for($this->project)->canceled()->create(['title' => 'Abandoned']);
+    $canceled->assignees()->attach($this->user);
+
+    $component = Livewire::actingAs($this->user)
+        ->test(Dashboard::class)
+        ->assertOk()
+        ->assertDontSee('Abandoned');
+
+    expect($component->instance()->activeTasks()->pluck('id'))->not->toContain($canceled->id)
+        ->and(collect($component->instance()->statusCounts())->pluck('status'))->not->toContain(Status::Canceled);
+});
+
+it('does not count a cancellation as completion progress', function () {
+    $task = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+
+    $this->actingAs($this->user);
+    app(CancelTask::class)->cancel($task, CancelReason::WontFix);
+
+    $progress = Livewire::actingAs($this->user)->test(Dashboard::class)->instance()->progress();
+
+    expect(collect($progress)->sum('count'))->toBe(0);
 });
