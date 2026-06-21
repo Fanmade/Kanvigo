@@ -20,6 +20,7 @@
         "pest-testing",
         "tailwindcss-development",
         "blaze-optimize",
+        "eloquent-query-classes",
         "tech-debt-review"
     ]
 }
