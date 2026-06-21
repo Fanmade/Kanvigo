@@ -70,83 +70,103 @@
                 </flux:select>
             </div>
 
-            {{-- Tags --}}
-            <div x-data="{ adding: false }" class="flex flex-col gap-2">
-                <div class="flex min-h-7 items-center justify-between gap-3">
-                    <span class="shrink-0 text-sm font-medium text-zinc-800 dark:text-white">{{ __('Tags') }}</span>
-                    <div class="flex min-w-0 flex-wrap items-center justify-end gap-1" data-test="create-task-tags">
+            {{-- Tags, due date and assignees: compact label + value + one-click control --}}
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {{-- Tags --}}
+                <div class="flex flex-col gap-1">
+                    <span class="text-sm font-medium text-zinc-800 dark:text-white">{{ __('Tags') }}</span>
+                    <div class="flex min-h-8 flex-wrap items-center gap-1" data-test="create-task-tags">
                         @foreach ($tagNames as $index => $name)
                             <flux:badge size="sm" color="zinc" variant="pill" wire:key="draft-tag-{{ $index }}">
                                 <x-tag-dot :color="$tagColors[$name] ?? 'zinc'" class="me-1.5 size-2" />{{ $name }}
                                 <flux:badge.close wire:click="removeDraftTag({{ $index }})" :aria-label="__('Remove tag')" data-test="create-task-remove-tag-{{ $index }}" />
                             </flux:badge>
                         @endforeach
-                        <flux:button
-                            type="button"
-                            size="xs"
-                            variant="subtle"
-                            icon="plus"
-                            :aria-label="__('Add tag')"
-                            x-on:click="adding = ! adding; $nextTick(() => $refs.tagInput?.querySelector('input')?.focus())"
-                            data-test="create-task-add-tag"
-                        />
+
+                        <flux:dropdown align="start">
+                            <flux:button type="button" size="xs" variant="subtle" icon="plus" :aria-label="__('Add tag')" data-test="create-task-add-tag" />
+
+                            <flux:popover class="flex w-64 flex-col gap-1">
+                                <flux:input
+                                    size="sm"
+                                    wire:model.live.debounce.200ms="tagQuery"
+                                    :placeholder="__('Find or create a tag')"
+                                    x-on:keydown.enter.prevent="$wire.tagEnter($event.target.value)"
+                                    data-test="create-task-tag-input"
+                                />
+
+                                @if (trim($tagQuery) !== '')
+                                    <div class="flex max-h-48 flex-col gap-0.5 overflow-y-auto" role="listbox">
+                                        @foreach ($this->tagSuggestions as $index => $suggestion)
+                                            <flux:button
+                                                type="button"
+                                                size="xs"
+                                                variant="ghost"
+                                                class="justify-start!"
+                                                wire:click="addSuggestedTag({{ $index }})"
+                                                data-test="create-task-tag-suggestion-{{ \Illuminate\Support\Str::slug($suggestion['name']) }}"
+                                            >
+                                                <x-tag-dot :color="$suggestion['color']" class="me-1.5 size-2" />{{ $suggestion['name'] }}
+                                            </flux:button>
+                                        @endforeach
+
+                                        @if ($this->canCreateTag)
+                                            <flux:button
+                                                type="button"
+                                                size="xs"
+                                                variant="ghost"
+                                                icon="plus"
+                                                class="justify-start!"
+                                                wire:click="openTagColorModal"
+                                                data-test="create-task-tag-create"
+                                            >
+                                                {{ __('Create') }} “{{ trim($tagQuery) }}”
+                                            </flux:button>
+                                        @endif
+                                    </div>
+                                @endif
+                            </flux:popover>
+                        </flux:dropdown>
                     </div>
                 </div>
 
-                <div x-show="adding" x-cloak x-ref="tagInput" class="flex flex-col gap-1">
-                    <flux:input
-                        size="sm"
-                        wire:model.live.debounce.200ms="tagQuery"
-                        :placeholder="__('Find or create a tag')"
-                        x-on:keydown.enter.prevent="$wire.tagEnter($event.target.value)"
-                        x-on:keydown.escape="adding = false"
-                        data-test="create-task-tag-input"
-                    />
+                {{-- Due date --}}
+                <div class="flex flex-col gap-1">
+                    <span class="text-sm font-medium text-zinc-800 dark:text-white">{{ __('Due date') }}</span>
+                    <div class="flex min-h-8 items-center gap-1">
+                        @if ($dueDate)
+                            <flux:badge size="sm" color="zinc" variant="pill" data-test="create-task-due-date-badge">
+                                {{ \Illuminate\Support\Carbon::parse($dueDate)->format('M j, Y') }}
+                                <flux:badge.close wire:click="$set('dueDate', '')" :aria-label="__('Clear due date')" data-test="create-task-clear-due-date" />
+                            </flux:badge>
+                        @else
+                            <flux:text size="sm" class="text-zinc-400">{{ __('None') }}</flux:text>
+                        @endif
 
-                    @if (trim($tagQuery) !== '')
-                        <div class="flex flex-col gap-0.5" role="listbox">
-                            @foreach ($this->tagSuggestions as $index => $suggestion)
-                                <flux:button
-                                    type="button"
-                                    size="xs"
-                                    variant="ghost"
-                                    class="justify-start!"
-                                    wire:click="addSuggestedTag({{ $index }})"
-                                    data-test="create-task-tag-suggestion-{{ \Illuminate\Support\Str::slug($suggestion['name']) }}"
-                                >
-                                    <x-tag-dot :color="$suggestion['color']" class="me-1.5 size-2" />{{ $suggestion['name'] }}
-                                </flux:button>
-                            @endforeach
-
-                            @if ($this->canCreateTag)
-                                <flux:button
-                                    type="button"
-                                    size="xs"
-                                    variant="ghost"
-                                    icon="plus"
-                                    class="justify-start!"
-                                    wire:click="openTagColorModal"
-                                    data-test="create-task-tag-create"
-                                >
-                                    {{ __('Create') }} “{{ trim($tagQuery) }}”
-                                </flux:button>
-                            @endif
-                        </div>
-                    @endif
+                        <flux:dropdown align="start">
+                            <flux:button type="button" size="xs" variant="subtle" :icon="$dueDate ? 'pencil' : 'plus'" :aria-label="__('Set due date')" data-test="create-task-due-date-control" />
+                            <flux:popover class="w-60">
+                                <flux:input type="date" wire:model.live="dueDate" :label="__('Due date')" x-on:keydown.enter.prevent data-test="create-task-due-date" />
+                            </flux:popover>
+                        </flux:dropdown>
+                    </div>
                 </div>
-            </div>
 
-            {{-- Due date + assignees --}}
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <flux:input type="date" wire:model="dueDate" :label="__('Due date')" data-test="create-task-due-date" />
-
-                @if ($this->projectId && $this->members->isNotEmpty())
-                    <flux:select variant="listbox" multiple searchable wire:model="assigneeIds" :label="__('Assignees')" :placeholder="__('Select assignees')" data-test="create-task-assignees">
-                        @foreach ($this->members as $member)
-                            <flux:select.option :value="$member->id">{{ $member->name }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                @endif
+                {{-- Assignees --}}
+                <div class="flex flex-col gap-1">
+                    <span class="text-sm font-medium text-zinc-800 dark:text-white">{{ __('Assignees') }}</span>
+                    <div class="flex min-h-8 items-center">
+                        @if ($this->projectId && $this->members->isNotEmpty())
+                            <x-assignee-picker
+                                :members="$this->members"
+                                :selected="$this->members->whereIn('id', $assigneeIds)"
+                                model="assigneeIds"
+                            />
+                        @else
+                            <flux:text size="sm" class="text-zinc-400">{{ __('Unassigned') }}</flux:text>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <div class="flex justify-end gap-2">

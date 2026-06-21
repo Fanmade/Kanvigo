@@ -166,29 +166,12 @@
                     </x-rail-row>
 
                     <x-rail-row :label="__('Assignees')">
-                        @if ($this->task->assignees->isNotEmpty())
-                            <flux:avatar.group>
-                                @foreach ($this->task->assignees as $assignee)
-                                    <x-user-avatar :user="$assignee" circle :tooltip="$assignee->name" />
-                                @endforeach
-                            </flux:avatar.group>
-                        @else
-                            <flux:text size="sm" class="text-zinc-400">{{ __('Unassigned') }}</flux:text>
-                        @endif
-
-                        @if ($canUpdate)
-                            <flux:dropdown align="end" data-test="assignees-control">
-                                <flux:button size="xs" variant="subtle" icon="plus" :aria-label="__('Edit assignees')" />
-                                <flux:popover class="flex w-64 flex-col gap-2">
-                                    <flux:text size="xs" class="font-medium text-zinc-400">{{ __('Assignees') }}</flux:text>
-                                    <flux:select variant="listbox" multiple wire:model.live="assigneeIds" :placeholder="__('Assign members')">
-                                        @foreach ($this->members as $member)
-                                            <flux:select.option :value="$member->id">{{ $member->name }}</flux:select.option>
-                                        @endforeach
-                                    </flux:select>
-                                </flux:popover>
-                            </flux:dropdown>
-                        @endif
+                        <x-assignee-picker
+                            :members="$this->members"
+                            :selected="$this->task->assignees"
+                            model="assigneeIds"
+                            :can-edit="$canUpdate"
+                        />
                     </x-rail-row>
 
                     <flux:separator variant="subtle" />
