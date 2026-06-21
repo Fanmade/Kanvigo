@@ -3,13 +3,10 @@
 use App\Enums\Status;
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\AddDependencyTool;
-use App\Mcp\Tools\GetStoryTool;
 use App\Mcp\Tools\GetTaskTool;
-use App\Mcp\Tools\ListStoriesTool;
 use App\Mcp\Tools\ListTasksTool;
 use App\Mcp\Tools\RemoveDependencyTool;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,14 +20,13 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::factory()->withMembers([$this->user])->create(['short_name' => 'ABC']);
-    $this->story = Story::factory()->for($this->project)->create();
 });
 
 // --- Read: get tools -------------------------------------------------------
 
 it('exposes a task\'s blockers, blocked items and blocked flag in the get tool', function () {
-    $task = Task::factory()->for($this->story)->create();
-    $blocker = Task::factory()->for($this->story)->status(Status::ToDo)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->status(Status::ToDo)->create();
     $task->addBlocker($blocker);
 
     KanbrioServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $task->reference])
@@ -46,8 +42,8 @@ it('exposes a task\'s blockers, blocked items and blocked flag in the get tool',
 });
 
 it('reports a task as unblocked once its blocker is complete', function () {
-    $task = Task::factory()->for($this->story)->create();
-    $blocker = Task::factory()->for($this->story)->status(Status::Done)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->status(Status::Done)->create();
     $task->addBlocker($blocker);
 
     KanbrioServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $task->reference])
@@ -55,46 +51,25 @@ it('reports a task as unblocked once its blocker is complete', function () {
         ->assertSee('"is_blocked":false');
 });
 
-it('exposes a story\'s dependencies in the get tool', function () {
-    $blocker = Task::factory()->for($this->story)->status(Status::ToDo)->create();
-    $blockedStory = Story::factory()->for($this->project)->create();
-    $blockedStory->addBlocker($blocker);
-
-    KanbrioServer::actingAs($this->user)->tool(GetStoryTool::class, ['reference' => $blockedStory->reference])
-        ->assertOk()
-        ->assertSee($blocker->reference)
-        ->assertSee('"is_blocked":true');
-});
-
 // --- Read: list tools ------------------------------------------------------
 
 it('surfaces the is_blocked flag in the list-tasks tool', function () {
-    $task = Task::factory()->for($this->story)->create();
-    $blocker = Task::factory()->for($this->story)->status(Status::ToDo)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->status(Status::ToDo)->create();
     $task->addBlocker($blocker);
 
-    KanbrioServer::actingAs($this->user)->tool(ListTasksTool::class, ['reference' => $this->story->reference])
+    KanbrioServer::actingAs($this->user)->tool(ListTasksTool::class, ['reference' => $this->project->short_name])
         ->assertOk()
         ->assertSee('"is_blocked":true')
         ->assertSee('"is_blocked":false');
-});
-
-it('surfaces the is_blocked flag in the list-stories tool', function () {
-    $blocker = Task::factory()->for($this->story)->status(Status::ToDo)->create();
-    $blockedStory = Story::factory()->for($this->project)->create();
-    $blockedStory->addBlocker($blocker);
-
-    KanbrioServer::actingAs($this->user)->tool(ListStoriesTool::class, ['short_name' => 'ABC'])
-        ->assertOk()
-        ->assertSee('"is_blocked":true');
 });
 
 // --- Write: add-dependency -------------------------------------------------
 
 it('links a blocked_by dependency and records the activity', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
-    $task = Task::factory()->for($this->story)->create();
-    $blocker = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->create();
 
     KanbrioServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
@@ -124,8 +99,8 @@ it('links a blocked_by dependency and records the activity', function () {
 
 it('links a blocks dependency in the reverse direction', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
-    $task = Task::factory()->for($this->story)->create();
-    $blocked = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocked = Task::factory()->for($this->project)->create();
 
     KanbrioServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
@@ -143,7 +118,7 @@ it('links a blocks dependency in the reverse direction', function () {
 
 it('rejects a self-dependency', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
-    $task = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
 
     KanbrioServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
@@ -154,8 +129,8 @@ it('rejects a self-dependency', function () {
 
 it('rejects a dependency that would create a cycle', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
-    $task = Task::factory()->for($this->story)->create();
-    $blocker = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->create();
     $task->addBlocker($blocker);
 
     // task is already blocked by blocker; making blocker depend on task closes a cycle.
@@ -168,7 +143,7 @@ it('rejects a dependency that would create a cycle', function () {
 
 it('returns an error for an unknown related reference', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
-    $task = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
 
     KanbrioServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
@@ -179,11 +154,10 @@ it('returns an error for an unknown related reference', function () {
 
 it('denies linking to an item the user cannot access', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
-    $task = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
 
     $otherProject = Project::factory()->create(['short_name' => 'XYZ']);
-    $otherStory = Story::factory()->for($otherProject)->create();
-    $hidden = Task::factory()->for($otherStory)->create();
+    $hidden = Task::factory()->for($otherProject)->create();
 
     KanbrioServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
@@ -196,8 +170,8 @@ it('denies linking to an item the user cannot access', function () {
 
 it('denies adding a dependency with a read-only token', function () {
     Sanctum::actingAs($this->user, ['read']);
-    $task = Task::factory()->for($this->story)->create();
-    $blocker = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->create();
 
     KanbrioServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
@@ -210,8 +184,8 @@ it('denies adding a dependency with a read-only token', function () {
 
 it('removes an existing dependency in either direction', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
-    $task = Task::factory()->for($this->story)->create();
-    $blocker = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->create();
     $task->addBlocker($blocker);
 
     KanbrioServer::tool(RemoveDependencyTool::class, [
@@ -236,8 +210,8 @@ it('removes an existing dependency in either direction', function () {
 
 it('returns an error when removing a dependency that does not exist', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
-    $task = Task::factory()->for($this->story)->create();
-    $other = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $other = Task::factory()->for($this->project)->create();
 
     KanbrioServer::tool(RemoveDependencyTool::class, [
         'reference' => $task->reference,
@@ -247,8 +221,8 @@ it('returns an error when removing a dependency that does not exist', function (
 
 it('denies removing a dependency with a read-only token', function () {
     Sanctum::actingAs($this->user, ['read']);
-    $task = Task::factory()->for($this->story)->create();
-    $blocker = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->create();
     $task->addBlocker($blocker);
 
     KanbrioServer::tool(RemoveDependencyTool::class, [

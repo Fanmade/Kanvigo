@@ -3,7 +3,6 @@
 use App\Enums\Status;
 use App\Livewire\Dashboard;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,14 +14,13 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::factory()->create();
     $this->project->members()->attach($this->user);
-    $this->story = Story::factory()->for($this->project)->create();
 });
 
 it('lists in-progress and to-do tasks before completed ones', function () {
-    $inProgress = Task::factory()->for($this->story)->status(Status::InProgress)->create(['title' => 'Active work']);
+    $inProgress = Task::factory()->for($this->project)->status(Status::InProgress)->create(['title' => 'Active work']);
     $inProgress->assignees()->attach($this->user);
 
-    $done = Task::factory()->for($this->story)->status(Status::Done)->create(['title' => 'Finished work']);
+    $done = Task::factory()->for($this->project)->status(Status::Done)->create(['title' => 'Finished work']);
     $done->assignees()->attach($this->user);
 
     Livewire::actingAs($this->user)
@@ -33,7 +31,7 @@ it('lists in-progress and to-do tasks before completed ones', function () {
 });
 
 it('lists unassigned to-do tasks in the user projects so they can be picked up', function () {
-    Task::factory()->for($this->story)->status(Status::ToDo)->create(['title' => 'Up for grabs']);
+    Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Up for grabs']);
 
     Livewire::actingAs($this->user)
         ->test(Dashboard::class)
@@ -42,7 +40,7 @@ it('lists unassigned to-do tasks in the user projects so they can be picked up',
 });
 
 it('hides unassigned in-progress tasks', function () {
-    Task::factory()->for($this->story)->status(Status::InProgress)->create(['title' => 'Someone is on it']);
+    Task::factory()->for($this->project)->status(Status::InProgress)->create(['title' => 'Someone is on it']);
 
     Livewire::actingAs($this->user)
         ->test(Dashboard::class)
@@ -52,7 +50,7 @@ it('hides unassigned in-progress tasks', function () {
 
 it('hides to-do tasks assigned to other people', function () {
     $other = User::factory()->create();
-    Task::factory()->for($this->story)->status(Status::ToDo)->create(['title' => 'Taken work'])
+    Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Taken work'])
         ->assignees()->attach($other);
 
     Livewire::actingAs($this->user)
@@ -63,8 +61,7 @@ it('hides to-do tasks assigned to other people', function () {
 
 it('hides tasks from projects the user is not a member of', function () {
     $foreignProject = Project::factory()->create();
-    $foreignStory = Story::factory()->for($foreignProject)->create();
-    Task::factory()->for($foreignStory)->status(Status::ToDo)->create(['title' => 'Not my project']);
+    Task::factory()->for($foreignProject)->status(Status::ToDo)->create(['title' => 'Not my project']);
 
     Livewire::actingAs($this->user)
         ->test(Dashboard::class)
@@ -73,8 +70,8 @@ it('hides tasks from projects the user is not a member of', function () {
 });
 
 it('orders active tasks with in-progress first, then to-do', function () {
-    Task::factory()->for($this->story)->status(Status::ToDo)->create()->assignees()->attach($this->user);
-    Task::factory()->for($this->story)->status(Status::InProgress)->create()->assignees()->attach($this->user);
+    Task::factory()->for($this->project)->status(Status::ToDo)->create()->assignees()->attach($this->user);
+    Task::factory()->for($this->project)->status(Status::InProgress)->create()->assignees()->attach($this->user);
 
     $active = Livewire::actingAs($this->user)->test(Dashboard::class)->instance()->activeTasks();
 
@@ -83,9 +80,9 @@ it('orders active tasks with in-progress first, then to-do', function () {
 });
 
 it('counts assigned tasks per status and projects', function () {
-    Task::factory()->for($this->story)->status(Status::InProgress)->create()->assignees()->attach($this->user);
-    Task::factory()->for($this->story)->status(Status::InProgress)->create()->assignees()->attach($this->user);
-    Task::factory()->for($this->story)->status(Status::Done)->create()->assignees()->attach($this->user);
+    Task::factory()->for($this->project)->status(Status::InProgress)->create()->assignees()->attach($this->user);
+    Task::factory()->for($this->project)->status(Status::InProgress)->create()->assignees()->attach($this->user);
+    Task::factory()->for($this->project)->status(Status::Done)->create()->assignees()->attach($this->user);
 
     $component = Livewire::actingAs($this->user)->test(Dashboard::class);
 
@@ -100,7 +97,7 @@ it('counts assigned tasks per status and projects', function () {
 it('caps the active task list at the render limit', function () {
     Task::factory()
         ->count(55)
-        ->for($this->story)
+        ->for($this->project)
         ->status(Status::ToDo)
         ->create()
         ->each(fn (Task $task) => $task->assignees()->attach($this->user));
@@ -111,7 +108,7 @@ it('caps the active task list at the render limit', function () {
 });
 
 it('builds a 14-day completion series from the user activity', function () {
-    $task = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
 
     // Two completions today, one seven days ago.
     $task->activities()->create(['user_id' => $this->user->id, 'action' => 'status_changed', 'field' => 'status', 'new_value' => Status::Done->value]);

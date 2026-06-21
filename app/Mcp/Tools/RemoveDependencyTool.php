@@ -15,7 +15,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Removes the dependency link between two stories or tasks, in whichever direction it exists. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Removes the dependency link between two tasks (or projects), in whichever direction it exists. Requires a write-access token; the user must be a member of the project.')]
 class RemoveDependencyTool extends Tool
 {
     use ExposesDependencies;
@@ -35,8 +35,8 @@ class RemoveDependencyTool extends Tool
             'reference' => ['required', 'string'],
             'related_reference' => ['required', 'string'],
         ], [
-            'reference.required' => 'You must provide the reference of the story or task whose dependency you are removing (e.g. "PROJ1" or "PROJ-42").',
-            'related_reference.required' => 'You must provide the reference of the related story or task to unlink.',
+            'reference.required' => 'You must provide the reference of the task whose dependency you are removing (e.g. "PROJ-42").',
+            'related_reference.required' => 'You must provide the reference of the related task to unlink.',
         ]);
 
         $resolution = $this->resolveDependencyPair($request, $validated['reference'], $validated['related_reference']);
@@ -87,11 +87,11 @@ class RemoveDependencyTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The reference of the story or task whose dependency you are removing (e.g. "PROJ1" or "PROJ-42").')
+                ->description('The reference of the task whose dependency you are removing (e.g. "PROJ-42").')
                 ->required(),
 
             'related_reference' => $schema->string()
-                ->description('The reference of the related story or task to unlink (e.g. "PROJ1" or "PROJ-42").')
+                ->description('The reference of the related task to unlink (e.g. "PROJ-42").')
                 ->required(),
         ];
     }
@@ -104,10 +104,10 @@ class RemoveDependencyTool extends Tool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'reference' => $schema->string()->description('The reference of the changed story or task.')->required(),
-            'related' => $schema->string()->description('The reference of the related story or task that was unlinked.')->required(),
-            'blocked_by' => $schema->array()->items($schema->string())->description('References of the stories and tasks that still block the changed item.')->required(),
-            'blocks' => $schema->array()->items($schema->string())->description('References of the stories and tasks that the changed item still blocks.')->required(),
+            'reference' => $schema->string()->description('The reference of the changed task.')->required(),
+            'related' => $schema->string()->description('The reference of the related task that was unlinked.')->required(),
+            'blocked_by' => $schema->array()->items($schema->string())->description('References of the tasks that still block the changed item.')->required(),
+            'blocks' => $schema->array()->items($schema->string())->description('References of the tasks that the changed item still blocks.')->required(),
             'is_blocked' => $schema->boolean()->description('Whether the changed item still has a blocker that is not yet complete.')->required(),
         ];
     }

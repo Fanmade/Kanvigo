@@ -4,7 +4,6 @@ use App\Actions\ChangeTaskStatus;
 use App\Enums\CascadePreference;
 use App\Enums\Status;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,16 +16,15 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::factory()->create();
     $this->project->members()->attach($this->user);
-    $this->story = Story::factory()->for($this->project)->create();
     actingAs($this->user);
 });
 
 /**
- * Create a task in the shared story with the given status (and optional parent).
+ * Create a task in the shared project with the given status (and optional parent).
  */
 function task(Status $status = Status::Planned, ?Task $parent = null): Task
 {
-    $factory = Task::factory()->for(test()->story)->status($status);
+    $factory = Task::factory()->for(test()->project)->status($status);
 
     if ($parent !== null) {
         $factory = $factory->childOf($parent);

@@ -2,13 +2,11 @@
 
 namespace App\Livewire\Projects;
 
-use App\Actions\CreateStory;
 use App\Actions\CreateTask;
 use App\Concerns\BuildsKanbanColumns;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Support\BlockedTasks;
 use Flux\Flux;
@@ -30,21 +28,8 @@ class ProjectBoard extends Component
 
     public bool $showArchived = false;
 
-    // Create-story modal state.
-    public bool $showStoryModal = false;
-
-    public string $storyTitle = '';
-
-    public string $storyDescription = '';
-
-    public string $storyDueDate = '';
-
-    public int $storyPriority;
-
-    // Create-task modal state.
+    // Create-task modal state. A board card is a top-level task.
     public bool $showTaskModal = false;
-
-    public ?int $taskStoryId = null;
 
     public string $taskTitle = '';
 
@@ -59,7 +44,6 @@ class ProjectBoard extends Component
     public function mount(string $short_name): void
     {
         $this->shortName = $short_name;
-        $this->storyPriority = Priority::default()->value;
         $this->taskPriority = Priority::default()->value;
 
         $this->authorize('view', $this->project());
@@ -76,33 +60,32 @@ class ProjectBoard extends Component
     }
 
     /**
-     * @return Collection<int, Story>
+     * Every task in the project, with the data the cards need.
+     *
+     * @return Collection<int, Task>
      */
     #[Computed]
-    public function stories(): Collection
+    public function tasks(): Collection
     {
-        return $this->project()->stories()->with(['tasks.assignees', 'tasks.tags'])->get();
+        $project = $this->project();
+
+        return $project->tasks()->with(['assignees', 'tags'])->get()
+            ->each(static fn (Task $task) => $task->setRelation('project', $project));
     }
 
     /**
-     * The board columns for this project's tasks. Archived tasks, and tasks of
-     * an archived story, are hidden unless {@see $showArchived} is on.
+     * The board columns for this project's tasks. Archived tasks are hidden unless
+     * {@see $showArchived} is on.
      *
      * @return array<int, array<string, mixed>>
      */
     #[Computed]
     public function columns(): array
     {
-        $project = $this->project();
-
-        $tasks = $this->stories()->flatMap(static function ($story) use ($project) {
-            $story->setRelation('project', $project);
-
-            return $story->tasks->each(static fn (Task $task) => $task->setRelation('story', $story));
-        });
+        $tasks = $this->tasks();
 
         if (! $this->showArchived) {
-            $tasks = $tasks->reject(static fn (Task $task): bool => $task->isArchived() || $task->story->isArchived());
+            $tasks = $tasks->reject(static fn (Task $task): bool => $task->isArchived());
         }
 
         if ($this->priorityFilter) {
@@ -120,12 +103,7 @@ class ProjectBoard extends Component
     #[Computed]
     public function blockedTaskIds(): array
     {
-        $taskIds = $this->stories()
-            ->flatMap(static fn (Story $story) => $story->tasks)
-            ->pluck('id')
-            ->all();
-
-        return BlockedTasks::ids($taskIds);
+        return BlockedTasks::ids($this->tasks()->pluck('id')->all());
     }
 
     /**
@@ -135,7 +113,7 @@ class ProjectBoard extends Component
     {
         $this->applyTaskMove($this->resolveProjectTask($taskId), $status);
 
-        unset($this->stories, $this->columns, $this->blockedTaskIds);
+        unset($this->tasks, $this->columns, $this->blockedTaskIds);
     }
 
     /**
@@ -145,7 +123,7 @@ class ProjectBoard extends Component
     {
         $this->applyTaskReorder($this->resolveProjectTask($taskId), $status, $beforeId, $afterId);
 
-        unset($this->stories, $this->columns, $this->blockedTaskIds);
+        unset($this->tasks, $this->columns, $this->blockedTaskIds);
     }
 
     /**
@@ -155,7 +133,7 @@ class ProjectBoard extends Component
     {
         $this->applyTaskArchive($this->resolveProjectTask($taskId));
 
-        unset($this->stories, $this->columns, $this->blockedTaskIds);
+        unset($this->tasks, $this->columns, $this->blockedTaskIds);
     }
 
     /**
@@ -165,58 +143,15 @@ class ProjectBoard extends Component
     {
         $this->applyTaskUnarchive($this->resolveProjectTask($taskId));
 
-        unset($this->stories, $this->columns, $this->blockedTaskIds);
+        unset($this->tasks, $this->columns, $this->blockedTaskIds);
     }
 
-    public function createStory(): void
-    {
-        $this->authorize('update', $this->project());
-
-        $validated = $this->validate([
-            'storyTitle' => ['required', 'string', 'max:255'],
-            'storyDescription' => ['nullable', 'string'],
-            'storyPriority' => ['required', new Enum(Priority::class)],
-            'storyDueDate' => ['nullable', 'date'],
-        ]);
-
-        app(CreateStory::class)->handle(
-            $this->project(),
-            $validated['storyTitle'],
-            $validated['storyDescription'] ?? null,
-            Priority::from($validated['storyPriority']),
-            $validated['storyDueDate'],
-        );
-
-        $this->reset('storyTitle', 'storyDescription', 'storyDueDate', 'showStoryModal');
-        unset($this->stories, $this->columns);
-
-        Flux::toast(variant: 'success', text: __('Story created.'));
-    }
-
-    public function openTaskModal(?int $storyId = null, ?string $status = null): void
+    public function openTaskModal(?string $status = null): void
     {
         $this->reset('taskTitle', 'taskDescription', 'taskDueDate');
-        $this->taskStoryId = $storyId ?? $this->stories()->reject(static fn (Story $story): bool => $story->isArchived())->first()?->id;
         $this->taskStatus = $status ?? Status::Planned->value;
-        $this->taskPriority = $this->priorityForStory($this->taskStoryId);
+        $this->taskPriority = Priority::default()->value;
         $this->showTaskModal = true;
-    }
-
-    /**
-     * Keep the task priority in sync with the selected story — tasks inherit it.
-     */
-    public function updatedTaskStoryId(mixed $value): void
-    {
-        $this->taskPriority = $this->priorityForStory((int) $value);
-    }
-
-    /**
-     * The priority a new task should default to, inherited from its story.
-     */
-    protected function priorityForStory(?int $storyId): int
-    {
-        return $this->stories()->firstWhere('id', $storyId)?->priority->value
-            ?? Priority::default()->value;
     }
 
     public function createTask(): void
@@ -224,7 +159,6 @@ class ProjectBoard extends Component
         $this->authorize('update', $this->project());
 
         $validated = $this->validate([
-            'taskStoryId' => ['required', 'integer'],
             'taskTitle' => ['required', 'string', 'max:255'],
             'taskDescription' => ['nullable', 'string'],
             'taskPriority' => ['required', new Enum(Priority::class)],
@@ -232,10 +166,8 @@ class ProjectBoard extends Component
             'taskStatus' => ['required', 'string', 'in:'.collect(Status::cases())->map->value->implode(',')],
         ]);
 
-        $story = $this->project()->stories()->whereKey($validated['taskStoryId'])->firstOrFail();
-
         app(CreateTask::class)->handle(
-            $story,
+            $this->project(),
             $validated['taskTitle'],
             $validated['taskDescription'] ?? null,
             Priority::from($validated['taskPriority']),
@@ -244,7 +176,7 @@ class ProjectBoard extends Component
         );
 
         $this->reset('taskTitle', 'taskDescription', 'taskDueDate', 'showTaskModal');
-        unset($this->stories, $this->columns);
+        unset($this->tasks, $this->columns);
 
         Flux::toast(variant: 'success', text: __('Task created.'));
     }
@@ -254,9 +186,9 @@ class ProjectBoard extends Component
      */
     protected function resolveProjectTask(int $taskId): Task
     {
-        $task = Task::with('story')->findOrFail($taskId);
+        $task = Task::findOrFail($taskId);
 
-        abort_unless($task->story->project_id === $this->project()->id, 404);
+        abort_unless($task->project_id === $this->project()->id, 404);
 
         return $task;
     }

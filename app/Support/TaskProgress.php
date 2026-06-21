@@ -3,14 +3,14 @@
 namespace App\Support;
 
 /**
- * A story's completeness, derived from the state of its tasks.
+ * A task subtree's completeness, derived from the state of its descendant tasks.
  *
  * "Done" is the only status that counts toward completion; every other status
- * (Planned, ToDo, In progress) contributes to the total but not the done count.
- * Constructed from plain counts so callers that already aggregate task counts in
- * the database (e.g. the command palette) can build it without loading tasks.
+ * contributes to the total but not the done count. Constructed from plain counts
+ * so callers that already aggregate task counts in the database can build it
+ * without loading tasks.
  */
-readonly class StoryProgress
+readonly class TaskProgress
 {
     public function __construct(
         public int $done,
@@ -26,7 +26,7 @@ readonly class StoryProgress
     }
 
     /**
-     * Whether the story has any tasks to report progress on.
+     * Whether there are any tasks to report progress on.
      */
     public function hasTasks(): bool
     {
@@ -34,7 +34,7 @@ readonly class StoryProgress
     }
 
     /**
-     * Whether every task is done. An empty story is never complete: there is
+     * Whether every task is done. An empty subtree is never complete: there is
      * nothing finished to unblock the work that depends on it.
      */
     public function isComplete(): bool

@@ -1,9 +1,7 @@
 <?php
 
-use App\Livewire\Stories\StoryView;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
@@ -23,8 +21,7 @@ function memberAndTask(): array
     $member = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
     $project->members()->attach($member);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($project)->create();
 
     return [$member, $task];
 }
@@ -35,7 +32,7 @@ function memberAndTask(): array
 function taskView(User $member, Task $task): Testable
 {
     return Livewire::actingAs($member)->test(TaskView::class, [
-        'short_name' => $task->story->project->short_name,
+        'short_name' => $task->project->short_name,
         'task_number' => $task->task_number,
     ]);
 }
@@ -49,16 +46,16 @@ it('attaches comma-separated tags, trimming and de-duplicating', function () {
         ->and(Tag::count())->toBe(2);
 });
 
-it('reuses the same tag across stories and tasks', function () {
+it('reuses the same tag across tasks', function () {
     $task = Task::factory()->create();
-    $story = Story::factory()->create();
+    $other = Task::factory()->create();
 
     $task->syncTags('shared');
-    $story->syncTags('shared');
+    $other->syncTags('shared');
 
     expect(Tag::where('name', 'shared')->count())->toBe(1)
         ->and($task->tags()->count())->toBe(1)
-        ->and($story->tags()->count())->toBe(1);
+        ->and($other->tags()->count())->toBe(1);
 });
 
 it('detaches tags removed from the list', function () {
@@ -192,15 +189,16 @@ it('suggests the most-used tags and excludes applied ones', function () {
         ->and(array_search('popular', $names, true))->toBeLessThan(array_search('rare', $names, true));
 });
 
-it('adds a tag to a story too', function () {
+it('adds a tag to a subtask too', function () {
     $member = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'XYZ']);
     $project->members()->attach($member);
-    $story = Story::factory()->for($project)->create();
+    $parent = Task::factory()->for($project)->create();
+    $subtask = Task::factory()->for($project)->childOf($parent)->create();
 
     Livewire::actingAs($member)
-        ->test(StoryView::class, ['short_name' => 'XYZ', 'story_number' => $story->story_number])
+        ->test(TaskView::class, ['short_name' => 'XYZ', 'task_number' => $subtask->task_number])
         ->call('addTag', 'epic');
 
-    expect($story->fresh()->tags->pluck('name')->all())->toBe(['epic']);
+    expect($subtask->fresh()->tags->pluck('name')->all())->toBe(['epic']);
 });

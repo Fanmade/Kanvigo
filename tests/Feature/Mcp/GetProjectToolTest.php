@@ -3,7 +3,7 @@
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\GetProjectTool;
 use App\Models\Project;
-use App\Models\Story;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -12,12 +12,12 @@ uses(RefreshDatabase::class);
 it('returns a project the user is a member of', function () {
     $user = User::factory()->create();
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($project)->create();
 
     KanbrioServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
         ->assertOk()
         ->assertSee('ABC')
-        ->assertSee($story->reference);
+        ->assertSee($task->reference);
 });
 
 it('denies access to a project the user is not a member of', function () {

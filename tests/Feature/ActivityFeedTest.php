@@ -2,7 +2,6 @@
 
 use App\Livewire\Activity\ActivityFeed;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,8 +13,7 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create();
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->create();
+    $this->task = Task::factory()->for($this->project)->create();
 });
 
 it('collapses the activity feed by default', function () {
@@ -60,10 +58,6 @@ it('applies the collapsed preference across all subject types', function () {
 
     Livewire::actingAs($this->member->fresh())
         ->test(ActivityFeed::class, ['subject' => $this->project])
-        ->assertSet('collapsed', false);
-
-    Livewire::actingAs($this->member->fresh())
-        ->test(ActivityFeed::class, ['subject' => $this->story])
         ->assertSet('collapsed', false);
 });
 

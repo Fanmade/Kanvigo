@@ -5,16 +5,10 @@
 ])
 
 @php
-    $isTask = $item instanceof \App\Models\Task;
-    $url = $isTask
-        ? route('task.show', [
-            'short_name' => $item->story->project->short_name,
-            'task_number' => $item->task_number,
-        ])
-        : route('story.show', [
-            'short_name' => $item->project->short_name,
-            'story_number' => $item->story_number,
-        ]);
+    $url = route('task.show', [
+        'short_name' => $item->project->short_name,
+        'task_number' => $item->task_number,
+    ]);
     $complete = $item->isComplete();
 @endphp
 

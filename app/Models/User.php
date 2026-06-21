@@ -67,7 +67,6 @@ class User extends Authenticatable implements PasskeyUser
             $user->projects()->detach();
             $user->assignedTasks()->detach();
             $user->subscribedProjects()->detach();
-            $user->subscribedStories()->detach();
             $user->subscribedTasks()->detach();
         });
     }
@@ -245,14 +244,6 @@ class User extends Authenticatable implements PasskeyUser
     public function subscribedProjects(): MorphToMany
     {
         return $this->morphedByMany(Project::class, 'subscribable', 'subscriptions')->withTimestamps();
-    }
-
-    /**
-     * @return MorphToMany<Story, $this>
-     */
-    public function subscribedStories(): MorphToMany
-    {
-        return $this->morphedByMany(Story::class, 'subscribable', 'subscriptions')->withTimestamps();
     }
 
     /**

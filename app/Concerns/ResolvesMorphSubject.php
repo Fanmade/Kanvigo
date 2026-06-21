@@ -3,14 +3,13 @@
 namespace App\Concerns;
 
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Livewire\Attributes\Locked;
 
 /**
  * Shared morph-subject resolution for Livewire components that act on a single
- * Project, Story or Task chosen at mount (comments, activity feed, subscription
+ * Project or Task chosen at mount (comments, activity feed, subscription
  * toggle).
  *
  * Holds the locked type/id pair and resolves it back to the model, re-authorizing
@@ -28,7 +27,7 @@ trait ResolvesMorphSubject
     /**
      * Record the morph subject's type and id and authorize the initial view.
      */
-    protected function initMorphSubject(Project|Story|Task $subject): void
+    protected function initMorphSubject(Project|Task $subject): void
     {
         $this->morphSubjectType = $subject->getMorphClass();
         $this->morphSubjectId = $subject->getKey();
@@ -39,13 +38,12 @@ trait ResolvesMorphSubject
     /**
      * Resolve the morph subject back to its model, re-authorizing `view`.
      */
-    protected function resolveMorphSubject(): Project|Story|Task
+    protected function resolveMorphSubject(): Project|Task
     {
         $class = Relation::getMorphedModel($this->morphSubjectType) ?? $this->morphSubjectType;
 
         $subject = match ($class) {
             Project::class => Project::findOrFail($this->morphSubjectId),
-            Story::class => Story::findOrFail($this->morphSubjectId),
             Task::class => Task::findOrFail($this->morphSubjectId),
             default => abort(404),
         };

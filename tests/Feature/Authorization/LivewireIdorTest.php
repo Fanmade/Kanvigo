@@ -4,11 +4,9 @@ use App\Livewire\Activity\ActivityFeed;
 use App\Livewire\Comments\CommentList;
 use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectShow;
-use App\Livewire\Stories\StoryView;
 use App\Livewire\Subscriptions\SubscriptionToggle;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -23,13 +21,11 @@ beforeEach(function () {
 
     $this->project = Project::factory()->create();
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->create();
+    $this->task = Task::factory()->for($this->project)->create();
 
     // A project the member is NOT a part of — the target of the IDOR.
     $this->foreignProject = Project::factory()->create();
-    $this->foreignStory = Story::factory()->for($this->foreignProject)->create();
-    $this->foreignTask = Task::factory()->for($this->foreignStory)->create();
+    $this->foreignTask = Task::factory()->for($this->foreignProject)->create();
 });
 
 /**
@@ -65,15 +61,6 @@ it('locks the ProjectShow short name', function () {
 it('locks the ProjectBoard short name', function () {
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => $this->project->short_name])
-        ->set('shortName', $this->foreignProject->short_name);
-})->throws(CannotUpdateLockedPropertyException::class);
-
-it('locks the StoryView identifiers', function () {
-    Livewire::actingAs($this->member)
-        ->test(StoryView::class, [
-            'short_name' => $this->project->short_name,
-            'story_number' => $this->story->story_number,
-        ])
         ->set('shortName', $this->foreignProject->short_name);
 })->throws(CannotUpdateLockedPropertyException::class);
 
@@ -127,21 +114,6 @@ it('re-authorizes ProjectBoard reads against tampered identifiers', function () 
     expect(fn () => $instance->project())->toThrow(AuthorizationException::class);
 });
 
-it('re-authorizes StoryView reads against tampered identifiers', function () {
-    $instance = tamper(
-        Livewire::actingAs($this->member)->test(StoryView::class, [
-            'short_name' => $this->project->short_name,
-            'story_number' => $this->story->story_number,
-        ]),
-        [
-            'shortName' => $this->foreignProject->short_name,
-            'storyNumber' => $this->foreignStory->story_number,
-        ],
-    );
-
-    expect(fn () => $instance->story())->toThrow(AuthorizationException::class);
-});
-
 it('re-authorizes TaskView reads against tampered identifiers', function () {
     $instance = tamper(
         Livewire::actingAs($this->member)->test(TaskView::class, [
@@ -150,7 +122,6 @@ it('re-authorizes TaskView reads against tampered identifiers', function () {
         ]),
         [
             'shortName' => $this->foreignProject->short_name,
-            'storyNumber' => $this->foreignStory->story_number,
             'taskNumber' => $this->foreignTask->task_number,
         ],
     );

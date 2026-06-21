@@ -13,7 +13,6 @@ use App\Livewire\Notifications\ManageNotifications;
 use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectList;
 use App\Livewire\Projects\ProjectShow;
-use App\Livewire\Stories\StoryView;
 use App\Livewire\Tasks\TaskView;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -69,10 +68,6 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('/{short_name}-{task_number}', TaskView::class)
         ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])
         ->name('task.show');
-
-    Route::livewire('/{short_name}{story_number}', StoryView::class)
-        ->where(['short_name' => '[A-Z]{2,4}', 'story_number' => '\d+'])
-        ->name('story.show');
 
     Route::livewire('/{short_name}', ProjectShow::class)
         ->where('short_name', '[A-Z]{2,4}')

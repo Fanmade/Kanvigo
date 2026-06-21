@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,7 +31,7 @@ class GlobalSearch
     }
 
     /**
-     * Search the user's accessible projects, stories and tasks.
+     * Search the user's accessible projects and tasks.
      *
      * A query that parses as a reference (e.g. "PROJ-42") yields a pinned
      * "jump to" result at the top, followed by text/tag matches.
@@ -62,7 +61,6 @@ class GlobalSearch
 
         return $results
             ->merge($this->projects($projectIds, $query))
-            ->merge($this->stories($projectIds, $query))
             ->merge($this->tasks($projectIds, $query))
             ->unique(static fn (SearchResult $result): string => $result->type.':'.$result->reference)
             ->values();
@@ -106,35 +104,14 @@ class GlobalSearch
      * @param  array<int, int>  $projectIds
      * @return Collection<int, SearchResult>
      */
-    private function stories(array $projectIds, string $query): Collection
-    {
-        $like = $this->like($query);
-        $operator = $this->likeOperator();
-
-        return Story::query()
-            ->with('project')
-            ->withProgressCounts()
-            ->whereIn('project_id', $projectIds)
-            ->where(static fn (Builder $builder): Builder => $builder
-                ->where('title', $operator, $like)
-                ->orWhereHas('tags', static fn (Builder $tag): Builder => $tag->where('name', $operator, $like)))
-            ->limit(self::LIMIT)
-            ->get()
-            ->map(fn (Story $story): SearchResult => $this->toResult($story));
-    }
-
-    /**
-     * @param  array<int, int>  $projectIds
-     * @return Collection<int, SearchResult>
-     */
     private function tasks(array $projectIds, string $query): Collection
     {
         $like = $this->like($query);
         $operator = $this->likeOperator();
 
         return Task::query()
-            ->with('story.project')
-            ->whereHas('story', static fn (Builder $story): Builder => $story->whereIn('project_id', $projectIds))
+            ->with('project')
+            ->whereIn('project_id', $projectIds)
             ->where(static fn (Builder $builder): Builder => $builder
                 ->where('title', $operator, $like)
                 ->orWhereHas('tags', static fn (Builder $tag): Builder => $tag->where('name', $operator, $like)))
@@ -146,31 +123,19 @@ class GlobalSearch
     /**
      * Map a resolved model into a palette result.
      */
-    private function toResult(Project|Story|Task $model, bool $pinned = false): SearchResult
+    private function toResult(Project|Task $model, bool $pinned = false): SearchResult
     {
         return match (true) {
             $model instanceof Task => new SearchResult(
                 type: 'task',
                 title: $model->title,
                 url: route('task.show', [
-                    'short_name' => $model->story->project->short_name,
+                    'short_name' => $model->project->short_name,
                     'task_number' => $model->task_number,
                 ]),
                 icon: $model->status->icon(),
                 reference: $model->reference,
                 pinned: $pinned,
-            ),
-            $model instanceof Story => new SearchResult(
-                type: 'story',
-                title: $model->title,
-                url: route('story.show', [
-                    'short_name' => $model->project->short_name,
-                    'story_number' => $model->story_number,
-                ]),
-                icon: 'rectangle-stack',
-                reference: $model->reference,
-                pinned: $pinned,
-                progress: $model->progress(),
             ),
             $model instanceof Project => new SearchResult(
                 type: 'project',

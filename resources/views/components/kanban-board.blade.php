@@ -20,7 +20,6 @@
                 class="flex flex-1 flex-col gap-2 overflow-y-auto p-3"
             >
                 @forelse ($column['tasks'] as $task)
-                    @php($story = $task->story)
                     <div
                         wire:key="task-{{ $task->id }}"
                         data-task-card
@@ -89,7 +88,7 @@
                         </div>
 
                         <a
-                            href="{{ route('task.show', ['short_name' => $story->project->short_name, 'task_number' => $task->task_number]) }}"
+                            href="{{ route('task.show', ['short_name' => $task->project->short_name, 'task_number' => $task->task_number]) }}"
                             wire:navigate
                             class="block"
                         >

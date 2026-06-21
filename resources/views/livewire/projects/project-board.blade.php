@@ -16,75 +16,41 @@
                         <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
-                <flux:button icon="plus" wire:click="$set('showStoryModal', true)">{{ __('New story') }}</flux:button>
-                <flux:button variant="primary" icon="plus" wire:click="openTaskModal">{{ __('New task') }}</flux:button>
+                <flux:button variant="primary" icon="plus" wire:click="openTaskModal" data-test="new-task">{{ __('New task') }}</flux:button>
             </div>
         </div>
     </div>
 
     <x-kanban-board :columns="$this->columns" :blocked-ids="$this->blockedTaskIds" />
 
-    {{-- Create story --}}
-    <flux:modal wire:model="showStoryModal" class="md:w-96">
-        <form wire:submit="createStory" class="flex flex-col gap-4">
-            <flux:heading size="lg">{{ __('New story') }}</flux:heading>
-            <flux:input wire:model="storyTitle" :label="__('Title')" />
-            <flux:textarea wire:model="storyDescription" :label="__('Description')" rows="3" />
-            <flux:select wire:model="storyPriority" :label="__('Priority')" data-test="story-priority">
+    {{-- Create task --}}
+    <flux:modal wire:model="showTaskModal" class="md:w-96">
+        <form wire:submit="createTask" class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('New task') }}</flux:heading>
+
+            <flux:input wire:model="taskTitle" :label="__('Title')" data-test="task-title" />
+            <flux:textarea wire:model="taskDescription" :label="__('Description')" rows="3" />
+
+            <flux:select wire:model="taskPriority" :label="__('Priority')" data-test="task-priority">
                 @foreach (\App\Enums\Priority::ordered() as $priority)
                     <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
                 @endforeach
             </flux:select>
-            <flux:input type="date" wire:model="storyDueDate" :label="__('Due date')" :description="__('Optional')" />
+
+            <flux:input type="date" wire:model="taskDueDate" :label="__('Due date')" :description="__('Optional')" />
+
+            <flux:select wire:model="taskStatus" :label="__('Status')">
+                @foreach (\App\Enums\Status::columns() as $status)
+                    <flux:select.option :value="$status->value">{{ $status->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
                     <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
                 <flux:button type="submit" variant="primary">{{ __('Create') }}</flux:button>
             </div>
-        </form>
-    </flux:modal>
-
-    {{-- Create task --}}
-    <flux:modal wire:model="showTaskModal" class="md:w-96">
-        <form wire:submit="createTask" class="flex flex-col gap-4">
-            <flux:heading size="lg">{{ __('New task') }}</flux:heading>
-
-            @if ($this->stories->isEmpty())
-                <flux:callout variant="warning">
-                    {{ __('Create a story first before adding tasks.') }}
-                </flux:callout>
-            @else
-                <flux:select wire:model.live="taskStoryId" :label="__('Story')">
-                    @foreach ($this->stories->reject(fn ($story) => $story->isArchived()) as $story)
-                        <flux:select.option :value="$story->id">{{ $story->reference }} · {{ $story->title }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-
-                <flux:input wire:model="taskTitle" :label="__('Title')" />
-                <flux:textarea wire:model="taskDescription" :label="__('Description')" rows="3" />
-
-                <flux:select wire:model="taskPriority" :label="__('Priority')" data-test="task-priority">
-                    @foreach (\App\Enums\Priority::ordered() as $priority)
-                        <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-
-                <flux:input type="date" wire:model="taskDueDate" :label="__('Due date')" :description="__('Optional')" />
-
-                <flux:select wire:model="taskStatus" :label="__('Status')">
-                    @foreach (\App\Enums\Status::columns() as $status)
-                        <flux:select.option :value="$status->value">{{ $status->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-
-                <div class="flex justify-end gap-2">
-                    <flux:modal.close>
-                        <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
-                    </flux:modal.close>
-                    <flux:button type="submit" variant="primary">{{ __('Create') }}</flux:button>
-                </div>
-            @endif
         </form>
     </flux:modal>
 </div>

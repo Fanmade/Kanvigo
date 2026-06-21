@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\Priority;
 use App\Enums\Status;
-use App\Models\Story;
+use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,7 +21,7 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         return [
-            'story_id' => Story::factory(),
+            'project_id' => Project::factory(),
             'title' => fake()->sentence(4),
             'description' => fake()->paragraph(),
             // Default to a working status; the terminal Canceled state is opt-in.
@@ -37,13 +37,13 @@ class TaskFactory extends Factory
     }
 
     /**
-     * Nest the task under the given parent, inheriting its story.
+     * Nest the task under the given parent, inheriting its project.
      */
     public function childOf(Task $parent): static
     {
         return $this->state(fn () => [
             'parent_id' => $parent->getKey(),
-            'story_id' => $parent->story_id,
+            'project_id' => $parent->project_id,
         ]);
     }
 

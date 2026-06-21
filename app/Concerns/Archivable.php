@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
- * Archiving hides a finished task or story from the board and project overview
+ * Archiving hides a finished task from the board and project overview
  * without deleting it. It is orthogonal to status: an archived task keeps its
  * status and position and can be restored at any time. Archived items are
  * excluded from the default board/list queries via {@see notArchived()} and

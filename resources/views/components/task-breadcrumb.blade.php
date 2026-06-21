@@ -7,7 +7,7 @@
     flat id is built from it plus the node's task number — no per-ancestor query.
 --}}
 @php
-    $shortName = $task->story->project->short_name;
+    $shortName = $task->project->short_name;
     $ancestors = $task->ancestors->sortBy($task->getDepthName())->values();
 @endphp
 

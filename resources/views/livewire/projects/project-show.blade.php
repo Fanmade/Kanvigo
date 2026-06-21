@@ -56,59 +56,59 @@
         <x-attachments.list :attachments="$this->attachments" />
     @endif
 
-    {{-- Open stories --}}
+    {{-- Open tasks --}}
     <div class="flex flex-col gap-3">
         <div class="flex items-center justify-between">
-            <flux:heading size="lg">{{ __('Open stories') }}</flux:heading>
+            <flux:heading size="lg">{{ __('Open tasks') }}</flux:heading>
             <div class="flex items-center gap-3">
-                @if ($this->archivedStories->isNotEmpty())
+                @if ($this->archivedTasks->isNotEmpty())
                     <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
                 @endif
                 @can('update', $this->project)
-                    <flux:button size="sm" icon="plus" wire:click="$set('showStoryModal', true)">{{ __('New story') }}</flux:button>
+                    <flux:button size="sm" icon="plus" wire:click="$set('showTaskModal', true)" data-test="new-task">{{ __('New task') }}</flux:button>
                 @endcan
             </div>
         </div>
 
-        @forelse ($this->openStories as $story)
-            <x-story-card :story="$story" :short-name="$this->project->short_name" :hide-finished-tasks="true" :can-archive="$canUpdate" />
+        @forelse ($this->openTasks as $task)
+            <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
         @empty
             <flux:card>
-                <flux:text class="text-zinc-400">{{ __('No open stories. Create one to get started.') }}</flux:text>
+                <flux:text class="text-zinc-400">{{ __('No open tasks. Create one to get started.') }}</flux:text>
             </flux:card>
         @endforelse
     </div>
 
-    {{-- Completed stories --}}
-    @if ($this->completedStories->isNotEmpty())
+    {{-- Completed tasks --}}
+    @if ($this->completedTasks->isNotEmpty())
         <div class="flex flex-col gap-3">
-            <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Completed stories') }}</flux:heading>
+            <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Completed tasks') }}</flux:heading>
 
-            @foreach ($this->completedStories as $story)
-                <x-story-card :story="$story" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
+            @foreach ($this->completedTasks as $task)
+                <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
             @endforeach
         </div>
     @endif
 
-    {{-- Archived stories --}}
-    @if ($showArchived && $this->archivedStories->isNotEmpty())
-        <div class="flex flex-col gap-3" data-test="archived-stories">
-            <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Archived stories') }}</flux:heading>
+    {{-- Archived tasks --}}
+    @if ($showArchived && $this->archivedTasks->isNotEmpty())
+        <div class="flex flex-col gap-3" data-test="archived-tasks">
+            <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Archived tasks') }}</flux:heading>
 
-            @foreach ($this->archivedStories as $story)
-                <x-story-card :story="$story" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
+            @foreach ($this->archivedTasks as $task)
+                <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
             @endforeach
         </div>
     @endif
 
     <livewire:comments.comment-list :commentable="$this->project" :wire:key="'comments-project-'.$this->project->id" />
 
-    {{-- Create story --}}
-    <flux:modal wire:model="showStoryModal" class="md:w-96">
-        <form wire:submit="createStory" class="flex flex-col gap-4">
-            <flux:heading size="lg">{{ __('New story') }}</flux:heading>
-            <flux:input wire:model="storyTitle" :label="__('Title')" />
-            <flux:textarea wire:model="storyDescription" :label="__('Description')" rows="3" />
+    {{-- Create task --}}
+    <flux:modal wire:model="showTaskModal" class="md:w-96">
+        <form wire:submit="createTask" class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('New task') }}</flux:heading>
+            <flux:input wire:model="taskTitle" :label="__('Title')" data-test="task-title" />
+            <flux:textarea wire:model="taskDescription" :label="__('Description')" rows="3" />
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
                     <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>

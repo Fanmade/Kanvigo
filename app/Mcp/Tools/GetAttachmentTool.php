@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets the binary content of an attachment by its id, including inline images embedded in a project, story or task description. Image and audio attachments are returned as viewable content; other file types return their metadata. Attachment ids are listed by the get-project, get-story and get-task tools. Only attachments in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets the binary content of an attachment by its id, including inline images embedded in a project or task description. Image and audio attachments are returned as viewable content; other file types return their metadata. Attachment ids are listed by the get-project and get-task tools. Only attachments in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetAttachmentTool extends Tool
 {
@@ -25,7 +25,7 @@ class GetAttachmentTool extends Tool
         $validated = $request->validate([
             'id' => ['required', 'integer'],
         ], [
-            'id.required' => 'You must provide the attachment id. Attachment ids are listed by the get-project, get-story and get-task tools.',
+            'id.required' => 'You must provide the attachment id. Attachment ids are listed by the get-project and get-task tools.',
         ]);
 
         $attachment = Attachment::query()->whereKey($validated['id'])->first();
@@ -63,7 +63,7 @@ class GetAttachmentTool extends Tool
     {
         return [
             'id' => $schema->integer()
-                ->description('The attachment id, as listed by the get-project, get-story and get-task tools.')
+                ->description('The attachment id, as listed by the get-project and get-task tools.')
                 ->required(),
         ];
     }

@@ -47,7 +47,7 @@ class Attachment extends Model
     }
 
     /**
-     * The Project, Story, or Task this file is attached to.
+     * The Project or Task this file is attached to.
      *
      * @return MorphTo<Model, $this>
      */
@@ -68,14 +68,13 @@ class Attachment extends Model
 
     /**
      * The project this attachment ultimately belongs to, resolved through its
-     * Project, Story, or Task owner.
+     * Project or Task owner.
      */
     public function ownerProject(): ?Project
     {
         return match (true) {
             $this->attachable instanceof Project => $this->attachable,
-            $this->attachable instanceof Story => $this->attachable->project,
-            $this->attachable instanceof Task => $this->attachable->project(),
+            $this->attachable instanceof Task => $this->attachable->project,
             default => null,
         };
     }

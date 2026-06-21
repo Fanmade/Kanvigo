@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\CreateTask;
 use App\Concerns\Archivable;
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
@@ -15,7 +16,7 @@ use App\Contracts\Dependable;
 use App\Contracts\Subscribable;
 use App\Enums\Priority;
 use App\Enums\Status;
-use App\Support\StoryProgress;
+use App\Support\TaskProgress;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,7 +30,6 @@ use Illuminate\Support\Collection;
 
 /**
  * @property int $id
- * @property int $story_id
  * @property int $project_id
  * @property int|null $parent_id
  * @property int $task_number
@@ -43,7 +43,7 @@ use Illuminate\Support\Collection;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
- * @property-read Story $story
+ * @property-read Project $project
  * @property-read Task|null $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Task> $children
  */
@@ -56,20 +56,19 @@ class Task extends Model implements Dependable, Subscribable
     protected string $scopedNumberColumn = 'task_number';
 
     /**
-     * A new task inherits its parent story's priority unless one is set explicitly.
+     * A new subtask inherits its parent's priority unless one is set explicitly.
+     * The owning project is set by the caller (factory, {@see CreateTask}
+     * or the `childOf` factory state) before save, since the per-project number
+     * ({@see scopedNumberQuery()}) is derived from it.
      */
     protected static function booted(): void
     {
         static::creating(static function (Task $task): void {
-            // A task belongs to its story's project; the flat reference and the
-            // per-project number ({@see scopedNumberQuery()}) hang off it.
-            $task->project_id = $task->story->project_id;
-
             // priority is non-null once settled, but unset before save — guard the transient null.
             // @phpstan-ignore identical.alwaysFalse
             if ($task->priority === null) {
-                // @phpstan-ignore nullCoalesce.expr
-                $task->priority = $task->story?->priority ?? Priority::default();
+                $parent = $task->parent_id !== null ? static::find($task->parent_id) : null;
+                $task->priority = $parent instanceof self ? $parent->priority : Priority::default();
             }
 
             // New tasks land at the bottom of the board (largest position).
@@ -101,15 +100,17 @@ class Task extends Model implements Dependable, Subscribable
      */
     public function scopedNumberQuery(): Builder
     {
-        return static::query()->where('project_id', $this->story->project_id);
+        return static::query()->where('project_id', $this->project_id);
     }
 
     /**
-     * @return BelongsTo<Story, $this>
+     * The owning project.
+     *
+     * @return BelongsTo<Project, $this>
      */
-    public function story(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(Story::class);
+        return $this->belongsTo(Project::class);
     }
 
     /**
@@ -123,23 +124,14 @@ class Task extends Model implements Dependable, Subscribable
     }
 
     /**
-     * The owning project, resolved through the story.
-     */
-    public function project(): ?Project
-    {
-        return $this->story->project;
-    }
-
-    /**
-     * A task update also reaches the story's and project's subscribers.
+     * A task update also reaches the project's subscribers.
      *
      * @return Collection<int, User>
      */
     public function notificationAudience(): Collection
     {
         return $this->subscribers()->get()
-            ->merge($this->story->subscribers()->get())
-            ->merge($this->story->project->subscribers()->get())
+            ->merge($this->project->subscribers()->get())
             ->unique('id');
     }
 
@@ -158,16 +150,16 @@ class Task extends Model implements Dependable, Subscribable
      * empty progress. Prefers an already-loaded {@see descendants()} relation,
      * falling back to two count queries.
      */
-    public function progress(): StoryProgress
+    public function progress(): TaskProgress
     {
         if ($this->relationLoaded('descendants')) {
-            return new StoryProgress(
+            return new TaskProgress(
                 done: $this->descendants->where('status', Status::Done)->count(),
                 total: $this->descendants->count(),
             );
         }
 
-        return new StoryProgress(
+        return new TaskProgress(
             done: $this->descendants()->where('status', Status::Done)->count(),
             total: $this->descendants()->count(),
         );
@@ -180,6 +172,6 @@ class Task extends Model implements Dependable, Subscribable
      */
     protected function reference(): Attribute
     {
-        return Attribute::get(fn (): string => $this->story->project->short_name.'-'.$this->task_number);
+        return Attribute::get(fn (): string => $this->project->short_name.'-'.$this->task_number);
     }
 }

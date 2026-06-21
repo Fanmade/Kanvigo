@@ -4,7 +4,6 @@ use App\Enums\Status;
 use App\Livewire\Notifications\NotificationsMenu;
 use App\Livewire\Projects\ProjectBoard;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,8 +17,7 @@ beforeEach(function () {
     $this->actor = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach([$this->watcher->id, $this->actor->id]);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->status(Status::Planned)->create();
+    $this->task = Task::factory()->for($this->project)->status(Status::Planned)->create();
     $this->task->subscribe($this->watcher);
 
     // The actor moves the task, generating a notification for the watcher.

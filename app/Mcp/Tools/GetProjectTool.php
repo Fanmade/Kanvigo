@@ -4,7 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Models\Attachment;
 use App\Models\Project;
-use App\Models\Story;
+use App\Models\Task;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets a single project by its short_name, including its stories. Only projects the authenticated user is a member of are accessible.')]
+#[Description('Gets a single project by its short_name, including its top-level tasks. Only projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetProjectTool extends Tool
 {
@@ -33,7 +33,7 @@ class GetProjectTool extends Tool
 
         $project = Project::query()
             ->where('short_name', $validated['short_name'])
-            ->with(['stories.project', 'attachments'])
+            ->with(['rootTasks.project', 'attachments'])
             ->first();
 
         if ($project === null || ! $user->can('view', $project)) {
@@ -44,9 +44,10 @@ class GetProjectTool extends Tool
             'short_name' => $project->short_name,
             'title' => $project->title,
             'description' => $project->description,
-            'stories' => $project->stories->map(static fn (Story $story): array => [
-                'reference' => $story->reference,
-                'title' => $story->title,
+            'tasks' => $project->rootTasks->map(static fn (Task $task): array => [
+                'reference' => $task->reference,
+                'title' => $task->title,
+                'status' => $task->status->value,
             ])->all(),
             'attachments' => $project->attachments->map(static fn (Attachment $attachment): array => [
                 'id' => $attachment->id,
@@ -82,10 +83,11 @@ class GetProjectTool extends Tool
             'short_name' => $schema->string()->description('The project short name.')->required(),
             'title' => $schema->string()->description('The project title.')->required(),
             'description' => $schema->string()->description('The project description; may be null.'),
-            'stories' => $schema->array()->items($schema->object([
-                'reference' => $schema->string()->description('The story reference, e.g. "PROJ1".')->required(),
-                'title' => $schema->string()->description('The story title.')->required(),
-            ]))->description('The stories in the project.')->required(),
+            'tasks' => $schema->array()->items($schema->object([
+                'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
+                'title' => $schema->string()->description('The task title.')->required(),
+                'status' => $schema->string()->description('The task status.')->required(),
+            ]))->description('The top-level tasks in the project.')->required(),
             'attachments' => $schema->array()->items($schema->object([
                 'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),
                 'name' => $schema->string()->description('The attachment file name.')->required(),

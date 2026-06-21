@@ -4,9 +4,7 @@ use App\Enums\Status;
 use App\Livewire\Board;
 use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectShow;
-use App\Livewire\Stories\StoryView;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,7 +16,7 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
+    $this->parent = Task::factory()->for($this->project)->create();
 });
 
 /*
@@ -28,7 +26,7 @@ beforeEach(function () {
 */
 
 test('archiving a task flags it and records the activity', function () {
-    $task = Task::factory()->for($this->story)->status(Status::Done)->create();
+    $task = Task::factory()->for($this->project)->status(Status::Done)->create();
 
     expect($task->isArchived())->toBeFalse();
 
@@ -41,7 +39,7 @@ test('archiving a task flags it and records the activity', function () {
 });
 
 test('unarchiving a task restores it and records the activity', function () {
-    $task = Task::factory()->for($this->story)->archived()->create();
+    $task = Task::factory()->for($this->project)->archived()->create();
 
     $task->unarchive();
 
@@ -50,7 +48,7 @@ test('unarchiving a task restores it and records the activity', function () {
 });
 
 test('archive and unarchive are idempotent', function () {
-    $task = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
 
     $task->unarchive();
     expect($task->activities()->where('action', 'unarchived')->count())->toBe(0);
@@ -61,8 +59,8 @@ test('archive and unarchive are idempotent', function () {
 });
 
 test('the notArchived and archived scopes filter by archive state', function () {
-    $active = Task::factory()->for($this->story)->create();
-    $archived = Task::factory()->for($this->story)->archived()->create();
+    $active = Task::factory()->for($this->project)->create();
+    $archived = Task::factory()->for($this->project)->archived()->create();
 
     expect(Task::query()->notArchived()->pluck('id'))->toContain($active->id)->not->toContain($archived->id)
         ->and(Task::query()->archived()->pluck('id'))->toContain($archived->id)->not->toContain($active->id);
@@ -75,8 +73,8 @@ test('the notArchived and archived scopes filter by archive state', function () 
 */
 
 test('the global board hides archived tasks until the toggle is on', function () {
-    Task::factory()->for($this->story)->create(['title' => 'Active task']);
-    Task::factory()->for($this->story)->archived()->create(['title' => 'Archived task']);
+    Task::factory()->for($this->project)->create(['title' => 'Active task']);
+    Task::factory()->for($this->project)->archived()->create(['title' => 'Archived task']);
 
     Livewire::actingAs($this->member)
         ->test(Board::class)
@@ -86,19 +84,8 @@ test('the global board hides archived tasks until the toggle is on', function ()
         ->assertSee('Archived task');
 });
 
-test('the global board hides tasks of an archived story', function () {
-    $archivedStory = Story::factory()->for($this->project)->archived()->create();
-    Task::factory()->for($archivedStory)->create(['title' => 'Task of archived story']);
-
-    Livewire::actingAs($this->member)
-        ->test(Board::class)
-        ->assertDontSee('Task of archived story')
-        ->set('showArchived', true)
-        ->assertSee('Task of archived story');
-});
-
 test('a task can be archived and unarchived from the global board', function () {
-    $task = Task::factory()->for($this->story)->status(Status::Done)->create();
+    $task = Task::factory()->for($this->project)->status(Status::Done)->create();
 
     $component = Livewire::actingAs($this->member)
         ->test(Board::class)
@@ -113,7 +100,7 @@ test('a task can be archived and unarchived from the global board', function () 
 
 test('archiving a task is forbidden in a project the user cannot access', function () {
     $foreign = Project::factory()->create();
-    $task = Task::factory()->for(Story::factory()->for($foreign))->create();
+    $task = Task::factory()->for($foreign)->create();
 
     Livewire::actingAs($this->member)
         ->test(Board::class)
@@ -130,8 +117,8 @@ test('archiving a task is forbidden in a project the user cannot access', functi
 */
 
 test('the project board hides archived tasks until the toggle is on', function () {
-    Task::factory()->for($this->story)->create(['title' => 'Active task']);
-    Task::factory()->for($this->story)->archived()->create(['title' => 'Archived task']);
+    Task::factory()->for($this->project)->create(['title' => 'Active task']);
+    Task::factory()->for($this->project)->archived()->create(['title' => 'Archived task']);
 
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
@@ -142,7 +129,7 @@ test('the project board hides archived tasks until the toggle is on', function (
 });
 
 test('a task can be archived from the project board', function () {
-    $task = Task::factory()->for($this->story)->create();
+    $task = Task::factory()->for($this->project)->create();
 
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
@@ -153,56 +140,37 @@ test('a task can be archived from the project board', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Project overview (stories)
+| Project overview (root tasks)
 |--------------------------------------------------------------------------
 */
 
-test('the project overview hides archived stories until the toggle is on', function () {
-    $archived = Story::factory()->for($this->project)->archived()->create(['title' => 'Archived story']);
-    Task::factory()->for($archived)->status(Status::ToDo)->create();
+test('the project overview hides archived root tasks until the toggle is on', function () {
+    Task::factory()->for($this->project)->archived()->create(['title' => 'Archived root task']);
 
     Livewire::actingAs($this->member)
         ->test(ProjectShow::class, ['short_name' => 'ABC'])
-        ->assertDontSee('Archived story')
+        ->assertDontSee('Archived root task')
         ->set('showArchived', true)
-        ->assertSee('Archived story');
+        ->assertSee('Archived root task');
 });
 
-test('a story can be archived and unarchived from the project overview', function () {
+test('a root task can be archived and unarchived from the project overview', function () {
     $component = Livewire::actingAs($this->member)
         ->test(ProjectShow::class, ['short_name' => 'ABC'])
-        ->call('archiveStory', $this->story->id);
+        ->call('archiveTask', $this->parent->id);
 
-    expect($this->story->fresh()->isArchived())->toBeTrue()
-        ->and($this->story->activities()->where('action', 'archived')->count())->toBe(1);
+    expect($this->parent->fresh()->isArchived())->toBeTrue()
+        ->and($this->parent->activities()->where('action', 'archived')->count())->toBe(1);
 
-    $component->call('unarchiveStory', $this->story->id);
+    $component->call('unarchiveTask', $this->parent->id);
 
-    expect($this->story->fresh()->isArchived())->toBeFalse();
+    expect($this->parent->fresh()->isArchived())->toBeFalse();
 });
 
-test('archiving a story is forbidden for a non-member', function () {
+test('archiving a root task is forbidden for a non-member', function () {
     $outsider = User::factory()->create();
 
     Livewire::actingAs($outsider)
         ->test(ProjectShow::class, ['short_name' => 'ABC'])
         ->assertForbidden();
-});
-
-/*
-|--------------------------------------------------------------------------
-| Story page
-|--------------------------------------------------------------------------
-*/
-
-test('a story can be archived and unarchived from its own page', function () {
-    $component = Livewire::actingAs($this->member)
-        ->test(StoryView::class, ['short_name' => 'ABC', 'story_number' => $this->story->story_number])
-        ->call('archiveStory');
-
-    expect($this->story->fresh()->isArchived())->toBeTrue();
-
-    $component->call('unarchiveStory');
-
-    expect($this->story->fresh()->isArchived())->toBeFalse();
 });

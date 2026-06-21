@@ -4,7 +4,6 @@ use App\Enums\Priority;
 use App\Enums\Status;
 use App\Livewire\Projects\ProjectShow;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,9 +23,8 @@ it('caps and scrolls the project description', function () {
         ->assertSeeHtml('max-h-96 overflow-y-auto');
 });
 
-it('shows the description and open story tasks', function () {
-    $story = Story::factory()->for($this->project)->create();
-    Task::factory()->for($story)->status(Status::ToDo)->create(['title' => 'Open task']);
+it('shows the description and open root tasks', function () {
+    Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Open task']);
 
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
@@ -35,78 +33,73 @@ it('shows the description and open story tasks', function () {
         ->assertSee('Open task');
 });
 
-it('separates open stories from completed ones', function () {
-    $completed = Story::factory()->for($this->project)->create();
-    Task::factory()->for($completed)->status(Status::Done)->create();
-
-    $open = Story::factory()->for($this->project)->create();
-    Task::factory()->for($open)->status(Status::ToDo)->create();
+it('separates open root tasks from completed ones', function () {
+    $completed = Task::factory()->for($this->project)->status(Status::Done)->create();
+    $open = Task::factory()->for($this->project)->status(Status::ToDo)->create();
 
     $component = Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
 
-    expect($component->instance()->openStories()->pluck('id'))
+    expect($component->instance()->openTasks()->pluck('id'))
         ->toContain($open->id)
         ->not->toContain($completed->id)
-        ->and($component->instance()->completedStories()->pluck('id'))
+        ->and($component->instance()->completedTasks()->pluck('id'))
         ->toContain($completed->id);
 });
 
-it('lists only unfinished tasks within open stories', function () {
-    $story = Story::factory()->for($this->project)->create();
-    Task::factory()->for($story)->status(Status::ToDo)->create(['title' => 'Keep me visible']);
-    Task::factory()->for($story)->status(Status::Done)->create(['title' => 'Hide me away']);
+it('treats a canceled root task as completed', function () {
+    $canceled = Task::factory()->for($this->project)->status(Status::Canceled)->create();
 
-    Livewire::actingAs($this->user)
-        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
-        ->assertSee('Keep me visible')
-        ->assertDontSee('Hide me away');
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
+
+    expect($component->instance()->openTasks()->pluck('id'))
+        ->not->toContain($canceled->id)
+        ->and($component->instance()->completedTasks()->pluck('id'))
+        ->toContain($canceled->id);
 });
 
-it('keeps empty stories in the open list but excludes fully-finished ones', function () {
-    $empty = Story::factory()->for($this->project)->create();
-
-    $done = Story::factory()->for($this->project)->create();
-    Task::factory()->for($done)->status(Status::Done)->create();
-
-    $open = Story::factory()->for($this->project)->create();
-    Task::factory()->for($open)->status(Status::ToDo)->create();
-
-    $ids = Livewire::actingAs($this->user)
-        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
-        ->instance()->openStories()->pluck('id');
-
-    expect($ids)->toContain($open->id)
-        ->toContain($empty->id)
-        ->not->toContain($done->id);
-});
-
-it('shows a freshly created task-less story on the board', function () {
+it('shows a freshly created task on the overview', function () {
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
-        ->set('storyTitle', 'Test story')
-        ->call('createStory')
-        ->assertSee('Test story');
+        ->set('taskTitle', 'Test task')
+        ->call('createTask')
+        ->assertSee('Test task');
 
-    $ids = Livewire::actingAs($this->user)
+    $titles = Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
-        ->instance()->openStories()->pluck('title');
+        ->instance()->openTasks()->pluck('title');
 
-    expect($ids)->toContain('Test story');
+    expect($titles)->toContain('Test task');
 });
 
-it('creates a story from the overview with the default priority', function () {
+it('creates a task from the overview with the default priority', function () {
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
-        ->set('storyTitle', 'Brand new story')
-        ->call('createStory');
+        ->set('taskTitle', 'Brand new task')
+        ->call('createTask');
 
-    $story = $this->project->stories()->where('title', 'Brand new story')->first();
+    $task = $this->project->tasks()->where('title', 'Brand new task')->first();
 
-    // The project page shares the creation action with the board, so a story made
-    // here gets the same default priority as one made on the board.
-    expect($story)->not->toBeNull()
-        ->and($story->priority)->toBe(Priority::default());
+    // The overview shares the creation action with the board, so a task made here
+    // gets the same default priority as one made on the board.
+    expect($task)->not->toBeNull()
+        ->and($task->parent_id)->toBeNull()
+        ->and($task->priority)->toBe(Priority::default());
+});
+
+it('archives and restores a root task', function () {
+    $task = Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Archivable']);
+
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->call('archiveTask', $task->id);
+
+    expect($task->fresh()->isArchived())->toBeTrue();
+
+    $component->call('unarchiveTask', $task->id);
+
+    expect($task->fresh()->isArchived())->toBeFalse();
 });
 
 it('renames the short name and redirects to the new url', function () {
@@ -123,13 +116,13 @@ it('renames the short name and redirects to the new url', function () {
 });
 
 it('rejects a short name already taken by another project', function () {
-    Project::factory()->create(['short_name' => 'TAKEN']);
+    Project::factory()->create(['short_name' => 'TAKN']);
     $this->project->update(['short_name' => 'MINE']);
 
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => 'MINE'])
         ->call('edit')
-        ->set('short_name', 'TAKEN')
+        ->set('short_name', 'TAKN')
         ->call('save')
         ->assertHasErrors('short_name');
 

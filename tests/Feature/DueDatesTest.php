@@ -1,10 +1,8 @@
 <?php
 
 use App\Livewire\Projects\ProjectBoard;
-use App\Livewire\Stories\StoryView;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -17,8 +15,7 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->create();
+    $this->task = Task::factory()->for($this->project)->create();
 });
 
 it('casts the due date to a date instance', function () {
@@ -28,17 +25,17 @@ it('casts the due date to a date instance', function () {
         ->and($task->fresh()->due_date->format('Y-m-d'))->toBe('2026-07-01');
 });
 
-it('saves a due date through the story view', function () {
+it('saves a due date through the task view', function () {
     Livewire::actingAs($this->member)
-        ->test(StoryView::class, [
+        ->test(TaskView::class, [
             'short_name' => 'ABC',
-            'story_number' => $this->story->story_number,
+            'task_number' => $this->task->task_number,
         ])
         ->call('edit')
         ->set('dueDate', '2026-08-15')
         ->call('save');
 
-    expect($this->story->fresh()->due_date->format('Y-m-d'))->toBe('2026-08-15');
+    expect($this->task->fresh()->due_date->format('Y-m-d'))->toBe('2026-08-15');
 });
 
 it('clears a due date through the task view', function () {
@@ -68,31 +65,20 @@ it('rejects an invalid due date in the task view', function () {
         ->assertHasErrors(['dueDate' => 'date']);
 });
 
-it('creates a story with a due date from the board', function () {
-    Livewire::actingAs($this->member)
-        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->set('storyTitle', 'Launch')
-        ->set('storyDueDate', '2026-09-01')
-        ->call('createStory');
-
-    expect($this->project->stories()->where('title', 'Launch')->first()->due_date->format('Y-m-d'))
-        ->toBe('2026-09-01');
-});
-
 it('creates a task with a due date from the board', function () {
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->call('openTaskModal', $this->story->id)
+        ->call('openTaskModal')
         ->set('taskTitle', 'Ship it')
         ->set('taskDueDate', '2026-09-02')
         ->call('createTask');
 
-    expect($this->story->tasks()->where('title', 'Ship it')->first()->due_date->format('Y-m-d'))
+    expect($this->project->tasks()->where('title', 'Ship it')->first()->due_date->format('Y-m-d'))
         ->toBe('2026-09-02');
 });
 
 it('shows an overdue task due date on the board', function () {
-    Task::factory()->for($this->story)->dueOn('2020-01-01')->create(['title' => 'Overdue task']);
+    Task::factory()->for($this->project)->dueOn('2020-01-01')->create(['title' => 'Overdue task']);
 
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])

@@ -4,7 +4,6 @@ namespace App\Concerns;
 
 use App\Models\Attachment;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Support\Thumbnail;
 use Flux\Flux;
@@ -17,7 +16,7 @@ use Livewire\WithFileUploads;
 
 /**
  * Adds attachment uploading, listing, and removal to a page component that
- * renders a single Project, Story, or Task.
+ * renders a single Project or Task.
  *
  * @property string $description
  */
@@ -33,7 +32,7 @@ trait HandlesAttachments
     /**
      * The model that uploaded files should be attached to.
      */
-    abstract protected function attachable(): Project|Story|Task;
+    abstract protected function attachable(): Project|Task;
 
     /**
      * Persist freshly dropped or selected files as soon as they finish uploading.
@@ -140,7 +139,7 @@ trait HandlesAttachments
      * Move an uploaded file onto the configured disk and create its attachment
      * record, generating a preview thumbnail when possible.
      */
-    private function storeAttachment(TemporaryUploadedFile $file, Project|Story|Task $attachable, bool $isInline = false): Attachment
+    private function storeAttachment(TemporaryUploadedFile $file, Project|Task $attachable, bool $isInline = false): Attachment
     {
         // Read metadata and contents before storing: when the temporary upload
         // and target disks match, store() moves the file, after which it can no

@@ -34,9 +34,8 @@ class Dashboard extends Component
         $projectIds = Auth::user()->projects()->pluck('projects.id');
 
         return Task::query()
-            ->join('stories', 'stories.id', '=', 'tasks.story_id')
-            ->join('projects', 'projects.id', '=', 'stories.project_id')
-            ->whereIn('stories.project_id', $projectIds)
+            ->join('projects', 'projects.id', '=', 'tasks.project_id')
+            ->whereIn('tasks.project_id', $projectIds)
             ->whereIn('tasks.status', [Status::InProgress, Status::ToDo])
             ->where(static function (Builder $query) use ($userId): void {
                 $query->whereHas('assignees', static fn (Builder $assignees): Builder => $assignees->whereKey($userId))
@@ -47,7 +46,7 @@ class Dashboard extends Component
             ->orderByRaw('case when tasks.status = ? then 0 else 1 end', [Status::InProgress->value])
             ->orderBy('projects.short_name')
             ->orderBy('tasks.task_number')
-            ->with('story.project')
+            ->with('project')
             ->select('tasks.*')
             ->limit(self::ACTIVE_TASKS_LIMIT)
             ->get();

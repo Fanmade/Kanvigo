@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
@@ -10,8 +9,7 @@ it('adds an existing tag from the suggestion list', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
     $project->members()->attach($user);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($project)->create();
 
     // An existing tag so it shows up as a suggestion.
     Tag::factory()->color('sky')->create(['name' => 'frontend']);
@@ -35,8 +33,7 @@ it('creates a new tag with a chosen color through the modal', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
     $project->members()->attach($user);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($project)->create();
 
     $this->actingAs($user);
 

@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * A single command palette entry: a matched project/story/task or an action.
+ * A single command palette entry: a matched project/task or an action.
  *
  * Decouples the palette view from Eloquent models so the search backend can
  * change without touching the rendering.
@@ -17,6 +17,6 @@ readonly class SearchResult
         public string $icon,
         public ?string $reference = null,
         public bool $pinned = false,
-        public ?StoryProgress $progress = null,
+        public ?TaskProgress $progress = null,
     ) {}
 }

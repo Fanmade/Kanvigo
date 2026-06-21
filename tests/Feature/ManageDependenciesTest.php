@@ -1,11 +1,9 @@
 <?php
 
 use App\Enums\Status;
-use App\Livewire\Stories\StoryView;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Dependency;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,9 +15,9 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->status(Status::Planned)->create();
-    $this->other = Task::factory()->for($this->story)->status(Status::ToDo)->create();
+    $this->parent = Task::factory()->for($this->project)->create();
+    $this->task = Task::factory()->for($this->project)->childOf($this->parent)->status(Status::Planned)->create();
+    $this->other = Task::factory()->for($this->project)->childOf($this->parent)->status(Status::ToDo)->create();
 
     $this->mountTask = fn () => Livewire::actingAs($this->member)
         ->test(TaskView::class, [
@@ -62,16 +60,16 @@ it('records a dependency activity capturing the direction and related reference'
         ->and($activity->old_value)->toBeNull();
 });
 
-it('offers same-project stories and tasks as candidates, searchable by reference and title, excluding itself', function () {
+it('offers same-project tasks as candidates, searchable by reference and title, excluding itself', function () {
     $this->other->update(['title' => 'Database migration']);
-    $this->story->update(['title' => 'Backend setup']);
+    $this->parent->update(['title' => 'Backend setup']);
 
     $candidates = ($this->mountTask)()->instance()->dependencyCandidates;
 
     $references = $candidates->pluck('reference')->all();
 
     expect($references)->toContain($this->other->reference)
-        ->toContain($this->story->reference)
+        ->toContain($this->parent->reference)
         ->not->toContain($this->task->reference);
 
     // The label combines reference and title so the combobox can match either.
@@ -80,7 +78,7 @@ it('offers same-project stories and tasks as candidates, searchable by reference
 });
 
 it('does not offer items from other projects as candidates', function () {
-    $hidden = Task::factory()->for(Story::factory()->for(Project::factory()))->create();
+    $hidden = Task::factory()->for(Project::factory())->create();
 
     $candidates = ($this->mountTask)()->instance()->dependencyCandidates;
 
@@ -115,7 +113,7 @@ it('rejects a dependency that would create a cycle', function () {
 });
 
 it('rejects an item the user cannot access', function () {
-    $hidden = Task::factory()->for(Story::factory()->for(Project::factory()))->create();
+    $hidden = Task::factory()->for(Project::factory())->create();
 
     ($this->mountTask)()
         ->set('dependencyReference', $hidden->reference)
@@ -146,14 +144,14 @@ it('shows the blocked badge while a blocker is unfinished', function () {
         ->assertSee(__('Blocked'));
 });
 
-it('manages dependencies on a story view too', function () {
+it('manages dependencies on a parent task view too', function () {
     Livewire::actingAs($this->member)
-        ->test(StoryView::class, ['short_name' => 'ABC', 'story_number' => $this->story->story_number])
+        ->test(TaskView::class, ['short_name' => 'ABC', 'task_number' => $this->parent->task_number])
         ->set('dependencyReference', $this->other->reference)
         ->call('addDependency')
         ->assertHasNoErrors();
 
-    expect($this->story->fresh()->blockers()->pluck('id'))->toContain($this->other->id);
+    expect($this->parent->fresh()->blockers()->pluck('id'))->toContain($this->other->id);
 });
 
 it('does not let a non-member manage dependencies', function () {

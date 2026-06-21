@@ -4,7 +4,6 @@ use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\GetAttachmentTool;
 use App\Models\Attachment;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,8 +17,7 @@ beforeEach(function () {
 
     $this->member = User::factory()->create();
     $this->project = Project::factory()->withMembers([$this->member])->create(['short_name' => 'ABC']);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->create();
+    $this->task = Task::factory()->for($this->project)->create();
 });
 
 it('returns the image content of an inline attachment to a member', function () {
@@ -61,8 +59,7 @@ it('returns metadata text for a non-viewable attachment type', function () {
 
 it('denies access to an attachment in a project the user is not a member of', function () {
     $project = Project::factory()->create(['short_name' => 'XYZ']);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($project)->create();
 
     $attachment = Attachment::factory()->create([
         'attachable_id' => $task->id,

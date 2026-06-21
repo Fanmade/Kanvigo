@@ -11,7 +11,6 @@ use App\Enums\CascadePreference;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Flux\Flux;
@@ -101,7 +100,7 @@ class TaskView extends Component
         $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
         $task = Task::query()
-            ->with(['assignees', 'tags', 'story.project', 'ancestors', 'children', 'descendants'])
+            ->with(['assignees', 'tags', 'project', 'ancestors', 'children', 'descendants'])
             ->where('project_id', $project->id)
             ->where('task_number', $this->taskNumber)
             ->firstOrFail();
@@ -111,17 +110,17 @@ class TaskView extends Component
         return $task;
     }
 
-    protected function attachable(): Project|Story|Task
+    protected function attachable(): Project|Task
     {
         return $this->task();
     }
 
-    protected function dependable(): Story|Task
+    protected function dependable(): Task
     {
         return $this->task();
     }
 
-    protected function taggable(): Story|Task
+    protected function taggable(): Task
     {
         return $this->task();
     }
@@ -139,7 +138,7 @@ class TaskView extends Component
     #[Computed]
     public function members(): Collection
     {
-        return $this->task()->story->project->members()->orderBy('name')->get();
+        return $this->task()->project->members()->orderBy('name')->get();
     }
 
     /**
@@ -186,7 +185,7 @@ class TaskView extends Component
         ]);
 
         app(CreateTask::class)->handle(
-            $task->story,
+            $task->project,
             $validated['subtaskTitle'],
             $validated['subtaskDescription'] ?? null,
             Priority::from($validated['subtaskPriority']),

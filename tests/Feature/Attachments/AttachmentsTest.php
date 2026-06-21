@@ -1,11 +1,9 @@
 <?php
 
 use App\Livewire\Projects\ProjectShow;
-use App\Livewire\Stories\StoryView;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Attachment;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -195,23 +193,23 @@ it('forbids thumbnail access from non-members', function () {
         ->assertForbidden();
 });
 
-it('uploads files onto a story', function () {
-    $story = Story::factory()->for($this->project)->create();
+it('uploads files onto a subtask', function () {
+    $parent = Task::factory()->for($this->project)->create();
+    $subtask = Task::factory()->for($this->project)->childOf($parent)->create();
 
     Livewire::actingAs($this->member)
-        ->test(StoryView::class, [
+        ->test(TaskView::class, [
             'short_name' => $this->project->short_name,
-            'story_number' => $story->story_number,
+            'task_number' => $subtask->task_number,
         ])
         ->set('newFiles', [UploadedFile::fake()->image('shot.png')])
         ->assertHasNoErrors();
 
-    expect($story->attachments()->count())->toBe(1);
+    expect($subtask->attachments()->count())->toBe(1);
 });
 
 it('uploads files onto a task', function () {
-    $story = Story::factory()->for($this->project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($this->project)->create();
 
     Livewire::actingAs($this->member)
         ->test(TaskView::class, [

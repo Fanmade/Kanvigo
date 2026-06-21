@@ -5,7 +5,6 @@ use App\Enums\Status;
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,8 +18,7 @@ it('updates a task title and description', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create(['title' => 'Old']);
+    $task = Task::factory()->for($project)->create(['title' => 'Old']);
 
     KanbrioServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
@@ -36,8 +34,7 @@ it('changes the task status and records the activity', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->status(Status::Planned)->create();
+    $task = Task::factory()->for($project)->status(Status::Planned)->create();
 
     KanbrioServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
@@ -59,8 +56,7 @@ it('updates a task priority', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->priority(Priority::Medium)->create();
+    $task = Task::factory()->for($project)->priority(Priority::Medium)->create();
 
     KanbrioServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
@@ -76,8 +72,7 @@ it('errors when no fields are provided to update', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($project)->create();
 
     KanbrioServer::tool(UpdateTaskTool::class, ['reference' => $task->reference])
         ->assertHasErrors();
@@ -87,8 +82,7 @@ it('denies updating a task with a read-only token', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($project)->create();
 
     KanbrioServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
@@ -100,8 +94,7 @@ it('replaces a task\'s tags and records the activity via MCP', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($project)->create();
     $task->syncTags('old');
 
     KanbrioServer::tool(UpdateTaskTool::class, [

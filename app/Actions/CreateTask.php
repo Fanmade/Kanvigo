@@ -5,20 +5,20 @@ namespace App\Actions;
 use App\Concerns\Nestable;
 use App\Enums\Priority;
 use App\Enums\Status;
-use App\Models\Story;
+use App\Models\Project;
 use App\Models\Task;
 
 /**
- * The single source of truth for task creation, shared by the board, the story
- * page and the MCP tool. A null priority is left unset so the model inherits the
- * story's priority; a null status defaults to Planned. Passing a $parent nests the
- * new task under it — the {@see Nestable} guard enforces the depth
- * limit and rejects cycles on save.
+ * The single source of truth for task creation, shared by the board, the task
+ * page and the MCP tool. A null priority is left unset so the model inherits its
+ * parent's priority (or the default); a null status defaults to Planned. Passing a
+ * $parent nests the new task under it — the {@see Nestable} guard enforces the
+ * depth limit and rejects cycles on save.
  */
 class CreateTask
 {
     public function handle(
-        Story $story,
+        Project $project,
         string $title,
         ?string $description = null,
         ?Priority $priority = null,
@@ -26,7 +26,7 @@ class CreateTask
         ?string $dueDate = null,
         ?Task $parent = null,
     ): Task {
-        $task = $story->tasks()->make([
+        $task = $project->tasks()->make([
             'title' => $title,
             'description' => $description,
             'due_date' => $dueDate ?: null,

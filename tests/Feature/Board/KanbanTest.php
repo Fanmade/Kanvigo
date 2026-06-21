@@ -4,7 +4,6 @@ use App\Enums\Priority;
 use App\Enums\Status;
 use App\Livewire\Projects\ProjectBoard;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,8 +16,7 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->status(Status::Planned)->create();
+    $this->task = Task::factory()->for($this->project)->status(Status::Planned)->create();
 });
 
 it('moves a task to a new status and logs the change', function () {
@@ -78,7 +76,7 @@ it('shows a root task as a single breadcrumb badge of its own reference', functi
 
 it('shows a nested task as a breadcrumb from its root ancestor down to itself', function () {
     $this->task->update(['title' => 'Parent task']);
-    $child = Task::factory()->for($this->story)->childOf($this->task)->create(['title' => 'Child task']);
+    $child = Task::factory()->for($this->project)->childOf($this->task)->create(['title' => 'Child task']);
 
     $html = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
@@ -97,9 +95,9 @@ it('eager-loads breadcrumb ancestors instead of one recursive query per nested c
 
     // Independent three-level chains: root -> child -> grandchild.
     foreach (range(1, $chains) as $ignored) {
-        $root = Task::factory()->for($this->story)->create();
-        $child = Task::factory()->for($this->story)->childOf($root)->create();
-        Task::factory()->for($this->story)->childOf($child)->create();
+        $root = Task::factory()->for($this->project)->create();
+        $child = Task::factory()->for($this->project)->childOf($root)->create();
+        Task::factory()->for($this->project)->childOf($child)->create();
     }
 
     DB::enableQueryLog();
@@ -132,10 +130,9 @@ it('forbids non-members from opening the board', function () {
         ->assertForbidden();
 });
 
-it('lists every task of a status in a single flat column, not grouped by story', function () {
-    $otherStory = Story::factory()->for($this->project)->create();
-    Task::factory()->for($otherStory)->status(Status::Planned)->create();
-    Task::factory()->for($this->story)->status(Status::Planned)->create();
+it('lists every task of a status in a single flat column', function () {
+    Task::factory()->for($this->project)->status(Status::Planned)->create();
+    Task::factory()->for($this->project)->status(Status::Planned)->create();
 
     $component = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC']);
@@ -150,8 +147,8 @@ it('orders tasks within a column by their manual position', function () {
     // Positions are assigned on creation, so the column reflects creation order
     // regardless of priority until a card is dragged.
     $first = $this->task; // created in beforeEach
-    $second = Task::factory()->for($this->story)->status(Status::Planned)->priority(Priority::Highest)->create();
-    $third = Task::factory()->for($this->story)->status(Status::Planned)->priority(Priority::Low)->create();
+    $second = Task::factory()->for($this->project)->status(Status::Planned)->priority(Priority::Highest)->create();
+    $third = Task::factory()->for($this->project)->status(Status::Planned)->priority(Priority::Low)->create();
 
     $columns = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
@@ -167,8 +164,8 @@ it('orders tasks within a column by their manual position', function () {
 it('assigns each new task a distinct, increasing position', function () {
     // Guards the board order: tasks must never share a position, or midpoint
     // reordering has no room to insert between them.
-    $a = Task::factory()->for($this->story)->create();
-    $b = Task::factory()->for($this->story)->create();
+    $a = Task::factory()->for($this->project)->create();
+    $b = Task::factory()->for($this->project)->create();
 
     expect($a->position)->toBeGreaterThan(0)
         ->and($b->position)->toBeGreaterThan($a->position)
@@ -177,8 +174,8 @@ it('assigns each new task a distinct, increasing position', function () {
 
 it('reorders a task within a column and persists the new order', function () {
     $first = $this->task; // position 1
-    $second = Task::factory()->for($this->story)->status(Status::Planned)->create();
-    $third = Task::factory()->for($this->story)->status(Status::Planned)->create();
+    $second = Task::factory()->for($this->project)->status(Status::Planned)->create();
+    $third = Task::factory()->for($this->project)->status(Status::Planned)->create();
 
     // Drag the third card to the very top: it lands above $first (no card before it).
     $columns = Livewire::actingAs($this->member)
@@ -195,7 +192,7 @@ it('reorders a task within a column and persists the new order', function () {
 });
 
 it('reordering a task into another column changes its status and logs it', function () {
-    $target = Task::factory()->for($this->story)->status(Status::Done)->create();
+    $target = Task::factory()->for($this->project)->status(Status::Done)->create();
 
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
@@ -211,9 +208,8 @@ it('reordering a task into another column changes its status and logs it', funct
 it('filters the board by priority', function () {
     $this->task->update(['priority' => Priority::Low]);
 
-    $story = Story::factory()->for($this->project)->create();
-    Task::factory()->for($story)->status(Status::Planned)->priority(Priority::Highest)->create();
-    Task::factory()->for($story)->status(Status::ToDo)->priority(Priority::Low)->create();
+    Task::factory()->for($this->project)->status(Status::Planned)->priority(Priority::Highest)->create();
+    Task::factory()->for($this->project)->status(Status::ToDo)->priority(Priority::Low)->create();
 
     $columns = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
@@ -226,31 +222,23 @@ it('filters the board by priority', function () {
         ->and($tasks->first()->priority)->toBe(Priority::Highest);
 });
 
-it('creates a story from the board', function () {
+it('creates a root task from the board', function () {
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->set('storyTitle', 'New Story')
-        ->call('createStory');
+        ->call('openTaskModal')
+        ->set('taskTitle', 'New Task')
+        ->call('createTask');
 
-    expect($this->project->stories()->where('title', 'New Story')->exists())->toBeTrue();
-});
+    $task = $this->project->tasks()->where('title', 'New Task')->first();
 
-it('requires a title to create a story from the board', function () {
-    $before = $this->project->stories()->count();
-
-    Livewire::actingAs($this->member)
-        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->set('storyTitle', '')
-        ->call('createStory')
-        ->assertHasErrors(['storyTitle' => 'required']);
-
-    expect($this->project->stories()->count())->toBe($before);
+    expect($task)->not->toBeNull()
+        ->and($task->parent_id)->toBeNull();
 });
 
 it('requires a title to create a task from the board', function () {
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->call('openTaskModal', $this->story->id)
+        ->call('openTaskModal')
         ->set('taskTitle', '')
         ->call('createTask')
         ->assertHasErrors(['taskTitle' => 'required']);

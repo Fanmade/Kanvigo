@@ -3,7 +3,6 @@
 use App\Livewire\Comments\CommentList;
 use App\Models\Comment;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,8 +14,8 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create();
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->create();
+    $this->task = Task::factory()->for($this->project)->create();
+    $this->subtask = Task::factory()->for($this->project)->childOf($this->task)->create();
 });
 
 it('lets a member comment on a task and logs the activity', function () {
@@ -34,19 +33,19 @@ it('lets a member comment on a task and logs the activity', function () {
         ->and($this->task->activities()->where('action', 'commented')->count())->toBe(1);
 });
 
-it('supports comments on projects and stories', function () {
+it('supports comments on projects and subtasks', function () {
     Livewire::actingAs($this->member)
         ->test(CommentList::class, ['commentable' => $this->project])
         ->set('body', 'Project note')
         ->call('addComment');
 
     Livewire::actingAs($this->member)
-        ->test(CommentList::class, ['commentable' => $this->story])
-        ->set('body', 'Story note')
+        ->test(CommentList::class, ['commentable' => $this->subtask])
+        ->set('body', 'Subtask note')
         ->call('addComment');
 
     expect($this->project->comments()->count())->toBe(1)
-        ->and($this->story->comments()->count())->toBe(1);
+        ->and($this->subtask->comments()->count())->toBe(1);
 });
 
 it('requires a comment body', function () {
@@ -210,6 +209,6 @@ it('applies the collapsed preference across all commentable types', function () 
         ->assertSet('collapsed', true);
 
     Livewire::actingAs($this->member->fresh())
-        ->test(CommentList::class, ['commentable' => $this->story])
+        ->test(CommentList::class, ['commentable' => $this->subtask])
         ->assertSet('collapsed', true);
 });

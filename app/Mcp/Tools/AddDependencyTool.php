@@ -15,7 +15,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Links a dependency between two stories or tasks. With direction "blocked_by", the item at "reference" is blocked by "related_reference" and should not be started until it is complete. With direction "blocks", the item at "reference" blocks "related_reference". Self-dependencies and cycles are rejected. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Links a dependency between two tasks (or projects). With direction "blocked_by", the item at "reference" is blocked by "related_reference" and should not be started until it is complete. With direction "blocks", the item at "reference" blocks "related_reference". Self-dependencies and cycles are rejected. Requires a write-access token; the user must be a member of the project.')]
 class AddDependencyTool extends Tool
 {
     use ExposesDependencies;
@@ -36,8 +36,8 @@ class AddDependencyTool extends Tool
             'related_reference' => ['required', 'string'],
             'direction' => ['required', Rule::in(['blocked_by', 'blocks'])],
         ], [
-            'reference.required' => 'You must provide the reference of the story or task whose dependencies you are changing (e.g. "PROJ1" or "PROJ-42").',
-            'related_reference.required' => 'You must provide the reference of the related story or task to link.',
+            'reference.required' => 'You must provide the reference of the task whose dependencies you are changing (e.g. "PROJ-42").',
+            'related_reference.required' => 'You must provide the reference of the related task to link.',
             'direction' => 'The direction must be "blocked_by" (reference is blocked by related_reference) or "blocks" (reference blocks related_reference).',
         ]);
 
@@ -80,11 +80,11 @@ class AddDependencyTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The reference of the story or task whose dependencies you are changing (e.g. "PROJ1" or "PROJ-42").')
+                ->description('The reference of the task whose dependencies you are changing (e.g. "PROJ-42").')
                 ->required(),
 
             'related_reference' => $schema->string()
-                ->description('The reference of the related story or task to link (e.g. "PROJ1" or "PROJ-42").')
+                ->description('The reference of the related task to link (e.g. "PROJ-42").')
                 ->required(),
 
             'direction' => $schema->string()
@@ -102,11 +102,11 @@ class AddDependencyTool extends Tool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'reference' => $schema->string()->description('The reference of the changed story or task.')->required(),
+            'reference' => $schema->string()->description('The reference of the changed task.')->required(),
             'direction' => $schema->string()->description('The direction of the added link: "blocked_by" or "blocks".')->required(),
-            'related' => $schema->string()->description('The reference of the related story or task that was linked.')->required(),
-            'blocked_by' => $schema->array()->items($schema->string())->description('References of the stories and tasks that now block the changed item.')->required(),
-            'blocks' => $schema->array()->items($schema->string())->description('References of the stories and tasks that the changed item now blocks.')->required(),
+            'related' => $schema->string()->description('The reference of the related task that was linked.')->required(),
+            'blocked_by' => $schema->array()->items($schema->string())->description('References of the tasks that now block the changed item.')->required(),
+            'blocks' => $schema->array()->items($schema->string())->description('References of the tasks that the changed item now blocks.')->required(),
             'is_blocked' => $schema->boolean()->description('Whether the changed item has a blocker that is not yet complete.')->required(),
         ];
     }

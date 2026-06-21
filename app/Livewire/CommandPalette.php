@@ -16,7 +16,7 @@ class CommandPalette extends Component
     public string $query = '';
 
     /**
-     * Entity matches (projects, stories, tasks) for the current query.
+     * Entity matches (projects, tasks) for the current query.
      *
      * @return Collection<int, SearchResult>
      */

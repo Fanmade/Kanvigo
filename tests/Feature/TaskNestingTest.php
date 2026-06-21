@@ -1,20 +1,17 @@
 <?php
 
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 /**
- * Create a root task in a fresh story/project.
+ * Create a root task in a fresh project.
  */
 function makeRootTask(): Task
 {
-    $story = Story::factory()->for(Project::factory())->create();
-
-    return Task::factory()->for($story)->create();
+    return Task::factory()->for(Project::factory())->create();
 }
 
 test('a task can have a parent and children', function () {

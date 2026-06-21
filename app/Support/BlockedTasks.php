@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Enums\Status;
 use App\Models\Dependency;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Support\Collection;
 
@@ -28,7 +27,6 @@ class BlockedTasks
         }
 
         $taskMorph = (new Task)->getMorphClass();
-        $storyMorph = (new Story)->getMorphClass();
 
         $links = Dependency::query()
             ->where('dependent_type', $taskMorph)
@@ -39,7 +37,7 @@ class BlockedTasks
             return [];
         }
 
-        $completeBlockers = self::completeBlockerKeys($links, $taskMorph, $storyMorph);
+        $completeBlockers = self::completeBlockerKeys($links, $taskMorph);
 
         $blocked = [];
 
@@ -55,13 +53,13 @@ class BlockedTasks
     }
 
     /**
-     * The "type:id" keys of the blockers in the given links that are complete,
-     * resolved in one query per blocker type.
+     * The "type:id" keys of the task blockers in the given links that are
+     * complete, resolved in a single query.
      *
      * @param  Collection<int, Dependency>  $links
      * @return array<string, true>
      */
-    private static function completeBlockerKeys(Collection $links, string $taskMorph, string $storyMorph): array
+    private static function completeBlockerKeys(Collection $links, string $taskMorph): array
     {
         $complete = [];
 
@@ -74,20 +72,6 @@ class BlockedTasks
                 ->pluck('id')
                 ->each(static function (int $id) use (&$complete, $taskMorph): void {
                     $complete[$taskMorph.':'.$id] = true;
-                });
-        }
-
-        $storyBlockerIds = $links->where('blocker_type', $storyMorph)->pluck('blocker_id')->unique()->all();
-
-        if ($storyBlockerIds !== []) {
-            Story::query()
-                ->whereKey($storyBlockerIds)
-                ->withProgressCounts()
-                ->get()
-                ->each(static function (Story $story) use (&$complete, $storyMorph): void {
-                    if ($story->isComplete()) {
-                        $complete[$storyMorph.':'.$story->getKey()] = true;
-                    }
                 });
         }
 

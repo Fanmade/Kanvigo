@@ -5,7 +5,6 @@ namespace App\Livewire\Comments;
 use App\Concerns\ResolvesMorphSubject;
 use App\Models\Comment;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -34,7 +33,7 @@ class CommentList extends Component
 
     public string $deleteReason = '';
 
-    public function mount(Project|Story|Task $commentable): void
+    public function mount(Project|Task $commentable): void
     {
         $this->initMorphSubject($commentable);
 
@@ -55,7 +54,7 @@ class CommentList extends Component
      * Resolve the model the comments belong to.
      */
     #[Computed]
-    public function commentable(): Project|Story|Task
+    public function commentable(): Project|Task
     {
         return $this->resolveMorphSubject();
     }

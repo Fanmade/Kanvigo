@@ -3,7 +3,6 @@
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\AddCommentTool;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,8 +16,7 @@ it('adds a comment to a task', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
-    $task = Task::factory()->for($story)->create();
+    $task = Task::factory()->for($project)->create();
 
     KanbrioServer::tool(AddCommentTool::class, [
         'reference' => $task->reference,
@@ -32,24 +30,6 @@ it('adds a comment to a task', function () {
         'commentable_id' => $task->id,
         'user_id' => $user->id,
         'body' => 'Looks good to me',
-    ]);
-});
-
-it('adds a comment to a story', function () {
-    $user = User::factory()->create();
-    Sanctum::actingAs($user, ['read', 'write']);
-    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
-
-    KanbrioServer::tool(AddCommentTool::class, [
-        'reference' => $story->reference,
-        'body' => 'A story comment',
-    ])->assertOk();
-
-    assertDatabaseHas('comments', [
-        'commentable_type' => $story->getMorphClass(),
-        'commentable_id' => $story->id,
-        'body' => 'A story comment',
     ]);
 });
 
@@ -74,7 +54,7 @@ it('denies commenting on an item the user cannot access', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $task = Task::factory()->for(Story::factory()->for($project))->create();
+    $task = Task::factory()->for($project)->create();
 
     KanbrioServer::tool(AddCommentTool::class, [
         'reference' => $task->reference,
@@ -86,10 +66,10 @@ it('denies commenting with a read-only token', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
-    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($project)->create();
 
     KanbrioServer::tool(AddCommentTool::class, [
-        'reference' => $story->reference,
+        'reference' => $task->reference,
         'body' => 'Should fail',
     ])->assertHasErrors();
 });

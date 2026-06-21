@@ -80,7 +80,7 @@ document.addEventListener('alpine:init', () => {
     /**
      * Tag input widget.
      *
-     * Backs the "Add tag" control on the story and task views. It keeps a local
+     * Backs the "Add tag" control on the task views. It keeps a local
      * `query`, filters the server-provided `suggestions` (most-used tags not yet
      * applied) and tracks a `highlighted` row so Up/Down/Enter navigate the list
      * with the keyboard. Picking a suggestion calls `$wire.addTag(name)`; when

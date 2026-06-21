@@ -3,23 +3,20 @@
 use App\Enums\Status;
 use App\Models\Dependency;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 /**
- * Create a task in a fresh story/project with the given status.
+ * Create a task in a fresh project with the given status.
  */
 function makeTask(Status $status = Status::Planned): Task
 {
-    $story = Story::factory()->for(Project::factory())->create();
-
-    return Task::factory()->for($story)->status($status)->create();
+    return Task::factory()->for(Project::factory())->status($status)->create();
 }
 
-test('an item lists its blockers and the items it blocks', function () {
+test('a task lists its blockers and the tasks it blocks', function () {
     $task = makeTask();
     $blocker = makeTask();
 
@@ -29,18 +26,17 @@ test('an item lists its blockers and the items it blocks', function () {
         ->and($blocker->blocking()->pluck('id'))->toContain($task->id);
 });
 
-test('dependencies work across stories and tasks', function () {
-    $task = makeTask();
-    $blockingStory = Story::factory()->for(Project::factory())->create();
+test('dependencies work between tasks regardless of nesting', function () {
+    $project = Project::factory()->create();
+    $parent = Task::factory()->for($project)->create();
+    $child = Task::factory()->for($project)->childOf($parent)->create();
 
-    $story = Story::factory()->for(Project::factory())->create();
-    $blockingTask = makeTask();
+    $blocker = makeTask();
+    $parent->addBlocker($blocker);
+    $child->addBlocker($parent);
 
-    $task->addBlocker($blockingStory);
-    $story->addBlocker($blockingTask);
-
-    expect($task->fresh()->blockers()->first())->toBeInstanceOf(Story::class)
-        ->and($story->fresh()->blockers()->first())->toBeInstanceOf(Task::class);
+    expect($parent->fresh()->blockers()->first())->toBeInstanceOf(Task::class)
+        ->and($child->fresh()->blockers()->first())->toBeInstanceOf(Task::class);
 });
 
 test('a task is complete only when done', function () {
@@ -48,22 +44,20 @@ test('a task is complete only when done', function () {
         ->and(makeTask(Status::Done)->isComplete())->toBeTrue();
 });
 
-test('a story is complete only when all its tasks are done', function () {
-    $story = Story::factory()->for(Project::factory())->create();
-    Task::factory()->for($story)->status(Status::Done)->create();
-    Task::factory()->for($story)->status(Status::ToDo)->create();
+test('a parent task subtree progress reflects its done descendants', function () {
+    $project = Project::factory()->create();
+    $parent = Task::factory()->for($project)->create();
+    Task::factory()->for($project)->childOf($parent)->status(Status::Done)->create();
+    Task::factory()->for($project)->childOf($parent)->status(Status::ToDo)->create();
 
-    expect($story->isComplete())->toBeFalse();
+    $progress = $parent->fresh()->progress();
 
-    $story->tasks()->update(['status' => Status::Done]);
+    expect($progress->done)->toBe(1)
+        ->and($progress->total)->toBe(2);
 
-    expect($story->fresh()->isComplete())->toBeTrue();
-});
+    $parent->children()->update(['status' => Status::Done]);
 
-test('an empty story is not complete', function () {
-    $story = Story::factory()->for(Project::factory())->create();
-
-    expect($story->isComplete())->toBeFalse();
+    expect($parent->fresh()->progress()->done)->toBe(2);
 });
 
 test('an item is blocked while a blocker is unfinished and unblocked once it is done', function () {

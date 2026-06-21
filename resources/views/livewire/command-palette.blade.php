@@ -32,7 +32,7 @@
         <flux:command filter="manual" class="flex w-full flex-col border-none shadow-lg max-h-[76vh]">
             <flux:command.input
                 wire:model.live.debounce.200ms="query"
-                :placeholder="__('Search projects, stories, tasks…')"
+                :placeholder="__('Search projects and tasks…')"
                 closable
                 autofocus
                 data-test="command-palette-input"
@@ -46,7 +46,7 @@
                         <span class="flex w-full items-center gap-2">
                             <span class="flex-1 truncate">{{ $item->title }}</span>
                             @if ($item->progress)
-                                <x-story-progress :progress="$item->progress" bar-class="w-10" class="shrink-0" />
+                                <x-task-progress :progress="$item->progress" bar-class="w-10" class="shrink-0" />
                             @endif
                             @if ($item->reference)
                                 <flux:badge size="sm" color="{{ $item->pinned ? 'blue' : 'zinc' }}">{{ $item->reference }}</flux:badge>

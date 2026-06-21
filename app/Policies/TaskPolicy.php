@@ -8,11 +8,11 @@ use App\Models\User;
 class TaskPolicy
 {
     /**
-     * Access to a task cascades from access to its story's project.
+     * Access to a task cascades from access to its project.
      */
     public function view(User $user, Task $task): bool
     {
-        return $user->can('view', $task->story->project);
+        return $user->can('view', $task->project);
     }
 
     public function update(User $user, Task $task): bool

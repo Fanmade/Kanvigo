@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -10,8 +9,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->project = Project::factory()->create();
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->create();
+    $this->task = Task::factory()->for($this->project)->create();
 
     $this->member = User::factory()->create();
     $this->project->members()->attach($this->member);
@@ -24,10 +22,8 @@ it('grants project access only to members', function () {
         ->and($this->stranger->can('view', $this->project))->toBeFalse();
 });
 
-it('cascades project access to stories and tasks', function () {
-    expect($this->member->can('view', $this->story))->toBeTrue()
-        ->and($this->member->can('view', $this->task))->toBeTrue()
-        ->and($this->stranger->can('view', $this->story))->toBeFalse()
+it('cascades project access to tasks', function () {
+    expect($this->member->can('view', $this->task))->toBeTrue()
         ->and($this->stranger->can('view', $this->task))->toBeFalse();
 });
 

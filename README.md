@@ -4,8 +4,9 @@
 ![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Fanmade/89b10cbc79557b748b8f50d2955dd9f6/raw/coverage.json)
 
 A minimalist, invitation-only Kanban project-management tool. Organize work as
-**Projects → Stories → Tasks**, with human-readable scoped URLs, a drag-and-drop
-board, comments, attachments, an audit trail, and per-project notifications.
+**Projects → nestable Tasks** (a project has tasks; tasks have subtasks), with
+human-readable scoped URLs, a drag-and-drop board, comments, attachments, an
+audit trail, and per-project notifications.
 
 Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
@@ -15,28 +16,28 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
 ## Features
 
-- **Projects, Stories & Tasks** — three-level hierarchy with project-scoped story
-  numbers and flat per-project task numbers.
-- **Nestable subtasks** — break a task into subtasks (up to three levels deep). A
-  task page shows its place in the tree, its subtasks, and a progress rollup over
-  the whole subtree. Closing a parent can cascade to its open subtasks (ask /
-  always / never), and starting a subtask pulls the parent into progress.
-- **Focused item views** — the project, story and task pages keep the description
+- **Projects & nestable Tasks** — a project contains tasks, and tasks nest into
+  subtasks (up to a configurable depth, default three) with flat per-project task
+  numbers. A task page shows its place in the tree, its subtasks, and a progress
+  rollup over the whole subtree. Closing a parent can cascade to its open subtasks
+  (ask / always / never), and starting a subtask pulls the parent into progress.
+- **Focused item views** — the project and task pages keep the description
   front and centre, with metadata (status, priority, assignees, dependencies,
   dates) gathered in a compact side rail. Status and priority are badges that open
   a dropdown to change them, and editing controls stay tucked away until needed.
-- **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}{n}` for a story,
-  `/{SHORT}-{n}` for a task (e.g. `/ABC`, `/ABC1`, `/ABC-42`).
-- **Command palette** (`⌘K` / `Ctrl+K`) — search projects, stories and tasks by
+- **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}/board` for its
+  board, and `/{SHORT}-{n}` for a task (e.g. `/ABC`, `/ABC/board`, `/ABC-42`).
+- **Command palette** (`⌘K` / `Ctrl+K`) — search projects and tasks by
   title or tag, jump straight to a typed reference, and run quick actions.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
   In progress, Done), per project or globally across every project you can see.
   Dragging is smoothly animated with highlighted drop targets and works on touch;
   each card also has a keyboard-accessible "Move to" menu. Cards keep the order
   you arrange them in within each column.
-- **Story completion progress bars** on the project overview, in the story
-  header, and on story search results — each based on the share of its tasks done.
-- **Archiving** — archive finished tasks or whole stories to clear them from the
+- **Completion progress bars** — any task with subtasks shows a progress rollup
+  based on the share of its descendant tasks done, on the project overview (per
+  root task) and on the task's detail page.
+- **Archiving** — archive finished tasks to clear them from the
   board and project overview without deleting them. Archived items are hidden by
   default and revealed with a "Show archived" toggle; archiving keeps a task's
   status and is fully reversible.
@@ -44,7 +45,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   tasks" list for picking the next thing to work on: your in-progress and to-do
   tasks plus unassigned to-do tasks across your projects (work assigned to others
   is hidden), in-progress first.
-- **Multi-assignee** stories and tasks for pairing and ensemble work.
+- **Multi-assignee** tasks for pairing and ensemble work.
 - **Profile avatars** — upload a profile picture (cropped to a square) from
   profile settings; it shows wherever you appear — assignees, comment authors and
   member lists — with your initials as the fallback when you have none.
@@ -53,15 +54,15 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails. Files above the size limit are rejected with a
   clear message.
-- **Tags** — label stories and tasks with color-coded tags, shown as badges with
+- **Tags** — label tasks with color-coded tags, shown as badges with
   a colored dot. Add one from a searchable list of your most-used tags, or create
   a new tag on the spot and pick its color.
 - **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
-  default) on stories and tasks, with new tasks inheriting their story's priority.
+  default) on tasks, with new subtasks inheriting their parent task's priority.
   Board columns are ordered by priority and can be filtered to a single level.
-- **Due dates** on stories and tasks, highlighted on the board when overdue.
-- **Dependencies** — mark a story or task as blocked by, or blocking, another
-  item (by reference). Blockers and blocked items are listed on the item view,
+- **Due dates** on tasks, highlighted on the board when overdue.
+- **Dependencies** — mark a task as blocked by, or blocking, another task (by
+  reference). Blockers and blocked items are listed on the task view,
   and a card is flagged "Blocked" on the board while any blocker is unfinished.
   Self-links and cycles are rejected. Available in the UI and through the MCP tools.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
@@ -85,10 +86,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **API tokens** — permitted users mint personal Sanctum tokens (read-only or
   read & write) for MCP/API access and revoke them from Settings.
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer
-  token, that lets AI agents work with the projects, stories, and tasks the token's
-  owner can access. Read tools (list/inspect) work with any token and surface each
-  item's dependencies (what blocks it, what it blocks, and whether it is currently
-  blocked); write tools (create/update stories & tasks, create projects, add
+  token, that lets AI agents work with the projects and tasks the token's owner can
+  access. Read tools (list/inspect) work with any token and surface each item's
+  dependencies (what blocks it, what it blocks, and whether it is currently
+  blocked); write tools (create/update tasks, create projects, add
   comments, link/unlink dependencies) require a token with write access. Agents can
   also read attachments — including inline description images — by their id.
 - **Localization** — English and German, defaulting to the browser language with
@@ -135,8 +136,8 @@ ADMIN_PASSWORD=change-me
 ```
 
 The admin can create projects and invite users. In `local`, the `DemoSeeder`
-also populates example projects, stories, and tasks (and seeds its own demo
-admin if none is configured).
+also populates example projects and tasks (with nested subtasks) (and seeds its
+own demo admin if none is configured).
 
 ## Inviting users
 
@@ -177,12 +178,12 @@ They require the Playwright Chromium binary (`npx playwright install chromium`).
 
 ## Project layout
 
-- `app/Livewire/` — class-based Livewire components (board, projects, stories,
-  tasks, comments, notifications, invitations).
+- `app/Livewire/` — class-based Livewire components (board, projects, tasks,
+  comments, notifications, invitations).
 - `app/Concerns/` — shared model traits (scoped numbering, activity logging,
   comments, tags, attachments, subscriptions).
-- `app/Models/` — Project, Story, Task, Comment, Attachment, Activity,
+- `app/Models/` — Project, Task, Comment, Attachment, Activity,
   Invitation, User.
 - `app/Policies/` — per-resource authorization cascading through membership.
 - `lang/` — English source strings inline; German in `de.json` and `de/`.
-- `routes/web.php` — scoped routing for projects, stories, and tasks.
+- `routes/web.php` — scoped routing for projects and tasks.

@@ -7,8 +7,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * A directed dependency link: the {@see dependent} item is blocked by the
- * {@see blocker} item, which must be completed first. Both ends are polymorphic
- * and may be a Story or a Task.
+ * {@see blocker} item, which must be completed first. Both ends are polymorphic.
  *
  * @property int $id
  * @property string $dependent_type
@@ -21,7 +20,7 @@ class Dependency extends Model
     protected $guarded = [];
 
     /**
-     * The blocked item (a Story or Task).
+     * The blocked item (a Task).
      *
      * @return MorphTo<Model, $this>
      */
@@ -31,7 +30,7 @@ class Dependency extends Model
     }
 
     /**
-     * The blocking item that must be completed first (a Story or Task).
+     * The blocking item that must be completed first (a Task).
      *
      * @return MorphTo<Model, $this>
      */

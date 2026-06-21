@@ -17,7 +17,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Creates a new task in a story, identified by its reference (e.g. "PROJ1"). Requires a write-access token; the user must be a member of the project.')]
+#[Description('Creates a new top-level task in a project, identified by its short_name (e.g. "PROJ"). Requires a write-access token; the user must be a member of the project.')]
 class CreateTaskTool extends Tool
 {
     use RequiresWriteAccess;
@@ -43,21 +43,21 @@ class CreateTaskTool extends Tool
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
         ], [
-            'reference.required' => 'You must provide the story reference to add the task to (e.g. "PROJ1").',
+            'reference.required' => 'You must provide the project short_name to add the task to (e.g. "PROJ").',
             'title.required' => 'You must provide a task title.',
             'priority' => 'The priority must be one of: '.implode(', ', Priority::names()).'.',
             'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format.',
             'status' => 'The status must be one of "'.$statuses.'".',
         ]);
 
-        $story = ReferenceResolver::story($validated['reference']);
+        $project = ReferenceResolver::project($validated['reference']);
 
-        if ($story === null || ! $request->user()->can('update', $story)) {
-            return Response::error('No story with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1".');
+        if ($project === null || ! $request->user()->can('update', $project)) {
+            return Response::error('No project with short_name "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ".');
         }
 
         $task = app(CreateTask::class)->handle(
-            $story,
+            $project,
             $validated['title'],
             $validated['description'] ?? null,
             isset($validated['priority']) ? Priority::fromName($validated['priority']) : null,
@@ -65,7 +65,7 @@ class CreateTaskTool extends Tool
             $validated['due_date'] ?? null,
         );
 
-        $task->setRelation('story', $story);
+        $task->setRelation('project', $project);
 
         if (isset($validated['tags'])) {
             $task->syncTags($validated['tags']);
@@ -91,7 +91,7 @@ class CreateTaskTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The reference of the story to add the task to (e.g. "PROJ1").')
+                ->description('The short_name of the project to add the task to (e.g. "PROJ").')
                 ->required(),
 
             'title' => $schema->string()
@@ -103,7 +103,7 @@ class CreateTaskTool extends Tool
 
             'priority' => $schema->string()
                 ->enum(Priority::names())
-                ->description('Optional priority: one of Lowest, Low, Medium, High, Highest. Defaults to the parent story\'s priority.'),
+                ->description('Optional priority: one of Lowest, Low, Medium, High, Highest. Defaults to the project default priority.'),
 
             'due_date' => $schema->string()
                 ->description('Optional due date in "YYYY-MM-DD" format.'),

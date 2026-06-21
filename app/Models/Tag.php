@@ -57,14 +57,6 @@ class Tag extends Model
     }
 
     /**
-     * @return MorphToMany<Story, $this>
-     */
-    public function stories(): MorphToMany
-    {
-        return $this->morphedByMany(Story::class, 'taggable');
-    }
-
-    /**
      * @return MorphToMany<Task, $this>
      */
     public function tasks(): MorphToMany

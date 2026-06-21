@@ -4,7 +4,6 @@ namespace App\Livewire\Subscriptions;
 
 use App\Concerns\ResolvesMorphSubject;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -14,13 +13,13 @@ class SubscriptionToggle extends Component
 {
     use ResolvesMorphSubject;
 
-    public function mount(Project|Story|Task $subscribable): void
+    public function mount(Project|Task $subscribable): void
     {
         $this->initMorphSubject($subscribable);
     }
 
     #[Computed]
-    public function subscribable(): Project|Story|Task
+    public function subscribable(): Project|Task
     {
         return $this->resolveMorphSubject();
     }

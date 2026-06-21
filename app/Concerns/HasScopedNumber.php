@@ -9,7 +9,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
  * Assigns a per-parent sequential number (starting at 1) on creation.
  *
  * Implementing models must define:
- *  - protected string $scopedNumberColumn (e.g. 'story_number')
+ *  - protected string $scopedNumberColumn (e.g. 'task_number')
  *  - public function scopedNumberQuery(): Builder  (siblings sharing the same parent)
  *
  * The owning table must carry a unique `(parent_id, number)` constraint — it is the

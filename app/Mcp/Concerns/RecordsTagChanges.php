@@ -3,7 +3,6 @@
 namespace App\Mcp\Concerns;
 
 use App\Concerns\HasTags;
-use App\Models\Story;
 use App\Models\Tag;
 use App\Models\Task;
 
@@ -16,7 +15,7 @@ trait RecordsTagChanges
      *
      * @param  array{attached: array<int, mixed>, detached: array<int, mixed>, updated: array<int, mixed>}  $changes
      */
-    protected function recordTagSync(Story|Task $item, array $changes): void
+    protected function recordTagSync(Task $item, array $changes): void
     {
         $names = Tag::query()
             ->whereIn('id', array_merge($changes['attached'], $changes['detached']))

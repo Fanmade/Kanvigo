@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Lists the projects the authenticated user is a member of, with their short_name, title, description and story count.')]
+#[Description('Lists the projects the authenticated user is a member of, with their short_name, title, description and top-level task count.')]
 #[IsReadOnly]
 class ListProjectsTool extends Tool
 {
@@ -22,14 +22,14 @@ class ListProjectsTool extends Tool
     public function handle(Request $request): ResponseFactory
     {
         $projects = $request->user()->projects()
-            ->withCount('stories')
+            ->withCount('rootTasks')
             ->orderBy('title')
             ->get()
             ->map(static fn (Project $project): array => [
                 'short_name' => $project->short_name,
                 'title' => $project->title,
                 'description' => $project->description,
-                'story_count' => $project->stories_count,
+                'task_count' => $project->root_tasks_count,
             ]);
 
         return Response::structured([
@@ -61,7 +61,7 @@ class ListProjectsTool extends Tool
                 'short_name' => $schema->string()->description('The project short name (2-4 uppercase letters).')->required(),
                 'title' => $schema->string()->description('The project title.')->required(),
                 'description' => $schema->string()->description('The project description; may be null.'),
-                'story_count' => $schema->integer()->description('Number of stories in the project.')->required(),
+                'task_count' => $schema->integer()->description('Number of top-level tasks in the project.')->required(),
             ]))->description('The projects the authenticated user is a member of.')->required(),
         ];
     }

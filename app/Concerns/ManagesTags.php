@@ -2,7 +2,6 @@
 
 namespace App\Concerns;
 
-use App\Models\Story;
 use App\Models\Tag;
 use App\Models\Task;
 use Flux\Flux;
@@ -13,7 +12,7 @@ use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 
 /**
- * Adds tag management to a Story or Task view component: listing the item's
+ * Adds tag management to a Task view component: listing the item's
  * tags, attaching existing ones, and creating new tags (with a color) through
  * the create-tag modal. Tags are applied live, mirroring dependency management.
  */
@@ -27,12 +26,12 @@ trait ManagesTags
     public string $newTagColor = 'zinc';
 
     /**
-     * The story or task whose tags are being managed.
+     * The task whose tags are being managed.
      */
-    abstract protected function taggable(): Story|Task;
+    abstract protected function taggable(): Task;
 
     /**
-     * Bust the host component's cached subject computed (e.g. `task` or `story`)
+     * Bust the host component's cached subject computed (e.g. `task`)
      * so the applied-tags list re-reads from the database after a change.
      */
     abstract protected function forgetTaggable(): void;

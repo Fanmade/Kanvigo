@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets a single task by its reference (e.g. "PROJ-42"), including status, priority, description, tags, assignees and its story/project references. Only tasks in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets a single task by its reference (e.g. "PROJ-42"), including status, priority, description, tags, assignees and its project reference. Only tasks in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetTaskTool extends Tool
 {
@@ -48,8 +48,7 @@ class GetTaskTool extends Tool
             'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
             'tags' => $task->tags->pluck('name')->all(),
-            'story' => $task->story->reference,
-            'project' => $task->story->project->short_name,
+            'project' => $task->project->short_name,
             ...$this->dependencyPayload($task),
             'assignees' => $task->assignees->map(static fn (User $user): array => [
                 'name' => $user->name,
@@ -93,10 +92,9 @@ class GetTaskTool extends Tool
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
-            'story' => $schema->string()->description('The reference of the story the task belongs to, e.g. "PROJ1".')->required(),
             'project' => $schema->string()->description('The short name of the project the task belongs to.')->required(),
-            'blocked_by' => $schema->array()->items($schema->string())->description('References of the stories and tasks that block this task; it should not be started until they are complete.')->required(),
-            'blocks' => $schema->array()->items($schema->string())->description('References of the stories and tasks that this task blocks.')->required(),
+            'blocked_by' => $schema->array()->items($schema->string())->description('References of the tasks and projects that block this task; it should not be started until they are complete.')->required(),
+            'blocks' => $schema->array()->items($schema->string())->description('References of the tasks and projects that this task blocks.')->required(),
             'is_blocked' => $schema->boolean()->description('Whether any of this task\'s blockers is not yet complete.')->required(),
             'assignees' => $schema->array()->items($schema->object([
                 'name' => $schema->string()->description('The assignee name.')->required(),

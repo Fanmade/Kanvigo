@@ -63,11 +63,23 @@ class Project extends Model implements Subscribable
     }
 
     /**
-     * @return HasMany<Story, $this>
+     * Every task in the project, at any nesting depth.
+     *
+     * @return HasMany<Task, $this>
      */
-    public function stories(): HasMany
+    public function tasks(): HasMany
     {
-        return $this->hasMany(Story::class)->orderBy('story_number');
+        return $this->hasMany(Task::class)->orderBy('task_number');
+    }
+
+    /**
+     * The project's top-level tasks (those without a parent).
+     *
+     * @return HasMany<Task, $this>
+     */
+    public function rootTasks(): HasMany
+    {
+        return $this->hasMany(Task::class)->whereNull('parent_id')->orderBy('task_number');
     }
 
     /**

@@ -1,8 +1,8 @@
 <div class="mx-auto flex w-full max-w-5xl flex-col gap-6">
     <div class="flex items-center justify-between gap-2">
-        @php($shortName = $this->task->story->project->short_name)
+        @php($shortName = $this->task->project->short_name)
         <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-            <a href="{{ route('project.show', $this->task->story->project) }}" wire:navigate class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
+            <a href="{{ route('project.show', $this->task->project) }}" wire:navigate class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
                 {{ $shortName }}
             </a>
             {{-- The task's place in the tree: each open ancestor, root first. --}}
@@ -84,7 +84,7 @@
                         <div class="mb-2 flex items-center justify-between gap-2">
                             <flux:heading size="sm">{{ __('Subtasks') }}</flux:heading>
                             <div class="flex items-center gap-3">
-                                <x-story-progress :progress="$this->task->progress()" />
+                                <x-task-progress :progress="$this->task->progress()" />
                                 @if ($canUpdate && $this->canAddSubtask)
                                     <flux:button size="sm" icon="plus" wire:click="openSubtaskModal" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
                                 @endif

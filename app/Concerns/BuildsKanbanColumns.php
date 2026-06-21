@@ -13,8 +13,8 @@ trait BuildsKanbanColumns
     /**
      * Split a set of tasks into board columns by status. Within each column the
      * tasks keep their manual board order (the `position` set by drag-and-drop),
-     * with the id as a stable tie-breaker. Story context travels with each
-     * task's reference, so the board is no longer grouped by story.
+     * with the id as a stable tie-breaker. Project context travels with each
+     * task's reference, so the board is no longer grouped by project.
      *
      * @param  Collection<int, Task>  $tasks
      * @return array<int, array{status: Status, tasks: Collection<int, Task>}>

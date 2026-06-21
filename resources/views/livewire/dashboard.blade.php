@@ -29,12 +29,12 @@
             <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
                 @forelse ($this->activeTasks as $task)
                     <a
-                        href="{{ route('task.show', ['short_name' => $task->story->project->short_name, 'task_number' => $task->task_number]) }}"
+                        href="{{ route('task.show', ['short_name' => $task->project->short_name, 'task_number' => $task->task_number]) }}"
                         wire:navigate
                         class="flex flex-col gap-1.5 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                     >
                         <div class="flex items-center gap-2">
-                            <flux:badge size="sm" color="indigo" variant="pill">{{ $task->story->project->short_name }}</flux:badge>
+                            <flux:badge size="sm" color="indigo" variant="pill">{{ $task->project->short_name }}</flux:badge>
                             <flux:text size="xs" class="font-mono text-zinc-400">{{ $task->reference }}</flux:text>
                         </div>
                         <span class="text-sm">{{ $task->title }}</span>

@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,8 +13,7 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->create();
+    $this->task = Task::factory()->for($this->project)->create();
 });
 
 it('resolves the project overview at /{short_name}', function () {
@@ -28,10 +26,6 @@ it('resolves the project board at /{short_name}/board', function () {
 
 it('resolves the global board at /board', function () {
     actingAs($this->member)->get('/board')->assertOk();
-});
-
-it('resolves a story at /{short_name}{story_number}', function () {
-    actingAs($this->member)->get('/ABC1')->assertOk()->assertSee($this->story->title);
 });
 
 it('resolves a task at /{short_name}-{task_number}', function () {
@@ -57,10 +51,6 @@ it('does not match lowercase short names', function () {
 
 it('does not match short names longer than four letters', function () {
     actingAs($this->member)->get('/ABCDE')->assertNotFound();
-});
-
-it('returns 404 for a non-existent story number', function () {
-    actingAs($this->member)->get('/ABC9')->assertNotFound();
 });
 
 it('returns 404 for a non-existent task number', function () {

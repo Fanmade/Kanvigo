@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Enums\Status;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -27,12 +26,14 @@ class DemoSeeder extends Seeder
         $project->members()->sync($everyone->pluck('id'));
 
         foreach (range(1, 4) as $i) {
-            $story = Story::factory()->for($project)->create();
-            $story->assignees()->sync($everyone->random(rand(1, 2))->pluck('id'));
+            $rootTask = Task::factory()->for($project)->create([
+                'title' => "Demo work stream {$i}",
+            ]);
+            $rootTask->assignees()->sync($everyone->random(rand(1, 2))->pluck('id'));
 
             foreach (Status::cases() as $status) {
-                $task = Task::factory()->for($story)->status($status)->create();
-                $task->assignees()->sync($everyone->random(rand(1, 2))->pluck('id'));
+                $child = Task::factory()->for($project)->childOf($rootTask)->status($status)->create();
+                $child->assignees()->sync($everyone->random(rand(1, 2))->pluck('id'));
             }
         }
 

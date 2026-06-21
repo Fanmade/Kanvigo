@@ -5,7 +5,6 @@ use App\Enums\CascadePreference;
 use App\Enums\Status;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,10 +16,9 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
 
-    $this->parent = Task::factory()->for($this->story)->status(Status::InProgress)->create();
-    $this->child = Task::factory()->for($this->story)->childOf($this->parent)->status(Status::ToDo)->create();
+    $this->parent = Task::factory()->for($this->project)->status(Status::InProgress)->create();
+    $this->child = Task::factory()->for($this->project)->childOf($this->parent)->status(Status::ToDo)->create();
 
     $this->view = fn (Task $task) => Livewire::actingAs($this->member)
         ->test(TaskView::class, ['short_name' => 'ABC', 'task_number' => $task->task_number]);

@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\Story;
 use App\Models\Task;
 use Laravel\Mcp\Response;
 
@@ -13,12 +12,12 @@ use Laravel\Mcp\Response;
 final readonly class DependencyPairResolution
 {
     private function __construct(
-        public Story|Task|null $item,
-        public Story|Task|null $related,
+        public ?Task $item,
+        public ?Task $related,
         public ?Response $error,
     ) {}
 
-    public static function success(Story|Task $item, Story|Task $related): self
+    public static function success(Task $item, Task $related): self
     {
         return new self($item, $related, null);
     }
@@ -47,7 +46,7 @@ final readonly class DependencyPairResolution
      * The resolved pair as [item, related]. Only valid when the resolution
      * succeeded.
      *
-     * @return array{0: Story|Task, 1: Story|Task}
+     * @return array{0: Task, 1: Task}
      */
     public function pair(): array
     {

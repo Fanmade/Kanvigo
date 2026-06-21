@@ -4,7 +4,6 @@ namespace App\Concerns;
 
 use App\Contracts\Dependable;
 use App\Models\Dependency;
-use App\Models\Story;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Flux\Flux;
@@ -15,9 +14,9 @@ use InvalidArgumentException;
 use Livewire\Attributes\Computed;
 
 /**
- * Adds dependency management to a Story or Task view component: listing an
- * item's blockers and the items it blocks, and adding or removing links by
- * reference (e.g. "ABC-42").
+ * Adds dependency management to a Task view component: listing an item's
+ * blockers and the items it blocks, and adding or removing links by reference
+ * (e.g. "ABC-42").
  */
 trait ManagesDependencies
 {
@@ -26,9 +25,9 @@ trait ManagesDependencies
     public string $dependencyDirection = 'blocked_by';
 
     /**
-     * The story or task whose dependencies are being managed.
+     * The task whose dependencies are being managed.
      */
-    abstract protected function dependable(): Story|Task;
+    abstract protected function dependable(): Task;
 
     /**
      * The dependency links where the viewed item is blocked, with the blocking
@@ -88,38 +87,28 @@ trait ManagesDependencies
     }
 
     /**
-     * The stories and tasks in the same project that can be linked as a
-     * dependency, each as a reference plus a label searchable by reference or
-     * title. Excludes the viewed item itself.
+     * The tasks in the same project that can be linked as a dependency, each as
+     * a reference plus a label searchable by reference or title. Excludes the
+     * viewed item itself.
      *
-     * @return BaseCollection<int, array{reference: string, label: string}>
+     * @return BaseCollection<int, array{reference: non-falsy-string, label: non-falsy-string}>
      */
     #[Computed]
     public function dependencyCandidates(): BaseCollection
     {
         $item = $this->dependable();
-        $project = $item instanceof Task ? $item->story->project : $item->project;
+        $project = $item->project;
 
-        $stories = $project->stories()
-            ->orderBy('story_number')
+        return Task::query()
+            ->where('project_id', $project->id)
+            ->with('project')
             ->get()
-            ->reject(static fn (Story $story): bool => $item instanceof Story && $story->is($item))
-            ->map(static fn (Story $story): array => [
-                'reference' => $story->reference,
-                'label' => $story->reference.' · '.$story->title,
-            ]);
-
-        $tasks = Task::query()
-            ->whereHas('story', static fn ($query) => $query->where('project_id', $project->id))
-            ->with('story.project')
-            ->get()
-            ->reject(static fn (Task $task): bool => $item instanceof Task && $task->is($item))
+            ->reject(static fn (Task $task): bool => $task->is($item))
             ->map(static fn (Task $task): array => [
                 'reference' => $task->reference,
                 'label' => $task->reference.' · '.$task->title,
-            ]);
-
-        return $stories->concat($tasks)->values();
+            ])
+            ->values();
     }
 
     /**
@@ -146,8 +135,8 @@ trait ManagesDependencies
 
         $related = ReferenceResolver::commentable(trim($this->dependencyReference));
 
-        if (! $related instanceof Story && ! $related instanceof Task) {
-            $this->addError('dependencyReference', __('No story or task found for that reference.'));
+        if (! $related instanceof Task) {
+            $this->addError('dependencyReference', __('No task found for that reference.'));
 
             return;
         }
@@ -202,7 +191,7 @@ trait ManagesDependencies
         $direction = $itemIsDependent ? 'blocked_by' : 'blocks';
         $related = $itemIsDependent ? $dependency->blocker : $dependency->dependent;
 
-        abort_unless($related instanceof Story || $related instanceof Task, 404);
+        abort_unless($related instanceof Task, 404);
 
         $dependency->delete();
 

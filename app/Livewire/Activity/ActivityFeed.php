@@ -5,7 +5,6 @@ namespace App\Livewire\Activity;
 use App\Concerns\ResolvesMorphSubject;
 use App\Models\Activity;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +19,7 @@ class ActivityFeed extends Component
 
     public bool $collapsed = true;
 
-    public function mount(Project|Story|Task $subject): void
+    public function mount(Project|Task $subject): void
     {
         $this->initMorphSubject($subject);
 
@@ -41,7 +40,7 @@ class ActivityFeed extends Component
      * Resolve the model the activities belong to.
      */
     #[Computed]
-    public function subject(): Project|Story|Task
+    public function subject(): Project|Task
     {
         return $this->resolveMorphSubject();
     }

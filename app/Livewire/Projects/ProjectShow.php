@@ -2,11 +2,9 @@
 
 namespace App\Livewire\Projects;
 
-use App\Actions\CreateStory;
+use App\Actions\CreateTask;
 use App\Concerns\HandlesAttachments;
-use App\Enums\Status;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Flux\Flux;
 use Illuminate\Support\Collection;
@@ -30,13 +28,13 @@ class ProjectShow extends Component
 
     public string $description = '';
 
-    public bool $showStoryModal = false;
+    public bool $showTaskModal = false;
 
     public bool $showArchived = false;
 
-    public string $storyTitle = '';
+    public string $taskTitle = '';
 
-    public string $storyDescription = '';
+    public string $taskDescription = '';
 
     public function mount(string $short_name): void
     {
@@ -49,7 +47,7 @@ class ProjectShow extends Component
     public function project(): Project
     {
         $project = Project::where('short_name', $this->shortName)
-            ->with(['stories.tags', 'stories.tasks.assignees'])
+            ->with(['rootTasks.tags', 'rootTasks.assignees', 'rootTasks.descendants'])
             ->firstOrFail();
 
         $this->authorize('view', $project);
@@ -57,85 +55,82 @@ class ProjectShow extends Component
         return $project;
     }
 
-    protected function attachable(): Project|Story|Task
+    protected function attachable(): Project|Task
     {
         return $this->project();
     }
 
     /**
-     * Active (non-archived) stories that are not yet fully completed. A story
-     * with no tasks counts as open so it stays visible until work is added.
+     * Active (non-archived) top-level tasks that are still in progress.
      *
-     * @return Collection<int, Story>
+     * @return Collection<int, Task>
      */
     #[Computed]
-    public function openStories(): Collection
+    public function openTasks(): Collection
     {
-        return $this->project()->stories
-            ->reject(static fn (Story $story) => $story->isArchived())
-            ->reject(static fn (Story $story) => $story->tasks->isNotEmpty()
-                && $story->tasks->every(static fn ($task) => $task->status === Status::Done))
+        return $this->project()->rootTasks
+            ->reject(static fn (Task $task): bool => $task->isArchived())
+            ->reject(static fn (Task $task): bool => $task->status->isTerminal())
             ->values();
     }
 
     /**
-     * Active (non-archived) stories whose tasks are all done.
+     * Active (non-archived) top-level tasks that are done or canceled.
      *
-     * @return Collection<int, Story>
+     * @return Collection<int, Task>
      */
     #[Computed]
-    public function completedStories(): Collection
+    public function completedTasks(): Collection
     {
-        return $this->project()->stories
-            ->reject(static fn (Story $story) => $story->isArchived())
-            ->filter(static fn (Story $story) => $story->tasks->isNotEmpty()
-                && $story->tasks->every(static fn ($task) => $task->status === Status::Done))
+        return $this->project()->rootTasks
+            ->reject(static fn (Task $task): bool => $task->isArchived())
+            ->filter(static fn (Task $task): bool => $task->status->isTerminal())
             ->values();
     }
 
     /**
-     * Archived stories, surfaced only behind the "Show archived" toggle.
+     * Archived top-level tasks, surfaced only behind the "Show archived" toggle.
      *
-     * @return Collection<int, Story>
+     * @return Collection<int, Task>
      */
     #[Computed]
-    public function archivedStories(): Collection
+    public function archivedTasks(): Collection
     {
-        return $this->project()->stories
-            ->filter(static fn (Story $story) => $story->isArchived())
+        return $this->project()->rootTasks
+            ->filter(static fn (Task $task): bool => $task->isArchived())
             ->values();
     }
 
     /**
-     * Archive a story, removing it from the project overview and the board.
+     * Archive a top-level task, removing it from the project overview and board.
      */
-    public function archiveStory(int $storyId): void
+    public function archiveTask(int $taskId): void
     {
-        $story = $this->project()->stories()->whereKey($storyId)->firstOrFail();
+        $task = $this->project()->rootTasks()->whereKey($taskId)->firstOrFail();
 
-        $this->authorize('update', $story);
+        $this->authorize('update', $task);
 
-        $story->archive();
+        $task->archive();
 
         unset($this->project);
 
-        Flux::toast(variant: 'success', text: __('Story archived.'));
+        Flux::toast(variant: 'success', text: __('Task archived.'));
     }
 
     /**
-     * Restore a story from the archive.
+     * Restore a top-level task from the archive.
      */
-    public function unarchiveStory(int $storyId): void
+    public function unarchiveTask(int $taskId): void
     {
-        $story = $this->project()->stories()->whereKey($storyId)->firstOrFail();
+        $task = $this->project()->rootTasks()->whereKey($taskId)->firstOrFail();
 
-        $this->authorize('update', $story);
+        $this->authorize('update', $task);
 
-        $story->unarchive();
+        $task->unarchive();
 
         unset($this->project);
 
-        Flux::toast(variant: 'success', text: __('Story restored.'));
+        Flux::toast(variant: 'success', text: __('Task restored.'));
     }
 
     public function edit(): void
@@ -182,24 +177,24 @@ class ProjectShow extends Component
         }
     }
 
-    public function createStory(): void
+    public function createTask(): void
     {
         $this->authorize('update', $this->project());
 
         $validated = $this->validate([
-            'storyTitle' => ['required', 'string', 'max:255'],
-            'storyDescription' => ['nullable', 'string'],
+            'taskTitle' => ['required', 'string', 'max:255'],
+            'taskDescription' => ['nullable', 'string'],
         ]);
 
-        app(CreateStory::class)->handle(
+        app(CreateTask::class)->handle(
             $this->project(),
-            $validated['storyTitle'],
-            $validated['storyDescription'] ?? null,
+            $validated['taskTitle'],
+            $validated['taskDescription'] ?? null,
         );
 
-        $this->reset('storyTitle', 'storyDescription', 'showStoryModal');
+        $this->reset('taskTitle', 'taskDescription', 'showTaskModal');
         unset($this->project);
 
-        Flux::toast(variant: 'success', text: __('Story created.'));
+        Flux::toast(variant: 'success', text: __('Task created.'));
     }
 }

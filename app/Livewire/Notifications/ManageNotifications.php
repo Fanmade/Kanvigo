@@ -59,25 +59,13 @@ class ManageNotifications extends Component
             ];
         }
 
-        foreach ($user->subscribedStories()->with('project')->get() as $story) {
-            $rows[] = [
-                'group' => __('Stories'),
-                'type' => 'story',
-                'id' => $story->id,
-                'label' => $story->reference.' · '.$story->title,
-                'url' => route('story.show', ['short_name' => $story->project->short_name, 'story_number' => $story->story_number]),
-                'total' => $total['Story:'.$story->id] ?? 0,
-                'unread' => $unread['Story:'.$story->id] ?? 0,
-            ];
-        }
-
-        foreach ($user->subscribedTasks()->with('story.project')->get() as $task) {
+        foreach ($user->subscribedTasks()->with('project')->get() as $task) {
             $rows[] = [
                 'group' => __('Tasks'),
                 'type' => 'task',
                 'id' => $task->id,
                 'label' => $task->reference.' · '.$task->title,
-                'url' => route('task.show', ['short_name' => $task->story->project->short_name, 'task_number' => $task->task_number]),
+                'url' => route('task.show', ['short_name' => $task->project->short_name, 'task_number' => $task->task_number]),
                 'total' => $total['Task:'.$task->id] ?? 0,
                 'unread' => $unread['Task:'.$task->id] ?? 0,
             ];
@@ -94,7 +82,6 @@ class ManageNotifications extends Component
         // never resolve — and act on — an item the user isn't subscribed to.
         $model = match ($type) {
             'project' => $user->subscribedProjects()->whereKey($id)->first(),
-            'story' => $user->subscribedStories()->whereKey($id)->first(),
             'task' => $user->subscribedTasks()->whereKey($id)->first(),
             default => null,
         };

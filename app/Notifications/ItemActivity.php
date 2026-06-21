@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\Activity;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -46,12 +45,8 @@ class ItemActivity extends Notification
     {
         return match (true) {
             $subject instanceof Task => route('task.show', [
-                'short_name' => $subject->story->project->short_name,
-                'task_number' => $subject->task_number,
-            ]),
-            $subject instanceof Story => route('story.show', [
                 'short_name' => $subject->project->short_name,
-                'story_number' => $subject->story_number,
+                'task_number' => $subject->task_number,
             ]),
             $subject instanceof Project => route('project.show', ['short_name' => $subject->short_name]),
             default => null,

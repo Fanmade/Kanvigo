@@ -3,7 +3,6 @@
 use App\Enums\Status;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,8 +16,7 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->status(Status::Planned)->create();
+    $this->task = Task::factory()->for($this->project)->status(Status::Planned)->create();
 
     $this->mountTask = fn () => Livewire::actingAs($this->member)
         ->test(TaskView::class, [

@@ -9,13 +9,13 @@
 - Add user administration.
 
 # E-Mails
-- Add optional e-mail updates on the project, story and task level.
+- Add optional e-mail updates on the project and task level.
 - Setting for immediate e-mail updates or for specific time intervals.
-- Add stories from e-mails.
+- Add tasks from e-mails.
   - Support for attachments.
 
-## Stories and tasks
-- Add optional types to stories and tasks (e.g. bug, feature, etc.).
+## Tasks
+- Add optional types to tasks (e.g. bug, feature, etc.).
 
 ## Design
 - The system doesn't look very good yet.
@@ -41,10 +41,10 @@
 - Use Mago
 
 ## Misc
-- Add @mentions in comments, stories and tasks.
-- Add functionality for tagging tasks and stories in descriptions and comments (What's the syntax in other project management tools? A backslash followed by a tag name? Research this!)
+- Add @mentions in comments and tasks.
+- Add functionality for tagging tasks in descriptions and comments (What's the syntax in other project management tools? A backslash followed by a tag name? Research this!)
 - Add API
 - Add SSO-options
 - Add code coverage metrics
 - Add optional priority levels (with colors)
-- Add optional dependencies between stories, and tasks
+- Add optional dependencies between tasks

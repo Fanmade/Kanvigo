@@ -2,7 +2,6 @@
 
 use App\Enums\Priority;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -13,47 +12,44 @@ it('uses the middle level as the default priority', function () {
         ->and(Priority::Medium->value)->toBe(3);
 });
 
-it('defaults a story without an explicit priority to medium', function () {
+it('defaults a root task without an explicit priority to medium', function () {
     $project = Project::factory()->create();
 
-    $story = $project->stories()->create(['title' => 'No priority given']);
+    $task = $project->tasks()->create(['title' => 'No priority given']);
 
-    expect($story->refresh()->priority)->toBe(Priority::Medium);
+    expect($task->refresh()->priority)->toBe(Priority::Medium);
 });
 
 it('casts the priority column to the enum', function () {
-    $story = Story::factory()->priority(Priority::High)->create();
+    $task = Task::factory()->priority(Priority::High)->create();
 
-    expect($story->refresh()->priority)->toBe(Priority::High);
+    expect($task->refresh()->priority)->toBe(Priority::High);
 });
 
-it('inherits the parent story priority when a task is created without one', function () {
-    $story = Story::factory()->priority(Priority::Highest)->create();
+it('inherits the parent task priority when a subtask is created without one', function () {
+    $parent = Task::factory()->priority(Priority::Highest)->create();
 
-    $task = $story->tasks()->create(['title' => 'Inherits from story']);
+    $subtask = Task::factory()->for($parent->project)->childOf($parent)->create();
 
-    expect($task->refresh()->priority)->toBe(Priority::Highest);
+    expect($subtask->refresh()->priority)->toBe(Priority::Highest);
 });
 
-it('lets a task override the inherited priority', function () {
-    $story = Story::factory()->priority(Priority::Highest)->create();
+it('lets a subtask override the inherited priority', function () {
+    $parent = Task::factory()->priority(Priority::Highest)->create();
 
-    $task = $story->tasks()->create([
-        'title' => 'Explicit priority',
-        'priority' => Priority::Lowest,
-    ]);
+    $subtask = Task::factory()->for($parent->project)->childOf($parent)->priority(Priority::Lowest)->create();
 
-    expect($task->refresh()->priority)->toBe(Priority::Lowest);
+    expect($subtask->refresh()->priority)->toBe(Priority::Lowest);
 });
 
 it('sorts by the integer-backed priority column', function () {
-    $story = Story::factory()->priority(Priority::Medium)->create();
+    $project = Project::factory()->create();
 
-    Task::factory()->for($story)->priority(Priority::High)->create();
-    Task::factory()->for($story)->priority(Priority::Lowest)->create();
-    Task::factory()->for($story)->priority(Priority::Highest)->create();
+    Task::factory()->for($project)->priority(Priority::High)->create();
+    Task::factory()->for($project)->priority(Priority::Lowest)->create();
+    Task::factory()->for($project)->priority(Priority::Highest)->create();
 
-    $ordered = Task::query()->where('story_id', $story->id)->orderByDesc('priority')->get()
+    $ordered = Task::query()->where('project_id', $project->id)->orderByDesc('priority')->get()
         ->map(static fn (Task $task): Priority => $task->priority)
         ->all();
 

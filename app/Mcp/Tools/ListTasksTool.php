@@ -3,11 +3,9 @@
 namespace App\Mcp\Tools;
 
 use App\Enums\Status;
-use App\Models\Story;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\Rules\Enum;
 use Laravel\Mcp\Request;
@@ -17,7 +15,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Lists the tasks of a story, identified by its reference (e.g. "PROJ1"), optionally filtered by status. Only stories in projects the authenticated user is a member of are accessible.')]
+#[Description('Lists the tasks of a project, identified by its short_name (e.g. "PROJ"), optionally filtered by status. Only projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class ListTasksTool extends Tool
 {
@@ -32,27 +30,24 @@ class ListTasksTool extends Tool
             'reference' => ['required', 'string'],
             'status' => ['nullable', new Enum(Status::class)],
         ], [
-            'reference.required' => 'You must provide the story reference, formed from the project short_name and the story number (e.g. "PROJ1").',
+            'reference.required' => 'You must provide the project short_name (e.g. "PROJ").',
             'status' => 'The status filter must be one of "'.$statuses.'".',
         ]);
 
-        $story = ReferenceResolver::story($validated['reference']);
+        $project = ReferenceResolver::project($validated['reference']);
 
-        if ($story === null || ! $request->user()->can('view', $story)) {
-            return Response::error('No story with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1".');
+        if ($project === null || ! $request->user()->can('view', $project)) {
+            return Response::error('No project with short_name "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ".');
         }
 
-        $story->loadMissing([
+        $project->loadMissing([
             'tasks.tags',
-            // Eager-load each task's blockers (a story blocker also needs its
-            // tasks to know whether it is complete) so isBlocked() stays N+1-free.
-            'tasks.dependencyLinks.blocker' => static fn (MorphTo $morphTo) => $morphTo->morphWith([
-                Story::class => ['tasks'],
-                Task::class => [],
-            ]),
+            'tasks.project',
+            // Eager-load each task's blockers so isBlocked() stays N+1-free.
+            'tasks.dependencyLinks.blocker',
         ]);
 
-        $tasks = $story->tasks
+        $tasks = $project->tasks
             ->when(
                 isset($validated['status']),
                 static fn ($tasks) => $tasks->where('status', Status::from($validated['status']))
@@ -82,7 +77,7 @@ class ListTasksTool extends Tool
     {
         return [
             'reference' => $schema->string()
-                ->description('The story reference: the project short_name followed by the story number (e.g. "PROJ1").')
+                ->description('The project short_name, 2-4 uppercase letters (e.g. "PROJ").')
                 ->required(),
 
             'status' => $schema->string()
@@ -107,7 +102,7 @@ class ListTasksTool extends Tool
                 'status' => $schema->string()->description('The task status.')->required(),
                 'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
                 'is_blocked' => $schema->boolean()->description('Whether the task has a blocker that is not yet complete. Use the get-task tool for the specific blocking/blocked references.')->required(),
-            ]))->description('The tasks in the story.')->required(),
+            ]))->description('The tasks in the project.')->required(),
         ];
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Concerns;
 
 use App\Models\Dependency;
-use App\Models\Story;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -12,9 +11,9 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 /**
- * Adds directed dependency links to a Story or Task. An item can be "blocked by"
+ * Adds directed dependency links to a Task. An item can be "blocked by"
  * other items (its blockers) and can itself block others. Both ends are
- * polymorphic, so a story may depend on a task and vice versa.
+ * polymorphic.
  *
  * @phpstan-require-extends Model
  */
@@ -60,7 +59,7 @@ trait HasDependencies
     /**
      * The items that block this one.
      *
-     * @return Collection<int, Story|Task>
+     * @return Collection<int, Task>
      */
     public function blockers(): Collection
     {
@@ -69,7 +68,7 @@ trait HasDependencies
         foreach ($this->dependencyLinks as $link) {
             $blocker = $link->blocker;
 
-            if ($blocker instanceof Story || $blocker instanceof Task) {
+            if ($blocker instanceof Task) {
                 $blockers[] = $blocker;
             }
         }
@@ -80,7 +79,7 @@ trait HasDependencies
     /**
      * The items this one blocks.
      *
-     * @return Collection<int, Story|Task>
+     * @return Collection<int, Task>
      */
     public function blocking(): Collection
     {
@@ -89,7 +88,7 @@ trait HasDependencies
         foreach ($this->dependentLinks as $link) {
             $dependent = $link->dependent;
 
-            if ($dependent instanceof Story || $dependent instanceof Task) {
+            if ($dependent instanceof Task) {
                 $blocking[] = $dependent;
             }
         }
@@ -102,7 +101,7 @@ trait HasDependencies
      */
     public function isBlocked(): bool
     {
-        return $this->blockers()->contains(static fn (Story|Task $blocker): bool => ! $blocker->isComplete());
+        return $this->blockers()->contains(static fn (Task $blocker): bool => ! $blocker->isComplete());
     }
 
     /**
@@ -111,7 +110,7 @@ trait HasDependencies
      *
      * @throws InvalidArgumentException when the link would be a self-dependency or close a cycle.
      */
-    public function addBlocker(Story|Task $blocker): Dependency
+    public function addBlocker(Task $blocker): Dependency
     {
         if ($this->wouldCreateCycleWith($blocker)) {
             throw new InvalidArgumentException('A dependency cannot create a cycle.');
@@ -132,7 +131,7 @@ trait HasDependencies
     /**
      * Remove the link recording that this item is blocked by the given one.
      */
-    public function removeBlocker(Story|Task $blocker): void
+    public function removeBlocker(Task $blocker): void
     {
         $this->dependencyLinks()
             ->where('blocker_type', $blocker->getMorphClass())
@@ -146,7 +145,7 @@ trait HasDependencies
      * Whether adding the given blocker would point an item at itself or close a
      * dependency cycle (the blocker already depends on this item).
      */
-    public function wouldCreateCycleWith(Story|Task $blocker): bool
+    public function wouldCreateCycleWith(Task $blocker): bool
     {
         return $blocker->is($this) || $blocker->dependsOn($this);
     }
@@ -154,12 +153,12 @@ trait HasDependencies
     /**
      * Whether this item depends — directly or transitively — on the given one.
      */
-    public function dependsOn(Story|Task $other): bool
+    public function dependsOn(Task $other): bool
     {
         /** @var array<string, true> $visited */
         $visited = [];
 
-        /** @var array<int, Story|Task> $queue */
+        /** @var array<int, Task> $queue */
         $queue = [$this];
 
         while ($queue !== []) {

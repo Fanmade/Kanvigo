@@ -5,7 +5,6 @@ use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Subscriptions\SubscriptionToggle;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use App\Notifications\ItemActivity;
@@ -19,8 +18,7 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
     $this->project->members()->attach($this->member);
-    $this->story = Story::factory()->for($this->project)->create();
-    $this->task = Task::factory()->for($this->story)->status(Status::Planned)->create();
+    $this->task = Task::factory()->for($this->project)->status(Status::Planned)->create();
 });
 
 it('toggles a subscription on and off via the bell', function () {
