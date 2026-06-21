@@ -28,14 +28,17 @@ return new class extends Migration
         // Backfill each task's project from its story (works on SQLite and Postgres).
         DB::statement('UPDATE tasks SET project_id = (SELECT project_id FROM stories WHERE stories.id = tasks.story_id)');
 
+        // Drop the per-story unique BEFORE renumbering: otherwise assigning a
+        // project-wide number can transiently collide with a not-yet-renumbered
+        // task that still holds that number within the same story.
+        Schema::table('tasks', static function (Blueprint $table): void {
+            $table->dropUnique(['story_id', 'task_number']);
+        });
+
         $this->renumberTasksPerProject();
 
         Schema::table('tasks', static function (Blueprint $table): void {
-            $table->dropUnique(['story_id', 'task_number']);
             $table->unique(['project_id', 'task_number']);
-        });
-
-        Schema::table('tasks', static function (Blueprint $table): void {
             $table->foreignId('project_id')->nullable(false)->change();
         });
     }
@@ -45,10 +48,13 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('tasks', static function (Blueprint $table): void {
+            $table->dropUnique(['project_id', 'task_number']);
+        });
+
         $this->renumberTasksPerStory();
 
         Schema::table('tasks', static function (Blueprint $table): void {
-            $table->dropUnique(['project_id', 'task_number']);
             $table->unique(['story_id', 'task_number']);
             $table->dropForeign(['project_id']);
             $table->dropIndex(['project_id']);
