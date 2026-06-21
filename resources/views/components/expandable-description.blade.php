@@ -1,9 +1,9 @@
 @props(['content'])
 
-{{-- A Markdown description capped to a default height (scrolling within its card
-     so it never grows the page), with a Show more / Show less toggle to expand to
-     full height and collapse again. The toggle only appears when the content
-     actually overflows the cap. --}}
+{{-- A rich-text (HTML) description capped to a default height (scrolling within
+     its card so it never grows the page), with a Show more / Show less toggle to
+     expand to full height and collapse again. The toggle only appears when the
+     content actually overflows the cap. --}}
 <div
     x-data="{
         expanded: false,
@@ -19,7 +19,7 @@
         x-ref="body"
         :class="expanded ? 'max-h-none' : 'max-h-96 overflow-y-auto'"
     >
-        <x-markdown :content="$content" />
+        <x-rich-text :content="$content" />
     </div>
 
     <button

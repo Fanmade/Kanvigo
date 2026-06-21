@@ -50,7 +50,7 @@
                 @if ($showPreview)
                     <div class="min-h-[6rem] rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700" data-test="create-task-preview-content">
                         @if (trim($description) !== '')
-                            <x-markdown :content="$description" />
+                            <x-rich-text :content="$description" />
                         @else
                             <flux:text class="text-sm text-zinc-400">{{ __('Nothing to preview.') }}</flux:text>
                         @endif
