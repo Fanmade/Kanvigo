@@ -40,6 +40,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Completion progress bars** — any task with subtasks shows a progress rollup
   based on the share of its descendant tasks done, on the project overview (per
   root task) and on the task's detail page.
+- **Cancellation** — abandon a task with a reason (Won't fix, Duplicate or
+  Deprecated) and an optional note, instead of deleting it. Cancelling a task also
+  cancels its open subtasks. Canceled tasks keep their full history and are taken
+  off the board and out of active counts, but stay visible on the project overview;
+  reopening one returns it to Planned.
 - **Archiving** — archive finished tasks to clear them from the
   board and project overview without deleting them. Archived items are hidden by
   default and revealed with a "Show archived" toggle; archiving keeps a task's
@@ -72,10 +77,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   manage everything from a dedicated page, unread badge in the header.
 - **Markdown** descriptions and comments.
 - **Activity log** — polymorphic audit trail of creations, status, priority,
-  assignment, tag and dependency changes, naming what was added or removed (which
-  assignees, which tags, which dependency) and noting when an action was performed
-  via an API/MCP token (showing the token name). Collapsed by default; the
-  open/closed state is remembered per user.
+  assignment, tag and dependency changes, plus cancellations and reopenings,
+  naming what changed (which assignees, which tags, which dependency, the cancel
+  reason) and noting when an action was performed via an API/MCP token (showing the
+  token name). Collapsed by default; the open/closed state is remembered per user.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`
@@ -92,10 +97,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   token, that lets AI agents work with the projects and tasks the token's owner can
   access. Read tools (list/inspect) work with any token and surface each item's
   dependencies (what blocks it, what it blocks, and whether it is currently
-  blocked); write tools (create/update tasks, create projects, add
-  comments, link/unlink dependencies) require a token with write access. Inspecting a
-  project or task also returns its comment thread, and agents can read attachments —
-  including inline description images — by their id.
+  blocked); write tools (create/update tasks, cancel or reopen tasks, create
+  projects, add comments, link/unlink dependencies) require a token with write
+  access. Inspecting a project or task also returns its comment thread and any
+  cancellation reason, and agents can read attachments — including inline
+  description images — by their id.
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 
