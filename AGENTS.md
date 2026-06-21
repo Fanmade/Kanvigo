@@ -70,6 +70,24 @@ $page->screenshot(false, 'command-palette'); // viewport only, custom name
 End interactive browser tests with `->assertNoJavascriptErrors()` so silent
 client-side failures surface.
 
+## Run browser tests via the composer script, never raw artisan
+
+Always run `composer test:browser` (or `composer test:all` / `composer check`) —
+**not** a bare `php artisan test --testsuite=Browser`.
+
+Pest's browser plugin starts a `playwright run-server` background process and, under
+`--parallel`, does not reliably reap it on teardown (and never reaps it if the test
+process is killed). The leaked server keeps the command's stdout/stderr pipe open.
+An interactive shell returns its prompt anyway, so a human sees the run finish in
+seconds — but a non-interactive runner (an agent's shell, CI) blocks on that open
+pipe until it times out, so the tests appear to "hang forever". Leaked servers also
+pile up and starve the machine, slowing *all* later runs.
+
+`composer test:browser` reaps the leftover server (`pkill -f 'playwright run-server'`)
+after the run while preserving the exit code, so the command always returns promptly.
+If browser tests ever do hang, the cause is almost always orphaned `playwright
+run-server` processes — `pkill -f 'playwright run-server'` clears them.
+
 === .ai/feature-documentation rules ===
 
 # Feature Documentation
