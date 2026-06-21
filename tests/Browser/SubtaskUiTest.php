@@ -12,7 +12,7 @@ it('creates a subtask from the task detail page and shows it in the list', funct
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
     $project->members()->attach($user);
-    $parent = Task::factory()->for($project)->create(['title' => 'Parent task']);
+    $parent = Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Parent task']);
 
     $this->actingAs($user);
 

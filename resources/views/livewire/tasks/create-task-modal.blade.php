@@ -23,7 +23,7 @@
                         @class(['sm:col-span-2' => count($this->projects) <= 1])
                         data-test="create-task-parent"
                     >
-                        <flux:select.option :value="null">{{ __('None (top-level task)') }}</flux:select.option>
+                        <flux:select.option value="">{{ __('None (top-level task)') }}</flux:select.option>
                         @foreach ($this->parentOptions as $id => $label)
                             <flux:select.option :value="$id">{{ $label }}</flux:select.option>
                         @endforeach

@@ -171,14 +171,27 @@ class CreateTaskModal extends Component
 
         $depthOf = $this->depthResolver($tasks->keyBy('id'));
 
-        return $tasks
+        $label = static fn (Task $task): string => $project->short_name.'-'.$task->task_number.' — '.$task->title;
+
+        $options = $tasks
             ->reject(static fn (Task $task): bool => $task->isArchived())
             ->reject(static fn (Task $task): bool => $task->status->isTerminal())
             ->filter(static fn (Task $task): bool => $depthOf($task->id) < $maxDepth)
-            ->mapWithKeys(fn (Task $task): array => [
-                $task->id => $project->short_name.'-'.$task->task_number.' — '.$task->title,
-            ])
+            ->mapWithKeys(static fn (Task $task): array => [$task->id => $label($task)])
             ->all();
+
+        // Always keep the contextually preselected parent in the list (e.g. a
+        // subtask added from a Done task page) so the select has an option for its
+        // value, even when the filters above would otherwise drop it.
+        if ($this->parentId !== null && ! array_key_exists($this->parentId, $options)) {
+            $selected = $tasks->firstWhere('id', $this->parentId);
+
+            if ($selected !== null) {
+                $options = [$selected->id => $label($selected)] + $options;
+            }
+        }
+
+        return $options;
     }
 
     /**
@@ -375,12 +388,25 @@ class CreateTaskModal extends Component
         $this->applyTags($task);
         $this->applyAssignees($task, $project);
 
+        $reference = $project->short_name.'-'.$task->task_number;
+        $url = route('task.show', ['short_name' => $project->short_name, 'task_number' => $task->task_number]);
+
         $this->resetForm();
         $this->show = false;
 
         $this->dispatch('task-created');
 
-        Flux::toast(variant: 'success', text: __('Task created.'));
+        // A longer, dismissible success toast that links straight to the new task.
+        Flux::toast(
+            text: __('Task created.'),
+            duration: 10000,
+            variant: 'success',
+            link: [
+                'text' => $reference,
+                'href' => $url,
+                'navigate' => true,
+            ],
+        );
     }
 
     /**

@@ -76,6 +76,32 @@ it('offers only depth-eligible, active tasks as parents', function () {
         ->and(array_keys($options))->not->toContain($grandchild->id, $done->id, $archived->id);
 });
 
+it('treats an empty parent selection as a top-level task', function () {
+    Task::factory()->for($this->project)->status(Status::ToDo)->create();
+
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('parentId', '') // what the "None (top-level task)" option sends
+        ->assertSet('parentId', null)
+        ->set('title', 'Top level')
+        ->call('save');
+
+    expect($this->project->tasks()->where('title', 'Top level')->first()->parent_id)->toBeNull();
+});
+
+it('keeps a terminal parent selectable when a subtask is added to it', function () {
+    $done = Task::factory()->for($this->project)->status(Status::Done)->create(['title' => 'Shipped']);
+
+    $options = Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id, $done->id)
+        ->instance()
+        ->parentOptions();
+
+    expect(array_keys($options))->toContain($done->id);
+});
+
 it('resets the parent and assignee selection when the project changes', function () {
     $parent = Task::factory()->for($this->project)->create();
     $other = Project::factory()->create(['short_name' => 'XYZ']);
@@ -206,14 +232,20 @@ it('renders a markdown preview of the description on demand', function () {
         ->assertSeeHtml('<h1>Plan</h1>');
 });
 
-it('dispatches task-created and closes after a successful save', function () {
-    Livewire::actingAs($this->member)
+it('refreshes the page and shows a toast linking to the new task', function () {
+    $component = Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)
         ->call('open', $this->project->id)
         ->set('title', 'Fresh task')
         ->call('save')
-        ->assertDispatched('task-created')
-        ->assertSet('show', false);
+        ->assertSet('show', false)
+        ->assertDispatched('task-created');
+
+    $task = $this->project->tasks()->where('title', 'Fresh task')->first();
+    $url = route('task.show', ['short_name' => $this->project->short_name, 'task_number' => $task->task_number]);
+
+    $component->assertDispatched('toast-show', fn (string $event, array $params): bool => ($params['link']['href'] ?? null) === $url
+        && ($params['link']['text'] ?? null) === $task->reference);
 });
 
 it('rejects a parent task at the maximum nesting depth', function () {
