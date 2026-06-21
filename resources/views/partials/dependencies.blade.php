@@ -1,8 +1,8 @@
 @php($canManage = $this->canManageDependencies)
 
 <div class="flex flex-col gap-3" data-test="dependencies" @if ($canManage) x-data="{ adding: @js($errors->has('dependencyReference')) }" @endif>
-    <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             <flux:heading size="sm">{{ __('Dependencies') }}</flux:heading>
             @if ($this->isBlocked)
                 <flux:badge size="sm" color="red" icon="lock-closed" data-test="blocked-badge">{{ __('Blocked') }}</flux:badge>
