@@ -25,6 +25,13 @@ it('preselects the project passed as context', function () {
         ->assertSet('projectId', $this->project->id);
 });
 
+it('preselects the only available project when opened without context', function () {
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open')
+        ->assertSet('projectId', $this->project->id);
+});
+
 it('only lists projects the user is a member of', function () {
     Project::factory()->create(['short_name' => 'XYZ']);
 

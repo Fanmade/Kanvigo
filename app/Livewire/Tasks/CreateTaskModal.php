@@ -93,6 +93,12 @@ class CreateTaskModal extends Component
 
         $projectId ??= $this->contextProjectId;
 
+        // With a single available project there is nothing to choose, so preselect
+        // it (the dropdown is hidden in that case).
+        if ($projectId === null && $this->projects()->count() === 1) {
+            $projectId = $this->projects()->first()?->id;
+        }
+
         if ($parentId === null && $projectId === $this->contextProjectId) {
             $parentId = $this->contextParentId;
         }
