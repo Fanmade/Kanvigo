@@ -66,7 +66,22 @@ class CreateTaskModal extends Component
      */
     public array $tagNames = [];
 
+    /**
+     * Display/creation color per staged tag name (an existing tag's color, or the
+     * one chosen for a brand-new tag).
+     *
+     * @var array<string, string>
+     */
+    public array $tagColors = [];
+
     public string $tagQuery = '';
+
+    // Create-tag (color picker) sub-dialog state.
+    public bool $showTagColorModal = false;
+
+    public string $newTagName = '';
+
+    public string $newTagColor = 'zinc';
 
     /**
      * Ids of project members to assign to the new task.
@@ -242,23 +257,70 @@ class CreateTaskModal extends Component
     }
 
     /**
-     * Stage a suggested tag by its position in the suggestion list.
+     * Stage a suggested (existing) tag by its position in the suggestion list,
+     * keeping its established color.
      */
     public function addSuggestedTag(int $index): void
     {
-        $name = $this->tagSuggestions()->get($index)['name'] ?? null;
+        $suggestion = $this->tagSuggestions()->get($index);
 
-        if ($name !== null) {
-            $this->stageTag($name);
+        if ($suggestion !== null) {
+            $this->stageTag($suggestion['name'], $suggestion['color']);
         }
     }
 
     /**
-     * Stage the typed query as a new tag.
+     * Handle Enter in the tag input: stage an exact existing match outright, or
+     * open the color picker for a brand-new tag.
      */
-    public function createDraftTag(): void
+    public function tagEnter(string $value): void
     {
-        $this->stageTag($this->tagQuery);
+        $this->openTagColorModal($value);
+    }
+
+    /**
+     * Begin creating a new tag: stage an exact existing match directly, otherwise
+     * open the color picker prefilled with a name-derived default color.
+     */
+    public function openTagColorModal(?string $name = null): void
+    {
+        $name = trim($name ?? $this->tagQuery);
+
+        if ($name === '') {
+            return;
+        }
+
+        $existing = Tag::query()->whereRaw('lower(name) = ?', [mb_strtolower($name)])->first();
+
+        if ($existing !== null) {
+            $this->stageTag($existing->name, $existing->color);
+            $this->reset('tagQuery');
+            unset($this->tagSuggestions);
+
+            return;
+        }
+
+        $this->resetErrorBag('newTagName');
+        $this->newTagName = $name;
+        $this->newTagColor = Tag::colorForName($name);
+        $this->showTagColorModal = true;
+    }
+
+    /**
+     * Confirm the new tag from the color picker and stage it with its color.
+     */
+    public function confirmNewTag(): void
+    {
+        $validated = $this->validate([
+            'newTagName' => ['required', 'string', 'max:255'],
+            'newTagColor' => ['required', 'string', 'in:'.implode(',', Tag::PALETTE)],
+        ]);
+
+        $this->stageTag($validated['newTagName'], $validated['newTagColor']);
+
+        $this->reset('newTagName', 'tagQuery', 'showTagColorModal');
+        $this->newTagColor = 'zinc';
+        unset($this->tagSuggestions);
     }
 
     /**
@@ -266,8 +328,14 @@ class CreateTaskModal extends Component
      */
     public function removeDraftTag(int $index): void
     {
+        $name = $this->tagNames[$index] ?? null;
+
         unset($this->tagNames[$index]);
         $this->tagNames = array_values($this->tagNames);
+
+        if ($name !== null) {
+            unset($this->tagColors[$name]);
+        }
     }
 
     public function save(): void
@@ -331,16 +399,21 @@ class CreateTaskModal extends Component
      */
     protected function resetForm(): void
     {
-        $this->reset('projectId', 'parentId', 'title', 'description', 'dueDate', 'showPreview', 'tagNames', 'tagQuery', 'assigneeIds');
+        $this->reset(
+            'projectId', 'parentId', 'title', 'description', 'dueDate', 'showPreview',
+            'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
+        );
         $this->priority = Priority::default()->value;
         $this->status = Status::Planned->value;
+        $this->newTagColor = 'zinc';
         unset($this->parentOptions, $this->members, $this->tagSuggestions);
     }
 
     /**
-     * Stage a tag name, ignoring blanks and case-insensitive duplicates.
+     * Stage a tag name with its color, ignoring blanks and case-insensitive
+     * duplicates.
      */
-    protected function stageTag(string $name): void
+    protected function stageTag(string $name, string $color): void
     {
         $name = trim($name);
 
@@ -356,12 +429,15 @@ class CreateTaskModal extends Component
             $this->tagNames[] = $name;
         }
 
+        $this->tagColors[$name] = $color;
+
         $this->reset('tagQuery');
         unset($this->tagSuggestions);
     }
 
     /**
-     * Create (or reuse) the staged tags and attach them to the new task.
+     * Create (or reuse) the staged tags and attach them to the new task. A
+     * brand-new tag is created with the color chosen for it.
      */
     protected function applyTags(Task $task): void
     {
@@ -370,7 +446,10 @@ class CreateTaskModal extends Component
         }
 
         $tagIds = collect($this->tagNames)
-            ->map(static fn (string $name): int => Tag::firstOrCreate(['name' => trim($name)])->getKey())
+            ->map(fn (string $name): int => Tag::firstOrCreate(
+                ['name' => trim($name)],
+                ['color' => $this->tagColors[$name] ?? Tag::colorForName($name)],
+            )->getKey())
             ->all();
 
         $task->tags()->syncWithoutDetaching($tagIds);

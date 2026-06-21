@@ -91,15 +91,19 @@ it('resets the parent and assignee selection when the project changes', function
         ->assertSet('assigneeIds', []);
 });
 
-it('stages a typed tag and attaches it to the created task', function () {
+it('stages a new tag through the color picker and attaches it to the created task', function () {
     Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)
         ->call('open', $this->project->id)
         ->set('title', 'Tagged')
         ->set('tagQuery', 'urgent')
-        ->call('createDraftTag')
+        ->call('openTagColorModal')
+        ->assertSet('showTagColorModal', true)
+        ->assertSet('newTagName', 'urgent')
+        ->call('confirmNewTag')
         ->assertSet('tagNames', ['urgent'])
         ->assertSet('tagQuery', '')
+        ->assertSet('showTagColorModal', false)
         ->call('save');
 
     $task = $this->project->tasks()->where('title', 'Tagged')->first();
@@ -107,14 +111,43 @@ it('stages a typed tag and attaches it to the created task', function () {
     expect($task->tags->pluck('name')->all())->toContain('urgent');
 });
 
+it('creates a brand-new tag with the chosen color', function () {
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'Colored')
+        ->set('tagQuery', 'backend')
+        ->call('openTagColorModal')
+        ->set('newTagColor', 'indigo')
+        ->call('confirmNewTag')
+        ->assertSet('tagNames', ['backend'])
+        ->call('save');
+
+    expect(Tag::where('name', 'backend')->first()->color)->toBe('indigo');
+});
+
+it('stages an existing tag directly on enter, skipping the color picker', function () {
+    Tag::firstOrCreate(['name' => 'backend'], ['color' => 'sky']);
+
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('tagQuery', 'backend')
+        ->call('tagEnter', 'backend')
+        ->assertSet('showTagColorModal', false)
+        ->assertSet('tagNames', ['backend']);
+});
+
 it('does not stage the same tag twice', function () {
     Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)
         ->call('open', $this->project->id)
         ->set('tagQuery', 'urgent')
-        ->call('createDraftTag')
+        ->call('tagEnter', 'urgent')
+        ->call('confirmNewTag')
         ->set('tagQuery', 'URGENT')
-        ->call('createDraftTag')
+        ->call('tagEnter', 'URGENT')
+        ->call('confirmNewTag')
         ->assertSet('tagNames', ['urgent']);
 });
 

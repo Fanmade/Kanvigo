@@ -70,129 +70,137 @@
                 </flux:select>
             </div>
 
-            {{-- Metadata rail: due date, tags, assignees --}}
-            <flux:card class="flex flex-col gap-4">
-                <x-rail-row :label="__('Due date')">
-                    @if ($dueDate)
-                        <flux:badge size="sm" color="zinc" variant="pill" data-test="create-task-due-date-badge">
-                            {{ \Illuminate\Support\Carbon::parse($dueDate)->format('M j, Y') }}
-                            <flux:badge.close wire:click="$set('dueDate', '')" :aria-label="__('Clear due date')" data-test="create-task-clear-due-date" />
-                        </flux:badge>
-                    @else
-                        <flux:text size="sm" class="text-zinc-400">{{ __('None') }}</flux:text>
-                    @endif
-
-                    <flux:dropdown align="end" data-test="create-task-due-date-control">
-                        <flux:button size="xs" variant="subtle" :icon="$dueDate ? 'pencil' : 'plus'" :aria-label="__('Set due date')" />
-                        <flux:popover class="flex w-64 flex-col gap-2">
-                            <flux:input type="date" wire:model.live="dueDate" :label="__('Due date')" data-test="create-task-due-date" />
-                        </flux:popover>
-                    </flux:dropdown>
-                </x-rail-row>
-
-                <flux:separator variant="subtle" />
-
-                {{-- Tags --}}
-                <div x-data="{ adding: false }" class="flex flex-col gap-2">
-                    <div class="flex items-center justify-between gap-3">
-                        <flux:text size="sm" class="shrink-0 text-zinc-500 dark:text-zinc-400">{{ __('Tags') }}</flux:text>
-                        <div class="flex min-w-0 flex-wrap items-center justify-end gap-1" data-test="create-task-tags">
-                            @foreach ($tagNames as $index => $name)
-                                <flux:badge size="sm" color="zinc" variant="pill" wire:key="draft-tag-{{ $index }}">
-                                    {{ $name }}
-                                    <flux:badge.close wire:click="removeDraftTag({{ $index }})" :aria-label="__('Remove tag')" data-test="create-task-remove-tag-{{ $index }}" />
-                                </flux:badge>
-                            @endforeach
-                            <flux:button
-                                type="button"
-                                size="xs"
-                                variant="subtle"
-                                icon="plus"
-                                :aria-label="__('Add tag')"
-                                x-on:click="adding = ! adding; $nextTick(() => $refs.tagInput?.querySelector('input')?.focus())"
-                                data-test="create-task-add-tag"
-                            />
-                        </div>
-                    </div>
-
-                    <div x-show="adding" x-cloak x-ref="tagInput" class="flex flex-col gap-1">
-                        <flux:input
-                            size="sm"
-                            wire:model.live.debounce.200ms="tagQuery"
-                            :placeholder="__('Find or create a tag')"
-                            x-on:keydown.escape="adding = false"
-                            data-test="create-task-tag-input"
+            {{-- Tags --}}
+            <div x-data="{ adding: false }" class="flex flex-col gap-2">
+                <div class="flex min-h-7 items-center justify-between gap-3">
+                    <span class="shrink-0 text-sm font-medium text-zinc-800 dark:text-white">{{ __('Tags') }}</span>
+                    <div class="flex min-w-0 flex-wrap items-center justify-end gap-1" data-test="create-task-tags">
+                        @foreach ($tagNames as $index => $name)
+                            <flux:badge size="sm" color="zinc" variant="pill" wire:key="draft-tag-{{ $index }}">
+                                <x-tag-dot :color="$tagColors[$name] ?? 'zinc'" class="me-1.5 size-2" />{{ $name }}
+                                <flux:badge.close wire:click="removeDraftTag({{ $index }})" :aria-label="__('Remove tag')" data-test="create-task-remove-tag-{{ $index }}" />
+                            </flux:badge>
+                        @endforeach
+                        <flux:button
+                            type="button"
+                            size="xs"
+                            variant="subtle"
+                            icon="plus"
+                            :aria-label="__('Add tag')"
+                            x-on:click="adding = ! adding; $nextTick(() => $refs.tagInput?.querySelector('input')?.focus())"
+                            data-test="create-task-add-tag"
                         />
-
-                        @if (trim($tagQuery) !== '')
-                            <div class="flex flex-col gap-0.5" role="listbox">
-                                @foreach ($this->tagSuggestions as $index => $suggestion)
-                                    <flux:button
-                                        type="button"
-                                        size="xs"
-                                        variant="ghost"
-                                        class="justify-start!"
-                                        wire:click="addSuggestedTag({{ $index }})"
-                                        data-test="create-task-tag-suggestion-{{ \Illuminate\Support\Str::slug($suggestion['name']) }}"
-                                    >
-                                        <x-tag-dot :color="$suggestion['color']" class="me-1.5 size-2" />{{ $suggestion['name'] }}
-                                    </flux:button>
-                                @endforeach
-
-                                @if ($this->canCreateTag)
-                                    <flux:button
-                                        type="button"
-                                        size="xs"
-                                        variant="ghost"
-                                        icon="plus"
-                                        class="justify-start!"
-                                        wire:click="createDraftTag"
-                                        data-test="create-task-tag-create"
-                                    >
-                                        {{ __('Create') }} “{{ trim($tagQuery) }}”
-                                    </flux:button>
-                                @endif
-                            </div>
-                        @endif
                     </div>
                 </div>
 
+                <div x-show="adding" x-cloak x-ref="tagInput" class="flex flex-col gap-1">
+                    <flux:input
+                        size="sm"
+                        wire:model.live.debounce.200ms="tagQuery"
+                        :placeholder="__('Find or create a tag')"
+                        x-on:keydown.enter.prevent="$wire.tagEnter($event.target.value)"
+                        x-on:keydown.escape="adding = false"
+                        data-test="create-task-tag-input"
+                    />
+
+                    @if (trim($tagQuery) !== '')
+                        <div class="flex flex-col gap-0.5" role="listbox">
+                            @foreach ($this->tagSuggestions as $index => $suggestion)
+                                <flux:button
+                                    type="button"
+                                    size="xs"
+                                    variant="ghost"
+                                    class="justify-start!"
+                                    wire:click="addSuggestedTag({{ $index }})"
+                                    data-test="create-task-tag-suggestion-{{ \Illuminate\Support\Str::slug($suggestion['name']) }}"
+                                >
+                                    <x-tag-dot :color="$suggestion['color']" class="me-1.5 size-2" />{{ $suggestion['name'] }}
+                                </flux:button>
+                            @endforeach
+
+                            @if ($this->canCreateTag)
+                                <flux:button
+                                    type="button"
+                                    size="xs"
+                                    variant="ghost"
+                                    icon="plus"
+                                    class="justify-start!"
+                                    wire:click="openTagColorModal"
+                                    data-test="create-task-tag-create"
+                                >
+                                    {{ __('Create') }} “{{ trim($tagQuery) }}”
+                                </flux:button>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Due date + assignees --}}
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <flux:input type="date" wire:model="dueDate" :label="__('Due date')" data-test="create-task-due-date" />
+
                 @if ($this->projectId && $this->members->isNotEmpty())
-                    <flux:separator variant="subtle" />
-
-                    <x-rail-row :label="__('Assignees')">
-                        @php($selectedAssignees = $this->members->whereIn('id', $assigneeIds))
-
-                        @if ($selectedAssignees->isNotEmpty())
-                            <flux:avatar.group>
-                                @foreach ($selectedAssignees as $assignee)
-                                    <x-user-avatar :user="$assignee" circle :tooltip="$assignee->name" />
-                                @endforeach
-                            </flux:avatar.group>
-                        @else
-                            <flux:text size="sm" class="text-zinc-400">{{ __('Unassigned') }}</flux:text>
-                        @endif
-
-                        <flux:dropdown align="end" data-test="create-task-assignees">
-                            <flux:button size="xs" variant="subtle" icon="plus" :aria-label="__('Edit assignees')" />
-                            <flux:popover class="flex w-64 flex-col gap-2">
-                                <flux:text size="xs" class="font-medium text-zinc-400">{{ __('Assignees') }}</flux:text>
-                                <flux:select variant="listbox" multiple searchable wire:model.live="assigneeIds" :placeholder="__('Assign members')">
-                                    @foreach ($this->members as $member)
-                                        <flux:select.option :value="$member->id">{{ $member->name }}</flux:select.option>
-                                    @endforeach
-                                </flux:select>
-                            </flux:popover>
-                        </flux:dropdown>
-                    </x-rail-row>
+                    <flux:select variant="listbox" multiple searchable wire:model="assigneeIds" :label="__('Assignees')" :placeholder="__('Select assignees')" data-test="create-task-assignees">
+                        @foreach ($this->members as $member)
+                            <flux:select.option :value="$member->id">{{ $member->name }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
                 @endif
-            </flux:card>
+            </div>
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
                     <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
                 <flux:button type="submit" variant="primary" data-test="create-task-submit">{{ __('Create') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- Choose a color for a brand-new tag --}}
+    <flux:modal wire:model="showTagColorModal" class="md:w-96" data-test="create-task-tag-color-modal">
+        <form wire:submit.prevent="confirmNewTag" class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('New tag') }}</flux:heading>
+
+            <flux:input wire:model="newTagName" :label="__('Name')" data-test="create-task-new-tag-name" />
+            <flux:error name="newTagName" />
+
+            <div class="flex flex-col gap-1.5">
+                <flux:label>{{ __('Color') }}</flux:label>
+                <div class="flex flex-wrap gap-2" data-test="create-task-tag-color-picker">
+                    @foreach (\App\Models\Tag::PALETTE as $paletteColor)
+                        <flux:button
+                            type="button"
+                            size="xs"
+                            variant="ghost"
+                            wire:click="$set('newTagColor', '{{ $paletteColor }}')"
+                            @class([
+                                'rounded-full! p-0! ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-800',
+                                'ring-zinc-900 dark:ring-white' => $newTagColor === $paletteColor,
+                                'ring-transparent' => $newTagColor !== $paletteColor,
+                            ])
+                            :aria-label="$paletteColor"
+                            data-test="create-task-tag-color-{{ $paletteColor }}"
+                        >
+                            <x-tag-dot :color="$paletteColor" class="size-5" />
+                        </flux:button>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
+                <flux:badge size="sm" color="zinc" variant="pill">
+                    <x-tag-dot :color="$newTagColor" class="me-1.5 size-2" />{{ $newTagName !== '' ? $newTagName : __('tag') }}
+                </flux:badge>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary" data-test="create-task-confirm-tag">{{ __('Add tag') }}</flux:button>
             </div>
         </form>
     </flux:modal>
