@@ -1,4 +1,26 @@
+import Image from '@tiptap/extension-image';
 import Sortable from 'sortablejs';
+
+/**
+ * Add inline image support to Flux's rich-text editor.
+ *
+ * Flux's editor ships without a Tiptap Image extension, so it would otherwise
+ * drop <img> nodes on load (losing inline images when a description is edited).
+ * We register the Image extension and stash the Tiptap instance on the editor
+ * element so the upload wrapper (Alpine `richEditor`) can insert images at the
+ * cursor after they finish uploading.
+ */
+document.addEventListener('flux:editor', (e) => {
+    e.detail.registerExtensions([
+        Image.configure({ HTMLAttributes: { class: 'rounded-lg' } }),
+    ]);
+
+    e.detail.init(({ editor }) => {
+        const root = e.target instanceof Element ? e.target.closest('[data-flux-editor]') : null;
+
+        (root ?? e.target).__editor = editor;
+    });
+});
 
 /**
  * Walk the siblings of a card in the given direction and return the id of the
@@ -183,6 +205,53 @@ document.addEventListener('alpine:init', () => {
                 pink: 'bg-pink-500',
                 rose: 'bg-rose-500',
             }[color] ?? 'bg-zinc-400';
+        },
+    }));
+
+    /**
+     * Inline image uploads for the Flux rich-text editor.
+     *
+     * Wraps a `flux:editor` and, on paste or drop of an image, uploads it as an
+     * inline attachment via `$wire.upload('inlineImage', …)` then inserts the
+     * stored image at the cursor using the Tiptap instance captured in the
+     * `flux:editor` listener above.
+     */
+    window.Alpine.data('richEditor', () => ({
+        uploading: false,
+
+        imageFiles(list) {
+            return Array.from(list || []).filter((file) => file.type.startsWith('image/'));
+        },
+
+        editor() {
+            return this.$el.querySelector('[data-flux-editor]')?.__editor ?? null;
+        },
+
+        async embed(file) {
+            this.uploading = true;
+
+            await new Promise((resolve) => {
+                this.$wire.upload(
+                    'inlineImage',
+                    file,
+                    () => this.$wire.addInlineImage().then((src) => {
+                        if (src) {
+                            this.editor()?.chain().focus().setImage({ src }).run();
+                        }
+
+                        resolve();
+                    }),
+                    () => resolve(),
+                );
+            });
+
+            this.uploading = false;
+        },
+
+        async handle(list) {
+            for (const file of this.imageFiles(list)) {
+                await this.embed(file);
+            }
         },
     }));
 });

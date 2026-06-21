@@ -78,6 +78,7 @@ return new class extends Migration
 
         // Open embedded image links (a thumbnail linking to its full-size image)
         // in a new tab instead of navigating away.
+        /** @noinspection HtmlUnknownTarget */
         return (string) preg_replace(
             '/<a href="([^"]*)">(\s*<img\b)/',
             '<a href="$1" target="_blank" rel="noopener noreferrer">$2',

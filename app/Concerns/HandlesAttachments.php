@@ -66,13 +66,13 @@ trait HandlesAttachments
     }
 
     /**
-     * Persist a pasted or dropped image as an inline attachment and splice a
-     * markdown reference to it into the description at the given cursor offset.
+     * Persist a pasted or dropped image as an inline attachment and return its
+     * (relative, host-portable) URL so the editor can insert it at the cursor.
      */
-    public function addInlineImage(int $cursor = 0): void
+    public function addInlineImage(): ?string
     {
         if ($this->inlineImage === null) {
-            return;
+            return null;
         }
 
         $attachable = $this->attachable();
@@ -87,19 +87,11 @@ trait HandlesAttachments
         $attachment = $this->storeAttachment($this->inlineImage, $attachable, isInline: true);
         $this->reset('inlineImage');
 
-        // Relative URLs so the markdown stays portable across hosts.
         $attachment->setRelation('attachable', $attachable);
-        $full = $attachment->viewUrl(absolute: false);
-        $preview = $attachment->hasThumbnail()
+
+        return $attachment->hasThumbnail()
             ? $attachment->thumbnailUrl(absolute: false)
-            : $full;
-
-        // A thumbnail image that links through to the full-size image (shown
-        // inline in a new tab, not downloaded).
-        $markdown = sprintf('[![%s](%s)](%s)', $attachment->name, $preview, $full);
-
-        $cursor = max(0, min($cursor, mb_strlen($this->description)));
-        $this->description = mb_substr($this->description, 0, $cursor).$markdown.mb_substr($this->description, $cursor);
+            : $attachment->viewUrl(absolute: false);
     }
 
     public function deleteAttachment(int $attachmentId): void

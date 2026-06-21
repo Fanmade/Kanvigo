@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection HtmlUnknownTarget */
+
 use Illuminate\Support\Facades\Blade;
 
 it('renders allowed HTML and keeps inline image links', function () {

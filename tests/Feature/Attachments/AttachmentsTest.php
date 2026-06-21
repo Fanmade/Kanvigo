@@ -54,12 +54,11 @@ it('generates a thumbnail for image uploads', function () {
     Storage::disk('attachments')->assertExists($attachment->thumbnail_path);
 });
 
-it('embeds a pasted image into the description as linked markdown', function () {
+it('uploads a pasted image as an inline attachment and returns its url', function () {
     $component = Livewire::actingAs($this->member)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
-        ->set('description', 'Hello world')
         ->set('inlineImage', UploadedFile::fake()->image('diagram.png', 400, 300))
-        ->call('addInlineImage', 5)
+        ->call('addInlineImage')
         ->assertHasNoErrors();
 
     $attachment = $this->project->attachments()->where('is_inline', true)->first();
@@ -68,20 +67,14 @@ it('embeds a pasted image into the description as linked markdown', function () 
         ->and($attachment->is_inline)->toBeTrue()
         ->and($attachment->hasThumbnail())->toBeTrue();
 
-    $description = $component->get('description');
+    // The editor inserts the returned (relative, project-scoped) thumbnail URL.
+    $component
+        ->assertReturned($attachment->thumbnailUrl(absolute: false))
+        ->assertSet('inlineImage', null);
 
-    expect($description)
-        ->toContain('[![diagram.png]')
-        ->toContain($attachment->thumbnailUrl(absolute: false))
-        ->toContain($attachment->viewUrl(absolute: false))
-        // URLs are project-scoped and relative, not absolute.
+    expect($attachment->thumbnailUrl(absolute: false))
         ->toContain('/'.$this->project->short_name.'/attachments/')
-        ->not->toContain($attachment->viewUrl())
-        ->and(str_starts_with($description, 'Hello[!['))->toBeTrue()
-        ->and(str_ends_with($description, ' world'))->toBeTrue();
-
-    // The temporary upload is cleared once embedded.
-    $component->assertSet('inlineImage', null);
+        ->not->toContain('http');
 });
 
 it('keeps inline images out of the attachment tile list', function () {

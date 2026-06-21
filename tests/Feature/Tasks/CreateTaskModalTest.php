@@ -223,17 +223,6 @@ it('ignores assignees who are not members of the project', function () {
     expect($task->assignees)->toHaveCount(0);
 });
 
-it('renders a sanitized HTML preview of the description on demand', function () {
-    Livewire::actingAs($this->member)
-        ->test(CreateTaskModal::class)
-        ->call('open', $this->project->id)
-        ->assertSet('showPreview', false)
-        ->set('description', '<h1>Plan</h1><script>alert(1)</script>')
-        ->set('showPreview', true)
-        ->assertSeeHtml('<h1>Plan</h1>')
-        ->assertDontSeeHtml('<script>alert(1)</script>');
-});
-
 it('refreshes the page and shows a toast linking to the new task', function () {
     $component = Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)

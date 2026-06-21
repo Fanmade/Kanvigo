@@ -51,8 +51,6 @@ class CreateTaskModal extends Component
 
     public string $description = '';
 
-    public bool $showPreview = false;
-
     /**
      * When on, the dialog stays open after saving so another task can be created.
      */
@@ -438,7 +436,7 @@ class CreateTaskModal extends Component
     protected function resetForm(): void
     {
         $this->reset(
-            'projectId', 'parentId', 'title', 'description', 'dueDate', 'showPreview', 'createAnother',
+            'projectId', 'parentId', 'title', 'description', 'dueDate', 'createAnother',
             'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
         );
         $this->priority = Priority::default()->value;
@@ -454,7 +452,7 @@ class CreateTaskModal extends Component
     protected function resetForNextTask(): void
     {
         $this->reset(
-            'title', 'description', 'dueDate', 'showPreview',
+            'title', 'description', 'dueDate',
             'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
         );
         $this->newTagColor = 'zinc';

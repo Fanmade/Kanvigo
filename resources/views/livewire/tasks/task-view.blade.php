@@ -70,7 +70,7 @@
     @if ($editing)
         <form wire:submit="save" class="flex flex-col gap-4">
             <flux:input wire:model="title" :label="__('Title')" />
-            <x-attachments.markdown-editor :label="__('Description')" />
+            <x-attachments.rich-editor :label="__('Description')" />
             <x-attachments.upload-button />
             <flux:input type="date" wire:model="dueDate" :label="__('Due date')" :description="__('Optional')" />
             <div class="flex gap-2">

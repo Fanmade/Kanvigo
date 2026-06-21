@@ -38,27 +38,7 @@
                 x-on:create-task-focus-title.window="$nextTick(() => (($el.matches('input') ? $el : $el.querySelector('input'))?.focus()))"
             />
 
-            <div>
-                <div class="mb-1 flex items-center justify-between">
-                    <span class="text-sm font-medium text-zinc-800 dark:text-white">{{ __('Description') }}</span>
-                    <div class="flex gap-1">
-                        <flux:button type="button" size="xs" :variant="$showPreview ? 'ghost' : 'filled'" wire:click="$set('showPreview', false)" data-test="create-task-write">{{ __('Write') }}</flux:button>
-                        <flux:button type="button" size="xs" :variant="$showPreview ? 'filled' : 'ghost'" wire:click="$set('showPreview', true)" data-test="create-task-preview">{{ __('Preview') }}</flux:button>
-                    </div>
-                </div>
-
-                @if ($showPreview)
-                    <div class="min-h-[6rem] rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700" data-test="create-task-preview-content">
-                        @if (trim($description) !== '')
-                            <x-rich-text :content="$description" />
-                        @else
-                            <flux:text class="text-sm text-zinc-400">{{ __('Nothing to preview.') }}</flux:text>
-                        @endif
-                    </div>
-                @else
-                    <flux:textarea wire:model="description" rows="5" :description="__('Markdown supported.')" data-test="create-task-description" />
-                @endif
-            </div>
+            <flux:editor wire:model="description" :label="__('Description')" data-test="create-task-description" />
 
             {{-- Priority + status --}}
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
