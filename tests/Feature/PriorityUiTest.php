@@ -66,14 +66,11 @@ it('defaults a new subtask priority to the parent task and creates with it', fun
     $parent = Task::factory()->for($this->project)->priority(Priority::Highest)->create();
 
     Livewire::actingAs($this->member)
-        ->test(TaskView::class, [
-            'short_name' => 'ABC',
-            'task_number' => $parent->task_number,
-        ])
-        ->call('openSubtaskModal')
-        ->assertSet('subtaskPriority', Priority::Highest->value)
-        ->set('subtaskTitle', 'Nested work')
-        ->call('createSubtask');
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id, $parent->id)
+        ->assertSet('priority', Priority::Highest->value)
+        ->set('title', 'Nested work')
+        ->call('save');
 
     expect($parent->children()->where('title', 'Nested work')->first()->priority)
         ->toBe(Priority::Highest);

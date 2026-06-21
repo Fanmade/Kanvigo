@@ -99,6 +99,17 @@ class CreateTaskModal extends Component
 
         $this->projectId = $projectId;
         $this->parentId = $parentId;
+
+        // A subtask inherits its parent's priority by default, matching how the
+        // task page used to prefill the subtask form.
+        if ($parentId !== null) {
+            $parent = Task::find($parentId);
+
+            if ($parent !== null) {
+                $this->priority = $parent->priority->value;
+            }
+        }
+
         $this->show = true;
     }
 

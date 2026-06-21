@@ -1,8 +1,8 @@
 <?php
 
-use App\Enums\Priority;
 use App\Enums\Status;
 use App\Livewire\Projects\ProjectShow;
+use App\Livewire\Tasks\CreateTaskModal;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -61,10 +61,10 @@ it('treats a canceled root task as completed', function () {
 
 it('shows a freshly created task on the overview', function () {
     Livewire::actingAs($this->user)
-        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
-        ->set('taskTitle', 'Test task')
-        ->call('createTask')
-        ->assertSee('Test task');
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'Test task')
+        ->call('save');
 
     $titles = Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
@@ -73,19 +73,14 @@ it('shows a freshly created task on the overview', function () {
     expect($titles)->toContain('Test task');
 });
 
-it('creates a task from the overview with the default priority', function () {
-    Livewire::actingAs($this->user)
-        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
-        ->set('taskTitle', 'Brand new task')
-        ->call('createTask');
+it('refreshes the overview when a task is created through the dialog', function () {
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
 
-    $task = $this->project->tasks()->where('title', 'Brand new task')->first();
+    Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Late arrival']);
 
-    // The overview shares the creation action with the board, so a task made here
-    // gets the same default priority as one made on the board.
-    expect($task)->not->toBeNull()
-        ->and($task->parent_id)->toBeNull()
-        ->and($task->priority)->toBe(Priority::default());
+    $component->call('refreshAfterCreate')
+        ->assertSee('Late arrival');
 });
 
 it('lists a root task\'s direct subtasks with links to their detail pages', function () {

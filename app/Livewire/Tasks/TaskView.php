@@ -4,7 +4,6 @@ namespace App\Livewire\Tasks;
 
 use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
-use App\Actions\CreateTask;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ManagesDependencies;
 use App\Concerns\ManagesTags;
@@ -21,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class TaskView extends Component
@@ -80,18 +80,6 @@ class TaskView extends Component
     public string $cancelReason = '';
 
     public string $cancelMessage = '';
-
-    public bool $showSubtaskModal = false;
-
-    public string $subtaskTitle = '';
-
-    public string $subtaskDescription = '';
-
-    public string $subtaskDueDate = '';
-
-    public int $subtaskPriority;
-
-    public string $subtaskStatus = Status::Planned->value;
 
     public function mount(string $short_name, int $task_number): void
     {
@@ -163,52 +151,14 @@ class TaskView extends Component
         return $this->task()->nestingDepth() < (int) config('kanbrio.tasks.max_depth');
     }
 
-    public function openSubtaskModal(): void
+    /**
+     * Refresh the subtask list and depth gate after a subtask is created through
+     * the shared create dialog.
+     */
+    #[On('task-created')]
+    public function refreshAfterCreate(): void
     {
-        $task = $this->task();
-        $this->authorize('update', $task);
-
-        if (! $this->canAddSubtask()) {
-            return;
-        }
-
-        $this->reset('subtaskTitle', 'subtaskDescription', 'subtaskDueDate');
-        $this->subtaskStatus = Status::Planned->value;
-        $this->subtaskPriority = $task->priority->value;
-        $this->showSubtaskModal = true;
-    }
-
-    public function createSubtask(): void
-    {
-        $task = $this->task();
-        $this->authorize('update', $task);
-
-        // Guard the depth limit server-side; the button is also hidden at the limit.
-        if (! $this->canAddSubtask()) {
-            return;
-        }
-
-        $validated = $this->validate([
-            'subtaskTitle' => ['required', 'string', 'max:255'],
-            'subtaskDescription' => ['nullable', 'string'],
-            'subtaskPriority' => ['required', new Enum(Priority::class)],
-            'subtaskDueDate' => ['nullable', 'date'],
-            'subtaskStatus' => ['required', 'string', 'in:'.collect(Status::cases())->map->value->implode(',')],
-        ]);
-
-        app(CreateTask::class)->handle(
-            $task->project,
-            $validated['subtaskTitle'],
-            $validated['subtaskDescription'] ?? null,
-            Priority::from($validated['subtaskPriority']),
-            Status::from($validated['subtaskStatus']),
-            $validated['subtaskDueDate'],
-            parent: $task,
-        );
-
-        $this->reset('subtaskTitle', 'subtaskDescription', 'subtaskDueDate', 'showSubtaskModal');
         unset($this->task, $this->canAddSubtask);
-        Flux::toast(variant: 'success', text: __('Subtask created.'));
     }
 
     public function updatedStatus(string $value): void

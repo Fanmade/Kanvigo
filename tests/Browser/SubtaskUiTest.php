@@ -21,8 +21,8 @@ it('creates a subtask from the task detail page and shows it in the list', funct
     $page->assertNoJavascriptErrors()
         ->assertSee('Subtasks')
         ->click('@new-subtask')
-        ->fill('@subtask-title', 'Build the thing')
-        ->click('@create-subtask')
+        ->fill('@create-task-title', 'Build the thing')
+        ->click('@create-task-submit')
         ->assertSee('Build the thing')
         ->assertNoJavascriptErrors();
 

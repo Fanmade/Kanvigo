@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Projects;
 
-use App\Actions\CreateTask;
 use App\Concerns\HandlesAttachments;
 use App\Models\Project;
 use App\Models\Task;
@@ -11,6 +10,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class ProjectShow extends Component
@@ -28,13 +28,7 @@ class ProjectShow extends Component
 
     public string $description = '';
 
-    public bool $showTaskModal = false;
-
     public bool $showArchived = false;
-
-    public string $taskTitle = '';
-
-    public string $taskDescription = '';
 
     public function mount(string $short_name): void
     {
@@ -177,24 +171,12 @@ class ProjectShow extends Component
         }
     }
 
-    public function createTask(): void
+    /**
+     * Refresh the task lists after one is created through the shared create dialog.
+     */
+    #[On('task-created')]
+    public function refreshAfterCreate(): void
     {
-        $this->authorize('update', $this->project());
-
-        $validated = $this->validate([
-            'taskTitle' => ['required', 'string', 'max:255'],
-            'taskDescription' => ['nullable', 'string'],
-        ]);
-
-        app(CreateTask::class)->handle(
-            $this->project(),
-            $validated['taskTitle'],
-            $validated['taskDescription'] ?? null,
-        );
-
-        $this->reset('taskTitle', 'taskDescription', 'showTaskModal');
         unset($this->project);
-
-        Flux::toast(variant: 'success', text: __('Task created.'));
     }
 }

@@ -32,8 +32,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   including creating a task from anywhere.
 - **Create task dialog** — one dialog for creating tasks, opened from the board,
   a project, a parent task or the command palette. Pick the target project and an
-  optional parent task (offered only where nesting stays within the depth limit);
-  the project and parent are preselected from the page you opened it on.
+  optional parent task (offered only where nesting stays within the depth limit) —
+  both preselected from the page you opened it on — set the title, a Markdown
+  description with live preview, priority, status and due date, and add tags and
+  assignees inline.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
   In progress, Done), per project or globally across every project you can see.
   Dragging is smoothly animated with highlighted drop targets and works on touch;

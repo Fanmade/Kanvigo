@@ -2,6 +2,7 @@
 
 use App\Enums\Priority;
 use App\Enums\Status;
+use App\Livewire\Tasks\CreateTaskModal;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
 use App\Models\Task;
@@ -22,12 +23,13 @@ beforeEach(function () {
 });
 
 it('creates a subtask nested under the task, inheriting the parent priority', function () {
-    ($this->view)($this->task)
-        ->call('openSubtaskModal')
-        ->assertSet('subtaskPriority', Priority::High->value)
-        ->set('subtaskTitle', 'A subtask')
-        ->call('createSubtask')
-        ->assertSet('showSubtaskModal', false);
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id, $this->task->id)
+        ->assertSet('priority', Priority::High->value)
+        ->set('title', 'A subtask')
+        ->call('save')
+        ->assertSet('show', false);
 
     $child = $this->task->children()->first();
 
@@ -38,11 +40,12 @@ it('creates a subtask nested under the task, inheriting the parent priority', fu
 });
 
 it('requires a subtask title', function () {
-    ($this->view)($this->task)
-        ->call('openSubtaskModal')
-        ->set('subtaskTitle', '')
-        ->call('createSubtask')
-        ->assertHasErrors(['subtaskTitle' => 'required']);
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id, $this->task->id)
+        ->set('title', '')
+        ->call('save')
+        ->assertHasErrors(['title' => 'required']);
 });
 
 it('forbids a non-member from opening the task view', function () {
@@ -59,13 +62,9 @@ it('cannot add a subtask at the maximum nesting depth', function () {
     expect($component->instance()->canAddSubtask)->toBeFalse();
 
     // With nothing to add and no children, the whole subtasks section is hidden —
-    // no button and no empty "No subtasks yet." placeholder. A forced call is refused.
+    // no button and no empty "No subtasks yet." placeholder.
     $component->assertDontSeeHtml('data-test="new-subtask"')
-        ->assertDontSee(__('No subtasks yet.'))
-        ->set('subtaskTitle', 'Too deep')
-        ->call('createSubtask');
-
-    expect($child->children()->count())->toBe(0);
+        ->assertDontSee(__('No subtasks yet.'));
 });
 
 it('rolls up progress from the whole descendant subtree', function () {

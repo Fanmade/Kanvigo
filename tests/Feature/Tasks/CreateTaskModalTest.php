@@ -176,6 +176,22 @@ it('dispatches task-created and closes after a successful save', function () {
         ->assertSet('show', false);
 });
 
+it('rejects a parent task at the maximum nesting depth', function () {
+    config(['kanbrio.tasks.max_depth' => 2]);
+    $root = Task::factory()->for($this->project)->create();
+    $child = Task::factory()->for($this->project)->childOf($root)->create(); // depth 2 = max
+
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'Too deep')
+        ->set('parentId', $child->id)
+        ->call('save')
+        ->assertStatus(422);
+
+    expect($child->children()->count())->toBe(0);
+});
+
 it('rejects creating a task in a project the user cannot access', function () {
     $other = Project::factory()->create(['short_name' => 'XYZ']);
 

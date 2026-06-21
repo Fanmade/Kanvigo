@@ -120,7 +120,7 @@
                             <div class="flex items-center gap-3">
                                 <x-task-progress :progress="$this->task->progress()" />
                                 @if ($canUpdate && $this->canAddSubtask)
-                                    <flux:button size="sm" icon="plus" wire:click="openSubtaskModal" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
+                                    <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-task', { projectId: {{ $this->task->project_id }}, parentId: {{ $this->task->id }} })" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
                                 @endif
                             </div>
                         </div>
@@ -215,32 +215,6 @@
             </aside>
         </div>
     @endif
-
-    {{-- Create subtask --}}
-    <flux:modal wire:model="showSubtaskModal" class="md:w-96">
-        <form wire:submit="createSubtask" class="flex flex-col gap-4">
-            <flux:heading size="lg">{{ __('New subtask') }}</flux:heading>
-            <flux:input wire:model="subtaskTitle" :label="__('Title')" data-test="subtask-title" />
-            <flux:textarea wire:model="subtaskDescription" :label="__('Description')" rows="3" />
-            <flux:select wire:model="subtaskPriority" :label="__('Priority')" data-test="subtask-priority">
-                @foreach (\App\Enums\Priority::ordered() as $priority)
-                    <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
-                @endforeach
-            </flux:select>
-            <flux:input type="date" wire:model="subtaskDueDate" :label="__('Due date')" :description="__('Optional')" />
-            <flux:select wire:model="subtaskStatus" :label="__('Status')">
-                @foreach (\App\Enums\Status::columns() as $status)
-                    <flux:select.option :value="$status->value">{{ $status->label() }}</flux:select.option>
-                @endforeach
-            </flux:select>
-            <div class="flex justify-end gap-2">
-                <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
-                </flux:modal.close>
-                <flux:button type="submit" variant="primary" data-test="create-subtask">{{ __('Create') }}</flux:button>
-            </div>
-        </form>
-    </flux:modal>
 
     <flux:modal wire:model.self="confirmingCascade" wire:close="abortCascade" class="md:w-96" data-test="cascade-modal">
         @php($canceling = $this->pendingStatusEnum === \App\Enums\Status::Canceled)

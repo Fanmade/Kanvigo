@@ -65,7 +65,7 @@
                     <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
                 @endif
                 @can('update', $this->project)
-                    <flux:button size="sm" icon="plus" wire:click="$set('showTaskModal', true)" data-test="new-task">{{ __('New task') }}</flux:button>
+                    <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-task', { projectId: {{ $this->project->id }} })" data-test="new-task">{{ __('New task') }}</flux:button>
                 @endcan
             </div>
         </div>
@@ -102,19 +102,4 @@
     @endif
 
     <livewire:comments.comment-list :commentable="$this->project" :wire:key="'comments-project-'.$this->project->id" />
-
-    {{-- Create task --}}
-    <flux:modal wire:model="showTaskModal" class="md:w-96">
-        <form wire:submit="createTask" class="flex flex-col gap-4">
-            <flux:heading size="lg">{{ __('New task') }}</flux:heading>
-            <flux:input wire:model="taskTitle" :label="__('Title')" data-test="task-title" />
-            <flux:textarea wire:model="taskDescription" :label="__('Description')" rows="3" />
-            <div class="flex justify-end gap-2">
-                <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
-                </flux:modal.close>
-                <flux:button type="submit" variant="primary">{{ __('Create') }}</flux:button>
-            </div>
-        </form>
-    </flux:modal>
 </div>
