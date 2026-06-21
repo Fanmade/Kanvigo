@@ -90,8 +90,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   access. Read tools (list/inspect) work with any token and surface each item's
   dependencies (what blocks it, what it blocks, and whether it is currently
   blocked); write tools (create/update tasks, create projects, add
-  comments, link/unlink dependencies) require a token with write access. Agents can
-  also read attachments — including inline description images — by their id.
+  comments, link/unlink dependencies) require a token with write access. Inspecting a
+  project or task also returns its comment thread, and agents can read attachments —
+  including inline description images — by their id.
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 

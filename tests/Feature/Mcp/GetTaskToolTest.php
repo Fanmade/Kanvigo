@@ -85,6 +85,57 @@ it('reports a top-level task as having no parent or ancestors', function () {
         });
 });
 
+it('exposes the task comments oldest first, with author, timestamp and reply threading', function () {
+    $user = User::factory()->create(['name' => 'Ada Lovelace']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+
+    $root = $task->comments()->create(['user_id' => $user->id, 'body' => 'First thought']);
+    $reply = $task->comments()->create(['user_id' => $user->id, 'body' => 'A reply', 'parent_id' => $root->id]);
+
+    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($root, $reply) {
+            $json->where('comments.0.id', $root->id)
+                ->where('comments.0.parent_id', null)
+                ->where('comments.0.author', 'Ada Lovelace')
+                ->where('comments.0.body', 'First thought')
+                ->where('comments.0.is_deleted', false)
+                ->where('comments.0.created_at', fn ($value) => is_string($value) && $value !== '')
+                ->where('comments.1.id', $reply->id)
+                ->where('comments.1.parent_id', $root->id)
+                ->where('comments.1.body', 'A reply')
+                ->etc();
+        });
+});
+
+it('keeps a deleted comment as an empty-bodied tombstone in the payload', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+
+    $root = $task->comments()->create(['user_id' => $user->id, 'body' => 'Will be removed']);
+    $root->forceFill(['is_deleted' => true, 'body' => '', 'delete_reason' => 'off-topic'])->save();
+
+    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('comments.0.is_deleted', true)
+                ->where('comments.0.body', '')
+                ->etc();
+        });
+});
+
+it('returns an empty comments array when the task has none', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+
+    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('comments', [])->etc());
+});
+
 it('lists the task attachments with their ids', function () {
     $user = User::factory()->create();
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);

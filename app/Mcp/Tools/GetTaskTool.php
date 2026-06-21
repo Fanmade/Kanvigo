@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\ExposesComments;
 use App\Mcp\Concerns\ExposesDependencies;
 use App\Models\Attachment;
 use App\Models\Task;
@@ -20,6 +21,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class GetTaskTool extends Tool
 {
+    use ExposesComments;
     use ExposesDependencies;
 
     /**
@@ -73,6 +75,7 @@ class GetTaskTool extends Tool
                 'mime_type' => $attachment->mime_type,
                 'is_inline' => $attachment->is_inline,
             ])->all(),
+            'comments' => $this->commentsPayload($task),
         ]);
     }
 
@@ -130,6 +133,7 @@ class GetTaskTool extends Tool
                 'mime_type' => $schema->string()->description('The attachment MIME type; may be null.'),
                 'is_inline' => $schema->boolean()->description('Whether the attachment is embedded inline in the description.')->required(),
             ]))->description('The files attached to the task, including inline description images.')->required(),
+            'comments' => $this->commentsSchema($schema),
         ];
     }
 }

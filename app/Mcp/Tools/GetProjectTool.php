@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\ExposesComments;
 use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
@@ -18,6 +19,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class GetProjectTool extends Tool
 {
+    use ExposesComments;
+
     /**
      * Handle the tool request.
      */
@@ -33,7 +36,7 @@ class GetProjectTool extends Tool
 
         $project = Project::query()
             ->where('short_name', $validated['short_name'])
-            ->with(['rootTasks.project', 'attachments'])
+            ->with(['rootTasks.project', 'attachments', 'comments.user'])
             ->first();
 
         if ($project === null || ! $user->can('view', $project)) {
@@ -55,6 +58,7 @@ class GetProjectTool extends Tool
                 'mime_type' => $attachment->mime_type,
                 'is_inline' => $attachment->is_inline,
             ])->all(),
+            'comments' => $this->commentsPayload($project),
         ]);
     }
 
@@ -94,6 +98,7 @@ class GetProjectTool extends Tool
                 'mime_type' => $schema->string()->description('The attachment MIME type; may be null.'),
                 'is_inline' => $schema->boolean()->description('Whether the attachment is embedded inline in the description.')->required(),
             ]))->description('The files attached to the project, including inline description images.')->required(),
+            'comments' => $this->commentsSchema($schema),
         ];
     }
 }

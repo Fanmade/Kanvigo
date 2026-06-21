@@ -49,6 +49,12 @@ use Laravel\Mcp\Server\Tool;
     descriptions. The get tools list each attachment's id; pass that id to the get-attachment
     tool to retrieve the file's content (images and audio are returned as viewable content).
 
+    Projects and tasks can also carry a discussion thread. The get tools (not the list tools)
+    return a "comments" array, oldest first; each comment has an id, author name, body,
+    created-at timestamp and the parent_id of the comment it replies to (null for a top-level
+    comment). A deleted comment is kept as a tombstone with an empty body and "is_deleted": true
+    when it still has replies. Use the add-comment tool to post a new comment.
+
     Read tools (list/get) are available to any token. Write tools (create/update/comment, link or
     unlink dependencies) require a token with write access and return an error for read-only
     tokens. Creating a project also requires the "create-projects" permission.
