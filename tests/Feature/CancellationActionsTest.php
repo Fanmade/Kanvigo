@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CancelTask;
 use App\Enums\CancelReason;
 use App\Enums\Status;
 use App\Models\Project;
@@ -77,6 +78,56 @@ it('notifies subscribers, but not the actor, when a task is canceled', function 
 
     Notification::assertSentTo($watcher, ItemActivity::class);
     Notification::assertNotSentTo($this->actor, ItemActivity::class);
+});
+
+it('cancels a parent together with its open subtree, in one transaction', function () {
+    $parent = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $openChild = Task::factory()->for($this->project)->childOf($parent)->status(Status::InProgress)->create();
+    $openGrandchild = Task::factory()->for($this->project)->childOf($openChild)->status(Status::Planned)->create();
+
+    $cascaded = app(CancelTask::class)->cancel($parent, CancelReason::Deprecated, 'End of life');
+
+    expect($cascaded)->toBe(2)
+        ->and($parent->fresh()->status)->toBe(Status::Canceled)
+        ->and($parent->fresh()->cancel_message)->toBe('End of life')
+        ->and($openChild->fresh()->isCanceled())->toBeTrue()
+        ->and($openChild->fresh()->cancel_reason)->toBe(CancelReason::Deprecated)
+        ->and($openChild->fresh()->cancel_message)->toBeNull() // the message stays on the parent only
+        ->and($openGrandchild->fresh()->isCanceled())->toBeTrue();
+});
+
+it('leaves already-terminal subtasks untouched when cancelling a parent', function () {
+    $parent = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $done = Task::factory()->for($this->project)->childOf($parent)->status(Status::Done)->create();
+    $preCanceled = Task::factory()->for($this->project)->childOf($parent)->canceled(CancelReason::Duplicate)->create();
+    $open = Task::factory()->for($this->project)->childOf($parent)->status(Status::ToDo)->create();
+
+    $cascaded = app(CancelTask::class)->cancel($parent, CancelReason::WontFix);
+
+    expect($cascaded)->toBe(1) // only the open child
+        ->and($done->fresh()->status)->toBe(Status::Done)
+        ->and($done->fresh()->isCanceled())->toBeFalse()
+        ->and($preCanceled->fresh()->cancel_reason)->toBe(CancelReason::Duplicate) // unchanged
+        ->and($open->fresh()->isCanceled())->toBeTrue();
+});
+
+it('reports how many open subtasks a cancel would cascade to', function () {
+    $parent = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    Task::factory()->for($this->project)->childOf($parent)->status(Status::ToDo)->create();
+    Task::factory()->for($this->project)->childOf($parent)->status(Status::Done)->create();
+
+    expect(app(CancelTask::class)->openSubtaskCount($parent))->toBe(1);
+});
+
+it('reopens only the parent, leaving cascade-canceled subtasks canceled', function () {
+    $parent = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $child = Task::factory()->for($this->project)->childOf($parent)->status(Status::ToDo)->create();
+    app(CancelTask::class)->cancel($parent, CancelReason::WontFix);
+
+    app(CancelTask::class)->reopen($parent);
+
+    expect($parent->fresh()->status)->toBe(Status::Planned)
+        ->and($child->fresh()->isCanceled())->toBeTrue();
 });
 
 it('forbids a non-member from updating (and thus cancelling) a task', function () {
