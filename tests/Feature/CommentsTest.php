@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -16,6 +17,24 @@ beforeEach(function () {
     $this->project->members()->attach($this->member);
     $this->task = Task::factory()->for($this->project)->create();
     $this->subtask = Task::factory()->for($this->project)->childOf($this->task)->create();
+});
+
+it('uploads an image pasted into a comment as an inline attachment on the task', function () {
+    $component = Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task])
+        ->set('inlineImage', UploadedFile::fake()->image('shot.png', 400, 300))
+        ->call('addInlineImage')
+        ->assertHasNoErrors();
+
+    $attachment = $this->task->attachments()->where('is_inline', true)->first();
+
+    expect($attachment)->not->toBeNull()
+        ->and($attachment->is_inline)->toBeTrue();
+
+    $component->assertReturned([
+        'src' => $attachment->thumbnailUrl(absolute: false),
+        'href' => $attachment->viewUrl(absolute: false),
+    ]);
 });
 
 it('lets a member comment on a task and logs the activity', function () {

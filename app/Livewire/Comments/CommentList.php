@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Comments;
 
+use App\Concerns\HandlesAttachments;
 use App\Concerns\ResolvesMorphSubject;
 use App\Models\Comment;
 use App\Models\Project;
@@ -13,6 +14,7 @@ use Livewire\Component;
 
 class CommentList extends Component
 {
+    use HandlesAttachments;
     use ResolvesMorphSubject;
 
     public const string COLLAPSED_PREFERENCE_KEY = 'comments_collapsed';
@@ -57,6 +59,14 @@ class CommentList extends Component
     public function commentable(): Project|Task
     {
         return $this->resolveMorphSubject();
+    }
+
+    /**
+     * Inline images pasted into a comment editor attach to the commented-on item.
+     */
+    protected function attachable(): Project|Task
+    {
+        return $this->commentable();
     }
 
     /**

@@ -1,4 +1,4 @@
-@props(['property' => 'description', 'label' => null])
+@props(['property' => 'description', 'label' => null, 'toolbar' => null, 'placeholder' => null])
 
 {{--
     A Flux rich-text editor that stores HTML. Pasting or dropping an image is
@@ -15,6 +15,8 @@
     <flux:editor
         wire:model="{{ $property }}"
         :label="$label"
+        :toolbar="$toolbar"
+        :placeholder="$placeholder"
         :description="__('Paste or drop an image to embed it in the text.')"
     />
 

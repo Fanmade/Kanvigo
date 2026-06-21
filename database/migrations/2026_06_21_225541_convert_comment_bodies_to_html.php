@@ -63,6 +63,7 @@ return new class extends Migration
             'allow_unsafe_links' => false,
         ]);
 
+        /** @noinspection HtmlUnknownTarget */
         return (string) preg_replace(
             '/<a href="([^"]*)">(\s*<img\b)/',
             '<a href="$1" target="_blank" rel="noopener noreferrer">$2',
