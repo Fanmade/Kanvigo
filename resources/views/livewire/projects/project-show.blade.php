@@ -104,5 +104,41 @@
         </div>
     @endif
 
+    {{-- Notes shared with the project (public notes, read-only for members). --}}
+    @if ($this->publicNotes->isNotEmpty())
+        <div data-test="project-notes">
+            <flux:heading size="lg" class="mb-2">{{ __('Notes') }}</flux:heading>
+
+            <div class="flex flex-col gap-3">
+                @foreach ($this->publicNotes as $note)
+                    <flux:card class="flex flex-col gap-2" wire:key="public-note-{{ $note->id }}" data-test="public-note-{{ $note->id }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex min-w-0 flex-col gap-0.5">
+                                <flux:heading size="sm" class="truncate">{{ $note->title }}</flux:heading>
+                                <flux:text size="xs" class="text-zinc-400">{{ __('by :name', ['name' => $note->user?->name ?? __('Deleted user')]) }}</flux:text>
+                            </div>
+
+                            @if ($note->user_id === auth()->id())
+                                <flux:dropdown align="end">
+                                    <flux:button size="xs" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Note actions')" data-test="public-note-actions-{{ $note->id }}" />
+                                    <flux:menu>
+                                        <flux:menu.item icon="pencil-square" wire:click="$dispatch('open-create-note', { noteId: {{ $note->id }} })">{{ __('Edit') }}</flux:menu.item>
+                                        <flux:menu.item icon="lock-closed" wire:click="toggleNoteVisibility({{ $note->id }})" data-test="unshare-note-{{ $note->id }}">{{ __('Make private') }}</flux:menu.item>
+                                        <flux:menu.separator />
+                                        <flux:menu.item icon="trash" variant="danger" wire:click="deleteNote({{ $note->id }})" wire:confirm="{{ __('Delete this note?') }}" data-test="delete-public-note-{{ $note->id }}">{{ __('Delete') }}</flux:menu.item>
+                                    </flux:menu>
+                                </flux:dropdown>
+                            @endif
+                        </div>
+
+                        @if ($note->body)
+                            <x-expandable-description :content="$note->body" />
+                        @endif
+                    </flux:card>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <livewire:comments.comment-list :commentable="$this->project" :wire:key="'comments-project-'.$this->project->id" />
 </div>

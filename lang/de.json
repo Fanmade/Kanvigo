@@ -60,6 +60,7 @@
   "Blocked by an unfinished dependency": "Durch eine offene Abhängigkeit blockiert",
   "Blocks": "Blockiert",
   "Board": "Board",
+  "by :name": "von :name",
   "Can read and modify data": "Kann Daten lesen und ändern",
   "Can read data": "Kann Daten lesen",
   "Cancel": "Abbrechen",

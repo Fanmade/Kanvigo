@@ -2,23 +2,24 @@
 
 namespace App\Livewire;
 
+use App\Concerns\ManagesNotes;
 use App\Enums\Status;
 use App\Models\Activity;
 use App\Models\Note;
 use App\Models\Task;
-use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Title('Dashboard')]
 class Dashboard extends Component
 {
+    use ManagesNotes;
+
     /**
      * Maximum number of actionable tasks rendered in the "My tasks" list.
      */
@@ -104,52 +105,9 @@ class Dashboard extends Component
             ->get();
     }
 
-    /**
-     * Refresh the Notes panel after the dialog saves one.
-     */
-    #[On('note-saved')]
-    public function refreshNotes(): void
+    protected function forgetNotes(): void
     {
         unset($this->notes);
-    }
-
-    /**
-     * Delete one of the user's own notes.
-     */
-    public function deleteNote(int $noteId): void
-    {
-        $note = Auth::user()->notes()->findOrFail($noteId);
-        $this->authorize('delete', $note);
-
-        $note->delete();
-
-        unset($this->notes);
-
-        Flux::toast(variant: 'success', text: __('Note deleted.'));
-    }
-
-    /**
-     * Toggle whether an attached note is public to its project. A projectless
-     * note can't be made public, so it is a no-op there (the model enforces the
-     * same invariant).
-     */
-    public function toggleNoteVisibility(int $noteId): void
-    {
-        $note = Auth::user()->notes()->findOrFail($noteId);
-        $this->authorize('changeVisibility', $note);
-
-        if ($note->project_id === null) {
-            return;
-        }
-
-        $note->update(['is_public' => ! $note->is_public]);
-
-        unset($this->notes);
-
-        Flux::toast(
-            variant: 'success',
-            text: $note->is_public ? __('Note shared with the project.') : __('Note made private.'),
-        );
     }
 
     /**

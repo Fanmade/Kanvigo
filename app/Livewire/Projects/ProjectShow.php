@@ -4,9 +4,12 @@ namespace App\Livewire\Projects;
 
 use App\Concerns\HandlesAttachments;
 use App\Concerns\HasLiveUpdates;
+use App\Concerns\ManagesNotes;
+use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
 use Flux\Flux;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -18,6 +21,7 @@ class ProjectShow extends Component
 {
     use HandlesAttachments;
     use HasLiveUpdates;
+    use ManagesNotes;
 
     #[Locked]
     public string $shortName;
@@ -95,6 +99,27 @@ class ProjectShow extends Component
         return $this->project()->rootTasks
             ->filter(static fn (Task $task): bool => $task->isArchived())
             ->values();
+    }
+
+    /**
+     * The project's public notes (any owner), newest first. Private attached
+     * notes are never listed here — they stay with their owner.
+     *
+     * @return EloquentCollection<int, Note>
+     */
+    #[Computed]
+    public function publicNotes(): EloquentCollection
+    {
+        return $this->project()->notes()
+            ->where('is_public', true)
+            ->with('user')
+            ->latest('updated_at')
+            ->get();
+    }
+
+    protected function forgetNotes(): void
+    {
+        unset($this->publicNotes);
     }
 
     /**
@@ -190,6 +215,6 @@ class ProjectShow extends Component
     #[On('live-refresh')]
     public function liveRefresh(): void
     {
-        unset($this->project);
+        unset($this->project, $this->publicNotes);
     }
 }

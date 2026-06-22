@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Note;
+use App\Models\Project;
 use App\Models\User;
 
 it('captures a note from the dashboard and lists it', function () {
@@ -11,5 +13,19 @@ it('captures a note from the dashboard and lists it', function () {
         ->fill('@create-note-title', 'Browser captured idea')
         ->click('@create-note-submit')
         ->waitForText('Browser captured idea') // appears in the Notes panel
+        ->assertNoJavascriptErrors();
+});
+
+it('renders public notes in the project Notes section', function () {
+    $owner = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $project->members()->attach($owner);
+    Note::factory()->for($owner)->publicTo($project)->create(['title' => 'Shared on the project']);
+
+    $this->actingAs($owner);
+
+    visit('/ABC')
+        ->assertVisible('@project-notes')
+        ->assertSee('Shared on the project')
         ->assertNoJavascriptErrors();
 });

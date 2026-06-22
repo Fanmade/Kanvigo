@@ -95,6 +95,16 @@ class Project extends Model implements Subscribable
     }
 
     /**
+     * Notes attached to this project (any owner, any visibility).
+     *
+     * @return HasMany<Note, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(Note::class);
+    }
+
+    /**
      * The users granted access to this project.
      *
      * @return BelongsToMany<User, $this>
