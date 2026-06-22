@@ -86,10 +86,15 @@
                     <flux:heading size="xl">{{ $this->task->title }}</flux:heading>
                     @can('update', $this->task)
                         <div class="flex shrink-0 items-center gap-2">
-                            <flux:button size="sm" icon="pencil-square" variant="ghost" wire:click="edit" data-test="edit-task">{{ __('Edit') }}</flux:button>
                             @unless ($this->task->isCanceled())
-                                <flux:button size="sm" icon="x-circle" variant="ghost" wire:click="confirmCancel" data-test="cancel-task">{{ __('Cancel task') }}</flux:button>
+                                <flux:dropdown align="end">
+                                    <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')" data-test="task-actions" />
+                                    <flux:menu>
+                                        <flux:menu.item icon="x-circle" variant="danger" wire:click="confirmCancel" data-test="cancel-task">{{ __('Cancel task') }}</flux:menu.item>
+                                    </flux:menu>
+                                </flux:dropdown>
                             @endunless
+                            <flux:button size="sm" icon="pencil-square" variant="ghost" wire:click="edit" data-test="edit-task">{{ __('Edit') }}</flux:button>
                         </div>
                     @endcan
                 </div>

@@ -17,7 +17,8 @@ it('cancels a task with a reason through the UI, warning about open subtasks', f
 
     $page = visit("/{$project->short_name}-{$task->task_number}");
 
-    $page->click('@cancel-task')
+    $page->click('@task-actions') // open the actions menu that now holds Cancel
+        ->click('@cancel-task')
         ->waitForText('Cancel this task?') // barrier: cancel modal opened (Livewire round-trip)
         ->assertVisible('@cancel-subtree-warning')
         ->assertSeeIn('@cancel-subtree-warning', 'open subtask')
@@ -28,7 +29,7 @@ it('cancels a task with a reason through the UI, warning about open subtasks', f
         ->assertVisible('@canceled-banner')
         ->assertSeeIn('@cancel-reason-badge', 'Duplicate')
         ->assertSeeIn('@canceled-banner', 'Superseded by ABC-9')
-        ->assertMissing('@cancel-task')
+        ->assertMissing('@task-actions')
         ->assertNoJavascriptErrors();
 
     expect($task->fresh()->status)->toBe(Status::Canceled);
@@ -48,7 +49,7 @@ it('reopens a canceled task through the UI', function () {
         ->click('@reopen-task')
         ->waitForText('Planned') // barrier: reopened, status is now Planned
         ->assertMissing('@canceled-banner')
-        ->assertVisible('@cancel-task')
+        ->assertVisible('@task-actions')
         ->assertNoJavascriptErrors();
 
     expect($task->fresh()->status)->toBe(Status::Planned);
