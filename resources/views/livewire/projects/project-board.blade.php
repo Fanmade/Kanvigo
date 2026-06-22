@@ -22,4 +22,6 @@
     </div>
 
     <x-kanban-board :columns="$this->columns" :blocked-ids="$this->blockedTaskIds" />
+
+    @include('partials.tasks.parent-close-modal')
 </div>

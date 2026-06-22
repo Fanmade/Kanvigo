@@ -21,8 +21,9 @@ use Illuminate\Support\Facades\DB;
  *   caller's choice or the actor's {@see CascadePreference}).
  * - Child → In progress: pull a not-yet-started parent into progress, silently,
  *   reporting enough state to undo just that bump.
- * - Child → Canceled (or any close) that was the parent's last open child: report
- *   it so the UI can prompt about the parent — never changed automatically.
+ * - Child → terminal that was the parent's last open child: close the parent too
+ *   under the "always" preference, or report it so the UI can prompt under "ask".
+ *   Under "never" — and never silently otherwise — the parent is left untouched.
  */
 class ChangeTaskStatus
 {
@@ -30,6 +31,12 @@ class ChangeTaskStatus
      * The per-user preference key controlling the Done/Cancel children cascade.
      */
     public const string PREFERENCE_KEY = 'status_cascade';
+
+    /**
+     * The per-user preference key controlling whether closing the last open
+     * subtask also closes the parent ({@see CascadePreference}: ask/always/never).
+     */
+    public const string PARENT_CLOSE_PREFERENCE_KEY = 'parent_close';
 
     /**
      * Apply $new to $task and run the cascade in a single transaction.
@@ -50,8 +57,11 @@ class ChangeTaskStatus
         $parentBumped = false;
         $parent = $task->parent;
         $parentPreviousStatus = null;
+        $parentCloseable = false;
+        $parentClosed = false;
+        $parentPref = $this->parentClosePreference();
 
-        DB::transaction(function () use ($task, $new, $cascadeToChildren, $parent, &$undo, &$cascaded, &$parentBumped, &$parentPreviousStatus): void {
+        DB::transaction(function () use ($task, $new, $cascadeToChildren, $parent, $parentPref, &$undo, &$cascaded, &$parentBumped, &$parentPreviousStatus, &$parentCloseable, &$parentClosed): void {
             $this->changeOne($task, $new, $undo);
 
             if ($new->isTerminal() && $this->resolveCascade($new, $cascadeToChildren)) {
@@ -70,13 +80,27 @@ class ChangeTaskStatus
                 $this->changeOne($parent, Status::InProgress, $undo);
                 $parentBumped = true;
             }
+
+            // Closing a child that was the parent's last open child: under "always"
+            // close the parent now; under "ask" only flag it for the UI to prompt;
+            // under "never" leave it. The parent is never closed silently.
+            $parentCloseable = $new->isTerminal()
+                && $parent !== null
+                && ! $parent->status->isTerminal()
+                && $this->openChildCount($parent) === 0;
+
+            if ($parentCloseable && $parentPref === CascadePreference::Always) {
+                $this->changeOne($parent, $new, $undo);
+                $parentClosed = true;
+            }
         });
 
         return new StatusCascadeResult(
             undo: $undo,
             cascadedChildren: $cascaded,
             parentBumped: $parentBumped,
-            parentClosedOut: $new->isTerminal() && $parent !== null && $this->openChildCount($parent) === 0,
+            parentClosed: $parentClosed,
+            parentClosedOut: $parentCloseable && ! $parentClosed && $parentPref === CascadePreference::Ask,
             parentId: $parent?->getKey(),
             parentPreviousStatus: $parentPreviousStatus,
         );
@@ -152,6 +176,20 @@ class ChangeTaskStatus
         $user = Auth::user();
         $value = $user instanceof User
             ? $user->preference(self::PREFERENCE_KEY, CascadePreference::Ask->value)
+            : CascadePreference::Ask->value;
+
+        return CascadePreference::tryFrom((string) $value) ?? CascadePreference::Ask;
+    }
+
+    /**
+     * The actor's "close the parent with its last subtask" preference, defaulting
+     * to "ask".
+     */
+    private function parentClosePreference(): CascadePreference
+    {
+        $user = Auth::user();
+        $value = $user instanceof User
+            ? $user->preference(self::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Ask->value)
             : CascadePreference::Ask->value;
 
         return CascadePreference::tryFrom((string) $value) ?? CascadePreference::Ask;

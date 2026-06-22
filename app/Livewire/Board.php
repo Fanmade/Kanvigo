@@ -3,6 +3,8 @@
 namespace App\Livewire;
 
 use App\Concerns\BuildsKanbanColumns;
+use App\Concerns\PromptsParentClose;
+use App\Enums\Status;
 use App\Models\Task;
 use App\Support\BlockedTasks;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +16,7 @@ use Livewire\Component;
 class Board extends Component
 {
     use BuildsKanbanColumns;
+    use PromptsParentClose;
 
     /**
      * Whether archived tasks are shown.
@@ -72,9 +75,13 @@ class Board extends Component
     {
         $task = Task::with('project')->findOrFail($taskId);
 
-        $this->applyTaskMove($task, $status);
+        $result = $this->applyTaskMove($task, $status);
 
         unset($this->columns, $this->blockedTaskIds);
+
+        if ($result !== null && ($new = Status::tryFrom($status)) !== null) {
+            $this->maybePromptParentClose($result, $new);
+        }
     }
 
     /**
@@ -84,9 +91,13 @@ class Board extends Component
     {
         $task = Task::with('project')->findOrFail($taskId);
 
-        $this->applyTaskReorder($task, $status, $beforeId, $afterId);
+        $result = $this->applyTaskReorder($task, $status, $beforeId, $afterId);
 
         unset($this->columns, $this->blockedTaskIds);
+
+        if ($result !== null && ($new = Status::tryFrom($status)) !== null) {
+            $this->maybePromptParentClose($result, $new);
+        }
     }
 
     /**

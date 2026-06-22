@@ -20,7 +20,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   subtasks (up to a configurable depth, default three) with flat per-project task
   numbers. A task page shows its place in the tree, its subtasks, and a progress
   rollup over the whole subtree. Closing a parent can cascade to its open subtasks
-  (ask / always / never), and starting a subtask pulls the parent into progress.
+  (ask / always / never), starting a subtask pulls the parent into progress, and
+  completing the last open subtask can prompt to close the parent (ask / always /
+  never).
 - **Focused item views** — the project and task pages keep the description
   front and centre, with metadata (status, priority, assignees, dependencies,
   dates) gathered in a compact side rail. Status and priority are badges that open

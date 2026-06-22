@@ -17,7 +17,9 @@ readonly class StatusCascadeResult
      *                                                            this call paired with the status it held beforehand, newest last
      * @param  int  $cascadedChildren  how many open descendants inherited the new status
      * @param  bool  $parentBumped  whether a not-yet-started parent was pulled into "In progress"
-     * @param  bool  $parentClosedOut  whether this change left the parent with no open children
+     * @param  bool  $parentClosed  whether this change also closed the parent (the "always" preference)
+     * @param  bool  $parentClosedOut  whether the caller should prompt to close the now-childless parent
+     *                                 (true only under the "ask" preference; false when auto-closed or "never")
      * @param  int|null  $parentId  the affected parent, when one was bumped or closed out
      * @param  string|null  $parentPreviousStatus  the bumped parent's prior status value, for undo
      */
@@ -25,6 +27,7 @@ readonly class StatusCascadeResult
         public array $undo = [],
         public int $cascadedChildren = 0,
         public bool $parentBumped = false,
+        public bool $parentClosed = false,
         public bool $parentClosedOut = false,
         public ?int $parentId = null,
         public ?string $parentPreviousStatus = null,

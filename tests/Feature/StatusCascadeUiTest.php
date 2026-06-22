@@ -131,3 +131,77 @@ it('undoes the silent parent bump', function () {
     expect($this->parent->fresh()->status)->toBe(Status::Planned)
         ->and($this->child->fresh()->status)->toBe(Status::InProgress);
 });
+
+describe('the close-the-parent prompt', function () {
+    it('prompts to close the parent when the last open subtask is completed (ask)', function () {
+        $this->member->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Ask->value);
+
+        ($this->view)($this->child)
+            ->set('status', Status::Done->value)
+            ->assertSet('confirmingParentClose', true)
+            ->assertSet('parentCloseReference', $this->parent->reference);
+
+        // Nothing happens to the parent until the prompt is resolved.
+        expect($this->parent->fresh()->status)->toBe(Status::InProgress);
+    });
+
+    it('closes the parent when the prompt is confirmed', function () {
+        ($this->view)($this->child)
+            ->set('status', Status::Done->value)
+            ->call('confirmParentClose')
+            ->assertSet('confirmingParentClose', false);
+
+        expect($this->parent->fresh()->status)->toBe(Status::Done)
+            ->and($this->child->fresh()->status)->toBe(Status::Done);
+    });
+
+    it('leaves the parent open when the prompt is declined', function () {
+        ($this->view)($this->child)
+            ->set('status', Status::Done->value)
+            ->call('declineParentClose')
+            ->assertSet('confirmingParentClose', false);
+
+        expect($this->parent->fresh()->status)->toBe(Status::InProgress);
+    });
+
+    it('remembers "always" when confirmed with the checkbox', function () {
+        ($this->view)($this->child)
+            ->set('status', Status::Done->value)
+            ->set('rememberParentCloseChoice', true)
+            ->call('confirmParentClose');
+
+        expect($this->member->fresh()->preference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY))
+            ->toBe(CascadePreference::Always->value);
+    });
+
+    it('remembers "never" when declined with the checkbox', function () {
+        ($this->view)($this->child)
+            ->set('status', Status::Done->value)
+            ->set('rememberParentCloseChoice', true)
+            ->call('declineParentClose');
+
+        expect($this->member->fresh()->preference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY))
+            ->toBe(CascadePreference::Never->value)
+            ->and($this->parent->fresh()->status)->toBe(Status::InProgress);
+    });
+
+    it('auto-closes the parent without prompting under "always"', function () {
+        $this->member->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Always->value);
+
+        ($this->view)($this->child)
+            ->set('status', Status::Done->value)
+            ->assertSet('confirmingParentClose', false);
+
+        expect($this->parent->fresh()->status)->toBe(Status::Done);
+    });
+
+    it('does not prompt under "never"', function () {
+        $this->member->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Never->value);
+
+        ($this->view)($this->child)
+            ->set('status', Status::Done->value)
+            ->assertSet('confirmingParentClose', false);
+
+        expect($this->parent->fresh()->status)->toBe(Status::InProgress);
+    });
+});

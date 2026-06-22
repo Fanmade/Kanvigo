@@ -3,6 +3,8 @@
 namespace App\Livewire\Projects;
 
 use App\Concerns\BuildsKanbanColumns;
+use App\Concerns\PromptsParentClose;
+use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\BlockedTasks;
@@ -15,6 +17,7 @@ use Livewire\Component;
 class ProjectBoard extends Component
 {
     use BuildsKanbanColumns;
+    use PromptsParentClose;
 
     #[Locked]
     public string $shortName;
@@ -93,9 +96,13 @@ class ProjectBoard extends Component
      */
     public function moveTask(int $taskId, string $status): void
     {
-        $this->applyTaskMove($this->resolveProjectTask($taskId), $status);
+        $result = $this->applyTaskMove($this->resolveProjectTask($taskId), $status);
 
         unset($this->tasks, $this->columns, $this->blockedTaskIds);
+
+        if ($result !== null && ($new = Status::tryFrom($status)) !== null) {
+            $this->maybePromptParentClose($result, $new);
+        }
     }
 
     /**
@@ -103,9 +110,13 @@ class ProjectBoard extends Component
      */
     public function reorderTask(int $taskId, string $status, ?int $beforeId, ?int $afterId): void
     {
-        $this->applyTaskReorder($this->resolveProjectTask($taskId), $status, $beforeId, $afterId);
+        $result = $this->applyTaskReorder($this->resolveProjectTask($taskId), $status, $beforeId, $afterId);
 
         unset($this->tasks, $this->columns, $this->blockedTaskIds);
+
+        if ($result !== null && ($new = Status::tryFrom($status)) !== null) {
+            $this->maybePromptParentClose($result, $new);
+        }
     }
 
     /**

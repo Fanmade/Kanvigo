@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\ChangeTaskStatus;
+use App\Enums\CascadePreference;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Servers\KanbrioServer;
@@ -50,6 +52,38 @@ it('changes the task status and records the activity', function () {
         'field' => 'status',
         'new_value' => Status::Done->value,
     ]);
+});
+
+it('closes the parent over MCP when the last subtask is completed under the "always" preference', function () {
+    $user = User::factory()->create();
+    $user->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Always->value);
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $parent = Task::factory()->for($project)->status(Status::InProgress)->create();
+    $child = Task::factory()->for($project)->childOf($parent)->status(Status::ToDo)->create();
+
+    KanbrioServer::tool(UpdateTaskTool::class, [
+        'reference' => $child->reference,
+        'status' => Status::Done->value,
+    ])->assertOk();
+
+    assertDatabaseHas('tasks', ['id' => $parent->id, 'status' => Status::Done->value]);
+});
+
+it('leaves the parent untouched over MCP under the default "ask" preference', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $parent = Task::factory()->for($project)->status(Status::InProgress)->create();
+    $child = Task::factory()->for($project)->childOf($parent)->status(Status::ToDo)->create();
+
+    KanbrioServer::tool(UpdateTaskTool::class, [
+        'reference' => $child->reference,
+        'status' => Status::Done->value,
+    ])->assertOk();
+
+    // MCP cannot prompt, so the parent is left open under "ask".
+    assertDatabaseHas('tasks', ['id' => $parent->id, 'status' => Status::InProgress->value]);
 });
 
 it('updates a task priority', function () {

@@ -204,6 +204,69 @@ it('never changes the parent automatically when a child is canceled', function (
     expect($parent->fresh()->status)->toBe(Status::InProgress);
 });
 
+describe('closing the last open subtask honors the parent-close preference', function () {
+    it('closes the parent under "always"', function () {
+        $this->user->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Always->value);
+        $parent = task(Status::InProgress);
+        $only = task(Status::ToDo, $parent);
+
+        $result = changeStatus($only, Status::Done);
+
+        expect($parent->fresh()->status)->toBe(Status::Done)
+            ->and($result->parentClosed)->toBeTrue()
+            ->and($result->parentClosedOut)->toBeFalse();
+    });
+
+    it('reports a prompt under "ask" without closing the parent', function () {
+        $this->user->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Ask->value);
+        $parent = task(Status::InProgress);
+        $only = task(Status::ToDo, $parent);
+
+        $result = changeStatus($only, Status::Done);
+
+        expect($parent->fresh()->status)->toBe(Status::InProgress)
+            ->and($result->parentClosedOut)->toBeTrue()
+            ->and($result->parentClosed)->toBeFalse()
+            ->and($result->parentId)->toBe($parent->getKey());
+    });
+
+    it('leaves the parent and never prompts under "never"', function () {
+        $this->user->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Never->value);
+        $parent = task(Status::InProgress);
+        $only = task(Status::ToDo, $parent);
+
+        $result = changeStatus($only, Status::Done);
+
+        expect($parent->fresh()->status)->toBe(Status::InProgress)
+            ->and($result->parentClosedOut)->toBeFalse()
+            ->and($result->parentClosed)->toBeFalse();
+    });
+
+    it('does not close the parent while open siblings remain, even under "always"', function () {
+        $this->user->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Always->value);
+        $parent = task(Status::InProgress);
+        $first = task(Status::ToDo, $parent);
+        task(Status::ToDo, $parent); // a still-open sibling
+
+        $result = changeStatus($first, Status::Done);
+
+        expect($parent->fresh()->status)->toBe(Status::InProgress)
+            ->and($result->parentClosed)->toBeFalse();
+    });
+
+    it('does not reopen or touch an already-terminal parent', function () {
+        $this->user->setPreference(ChangeTaskStatus::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Always->value);
+        $parent = task(Status::Done);
+        $only = task(Status::ToDo, $parent);
+
+        $result = changeStatus($only, Status::Done);
+
+        expect($parent->fresh()->status)->toBe(Status::Done)
+            ->and($result->parentClosed)->toBeFalse()
+            ->and($result->parentClosedOut)->toBeFalse();
+    });
+});
+
 it('logs a status_changed activity for every task the cascade touches', function () {
     $parent = task(Status::InProgress);
     $child = task(Status::ToDo, $parent);

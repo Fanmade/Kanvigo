@@ -5,6 +5,7 @@ namespace App\Concerns;
 use App\Actions\ChangeTaskStatus;
 use App\Enums\Status;
 use App\Models\Task;
+use App\Support\StatusCascadeResult;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
@@ -50,22 +51,25 @@ trait BuildsKanbanColumns
 
     /**
      * Authorize and apply a status change to a task, recording the activity.
-     * Moved tasks land at the bottom of the destination column.
+     * Moved tasks land at the bottom of the destination column. Returns the
+     * cascade result (so callers can prompt about a closed-out parent), or null
+     * when nothing changed.
      */
-    protected function applyTaskMove(Task $task, string $status): void
+    protected function applyTaskMove(Task $task, string $status): ?StatusCascadeResult
     {
         $this->authorize('updateStatus', $task);
 
         $new = Status::tryFrom($status);
 
         if ($new === null || $task->status === $new) {
-            return;
+            return null;
         }
 
         // Position is set first; the status change (and its cascade) is persisted
         // by the shared action, which saves the model — carrying the new position.
         $task->position = (Task::where('status', $new)->max('position') ?? 0) + 1;
-        app(ChangeTaskStatus::class)->handle($task, $new);
+
+        return app(ChangeTaskStatus::class)->handle($task, $new);
     }
 
     /**
@@ -94,14 +98,14 @@ trait BuildsKanbanColumns
      * new neighbours — the cards immediately above ($beforeId) and below
      * ($afterId) it in the destination column.
      */
-    protected function applyTaskReorder(Task $task, string $status, ?int $beforeId, ?int $afterId): void
+    protected function applyTaskReorder(Task $task, string $status, ?int $beforeId, ?int $afterId): ?StatusCascadeResult
     {
         $this->authorize('updateStatus', $task);
 
         $new = Status::tryFrom($status);
 
         if ($new === null) {
-            return;
+            return null;
         }
 
         $task->position = $this->positionBetween($beforeId, $afterId);
@@ -109,12 +113,12 @@ trait BuildsKanbanColumns
         if ($task->status === $new) {
             $task->save();
 
-            return;
+            return null;
         }
 
         // A genuine status change goes through the shared action so the cascade
         // and activity logging stay consistent with every other entry point.
-        app(ChangeTaskStatus::class)->handle($task, $new);
+        return app(ChangeTaskStatus::class)->handle($task, $new);
     }
 
     /**

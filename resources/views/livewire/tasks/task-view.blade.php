@@ -227,6 +227,8 @@
         </div>
     </flux:modal>
 
+    @include('partials.tasks.parent-close-modal')
+
     <flux:modal wire:model.self="confirmingCancel" wire:close="abortCancel" class="md:w-96" data-test="cancel-modal">
         <form wire:submit="cancelTask" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ __('Cancel this task?') }}</flux:heading>

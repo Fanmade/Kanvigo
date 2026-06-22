@@ -7,6 +7,7 @@ use App\Actions\ChangeTaskStatus;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ManagesDependencies;
 use App\Concerns\ManagesTags;
+use App\Concerns\PromptsParentClose;
 use App\Enums\CancelReason;
 use App\Enums\CascadePreference;
 use App\Enums\Priority;
@@ -28,6 +29,7 @@ class TaskView extends Component
     use HandlesAttachments;
     use ManagesDependencies;
     use ManagesTags;
+    use PromptsParentClose;
 
     #[Locked]
     public string $shortName;
@@ -360,6 +362,8 @@ class TaskView extends Component
         unset($this->task);
         $this->status = $new->value;
         $this->parentBumpUndoStatus = $result->parentBumped ? (string) $result->parentPreviousStatus : '';
+
+        $this->maybePromptParentClose($result, $new);
 
         Flux::toast(
             text: $result->parentBumped
