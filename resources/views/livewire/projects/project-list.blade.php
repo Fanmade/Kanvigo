@@ -24,7 +24,13 @@
                                 <flux:heading size="lg">{{ $project->title }}</flux:heading>
                             </div>
                             @if ($project->description)
-                                <flux:text class="mt-2">{{ Str::limit($project->description, 120) }}</flux:text>
+                                {{-- Render the stored rich-text description (sanitized) rather than
+                                     dumping its raw markup, clamped to a few lines so cards stay even. --}}
+                                <x-rich-text
+                                    :content="$project->description"
+                                    class="mt-2 line-clamp-3 text-sm text-zinc-500 [&_*]:my-0 dark:text-zinc-400"
+                                    data-test="project-card-description"
+                                />
                             @endif
                         </flux:card>
                     </a>

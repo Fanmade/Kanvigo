@@ -41,6 +41,21 @@ it('lists only the projects the user belongs to, ordered by title', function () 
     expect($projects->pluck('title')->all())->toBe(['Alpha', 'Beta']);
 });
 
+it('renders the project description as sanitized rich text, clamped, on the card', function () {
+    $user = User::factory()->create();
+
+    $project = Project::factory()->create([
+        'title' => 'Documented',
+        'description' => '<p>Hello <strong>world</strong></p>',
+    ]);
+    $project->members()->attach($user);
+
+    Livewire::actingAs($user)
+        ->test(ProjectList::class)
+        ->assertSeeHtml('<strong>world</strong>') // rendered, not escaped raw markup
+        ->assertSeeHtml('line-clamp-3');           // capped to a few lines
+});
+
 it('opens the create form when deep-linked with the create flag', function () {
     Livewire::actingAs(User::factory()->canCreateProjects()->create())
         ->withQueryParams(['create' => true])
