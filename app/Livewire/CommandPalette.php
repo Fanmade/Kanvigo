@@ -16,6 +16,18 @@ class CommandPalette extends Component
     public string $query = '';
 
     /**
+     * The short_name of the project the user is viewing when the palette mounts,
+     * used to prioritize that project's tasks on bare-number searches.
+     */
+    public ?string $contextShortName = null;
+
+    public function mount(): void
+    {
+        $shortName = request()->route('short_name');
+        $this->contextShortName = is_string($shortName) ? $shortName : null;
+    }
+
+    /**
      * Entity matches (projects, tasks) for the current query.
      *
      * @return Collection<int, SearchResult>
@@ -26,7 +38,7 @@ class CommandPalette extends Component
         /** @var User $user */
         $user = Auth::user();
 
-        return app(GlobalSearch::class)->search($user, $this->query);
+        return app(GlobalSearch::class)->search($user, $this->query, $this->contextShortName);
     }
 
     /**

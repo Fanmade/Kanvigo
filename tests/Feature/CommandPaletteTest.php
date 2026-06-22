@@ -65,6 +65,110 @@ it('pins a jump result for a typed reference', function () {
         ->assertSee($this->task->reference);
 });
 
+it('finds a task by a compact reference without the separator', function () {
+    $compact = strtolower(str_replace('-', '', $this->task->reference)); // "ABC-1" -> "abc1"
+
+    Livewire::actingAs($this->user)
+        ->test(CommandPalette::class)
+        ->set('query', $compact)
+        ->assertSee('Deploy fix')
+        ->assertSee($this->task->reference);
+});
+
+it('pins a compact reference jump just like the dashed form', function () {
+    $compact = str_replace('-', '', $this->task->reference); // "ABC1"
+
+    $result = app(GlobalSearch::class)->search($this->user, $compact)->first();
+
+    expect($result->reference)->toBe($this->task->reference)
+        ->and($result->pinned)->toBeTrue();
+});
+
+it('surfaces every accessible task that carries a bare task number', function () {
+    $other = Project::factory()->create(['short_name' => 'DEF']);
+    $other->members()->attach($this->user);
+    $otherTask = Task::factory()->for($other)->create(['title' => 'Other fix']);
+
+    // Both first tasks share task_number 1.
+    expect($this->task->task_number)->toBe($otherTask->task_number);
+
+    $references = app(GlobalSearch::class)
+        ->search($this->user, (string) $this->task->task_number)
+        ->pluck('reference');
+
+    expect($references)->toContain($this->task->reference)
+        ->and($references)->toContain($otherTask->reference);
+});
+
+it('prioritizes and pins the current project task on a bare-number search', function () {
+    $other = Project::factory()->create(['short_name' => 'DEF']);
+    $other->members()->attach($this->user);
+    $otherTask = Task::factory()->for($other)->create(['title' => 'Other fix']);
+
+    $results = app(GlobalSearch::class)
+        ->search($this->user, (string) $otherTask->task_number, contextShortName: 'DEF');
+
+    expect($results->first()->reference)->toBe($otherTask->reference)
+        ->and($results->first()->pinned)->toBeTrue();
+});
+
+it('does not surface a bare-number task from an inaccessible project', function () {
+    $hidden = Project::factory()->create(['short_name' => 'XYZ']);
+    $hiddenTask = Task::factory()->for($hidden)->create(['title' => 'Secret task']);
+
+    $references = app(GlobalSearch::class)
+        ->search($this->user, (string) $hiddenTask->task_number)
+        ->pluck('reference');
+
+    expect($references)->not->toContain($hiddenTask->reference);
+});
+
+describe('search edge cases', function () {
+    it('ignores an unknown context project and still returns matches unpinned', function () {
+        $results = app(GlobalSearch::class)
+            ->search($this->user, (string) $this->task->task_number, contextShortName: 'NOPE');
+
+        expect($results->pluck('reference'))->toContain($this->task->reference)
+            ->and($results->firstWhere('reference', $this->task->reference)->pinned)->toBeFalse();
+    });
+
+    it('ignores an inaccessible context project without leaking its tasks', function () {
+        $hidden = Project::factory()->create(['short_name' => 'XYZ']);
+        $hiddenTask = Task::factory()->for($hidden)->create();
+
+        $references = app(GlobalSearch::class)
+            ->search($this->user, (string) $this->task->task_number, contextShortName: 'XYZ')
+            ->pluck('reference');
+
+        expect($references)->toContain($this->task->reference)
+            ->and($references)->not->toContain($hiddenTask->reference);
+    });
+
+    it('does not treat a malformed or unresolvable compact reference as a jump', function (string $query) {
+        expect(app(GlobalSearch::class)->search($this->user, $query)->where('pinned', true))->toBeEmpty();
+    })->with([
+        'well-formed but no such task number' => ['abc12'],
+        'well-formed but no such project' => ['zzz1'],
+        'trailing junk after the number' => ['abc1x'],
+        'a lone dash with no number' => ['abc-'],
+        'a single-letter prefix' => ['a1'],
+    ]);
+
+    it('returns nothing for a bare number with no matching task', function () {
+        expect(app(GlobalSearch::class)->search($this->user, '9999'))->toBeEmpty();
+    });
+
+    it('does not jump to a compact reference the user cannot access', function () {
+        $hidden = Project::factory()->create(['short_name' => 'XYZ']);
+        Task::factory()->for($hidden)->create(['title' => 'Secret task']);
+
+        Livewire::actingAs($this->user)
+            ->test(CommandPalette::class)
+            ->set('query', 'xyz1') // compact form of XYZ-1
+            ->assertDontSee('Secret task');
+    });
+});
+
 it('does not surface items from projects the user cannot access', function () {
     $otherProject = Project::factory()->create(['short_name' => 'XYZ']);
     Task::factory()->for($otherProject)->create(['title' => 'Secret task']);

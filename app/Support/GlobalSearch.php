@@ -33,12 +33,16 @@ class GlobalSearch
     /**
      * Search the user's accessible projects and tasks.
      *
-     * A query that parses as a reference (e.g. "PROJ-42") yields a pinned
-     * "jump to" result at the top, followed by text/tag matches.
+     * A query that parses as a reference (e.g. "PROJ-42", or the compact "PROJ42")
+     * yields a pinned "jump to" result at the top. A bare number ("42") surfaces
+     * every accessible task with that number, ordered so the current project's
+     * task (when $contextShortName is given) comes first. Text/tag matches follow.
      *
+     * @param  string|null  $contextShortName  the short_name of the project the user is
+     *                                         currently viewing, used to break ties on bare-number matches
      * @return Collection<int, SearchResult>
      */
-    public function search(User $user, string $query): Collection
+    public function search(User $user, string $query, ?string $contextShortName = null): Collection
     {
         $query = trim($query);
 
@@ -59,6 +63,11 @@ class GlobalSearch
             return $results->values();
         }
 
+        if (ctype_digit($query)) {
+            $contextProjectId = $this->contextProjectId($projectIds, $contextShortName);
+            $results = $results->merge($this->tasksByNumber($projectIds, (int) $query, $contextProjectId));
+        }
+
         return $results
             ->merge($this->projects($projectIds, $query))
             ->merge($this->tasks($projectIds, $query))
@@ -71,13 +80,64 @@ class GlobalSearch
      */
     private function referenceJump(User $user, string $query): ?SearchResult
     {
-        $model = ReferenceResolver::commentable($query);
+        $model = ReferenceResolver::commentable($this->normalizeReference($query));
 
         if ($model === null || ! $user->can('view', $model)) {
             return null;
         }
 
         return $this->toResult($model, pinned: true);
+    }
+
+    /**
+     * Normalize a typed reference so a compact task reference like "PROJ42" (no
+     * separator) resolves the same as "PROJ-42". Anything else is returned
+     * untouched (uppercased) for the resolver to handle.
+     */
+    private function normalizeReference(string $query): string
+    {
+        $query = strtoupper(trim($query));
+
+        return preg_replace('/^('.ReferenceResolver::SHORT_NAME.')-?(\d+)$/', '$1-$2', $query) ?? $query;
+    }
+
+    /**
+     * The id of the user's current-context project, when given and accessible.
+     *
+     * @param  array<int, int>  $projectIds
+     */
+    private function contextProjectId(array $projectIds, ?string $contextShortName): ?int
+    {
+        if ($contextShortName === null) {
+            return null;
+        }
+
+        $id = Project::query()
+            ->whereIn('id', $projectIds)
+            ->where('short_name', strtoupper(trim($contextShortName)))
+            ->value('id');
+
+        return $id !== null ? (int) $id : null;
+    }
+
+    /**
+     * Every accessible task carrying the given task number, with the current
+     * project's match pinned and ordered first.
+     *
+     * @param  array<int, int>  $projectIds
+     * @return Collection<int, SearchResult>
+     */
+    private function tasksByNumber(array $projectIds, int $number, ?int $contextProjectId): Collection
+    {
+        return Task::query()
+            ->with('project')
+            ->whereIn('project_id', $projectIds)
+            ->where('task_number', $number)
+            ->get()
+            ->sortBy(static fn (Task $task): int => $task->project_id === $contextProjectId ? 0 : 1)
+            ->take(self::LIMIT)
+            ->map(fn (Task $task): SearchResult => $this->toResult($task, pinned: $task->project_id === $contextProjectId))
+            ->values();
     }
 
     /**

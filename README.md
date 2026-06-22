@@ -30,8 +30,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}/board` for its
   board, and `/{SHORT}-{n}` for a task (e.g. `/ABC`, `/ABC/board`, `/ABC-42`).
 - **Command palette** (`⌘K` / `Ctrl+K`) — search projects and tasks by
-  title or tag, jump straight to a typed reference, and run quick actions
-  including creating a task from anywhere.
+  title or tag, jump straight to a typed reference (`PROJ-42` or the compact
+  `PROJ42`), find tasks by a bare number across your projects (prioritizing the
+  one you're viewing), and run quick actions including creating a task from anywhere.
 - **Create task dialog** — one dialog for creating tasks, opened from the board,
   a project, a parent task or the command palette. Pick the target project and an
   optional parent task (offered only where nesting stays within the depth limit) —

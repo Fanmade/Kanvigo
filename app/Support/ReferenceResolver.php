@@ -14,7 +14,7 @@ class ReferenceResolver
     /**
      * The short name pattern: 2-4 uppercase letters, matching the web routes.
      */
-    private const SHORT_NAME = '[A-Z]{2,4}';
+    public const string SHORT_NAME = '[A-Z]{2,4}';
 
     /**
      * Resolve a task reference (e.g. "PROJ-42") into its model.
