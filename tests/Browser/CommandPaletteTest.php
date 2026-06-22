@@ -50,6 +50,18 @@ it('renders the keyboard-shortcut hint without a JS error', function () {
         ->assertNoJavascriptErrors();
 });
 
+it('hides the keyboard-shortcut hint on a mobile viewport', function () {
+    $this->actingAs($this->user);
+
+    // Below Tailwind's `sm` breakpoint the hint doesn't fit the narrow search bar
+    // and isn't useful without a keyboard, so it's hidden — see KAN-183.
+    $page = visit('/dashboard')->resize(375, 667);
+
+    $page->assertVisible('@command-palette-trigger')
+        ->assertMissing('@command-palette-shortcut')
+        ->assertNoJavascriptErrors();
+});
+
 it('opens the create-project form from the New project action', function () {
     $user = User::factory()->canCreateProjects()->create();
 

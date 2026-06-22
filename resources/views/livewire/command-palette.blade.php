@@ -18,8 +18,11 @@
                 {{-- Inline the platform check in x-text so there is no x-data state to
                      race against: x-text is always self-contained, never referencing an
                      uninitialized scope (avoids the flaky "mac is not defined"). --}}
+                {{-- Hidden below the `sm` breakpoint: the hint doesn't fit the
+                     narrow mobile search bar and isn't useful without a keyboard. --}}
                 <span
                     data-test="command-palette-shortcut"
+                    class="hidden sm:inline"
                     x-text="(navigator.userAgentData?.platform || navigator.platform || '').toLowerCase().includes('mac') ? '⌘K' : 'Ctrl K'"
                 >⌘K</span>
             </x-slot:kbd>
