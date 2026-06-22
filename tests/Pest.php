@@ -22,6 +22,14 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Browser');
 
+// Browser tests run the app, its JS bundle (Livewire, Flux, Tiptap) and a real
+// browser all in-process, and the suite runs `--parallel`. Under that CPU
+// contention an occasional page load or Livewire render overshoots Playwright's
+// 5s default and a wait spuriously times out (e.g. login → dashboard). Raising
+// the ceiling costs passing tests nothing — waits resolve the moment their
+// condition is met — and only absorbs those load spikes.
+pest()->browser()->timeout(15_000);
+
 /*
 |--------------------------------------------------------------------------
 | Expectations
