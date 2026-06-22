@@ -103,21 +103,19 @@
                     <flux:label>{{ __('Color') }}</flux:label>
                     <div class="flex flex-wrap gap-2" data-test="tag-color-picker">
                         @foreach (\App\Models\Tag::PALETTE as $paletteColor)
-                            <flux:button
+                            <button
                                 type="button"
-                                size="xs"
-                                variant="ghost"
                                 wire:click="$set('newTagColor', '{{ $paletteColor }}')"
                                 @class([
-                                    'rounded-full! p-0! ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-800',
+                                    'flex size-7 cursor-pointer items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-800',
                                     'ring-zinc-900 dark:ring-white' => $newTagColor === $paletteColor,
                                     'ring-transparent' => $newTagColor !== $paletteColor,
                                 ])
-                                :aria-label="$paletteColor"
+                                aria-label="{{ $paletteColor }}"
                                 data-test="tag-color-{{ $paletteColor }}"
                             >
                                 <x-tag-dot :color="$paletteColor" class="size-5" />
-                            </flux:button>
+                            </button>
                         @endforeach
                     </div>
                     <flux:error name="newTagColor" />
