@@ -456,7 +456,7 @@ class TaskView extends Component
             return;
         }
 
-        $this->assigneeIds[] = $userId;
+        $this->assigneeIds[] = (int) $userId;
         $this->updatedAssigneeIds();
     }
 

@@ -23,7 +23,7 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * The single, globally-mounted dialog for creating a task. It is opened from any
+ * The single, globally mounted dialog for creating a task. It is opened from any
  * page (board cards, the project overview, a parent task, the command palette) by
  * dispatching the `open-create-task` event with optional project/parent context.
  * Creation funnels through the shared {@see CreateTask} action; on success it
@@ -462,7 +462,7 @@ class CreateTaskModal extends Component
         $userId = Auth::id();
 
         if (! in_array($userId, $this->assigneeIds, true)) {
-            $this->assigneeIds[] = $userId;
+            $this->assigneeIds[] = (int) $userId;
         }
     }
 
