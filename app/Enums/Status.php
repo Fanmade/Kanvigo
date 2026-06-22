@@ -33,7 +33,7 @@ enum Status: string
             self::Planned => 'zinc',
             self::ToDo => 'sky',
             self::InProgress => 'amber',
-            self::Done => 'green',
+            self::Done => 'teal',
             self::Canceled => 'red',
         };
     }
