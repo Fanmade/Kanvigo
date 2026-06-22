@@ -64,6 +64,8 @@ class CommandPalette extends Component
             $actions->push(new SearchResult(type: 'action', title: __('New task'), icon: 'plus', event: 'open-create-task'));
         }
 
+        $actions->push(new SearchResult(type: 'action', title: __('New note'), icon: 'pencil-square', event: 'open-create-note'));
+
         if ($user->hasPermission(Permission::CreateProjects)) {
             $actions->push(new SearchResult(type: 'action', title: __('New project'), url: route('projects.index', ['create' => 1]), icon: 'folder-plus'));
         }

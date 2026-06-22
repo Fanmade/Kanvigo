@@ -4,11 +4,15 @@ namespace App\Livewire;
 
 use App\Enums\Status;
 use App\Models\Activity;
+use App\Models\Note;
 use App\Models\Task;
+use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -19,6 +23,11 @@ class Dashboard extends Component
      * Maximum number of actionable tasks rendered in the "My tasks" list.
      */
     private const ACTIVE_TASKS_LIMIT = 50;
+
+    /**
+     * Maximum number of notes rendered in the Notes panel.
+     */
+    private const NOTES_LIMIT = 50;
 
     /**
      * The user's actionable tasks across their projects, in progress first then
@@ -76,6 +85,71 @@ class Dashboard extends Component
     public function projectCount(): int
     {
         return Auth::user()->projects()->count();
+    }
+
+    /**
+     * The user's notes, newest first. Empty-title drafts (left behind by an
+     * abandoned note dialog) are hidden.
+     *
+     * @return EloquentCollection<int, Note>
+     */
+    #[Computed]
+    public function notes(): EloquentCollection
+    {
+        return Auth::user()->notes()
+            ->where('title', '!=', '')
+            ->with(['project', 'convertedTask.project'])
+            ->latest('updated_at')
+            ->limit(self::NOTES_LIMIT)
+            ->get();
+    }
+
+    /**
+     * Refresh the Notes panel after the dialog saves one.
+     */
+    #[On('note-saved')]
+    public function refreshNotes(): void
+    {
+        unset($this->notes);
+    }
+
+    /**
+     * Delete one of the user's own notes.
+     */
+    public function deleteNote(int $noteId): void
+    {
+        $note = Auth::user()->notes()->findOrFail($noteId);
+        $this->authorize('delete', $note);
+
+        $note->delete();
+
+        unset($this->notes);
+
+        Flux::toast(variant: 'success', text: __('Note deleted.'));
+    }
+
+    /**
+     * Toggle whether an attached note is public to its project. A projectless
+     * note can't be made public, so it is a no-op there (the model enforces the
+     * same invariant).
+     */
+    public function toggleNoteVisibility(int $noteId): void
+    {
+        $note = Auth::user()->notes()->findOrFail($noteId);
+        $this->authorize('changeVisibility', $note);
+
+        if ($note->project_id === null) {
+            return;
+        }
+
+        $note->update(['is_public' => ! $note->is_public]);
+
+        unset($this->notes);
+
+        Flux::toast(
+            variant: 'success',
+            text: $note->is_public ? __('Note shared with the project.') : __('Note made private.'),
+        );
     }
 
     /**
