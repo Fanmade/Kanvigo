@@ -1,5 +1,12 @@
 <?php
 
+use App\Models\Project;
+use App\Models\Tag;
+use App\Models\Task;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\MorphPivot;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Str;
 
 return [
@@ -129,8 +136,24 @@ return [
     | storage. By default, no PHP classes will be unserialized from your
     | cache to prevent gadget chain attacks if your APP_KEY is leaked.
     |
+    | The kanban boards cache a hydrated task graph (see App\Support\BoardCache),
+    | so the classes that graph serializes to are allow-listed here. Everything
+    | else stays blocked. Keep this in sync with what the board eager-loads —
+    | adding a new cached relation or cast may introduce a new class. The
+    | BoardCacheSerializationTest round-trips the graph through the database
+    | store and fails if a class is missing.
+    |
     */
 
-    'serializable_classes' => false,
+    'serializable_classes' => [
+        Project::class,
+        Tag::class,
+        Task::class,
+        User::class,
+        Collection::class,
+        MorphPivot::class,
+        Pivot::class,
+        Staudenmeir\LaravelAdjacencyList\Eloquent\Collection::class,
+    ],
 
 ];
