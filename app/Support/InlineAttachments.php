@@ -37,12 +37,13 @@ class InlineAttachments
      */
     public static function referencedIdsForOwner(Project|Task $owner): array
     {
-        $ids = self::referencedIds($owner->description);
+        $documents = collect([$owner->description])
+            ->merge($owner->comments()->pluck('body'));
 
-        foreach ($owner->comments()->pluck('body') as $body) {
-            $ids = array_merge($ids, self::referencedIds($body));
-        }
-
-        return array_values(array_unique($ids));
+        return $documents
+            ->flatMap(static fn (?string $document): array => self::referencedIds($document))
+            ->unique()
+            ->values()
+            ->all();
     }
 }
