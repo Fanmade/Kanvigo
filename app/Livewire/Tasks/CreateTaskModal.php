@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Tasks;
 
+use App\Actions\ConvertNote;
 use App\Actions\CreateTask;
 use App\Enums\Priority;
 use App\Enums\Status;
+use App\Models\Note;
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Task;
@@ -46,6 +48,12 @@ class CreateTaskModal extends Component
     public ?int $projectId = null;
 
     public ?int $parentId = null;
+
+    /**
+     * When converting a note into a task: the source note, linked to the new
+     * task on save so its "Converted → …" badge points back at it.
+     */
+    public ?int $fromNoteId = null;
 
     public string $title = '';
 
@@ -105,9 +113,21 @@ class CreateTaskModal extends Component
      * or, when omitted, falling back to the page the component was mounted on.
      */
     #[On('open-create-task')]
-    public function open(?int $projectId = null, ?int $parentId = null): void
+    public function open(?int $projectId = null, ?int $parentId = null, ?int $fromNoteId = null): void
     {
         $this->resetForm();
+
+        // Converting a note: prefill the title/body from it and default the
+        // project to the note's, if attached. Only the owner may convert.
+        if ($fromNoteId !== null) {
+            $note = Note::findOrFail($fromNoteId);
+            $this->authorize('update', $note);
+
+            $this->fromNoteId = $note->id;
+            $this->title = $note->title;
+            $this->description = (string) $note->body;
+            $projectId ??= $note->project_id;
+        }
 
         $projectId ??= $this->contextProjectId;
 
@@ -391,6 +411,18 @@ class CreateTaskModal extends Component
         $this->applyTags($task);
         $this->applyAssignees($task, $project);
 
+        // When this task was created by converting a note, link them back so the
+        // note keeps a "Converted → …" badge. Skipped if the note has since gone
+        // or the user can no longer edit it.
+        if ($this->fromNoteId !== null) {
+            $note = Note::find($this->fromNoteId);
+
+            if ($note !== null && Auth::user()?->can('update', $note)) {
+                app(ConvertNote::class)->handle($note, $task);
+                $this->dispatch('note-saved');
+            }
+        }
+
         $reference = $project->short_name.'-'.$task->task_number;
         $url = route('task.show', ['short_name' => $project->short_name, 'task_number' => $task->task_number]);
 
@@ -436,7 +468,7 @@ class CreateTaskModal extends Component
     protected function resetForm(): void
     {
         $this->reset(
-            'projectId', 'parentId', 'title', 'description', 'dueDate', 'createAnother',
+            'projectId', 'parentId', 'fromNoteId', 'title', 'description', 'dueDate', 'createAnother',
             'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
         );
         $this->priority = Priority::default()->value;
@@ -452,7 +484,7 @@ class CreateTaskModal extends Component
     protected function resetForNextTask(): void
     {
         $this->reset(
-            'title', 'description', 'dueDate',
+            'fromNoteId', 'title', 'description', 'dueDate',
             'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
         );
         $this->newTagColor = 'zinc';

@@ -118,6 +118,9 @@
                         <flux:button size="xs" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Note actions')" data-test="note-actions-{{ $note->id }}" />
                         <flux:menu>
                             <flux:menu.item icon="pencil-square" wire:click="$dispatch('open-create-note', { noteId: {{ $note->id }} })">{{ __('Edit') }}</flux:menu.item>
+                            @unless ($note->convertedTask)
+                                <flux:menu.item icon="arrow-right-circle" wire:click="$dispatch('open-create-task', { fromNoteId: {{ $note->id }} })" data-test="convert-note-{{ $note->id }}">{{ __('Convert to task') }}</flux:menu.item>
+                            @endunless
                             @if ($note->project)
                                 <flux:menu.item
                                     :icon="$note->is_public ? 'lock-closed' : 'globe-alt'"
