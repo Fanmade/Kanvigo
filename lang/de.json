@@ -437,7 +437,7 @@
   "User administration": "Benutzerverwaltung",
   "Username": "Benutzername",
   "Verify authentication code": "Authentifizierungscode bestätigen",
-  "via token “:name”": "über Token „:name“",
+  "via API token": "über API-Token",
   "View recovery codes": "Wiederherstellungscodes anzeigen",
   "When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.": "Wenn du die Zwei-Faktor-Authentifizierung aktivierst, wirst du bei der Anmeldung nach einer sicheren PIN gefragt. Diese PIN kannst du aus einer TOTP-fähigen App auf deinem Smartphone abrufen.",
   "Won't fix": "Wird nicht behoben",

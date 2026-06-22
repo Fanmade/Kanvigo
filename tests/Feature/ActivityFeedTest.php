@@ -195,7 +195,7 @@ it('localizes a cancellation in German', function () {
         ->assertSee('hat dies abgebrochen (Veraltet)');
 });
 
-it('shows the token attribution for a token-driven action', function () {
+it('flags a token-driven action generically without leaking the token name', function () {
     $this->member->setPreference('activities_collapsed', false);
     $this->task->activities()->create([
         'user_id' => $this->member->id,
@@ -208,8 +208,8 @@ it('shows the token attribution for a token-driven action', function () {
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
-        ->assertSee('via token')
-        ->assertSee('Claude');
+        ->assertSee('via API token')
+        ->assertDontSee('Claude'); // the private token name must not be shown
 });
 
 it('shows no token attribution for a web-session action', function () {

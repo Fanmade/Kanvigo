@@ -106,8 +106,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Activity log** — polymorphic audit trail of creations, status, priority,
   assignment, tag and dependency changes, plus cancellations and reopenings,
   naming what changed (which assignees, which tags, which dependency, the cancel
-  reason) and noting when an action was performed via an API/MCP token (showing the
-  token name). Collapsed by default; the open/closed state is remembered per user.
+  reason) and noting when an action was performed via an API/MCP token (flagged
+  generically, without revealing the token's private name). Collapsed by default;
+  the open/closed state is remembered per user.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`
