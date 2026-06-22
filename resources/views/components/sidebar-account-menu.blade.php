@@ -1,10 +1,12 @@
-<flux:dropdown position="bottom" align="start">
+{{-- Bottom-left account/settings entry point for the sidebar shell. Opens upward
+     (the trigger sits in the sidebar footer) and reuses the shared account items. --}}
+<flux:dropdown position="top" align="start">
     <flux:sidebar.profile
         :name="auth()->user()->name"
         :avatar="auth()->user()->avatarUrl()"
         :initials="auth()->user()->initials()"
         icon:trailing="chevrons-up-down"
-        data-test="sidebar-menu-button"
+        data-test="sidebar-account-menu"
     />
 
     <flux:menu>
@@ -19,23 +21,9 @@
                 <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
             </div>
         </div>
+
         <flux:menu.separator />
-        <flux:menu.radio.group>
-            <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                {{ __('Settings') }}
-            </flux:menu.item>
-            <form method="POST" action="{{ route('logout') }}" class="w-full">
-                @csrf
-                <flux:menu.item
-                    as="button"
-                    type="submit"
-                    icon="arrow-right-start-on-rectangle"
-                    class="w-full cursor-pointer"
-                    data-test="logout-button"
-                >
-                    {{ __('Log out') }}
-                </flux:menu.item>
-            </form>
-        </flux:menu.radio.group>
+
+        <x-account-menu-items test-prefix="sidebar-account" />
     </flux:menu>
 </flux:dropdown>

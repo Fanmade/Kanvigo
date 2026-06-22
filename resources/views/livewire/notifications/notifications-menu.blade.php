@@ -60,16 +60,7 @@
                 {{ __('Manage notifications') }}
             </flux:menu.item>
 
-            <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                {{ __('Settings') }}
-            </flux:menu.item>
-
-            <form method="POST" action="{{ route('logout') }}" class="w-full">
-                @csrf
-                <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full cursor-pointer">
-                    {{ __('Log out') }}
-                </flux:menu.item>
-            </form>
+            <x-account-menu-items />
         </flux:menu>
     </flux:dropdown>
 </div>

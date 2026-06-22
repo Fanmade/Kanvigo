@@ -58,6 +58,8 @@
                     @endcan
                 </flux:sidebar.nav>
             @endcanany
+
+            <x-sidebar-account-menu />
         </flux:sidebar>
 
         <flux:header class="border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
