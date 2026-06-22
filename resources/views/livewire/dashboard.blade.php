@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-6">
-    <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+    <flux:heading size="xl" data-test="dashboard-heading">{{ __('Dashboard') }}</flux:heading>
 
     {{-- Statistics --}}
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">

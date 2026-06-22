@@ -32,6 +32,7 @@ it('jumps to a typed reference', function () {
         ->fill('@command-palette-input', $this->task->reference)
         ->assertSee('Deploy fix')
         ->click('Deploy fix')
+        ->assertVisible('@task-actions')
         ->assertPathIs('/'.$this->task->reference)
         ->assertNoJavascriptErrors();
 });
@@ -59,7 +60,7 @@ it('opens the create-project form from the New project action', function () {
     $page->click('@command-palette-trigger')
         ->fill('@command-palette-input', 'New project')
         ->click('@palette-item-new-project')
-        ->assertPathIs('/projects')
         ->assertVisible('@project-title')
+        ->assertPathIs('/projects')
         ->assertNoJavascriptErrors();
 });

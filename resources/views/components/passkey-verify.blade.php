@@ -53,6 +53,7 @@
                     class="w-full"
                     x-on:click="verify()"
                     x-bind:disabled="loading"
+                    data-test="passkey-verify"
                 >
                     <span x-show="!loading">{{ $label }}</span>
                     <span x-show="loading" x-cloak>{{ $loadingLabel }}</span>

@@ -9,6 +9,7 @@ it('opens the bottom-left account menu and reaches settings', function () {
 
     $page->click('@sidebar-account-menu')
         ->click('@sidebar-account-settings')
+        ->assertVisible('@avatar-section')
         ->assertPathIs('/settings/profile')
         ->assertNoJavascriptErrors();
 });
@@ -20,6 +21,7 @@ it('logs out from the bottom-left account menu', function () {
 
     $page->click('@sidebar-account-menu')
         ->click('@sidebar-account-logout')
+        ->assertVisible('@login-button')
         ->assertPathIs('/login')
         ->assertNoJavascriptErrors();
 
