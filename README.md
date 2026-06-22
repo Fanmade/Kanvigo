@@ -73,7 +73,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   member lists — with your initials as the fallback when you have none.
 - **Comments** with one-level replies, editing, and soft-delete tombstones, written
   with the same rich-text editor as descriptions. The whole section can be collapsed,
-  remembered per user.
+  remembered per user. New comments and activity from others appear automatically
+  while "Live updates" is on, without interrupting a reply you're typing.
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails. Files above the size limit are rejected with a
   clear message.

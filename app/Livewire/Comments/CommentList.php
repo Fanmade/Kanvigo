@@ -10,6 +10,7 @@ use App\Models\Task;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class CommentList extends Component
@@ -91,6 +92,17 @@ class CommentList extends Component
     public function commentCount(): int
     {
         return $this->commentable()->comments()->whereNull('parent_id')->count();
+    }
+
+    /**
+     * Live-updates tick: pull in comments added by others. The task-page poll
+     * that fires this already skips ticks while a comment editor is focused, so a
+     * draft is never lost.
+     */
+    #[On('task-page-refresh')]
+    public function liveRefresh(): void
+    {
+        unset($this->comments, $this->commentCount);
     }
 
     public function addComment(): void

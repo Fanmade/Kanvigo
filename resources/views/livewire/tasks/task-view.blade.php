@@ -1,4 +1,6 @@
 <div class="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <x-task-page-refresh :interval-ms="$this->livePollIntervalMs()" />
+
     <div class="flex items-center justify-between gap-2">
         @php($shortName = $this->task->project->short_name)
         <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
@@ -20,7 +22,10 @@
             <span class="text-zinc-300">/</span>
             <span class="font-mono text-zinc-400">{{ $this->task->reference }}</span>
         </div>
-        <livewire:subscriptions.subscription-toggle :subscribable="$this->task" :wire:key="'sub-task-'.$this->task->id" />
+        <div class="flex shrink-0 items-center gap-3">
+            <x-live-updates-toggle />
+            <livewire:subscriptions.subscription-toggle :subscribable="$this->task" :wire:key="'sub-task-'.$this->task->id" />
+        </div>
     </div>
 
     @if ($parentBumpUndoStatus !== '')

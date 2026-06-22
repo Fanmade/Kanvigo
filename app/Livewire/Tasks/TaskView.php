@@ -177,6 +177,16 @@ class TaskView extends Component
         unset($this->task, $this->canAddSubtask);
     }
 
+    /**
+     * Live-updates tick: refresh the header from the latest data. Driven by the
+     * task-page poll, which already skips ticks while the user is editing.
+     */
+    #[On('task-page-refresh')]
+    public function liveRefresh(): void
+    {
+        unset($this->task);
+    }
+
     public function updatedStatus(string $value): void
     {
         $task = $this->task();

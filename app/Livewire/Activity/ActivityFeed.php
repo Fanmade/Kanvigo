@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class ActivityFeed extends Component
@@ -28,6 +29,16 @@ class ActivityFeed extends Component
         $this->initMorphSubject($subject);
 
         $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, true);
+    }
+
+    /**
+     * Live-updates tick: pull in activity recorded by others (read-only feed, so
+     * always safe to refresh).
+     */
+    #[On('task-page-refresh')]
+    public function liveRefresh(): void
+    {
+        unset($this->activities, $this->activityCount, $this->descriptions);
     }
 
     /**
