@@ -3,13 +3,16 @@
 namespace App\Console\Commands;
 
 use App\Models\Attachment;
+use App\Models\Project;
+use App\Models\Task;
+use App\Support\InlineAttachments;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 
 #[Signature('attachments:prune-inline {--hours=24 : Minimum age in hours before an unreferenced inline image is removed}')]
-#[Description('Delete inline image attachments no longer referenced in their parent description.')]
+#[Description('Delete inline image attachments no longer referenced by their owner description or any of its comments.')]
 class PruneInlineAttachments extends Command
 {
     /**
@@ -41,23 +44,22 @@ class PruneInlineAttachments extends Command
     }
 
     /**
-     * Whether the attachment is still linked from its parent's description.
+     * Whether the attachment is still linked from its owner's description or any
+     * of the owner's comment bodies.
      *
-     * Inline images are embedded as markdown pointing at the download and
-     * thumbnail routes, which both contain "attachments/{id}/".
+     * Inline images are embedded pointing at the view and thumbnail routes, which
+     * both contain "attachments/{id}/".
      */
     private function isReferenced(Attachment $attachment): bool
     {
-        // Read through the relation query so a deleted parent surfaces as null
+        // Read through the relation query so a deleted owner surfaces as null
         // (a morphed-away attachment is, by definition, unreferenced).
-        $attachable = $attachment->attachable()->first();
+        $owner = $attachment->attachable()->first();
 
-        if ($attachable === null) {
+        if (! $owner instanceof Project && ! $owner instanceof Task) {
             return false;
         }
 
-        $description = (string) ($attachable->description ?? '');
-
-        return str_contains($description, "attachments/{$attachment->id}/");
+        return in_array($attachment->id, InlineAttachments::referencedIdsForOwner($owner), true);
     }
 }

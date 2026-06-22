@@ -6,6 +6,7 @@ use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
 use App\Concerns\HasSubscribers;
 use App\Concerns\LogsActivity;
+use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use App\Contracts\Subscribable;
 use Database\Factories\ProjectFactory;
@@ -28,7 +29,17 @@ use Illuminate\Support\Carbon;
 class Project extends Model implements Subscribable
 {
     /** @use HasFactory<ProjectFactory> */
-    use HasAttachments, HasComments, HasFactory, HasSubscribers, LogsActivity, SanitizesRichText;
+    use HasAttachments, HasComments, HasFactory, HasSubscribers, LogsActivity, PrunesInlineAttachments, SanitizesRichText;
+
+    public function inlineAttachmentOwner(): Project|Task
+    {
+        return $this;
+    }
+
+    public function inlineDocumentColumn(): string
+    {
+        return 'description';
+    }
 
     public function getRouteKeyName(): string
     {

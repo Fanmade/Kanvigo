@@ -13,6 +13,7 @@ use App\Concerns\HasSubscribers;
 use App\Concerns\HasTags;
 use App\Concerns\LogsActivity;
 use App\Concerns\Nestable;
+use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use App\Contracts\Dependable;
 use App\Contracts\Subscribable;
@@ -57,7 +58,7 @@ use Illuminate\Support\Collection;
 class Task extends Model implements Dependable, Subscribable
 {
     /** @use HasFactory<TaskFactory> */
-    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable, SanitizesRichText;
+    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable, PrunesInlineAttachments, SanitizesRichText;
 
     protected string $scopedNumberColumn = 'task_number';
 
@@ -82,6 +83,16 @@ class Task extends Model implements Dependable, Subscribable
                 $task->position = (static::max('position') ?? 0) + 1;
             }
         });
+    }
+
+    public function inlineAttachmentOwner(): Project|Task
+    {
+        return $this;
+    }
+
+    public function inlineDocumentColumn(): string
+    {
+        return 'description';
     }
 
     /**

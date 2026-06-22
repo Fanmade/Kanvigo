@@ -32,4 +32,17 @@ class AttachmentFactory extends Factory
             'size' => fake()->numberBetween(1024, 5_000_000),
         ];
     }
+
+    /**
+     * An inline image attachment (embedded in a rich-text document).
+     */
+    public function inline(): static
+    {
+        return $this->state(fn (): array => [
+            'is_inline' => true,
+            'name' => fake()->unique()->slug(2).'.png',
+            'mime_type' => 'image/png',
+            'path' => 'attachments/'.fake()->uuid().'.png',
+        ]);
+    }
 }

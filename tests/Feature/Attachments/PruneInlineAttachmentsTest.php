@@ -2,6 +2,7 @@
 
 use App\Models\Attachment;
 use App\Models\Project;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -46,6 +47,19 @@ it('keeps inline attachments still referenced in the description', function () {
 
     $this->project->update([
         'description' => 'Diagram: '.$attachment->downloadUrl(),
+    ]);
+
+    $this->artisan('attachments:prune-inline')->assertSuccessful();
+
+    expect(Attachment::find($attachment->id))->not->toBeNull();
+});
+
+it('keeps an aged inline attachment referenced only from a comment body', function () {
+    $attachment = inlineAttachment($this->project);
+
+    $this->project->comments()->create([
+        'user_id' => User::factory()->create()->id,
+        'body' => '<p><img src="/'.$this->project->short_name.'/attachments/'.$attachment->id.'/thumbnail"></p>',
     ]);
 
     $this->artisan('attachments:prune-inline')->assertSuccessful();

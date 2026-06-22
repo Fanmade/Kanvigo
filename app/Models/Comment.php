@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,7 @@ use Illuminate\Support\Carbon;
 #[Fillable(['user_id', 'body', 'parent_id'])]
 class Comment extends Model
 {
+    use PrunesInlineAttachments;
     use SanitizesRichText;
 
     /**
@@ -36,6 +38,22 @@ class Comment extends Model
         return [
             'is_deleted' => 'boolean',
         ];
+    }
+
+    public function inlineAttachmentOwner(): Project|Task
+    {
+        $commentable = $this->commentable;
+
+        if ($commentable instanceof Project || $commentable instanceof Task) {
+            return $commentable;
+        }
+
+        throw new \LogicException('A comment must belong to a project or task.');
+    }
+
+    public function inlineDocumentColumn(): string
+    {
+        return 'body';
     }
 
     /**
