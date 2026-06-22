@@ -75,6 +75,7 @@ it('rebuilds the board after a task row change invalidates the cache', function 
     Livewire::actingAs($this->user)->test(ProjectBoard::class, ['short_name' => 'ABC']);
     $before = BoardCache::version($this->project->id);
 
+    /** @noinspection LaravelEloquentGuardedAttributeAssignmentInspection */
     $this->task->update(['status' => Status::Done]); // Task saved → touch
 
     expect(BoardCache::version($this->project->id))->toBeGreaterThan($before);
