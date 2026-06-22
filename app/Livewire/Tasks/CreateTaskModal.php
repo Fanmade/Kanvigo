@@ -452,6 +452,21 @@ class CreateTaskModal extends Component
     }
 
     /**
+     * One-click self-assignment: stage the current user as an assignee. The
+     * creator is always a member of any project they can pick, so no membership
+     * check is needed here; subscription and logging happen in {@see applyAssignees}
+     * when the task is saved.
+     */
+    public function assignToMe(): void
+    {
+        $userId = Auth::id();
+
+        if (! in_array($userId, $this->assigneeIds, true)) {
+            $this->assigneeIds[] = $userId;
+        }
+    }
+
+    /**
      * Re-scope the parent and member options whenever the chosen project changes,
      * dropping selections that no longer belong to it.
      */

@@ -30,6 +30,29 @@ it('creates a subtask from the task detail page and shows it in the list', funct
         ->and($parent->children()->first()->title)->toBe('Build the thing');
 });
 
+it('assigns the creator from the create-task modal with one click', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $project->members()->attach($user);
+    $parent = Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Parent task']);
+
+    $this->actingAs($user);
+
+    $page = visit('/'.$parent->reference);
+
+    $page->click('@new-subtask')
+        ->fill('@create-task-title', 'Assigned subtask')
+        ->click('@create-task-assign-to-me')
+        ->assertMissing('@create-task-assign-to-me')
+        ->click('@create-task-submit')
+        ->assertSee('Assigned subtask')
+        ->assertNoJavascriptErrors();
+
+    $task = $project->tasks()->where('title', 'Assigned subtask')->first();
+
+    expect($task->assignees->pluck('id')->all())->toBe([$user->id]);
+});
+
 it('shows the subtree progress rollup on the detail page', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);

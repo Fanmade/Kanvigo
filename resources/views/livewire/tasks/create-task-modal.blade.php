@@ -140,8 +140,21 @@
                 {{-- Assignees --}}
                 <div class="flex flex-col gap-1">
                     <span class="text-sm font-medium text-zinc-800 dark:text-white">{{ __('Assignees') }}</span>
-                    <div class="flex min-h-8 items-center">
+                    <div class="flex min-h-8 items-center gap-1">
                         @if ($this->projectId && $this->members->isNotEmpty())
+                            @unless (in_array(auth()->id(), $assigneeIds, true))
+                                <flux:tooltip :content="__('Assign to me')">
+                                    <flux:button
+                                        size="xs"
+                                        variant="subtle"
+                                        icon="user-plus"
+                                        wire:click="assignToMe"
+                                        :aria-label="__('Assign to me')"
+                                        data-test="create-task-assign-to-me"
+                                    />
+                                </flux:tooltip>
+                            @endunless
+
                             <x-assignee-picker
                                 :members="$this->members"
                                 :selected="$this->members->whereIn('id', $assigneeIds)"

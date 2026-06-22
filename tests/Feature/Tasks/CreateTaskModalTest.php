@@ -208,6 +208,24 @@ it('assigns chosen project members and subscribes them', function () {
         ->and($task->subscribers->pluck('id')->all())->toContain($assignee->id);
 });
 
+it('stages the current user with one click and assigns them on save', function () {
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->assertSet('assigneeIds', [])
+        ->call('assignToMe')
+        ->assertSet('assigneeIds', [$this->member->id])
+        ->call('assignToMe') // idempotent
+        ->assertSet('assigneeIds', [$this->member->id])
+        ->set('title', 'Mine')
+        ->call('save');
+
+    $task = $this->project->tasks()->where('title', 'Mine')->first();
+
+    expect($task->assignees->pluck('id')->all())->toBe([$this->member->id])
+        ->and($task->subscribers->pluck('id')->all())->toContain($this->member->id);
+});
+
 it('ignores assignees who are not members of the project', function () {
     $stranger = User::factory()->create();
 
