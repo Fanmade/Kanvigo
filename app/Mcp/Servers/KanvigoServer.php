@@ -25,10 +25,10 @@ use Laravel\Mcp\Server\Attributes\Version;
 use Laravel\Mcp\Server\Prompt;
 use Laravel\Mcp\Server\Tool;
 
-#[Name('Kanbrio')]
+#[Name('Kanvigo')]
 #[Version('0.1.0')]
 #[Instructions(<<<'TEXT'
-    Kanbrio is a project-management board. The data model is a hierarchy:
+    Kanvigo is a project-management board. The data model is a hierarchy:
 
     - A project groups work and has a short_name (2-4 uppercase letters), title and description.
       A project is referenced by its short_name, e.g. "PROJ".
@@ -88,7 +88,7 @@ use Laravel\Mcp\Server\Tool;
     access and return an error for read-only tokens. Creating a project also requires the
     "create-projects" permission.
     TEXT)]
-class KanbrioServer extends Server
+class KanvigoServer extends Server
 {
     /**
      * The tools registered with this MCP server.

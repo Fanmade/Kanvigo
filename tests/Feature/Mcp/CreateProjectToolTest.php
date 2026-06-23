@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Models\Project;
 use App\Models\User;
@@ -15,7 +15,7 @@ it('creates a project and adds the user as a member with a write token', functio
     $user = User::factory()->canCreateProjects()->create();
     Sanctum::actingAs($user, ['read', 'write']);
 
-    KanbrioServer::tool(CreateProjectTool::class, [
+    KanvigoServer::tool(CreateProjectTool::class, [
         'title' => 'New Project',
         'short_name' => 'NEW',
     ])
@@ -30,7 +30,7 @@ it('uppercases the provided short_name', function () {
     $user = User::factory()->canCreateProjects()->create();
     Sanctum::actingAs($user, ['read', 'write']);
 
-    KanbrioServer::tool(CreateProjectTool::class, [
+    KanvigoServer::tool(CreateProjectTool::class, [
         'title' => 'New Project',
         'short_name' => 'low',
     ])->assertOk();
@@ -42,7 +42,7 @@ it('denies project creation without the create-projects permission', function ()
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
 
-    KanbrioServer::tool(CreateProjectTool::class, [
+    KanvigoServer::tool(CreateProjectTool::class, [
         'title' => 'New Project',
         'short_name' => 'NEW',
     ])->assertHasErrors();
@@ -52,7 +52,7 @@ it('denies project creation with a read-only token', function () {
     $user = User::factory()->canCreateProjects()->create();
     Sanctum::actingAs($user, ['read']);
 
-    KanbrioServer::tool(CreateProjectTool::class, [
+    KanvigoServer::tool(CreateProjectTool::class, [
         'title' => 'New Project',
         'short_name' => 'NEW',
     ])->assertHasErrors();
@@ -64,7 +64,7 @@ it('rejects a duplicate short_name', function () {
 
     Project::factory()->create(['short_name' => 'DUP']);
 
-    KanbrioServer::tool(CreateProjectTool::class, [
+    KanvigoServer::tool(CreateProjectTool::class, [
         'title' => 'Another',
         'short_name' => 'DUP',
     ])->assertHasErrors();

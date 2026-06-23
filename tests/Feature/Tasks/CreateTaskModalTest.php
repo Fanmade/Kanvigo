@@ -287,7 +287,7 @@ it('stays open and keeps the context when create another is on', function () {
 });
 
 it('rejects a parent task at the maximum nesting depth', function () {
-    config(['kanbrio.tasks.max_depth' => 2]);
+    config(['kanvigo.tasks.max_depth' => 2]);
     $root = Task::factory()->for($this->project)->create();
     $child = Task::factory()->for($this->project)->childOf($root)->create(); // depth 2 = max
 

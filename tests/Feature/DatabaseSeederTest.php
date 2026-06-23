@@ -17,7 +17,7 @@ it('does not create an admin when no credentials are configured', function (): v
 });
 
 it('does not create an admin when only the email is configured', function (): void {
-    config(['admin.email' => 'admin@kanbrio.test', 'admin.password' => null]);
+    config(['admin.email' => 'admin@kanvigo.test', 'admin.password' => null]);
 
     $this->seed(DatabaseSeeder::class);
 
@@ -27,7 +27,7 @@ it('does not create an admin when only the email is configured', function (): vo
 it('creates an admin with every permission from the configured credentials', function (): void {
     config([
         'admin.name' => 'Admin',
-        'admin.email' => 'admin@kanbrio.test',
+        'admin.email' => 'admin@kanvigo.test',
         'admin.password' => 'super-secret',
     ]);
 
@@ -36,7 +36,7 @@ it('creates an admin with every permission from the configured credentials', fun
     $admin = User::sole();
 
     expect($admin->name)->toBe('Admin')
-        ->and($admin->email)->toBe('admin@kanbrio.test')
+        ->and($admin->email)->toBe('admin@kanvigo.test')
         ->and(Hash::check('super-secret', $admin->password))->toBeTrue();
 
     foreach (Permission::cases() as $permission) {
@@ -47,7 +47,7 @@ it('creates an admin with every permission from the configured credentials', fun
 it('uses the configured name', function (): void {
     config([
         'admin.name' => 'Ben',
-        'admin.email' => 'ben@kanbrio.test',
+        'admin.email' => 'ben@kanvigo.test',
         'admin.password' => 'super-secret',
     ]);
 
@@ -59,7 +59,7 @@ it('uses the configured name', function (): void {
 it('falls back to the Admin name when none is configured', function (): void {
     config([
         'admin.name' => null,
-        'admin.email' => 'admin@kanbrio.test',
+        'admin.email' => 'admin@kanvigo.test',
         'admin.password' => 'super-secret',
     ]);
 
@@ -70,12 +70,12 @@ it('falls back to the Admin name when none is configured', function (): void {
 
 it('does not create a duplicate admin when seeded twice', function (): void {
     config([
-        'admin.email' => 'admin@kanbrio.test',
+        'admin.email' => 'admin@kanvigo.test',
         'admin.password' => 'super-secret',
     ]);
 
     $this->seed(DatabaseSeeder::class);
     $this->seed(DatabaseSeeder::class);
 
-    expect(User::where('email', 'admin@kanbrio.test')->count())->toBe(1);
+    expect(User::where('email', 'admin@kanvigo.test')->count())->toBe(1);
 });

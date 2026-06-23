@@ -55,7 +55,7 @@ it('forbids a non-member from opening the task view', function () {
 });
 
 it('cannot add a subtask at the maximum nesting depth', function () {
-    config(['kanbrio.tasks.max_depth' => 2]);
+    config(['kanvigo.tasks.max_depth' => 2]);
     $child = Task::factory()->for($this->project)->childOf($this->task)->create(); // depth 2 = max
 
     $component = ($this->view)($child);

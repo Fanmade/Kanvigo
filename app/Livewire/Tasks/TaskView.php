@@ -164,7 +164,7 @@ class TaskView extends Component
     #[Computed]
     public function canAddSubtask(): bool
     {
-        return $this->task()->nestingDepth() < (int) config('kanbrio.tasks.max_depth');
+        return $this->task()->nestingDepth() < (int) config('kanvigo.tasks.max_depth');
     }
 
     /**

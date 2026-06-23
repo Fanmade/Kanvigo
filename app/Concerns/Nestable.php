@@ -78,7 +78,7 @@ trait Nestable
             throw new InvalidArgumentException('A task cannot be nested under its own descendant.');
         }
 
-        $maxDepth = (int) config('kanbrio.tasks.max_depth');
+        $maxDepth = (int) config('kanvigo.tasks.max_depth');
 
         if ($parent->nestingDepth() + $this->subtreeHeight() > $maxDepth) {
             throw new InvalidArgumentException(

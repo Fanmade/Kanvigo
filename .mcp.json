@@ -7,11 +7,11 @@
                 "boost:mcp"
             ]
         },
-        "kanbrio": {
+        "kanvigo": {
             "type": "http",
             "url": "http://localhost:8000/mcp",
             "headers": {
-                "Authorization": "Bearer ${KANBRIO_MCP_TOKEN}"
+                "Authorization": "Bearer ${KANVIGO_MCP_TOKEN}"
             }
         }
     }

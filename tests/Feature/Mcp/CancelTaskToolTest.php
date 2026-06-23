@@ -2,7 +2,7 @@
 
 use App\Enums\CancelReason;
 use App\Enums\Status;
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\GetTaskTool;
 use App\Mcp\Tools\ListTasksTool;
 use App\Mcp\Tools\UpdateTaskTool;
@@ -30,7 +30,7 @@ it('cancels a task and its open subtree with a reason and message via MCP', func
     $task = Task::factory()->for($project)->status(Status::ToDo)->create();
     $child = Task::factory()->for($project)->childOf($task)->status(Status::ToDo)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'cancel_reason' => CancelReason::Duplicate->name,
         'cancel_message' => 'Same as ABC-9',
@@ -57,7 +57,7 @@ it('reopens a canceled task via MCP', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->canceled(CancelReason::WontFix, 'old')->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'reopen' => true,
     ])
@@ -81,7 +81,7 @@ it('rejects setting the Canceled status directly, steering to cancel_reason', fu
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->status(Status::ToDo)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'status' => Status::Canceled->value,
     ])->assertHasErrors();
@@ -94,7 +94,7 @@ it('rejects combining cancel_reason with a status change', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->status(Status::ToDo)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'cancel_reason' => CancelReason::WontFix->name,
         'status' => Status::Done->value,
@@ -106,7 +106,7 @@ it('rejects changing the status of a canceled task without reopening', function 
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->canceled(CancelReason::Deprecated)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'status' => Status::ToDo->value,
     ])->assertHasErrors();
@@ -120,7 +120,7 @@ it('denies cancelling with a read-only token', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->status(Status::ToDo)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'cancel_reason' => CancelReason::WontFix->name,
     ])->assertHasErrors();
@@ -133,7 +133,7 @@ it('exposes the cancellation reason and message through get-task', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->canceled(CancelReason::Duplicate, 'Superseded')->create();
 
-    KanbrioServer::tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('cancel_reason', 'Duplicate')
@@ -147,7 +147,7 @@ it('exposes the cancellation reason through list-tasks', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     Task::factory()->for($project)->canceled(CancelReason::Deprecated)->create();
 
-    KanbrioServer::tool(ListTasksTool::class, ['reference' => 'ABC'])
+    KanvigoServer::tool(ListTasksTool::class, ['reference' => 'ABC'])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('tasks.0.cancel_reason', 'Deprecated')->etc();

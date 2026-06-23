@@ -100,13 +100,13 @@ must not itself contain the search literal, or it kills its own shell.
 # Bug Reports
 
 When the user reports a bug — unexpected or broken behavior, a failing page, or a
-pasted error/stack trace they want fixed — open a tracking task on the Kanbrio
+pasted error/stack trace they want fixed — open a tracking task on the Kanvigo
 board **before** you start diagnosing or fixing. Recording the defect first keeps
 the board the source of truth for what broke and what was done about it.
 
 ## Create the task first
 
-- Create a task on this project's Kanbrio board (`KAN`) with the Kanbrio MCP
+- Create a task on this project's Kanvigo board (`KAN`) with the Kanvigo MCP
   create-task tool, tagged `bug`, before any investigation.
 - **Title**: a short, specific symptom — e.g. "Project board 500s with
   `__PHP_Incomplete_Class` on load", not "board broken".

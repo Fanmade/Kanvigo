@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Status;
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\AddDependencyTool;
 use App\Mcp\Tools\GetTaskTool;
 use App\Mcp\Tools\ListTasksTool;
@@ -29,13 +29,13 @@ it('exposes a task\'s blockers, blocked items and blocked flag in the get tool',
     $blocker = Task::factory()->for($this->project)->status(Status::ToDo)->create();
     $task->addBlocker($blocker);
 
-    KanbrioServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertSee($blocker->reference)
         ->assertSee('"is_blocked":true');
 
     // The blocker reports the task it blocks, and is not itself blocked.
-    KanbrioServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $blocker->reference])
+    KanvigoServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $blocker->reference])
         ->assertOk()
         ->assertSee($task->reference)
         ->assertSee('"is_blocked":false');
@@ -46,7 +46,7 @@ it('reports a task as unblocked once its blocker is complete', function () {
     $blocker = Task::factory()->for($this->project)->status(Status::Done)->create();
     $task->addBlocker($blocker);
 
-    KanbrioServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertSee('"is_blocked":false');
 });
@@ -58,7 +58,7 @@ it('surfaces the is_blocked flag in the list-tasks tool', function () {
     $blocker = Task::factory()->for($this->project)->status(Status::ToDo)->create();
     $task->addBlocker($blocker);
 
-    KanbrioServer::actingAs($this->user)->tool(ListTasksTool::class, ['reference' => $this->project->short_name])
+    KanvigoServer::actingAs($this->user)->tool(ListTasksTool::class, ['reference' => $this->project->short_name])
         ->assertOk()
         ->assertSee('"is_blocked":true')
         ->assertSee('"is_blocked":false');
@@ -71,7 +71,7 @@ it('links a blocked_by dependency and records the activity', function () {
     $task = Task::factory()->for($this->project)->create();
     $blocker = Task::factory()->for($this->project)->create();
 
-    KanbrioServer::tool(AddDependencyTool::class, [
+    KanvigoServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => $blocker->reference,
         'direction' => 'blocked_by',
@@ -102,7 +102,7 @@ it('links a blocks dependency in the reverse direction', function () {
     $task = Task::factory()->for($this->project)->create();
     $blocked = Task::factory()->for($this->project)->create();
 
-    KanbrioServer::tool(AddDependencyTool::class, [
+    KanvigoServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => $blocked->reference,
         'direction' => 'blocks',
@@ -120,7 +120,7 @@ it('rejects a self-dependency', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
     $task = Task::factory()->for($this->project)->create();
 
-    KanbrioServer::tool(AddDependencyTool::class, [
+    KanvigoServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => $task->reference,
         'direction' => 'blocked_by',
@@ -134,7 +134,7 @@ it('rejects a dependency that would create a cycle', function () {
     $task->addBlocker($blocker);
 
     // task is already blocked by blocker; making blocker depend on task closes a cycle.
-    KanbrioServer::tool(AddDependencyTool::class, [
+    KanvigoServer::tool(AddDependencyTool::class, [
         'reference' => $blocker->reference,
         'related_reference' => $task->reference,
         'direction' => 'blocked_by',
@@ -145,7 +145,7 @@ it('returns an error for an unknown related reference', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
     $task = Task::factory()->for($this->project)->create();
 
-    KanbrioServer::tool(AddDependencyTool::class, [
+    KanvigoServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => 'ABC-99',
         'direction' => 'blocked_by',
@@ -159,7 +159,7 @@ it('denies linking to an item the user cannot access', function () {
     $otherProject = Project::factory()->create(['short_name' => 'XYZ']);
     $hidden = Task::factory()->for($otherProject)->create();
 
-    KanbrioServer::tool(AddDependencyTool::class, [
+    KanvigoServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => $hidden->reference,
         'direction' => 'blocked_by',
@@ -173,7 +173,7 @@ it('denies adding a dependency with a read-only token', function () {
     $task = Task::factory()->for($this->project)->create();
     $blocker = Task::factory()->for($this->project)->create();
 
-    KanbrioServer::tool(AddDependencyTool::class, [
+    KanvigoServer::tool(AddDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => $blocker->reference,
         'direction' => 'blocked_by',
@@ -188,7 +188,7 @@ it('removes an existing dependency in either direction', function () {
     $blocker = Task::factory()->for($this->project)->create();
     $task->addBlocker($blocker);
 
-    KanbrioServer::tool(RemoveDependencyTool::class, [
+    KanvigoServer::tool(RemoveDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => $blocker->reference,
     ])->assertOk();
@@ -213,7 +213,7 @@ it('returns an error when removing a dependency that does not exist', function (
     $task = Task::factory()->for($this->project)->create();
     $other = Task::factory()->for($this->project)->create();
 
-    KanbrioServer::tool(RemoveDependencyTool::class, [
+    KanvigoServer::tool(RemoveDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => $other->reference,
     ])->assertHasErrors();
@@ -225,7 +225,7 @@ it('denies removing a dependency with a read-only token', function () {
     $blocker = Task::factory()->for($this->project)->create();
     $task->addBlocker($blocker);
 
-    KanbrioServer::tool(RemoveDependencyTool::class, [
+    KanvigoServer::tool(RemoveDependencyTool::class, [
         'reference' => $task->reference,
         'related_reference' => $blocker->reference,
     ])->assertHasErrors();

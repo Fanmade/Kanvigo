@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Status;
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\GetTaskTool;
 use App\Models\Attachment;
 use App\Models\Project;
@@ -16,7 +16,7 @@ it('returns a task in a project the user is a member of', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertSee($task->reference)
         ->assertSee($task->status->value);
@@ -27,14 +27,14 @@ it('denies access to a task in a project the user is not a member of', function 
     $project = Project::factory()->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertHasErrors();
 });
 
 it('returns an error for a malformed task reference', function () {
     $user = User::factory()->create();
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => 'ABC1'])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => 'ABC1'])
         ->assertHasErrors();
 });
 
@@ -44,7 +44,7 @@ it('includes the task tags', function () {
     $task = Task::factory()->for($project)->create();
     $task->syncTags('design');
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertSee('design');
 });
@@ -56,7 +56,7 @@ it('exposes the task hierarchy: parent, ancestors, children and rolled-up progre
     $middle = Task::factory()->for($project)->childOf($root)->create();
     $leaf = Task::factory()->for($project)->childOf($middle)->status(Status::Done)->create();
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $middle->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $middle->reference])
         ->assertOk()
         ->assertStructuredContent(function ($json) use ($root, $middle, $leaf) {
             $json->where('reference', $middle->reference)
@@ -75,7 +75,7 @@ it('reports a top-level task as having no parent or ancestors', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('parent', null)
@@ -93,7 +93,7 @@ it('exposes the task comments oldest first, with author, timestamp and reply thr
     $root = $task->comments()->create(['user_id' => $user->id, 'body' => 'First thought']);
     $reply = $task->comments()->create(['user_id' => $user->id, 'body' => 'A reply', 'parent_id' => $root->id]);
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertStructuredContent(function ($json) use ($root, $reply) {
             $json->where('comments.0.id', $root->id)
@@ -117,7 +117,7 @@ it('keeps a deleted comment as an empty-bodied tombstone in the payload', functi
     $root = $task->comments()->create(['user_id' => $user->id, 'body' => 'Will be removed']);
     $root->forceFill(['is_deleted' => true, 'body' => '', 'delete_reason' => 'off-topic'])->save();
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('comments.0.is_deleted', true)
@@ -131,7 +131,7 @@ it('returns an empty comments array when the task has none', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertStructuredContent(fn ($json) => $json->where('comments', [])->etc());
 });
@@ -147,7 +147,7 @@ it('lists the task attachments with their ids', function () {
         'is_inline' => true,
     ]);
 
-    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertStructuredContent(function ($json) use ($attachment) {
             $json->where('attachments.0.id', $attachment->id)

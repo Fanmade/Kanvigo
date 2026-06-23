@@ -8,7 +8,7 @@ use App\Models\User;
 
 it('auto-refreshes the board and suspends while dragging', function () {
     // Poll quickly so the test doesn't wait on the 15s default.
-    config()->set('kanbrio.live_updates.interval_seconds', 1);
+    config()->set('kanvigo.live_updates.interval_seconds', 1);
 
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
@@ -37,7 +37,7 @@ it('auto-refreshes the board and suspends while dragging', function () {
 });
 
 it('does not auto-refresh while live updates are off', function () {
-    config()->set('kanbrio.live_updates.interval_seconds', 1);
+    config()->set('kanvigo.live_updates.interval_seconds', 1);
 
     $user = User::factory()->create();
     // Start with live updates off, so the board never polls from the first render

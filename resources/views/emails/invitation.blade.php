@@ -1,7 +1,7 @@
 <x-mail::message>
-# {{ __('You have been invited to Kanbrio') }}
+# {{ __('You have been invited to Kanvigo') }}
 
-{{ __(':name has invited you to collaborate on Kanbrio.', ['name' => $inviterName]) }}
+{{ __(':name has invited you to collaborate on Kanvigo.', ['name' => $inviterName]) }}
 
 {{ __('Click the button below to choose a username, set your password, and configure your security settings.') }}
 

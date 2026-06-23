@@ -28,7 +28,7 @@ class InvitationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('You have been invited to Kanbrio'),
+            subject: __('You have been invited to Kanvigo'),
         );
     }
 

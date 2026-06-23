@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Status;
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\ListTasksTool;
 use App\Models\Project;
 use App\Models\Task;
@@ -15,7 +15,7 @@ it('lists the tasks of a project the user can access', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
+    KanvigoServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
         ->assertOk()
         ->assertSee($task->reference);
 });
@@ -26,7 +26,7 @@ it('filters tasks by status', function () {
     $done = Task::factory()->for($project)->status(Status::Done)->create();
     $planned = Task::factory()->for($project)->status(Status::Planned)->create();
 
-    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, [
+    KanvigoServer::actingAs($user)->tool(ListTasksTool::class, [
         'reference' => $project->short_name,
         'status' => Status::Done->value,
     ])
@@ -40,7 +40,7 @@ it('denies listing tasks of a project the user cannot access', function () {
     $project = Project::factory()->create(['short_name' => 'ABC']);
     Task::factory()->for($project)->create();
 
-    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
+    KanvigoServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
         ->assertHasErrors();
 });
 
@@ -51,7 +51,7 @@ it('restricts the list to a parent task\'s direct subtasks', function () {
     $child = Task::factory()->for($project)->childOf($root)->create();
     $grandchild = Task::factory()->for($project)->childOf($child)->create();
 
-    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, [
+    KanvigoServer::actingAs($user)->tool(ListTasksTool::class, [
         'reference' => $project->short_name,
         'parent' => $root->reference,
     ])
@@ -67,7 +67,7 @@ it('reports each task\'s parent so nesting can be reconstructed', function () {
     $root = Task::factory()->for($project)->create();
     $child = Task::factory()->for($project)->childOf($root)->create();
 
-    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
+    KanvigoServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
         ->assertOk()
         ->assertStructuredContent(function ($json) use ($root, $child) {
             $tasks = collect($json->toArray()['tasks']);
@@ -83,7 +83,7 @@ it('includes each task\'s tags', function () {
     $task = Task::factory()->for($project)->create();
     $task->syncTags('design');
 
-    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
+    KanvigoServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
         ->assertOk()
         ->assertSee('design');
 });

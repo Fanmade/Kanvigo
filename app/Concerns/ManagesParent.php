@@ -70,7 +70,7 @@ trait ManagesParent
     {
         $task = $this->reparentable();
         $project = $task->project;
-        $maxDepth = (int) config('kanbrio.tasks.max_depth');
+        $maxDepth = (int) config('kanvigo.tasks.max_depth');
         $height = $task->subtreeHeight();
 
         $excluded = array_merge([$task->id], $task->descendants->pluck('id')->all());

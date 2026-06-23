@@ -2,7 +2,7 @@
 
 use App\Enums\Priority;
 use App\Enums\Status;
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\CreateTaskTool;
 use App\Models\Project;
 use App\Models\Task;
@@ -20,7 +20,7 @@ it('creates a task in a project the user can access', function () {
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
         'status' => Status::ToDo->value,
@@ -37,7 +37,7 @@ it('sanitizes an HTML description written through the tool', function () {
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
         'description' => '<p>Plan</p><script>alert(1)</script>',
@@ -55,7 +55,7 @@ it('defaults a new task to Planned status', function () {
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
     ])->assertOk();
@@ -68,7 +68,7 @@ it('creates a task with an explicit priority', function () {
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
         'priority' => 'High',
@@ -84,7 +84,7 @@ it('defaults a new task to the default priority when none is given via MCP', fun
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
     ])->assertOk();
@@ -97,7 +97,7 @@ it('rejects an unknown priority', function () {
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
         'priority' => 'Urgent',
@@ -109,7 +109,7 @@ it('denies creating a task in a project the user cannot access', function () {
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
     ])->assertHasErrors();
@@ -120,7 +120,7 @@ it('denies creating a task with a read-only token', function () {
     Sanctum::actingAs($user, ['read']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
     ])->assertHasErrors();
@@ -132,7 +132,7 @@ it('nests a task under a parent when a parent reference is given', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $parent = Task::factory()->for($project)->create();
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'parent' => $parent->reference,
         'title' => 'A subtask',
@@ -149,7 +149,7 @@ it('rejects a parent task in a different project', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $otherParent = Task::factory()->for(Project::factory()->withMembers([$user])->create(['short_name' => 'XYZ']))->create();
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'parent' => $otherParent->reference,
         'title' => 'Mismatched',
@@ -159,14 +159,14 @@ it('rejects a parent task in a different project', function () {
 });
 
 it('refuses to nest a task beyond the maximum depth', function () {
-    config(['kanbrio.tasks.max_depth' => 2]);
+    config(['kanvigo.tasks.max_depth' => 2]);
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $root = Task::factory()->for($project)->create();
     $child = Task::factory()->for($project)->childOf($root)->create(); // depth 2 = max
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'parent' => $child->reference,
         'title' => 'Too deep',
@@ -180,7 +180,7 @@ it('applies tags when creating a task via MCP', function () {
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(CreateTaskTool::class, [
+    KanvigoServer::tool(CreateTaskTool::class, [
         'reference' => $project->short_name,
         'title' => 'A task',
         'tags' => ['design', 'bug'],

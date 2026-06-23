@@ -186,7 +186,7 @@ class CreateTaskModal extends Component
             return [];
         }
 
-        $maxDepth = (int) config('kanbrio.tasks.max_depth');
+        $maxDepth = (int) config('kanvigo.tasks.max_depth');
 
         $tasks = $project->tasks()
             ->select(['id', 'parent_id', 'task_number', 'title', 'status', 'archived_at'])
@@ -628,7 +628,7 @@ class CreateTaskModal extends Component
      */
     protected function canParent(Task $task): bool
     {
-        return $task->nestingDepth() < (int) config('kanbrio.tasks.max_depth');
+        return $task->nestingDepth() < (int) config('kanvigo.tasks.max_depth');
     }
 
     protected function selectedProject(): ?Project

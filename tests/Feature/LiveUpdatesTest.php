@@ -51,7 +51,7 @@ it('exposes the poll interval only while enabled', function () {
 });
 
 it('honors the configured live-updates interval', function () {
-    config()->set('kanbrio.live_updates.interval_seconds', 5);
+    config()->set('kanvigo.live_updates.interval_seconds', 5);
 
     $component = Livewire::actingAs($this->user)->test(Board::class);
 

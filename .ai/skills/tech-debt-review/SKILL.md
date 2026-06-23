@@ -1,6 +1,6 @@
 ---
 name: tech-debt-review
-description: Run the recurring technical-debt review for this project. Activate when asked to run the tech-debt review, the monthly code-health/code-quality review, to detect code smells and improvement opportunities across stability/maintainability/security, to find removable/dead code, or to record code-health metrics (coverage, mutation score, hotspots). Combines deterministic checks (composer/npm audit, Larastan, Pint, line/type coverage, mutation testing, churn×complexity hotspots) with an LLM review across a rotating code slice, then PROPOSES findings as triage tasks on the Kanbrio board — it never edits, fixes, or deletes code. State and metrics history live in docs/TECH_DEBT.md.
+description: Run the recurring technical-debt review for this project. Activate when asked to run the tech-debt review, the monthly code-health/code-quality review, to detect code smells and improvement opportunities across stability/maintainability/security, to find removable/dead code, or to record code-health metrics (coverage, mutation score, hotspots). Combines deterministic checks (composer/npm audit, Larastan, Pint, line/type coverage, mutation testing, churn×complexity hotspots) with an LLM review across a rotating code slice, then PROPOSES findings as triage tasks on the Kanvigo board — it never edits, fixes, or deletes code. State and metrics history live in docs/TECH_DEBT.md.
 ---
 
 # Tech-Debt Review Playbook
@@ -128,7 +128,7 @@ become findings.
 ## Step 3 — Load suppression
 
 1. From the ledger's **wont-fix** list, collect accepted-debt fingerprints.
-2. Via the Kanbrio MCP, list existing debt items so you don't duplicate them:
+2. Via the Kanvigo MCP, list existing debt items so you don't duplicate them:
    - `list-stories` on the project; find prior "Tech-debt review …" stories.
    - `list-tasks` on those stories; collect open and closed-as-wontfix task titles/fingerprints.
 
@@ -188,13 +188,13 @@ lowercase, whitespace-collapsed one-line summary. **Never use line numbers** —
 they shift on refactor and would defeat suppression.
 
 Drop any finding whose fingerprint matches the wont-fix list or an existing
-open/wontfix Kanbrio item from Step 3.
+open/wontfix Kanvigo item from Step 3.
 
 ---
 
-## Step 7 — File survivors into Kanbrio (propose only)
+## Step 7 — File survivors into Kanvigo (propose only)
 
-Via the Kanbrio MCP:
+Via the Kanvigo MCP:
 
 1. Create one **story**: `Tech-debt review YYYY-MM` (use the current month).
 2. Create one **task per surviving finding** under that story. Each task:

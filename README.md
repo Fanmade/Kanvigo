@@ -1,4 +1,4 @@
-# Kanbrio
+# Kanvigo
 
 ![Tests](https://github.com/Fanmade/kanbrio/actions/workflows/tests.yml/badge.svg)
 ![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Fanmade/89b10cbc79557b748b8f50d2955dd9f6/raw/coverage.json)
@@ -10,7 +10,7 @@ audit trail, and per-project notifications.
 
 Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
-> ⚠️ **Early development** — Kanbrio is still under active development and is **not
+> ⚠️ **Early development** — Kanvigo is still under active development and is **not
 > yet considered production ready**. Expect breaking changes, and use it in
 > production at your own risk.
 

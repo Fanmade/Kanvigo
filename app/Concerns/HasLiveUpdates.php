@@ -44,7 +44,7 @@ trait HasLiveUpdates
      */
     public function livePollIntervalSeconds(): int
     {
-        return max(1, (int) config('kanbrio.live_updates.interval_seconds', 15));
+        return max(1, (int) config('kanvigo.live_updates.interval_seconds', 15));
     }
 
     /**

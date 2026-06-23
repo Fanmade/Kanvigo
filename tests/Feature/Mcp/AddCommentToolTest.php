@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\AddCommentTool;
 use App\Models\Project;
 use App\Models\Task;
@@ -18,7 +18,7 @@ it('adds a comment to a task', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::tool(AddCommentTool::class, [
+    KanvigoServer::tool(AddCommentTool::class, [
         'reference' => $task->reference,
         'body' => 'Looks good to me',
     ])
@@ -38,7 +38,7 @@ it('adds a comment to a project', function () {
     Sanctum::actingAs($user, ['read', 'write']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::tool(AddCommentTool::class, [
+    KanvigoServer::tool(AddCommentTool::class, [
         'reference' => $project->short_name,
         'body' => 'A project comment',
     ])->assertOk();
@@ -56,7 +56,7 @@ it('denies commenting on an item the user cannot access', function () {
     $project = Project::factory()->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::tool(AddCommentTool::class, [
+    KanvigoServer::tool(AddCommentTool::class, [
         'reference' => $task->reference,
         'body' => 'Should fail',
     ])->assertHasErrors();
@@ -68,7 +68,7 @@ it('denies commenting with a read-only token', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::tool(AddCommentTool::class, [
+    KanvigoServer::tool(AddCommentTool::class, [
         'reference' => $task->reference,
         'body' => 'Should fail',
     ])->assertHasErrors();

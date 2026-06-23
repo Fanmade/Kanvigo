@@ -15,7 +15,7 @@ return [
     */
 
     'tasks' => [
-        'max_depth' => (int) env('KANBRIO_TASK_MAX_DEPTH', 3),
+        'max_depth' => (int) env('KANVIGO_TASK_MAX_DEPTH', 3),
     ],
 
     /*
@@ -29,7 +29,7 @@ return [
     */
 
     'live_updates' => [
-        'interval_seconds' => (int) env('KANBRIO_LIVE_UPDATES_INTERVAL', 15),
+        'interval_seconds' => (int) env('KANVIGO_LIVE_UPDATES_INTERVAL', 15),
     ],
 
 ];

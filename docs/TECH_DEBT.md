@@ -11,7 +11,7 @@ slice_pointer: 1
 # Technical Debt Ledger
 
 State and history for the monthly technical-debt review. Run it with
-`/tech-debt-review`. The review **proposes** findings as Kanbrio tasks for you to
+`/tech-debt-review`. The review **proposes** findings as Kanvigo tasks for you to
 triage — it never edits, fixes, or deletes code. See the playbook at
 `.claude/commands/tech-debt-review.md` for the full process.
 
@@ -19,7 +19,7 @@ triage — it never edits, fixes, or deletes code. See the playbook at
 
 Debt you have consciously decided to keep. The review reads this list first and
 skips anything matching. To silence a rejected finding permanently, add a row:
-copy its **fingerprint** from the Kanbrio task, give a one-line reason.
+copy its **fingerprint** from the Kanvigo task, give a one-line reason.
 
 | Fingerprint | What | Why accepted | Since |
 |-------------|------|--------------|-------|

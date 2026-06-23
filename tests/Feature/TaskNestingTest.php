@@ -69,7 +69,7 @@ test('a transitive cycle is rejected', function () {
 });
 
 test('the depth limit is enforced when creating a task', function () {
-    config(['kanbrio.tasks.max_depth' => 3]);
+    config(['kanvigo.tasks.max_depth' => 3]);
 
     $root = makeRootTask();
     $child = Task::factory()->childOf($root)->create();
@@ -80,7 +80,7 @@ test('the depth limit is enforced when creating a task', function () {
 });
 
 test('the depth limit is enforced when moving a subtree', function () {
-    config(['kanbrio.tasks.max_depth' => 3]);
+    config(['kanvigo.tasks.max_depth' => 3]);
 
     // A two-level subtree: branch -> leaf.
     $branchRoot = makeRootTask();
@@ -96,7 +96,7 @@ test('the depth limit is enforced when moving a subtree', function () {
 });
 
 test('a subtree can be moved while it stays within the depth limit', function () {
-    config(['kanbrio.tasks.max_depth' => 3]);
+    config(['kanvigo.tasks.max_depth' => 3]);
 
     $branchRoot = makeRootTask();
     $leaf = Task::factory()->childOf($branchRoot)->create();
@@ -112,7 +112,7 @@ test('a subtree can be moved while it stays within the depth limit', function ()
 });
 
 test('the maximum depth is configurable', function () {
-    config(['kanbrio.tasks.max_depth' => 2]);
+    config(['kanvigo.tasks.max_depth' => 2]);
 
     $root = makeRootTask();
     $child = Task::factory()->childOf($root)->create();

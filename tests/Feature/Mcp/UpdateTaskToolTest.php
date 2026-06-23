@@ -4,7 +4,7 @@ use App\Actions\ChangeTaskStatus;
 use App\Enums\CascadePreference;
 use App\Enums\Priority;
 use App\Enums\Status;
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\Project;
 use App\Models\Task;
@@ -22,7 +22,7 @@ it('updates a task title and description', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create(['title' => 'Old']);
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'title' => 'New title',
     ])
@@ -38,7 +38,7 @@ it('changes the task status and records the activity', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->status(Status::Planned)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'status' => Status::Done->value,
     ])
@@ -62,7 +62,7 @@ it('closes the parent over MCP when the last subtask is completed under the "alw
     $parent = Task::factory()->for($project)->status(Status::InProgress)->create();
     $child = Task::factory()->for($project)->childOf($parent)->status(Status::ToDo)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $child->reference,
         'status' => Status::Done->value,
     ])->assertOk();
@@ -77,7 +77,7 @@ it('leaves the parent untouched over MCP under the default "ask" preference', fu
     $parent = Task::factory()->for($project)->status(Status::InProgress)->create();
     $child = Task::factory()->for($project)->childOf($parent)->status(Status::ToDo)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $child->reference,
         'status' => Status::Done->value,
     ])->assertOk();
@@ -92,7 +92,7 @@ it('updates a task priority', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->priority(Priority::Medium)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'priority' => 'Lowest',
     ])
@@ -108,7 +108,7 @@ it('errors when no fields are provided to update', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, ['reference' => $task->reference])
+    KanvigoServer::tool(UpdateTaskTool::class, ['reference' => $task->reference])
         ->assertHasErrors();
 });
 
@@ -118,7 +118,7 @@ it('denies updating a task with a read-only token', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'status' => Status::Done->value,
     ])->assertHasErrors();
@@ -131,7 +131,7 @@ it('replaces a task\'s tags and records the activity via MCP', function () {
     $task = Task::factory()->for($project)->create();
     $task->syncTags('old');
 
-    KanbrioServer::tool(UpdateTaskTool::class, [
+    KanvigoServer::tool(UpdateTaskTool::class, [
         'reference' => $task->reference,
         'tags' => ['design'],
     ])

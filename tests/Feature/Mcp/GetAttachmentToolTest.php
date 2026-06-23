@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\GetAttachmentTool;
 use App\Models\Attachment;
 use App\Models\Project;
@@ -32,7 +32,7 @@ it('returns the image content of an inline attachment to a member', function () 
         'is_inline' => true,
     ]);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
         ->assertOk()
         ->assertSee(base64_encode('png-bytes'));
@@ -50,7 +50,7 @@ it('returns metadata text for a non-viewable attachment type', function () {
         'mime_type' => 'application/pdf',
     ]);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
         ->assertOk()
         ->assertSee('spec.pdf')
@@ -66,13 +66,13 @@ it('denies access to an attachment in a project the user is not a member of', fu
         'attachable_type' => $task->getMorphClass(),
     ]);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
         ->assertHasErrors();
 });
 
 it('errors when the attachment does not exist', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetAttachmentTool::class, ['id' => 999999])
         ->assertHasErrors();
 });
@@ -86,13 +86,13 @@ it('errors when the underlying file is missing from disk', function () {
         'mime_type' => 'image/png',
     ]);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
         ->assertHasErrors();
 });
 
 it('errors when the id argument is missing', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetAttachmentTool::class, [])
         ->assertHasErrors();
 });

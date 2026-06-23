@@ -6,7 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 
 it('auto-refreshes comments but pauses while the editor is focused', function () {
-    config()->set('kanbrio.live_updates.interval_seconds', 1);
+    config()->set('kanvigo.live_updates.interval_seconds', 1);
 
     $member = User::factory()->create();
     $other = User::factory()->create();

@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\GetProjectTool;
 use App\Models\Project;
 use App\Models\Task;
@@ -14,7 +14,7 @@ it('returns a project the user is a member of', function () {
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
+    KanvigoServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
         ->assertOk()
         ->assertSee('ABC')
         ->assertSee($task->reference);
@@ -24,21 +24,21 @@ it('denies access to a project the user is not a member of', function () {
     $user = User::factory()->create();
     Project::factory()->create(['short_name' => 'ABC']);
 
-    KanbrioServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
+    KanvigoServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
         ->assertHasErrors();
 });
 
 it('returns an error for a project that does not exist', function () {
     $user = User::factory()->create();
 
-    KanbrioServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'NOPE'])
+    KanvigoServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'NOPE'])
         ->assertHasErrors();
 });
 
 it('requires the short_name argument', function () {
     $user = User::factory()->create();
 
-    KanbrioServer::actingAs($user)->tool(GetProjectTool::class)
+    KanvigoServer::actingAs($user)->tool(GetProjectTool::class)
         ->assertHasErrors();
 });
 
@@ -48,7 +48,7 @@ it('exposes the project comments with author and body', function () {
 
     $comment = $project->comments()->create(['user_id' => $user->id, 'body' => 'Kickoff note']);
 
-    KanbrioServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
+    KanvigoServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
         ->assertOk()
         ->assertStructuredContent(function ($json) use ($comment) {
             $json->where('comments.0.id', $comment->id)
@@ -62,7 +62,7 @@ it('returns an empty comments array when the project has none', function () {
     $user = User::factory()->create();
     Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
 
-    KanbrioServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
+    KanvigoServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
         ->assertOk()
         ->assertStructuredContent(fn ($json) => $json->where('comments', [])->etc());
 });

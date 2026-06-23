@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Status;
-use App\Mcp\Servers\KanbrioServer;
+use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetTaskTool;
 use App\Mcp\Tools\ListProjectsTool;
@@ -20,7 +20,7 @@ beforeEach(function () {
 });
 
 it('lists projects the user is a member of', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(ListProjectsTool::class)
         ->assertOk()
         ->assertSee('Apollo')
@@ -30,14 +30,14 @@ it('lists projects the user is a member of', function () {
 it('omits projects the user is not a member of from the list', function () {
     Project::factory()->create(['short_name' => 'XYZ', 'title' => 'Secret Project']);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(ListProjectsTool::class)
         ->assertOk()
         ->assertDontSee('Secret Project');
 });
 
 it('gets a project the member can view including its tasks', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetProjectTool::class, ['short_name' => 'ABC'])
         ->assertOk()
         ->assertSee('Apollo')
@@ -48,25 +48,25 @@ it('gets a project the member can view including its tasks', function () {
 it('errors when getting a project the user is not a member of', function () {
     $project = Project::factory()->create(['short_name' => 'XYZ']);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetProjectTool::class, ['short_name' => $project->short_name])
         ->assertHasErrors();
 });
 
 it('errors when getting a project that does not exist', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetProjectTool::class, ['short_name' => 'NOPE'])
         ->assertHasErrors();
 });
 
 it('errors when the short_name argument is missing', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetProjectTool::class, [])
         ->assertHasErrors();
 });
 
 it('lists the tasks of a project', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(ListTasksTool::class, ['reference' => 'ABC'])
         ->assertOk()
         ->assertSee('First task')
@@ -76,7 +76,7 @@ it('lists the tasks of a project', function () {
 it('errors listing tasks of an inaccessible project', function () {
     $project = Project::factory()->create(['short_name' => 'XYZ']);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(ListTasksTool::class, ['reference' => $project->short_name])
         ->assertHasErrors();
 });
@@ -84,7 +84,7 @@ it('errors listing tasks of an inaccessible project', function () {
 it('filters tasks by status', function () {
     Task::factory()->for($this->project)->status(Status::Done)->create(['title' => 'Completed task']);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(ListTasksTool::class, ['reference' => 'ABC', 'status' => Status::Done->value])
         ->assertOk()
         ->assertSee('Completed task')
@@ -92,7 +92,7 @@ it('filters tasks by status', function () {
 });
 
 it('errors filtering tasks with an invalid status', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(ListTasksTool::class, ['reference' => 'ABC', 'status' => 'Bogus'])
         ->assertHasErrors();
 });
@@ -100,7 +100,7 @@ it('errors filtering tasks with an invalid status', function () {
 it('gets a task by reference', function () {
     $this->task->assignees()->attach($this->member);
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetTaskTool::class, ['reference' => $this->task->reference])
         ->assertOk()
         ->assertSee('First task')
@@ -112,13 +112,13 @@ it('errors getting a task the user cannot view', function () {
     $project = Project::factory()->create(['short_name' => 'XYZ']);
     $task = Task::factory()->for($project)->create();
 
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertHasErrors();
 });
 
 it('errors getting a task with a malformed reference', function () {
-    KanbrioServer::actingAs($this->member)
+    KanvigoServer::actingAs($this->member)
         ->tool(GetTaskTool::class, ['reference' => 'ABC1'])
         ->assertHasErrors();
 });

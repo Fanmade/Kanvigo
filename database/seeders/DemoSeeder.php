@@ -22,7 +22,7 @@ class DemoSeeder extends Seeder
         $everyone = $members->push($admin);
 
         $project = Project::factory()
-            ->create(['title' => 'Kanbrio Demo', 'short_name' => 'KAN']);
+            ->create(['title' => 'Kanvigo Demo', 'short_name' => 'KAN']);
         $project->members()->sync($everyone->pluck('id'));
 
         foreach (range(1, 4) as $i) {
