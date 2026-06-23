@@ -48,6 +48,17 @@ class ProjectBoard extends Component
     }
 
     /**
+     * How many board filters are currently narrowing the view. Drives the count
+     * badge on the "Filters" button.
+     */
+    #[Computed]
+    public function activeFilterCount(): int
+    {
+        return ($this->showArchived ? 1 : 0)
+            + ($this->priorityFilter ? 1 : 0);
+    }
+
+    /**
      * Every task in the project, with the data the cards need.
      *
      * @return Collection<int, Task>

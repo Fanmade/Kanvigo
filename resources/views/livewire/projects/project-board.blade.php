@@ -8,15 +8,34 @@
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <flux:heading size="xl">{{ __('Board') }}</flux:heading>
 
-            <div class="flex flex-wrap items-center gap-2">
-                <x-live-updates-toggle />
-                <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
-                <flux:select wire:model.live="priorityFilter" size="sm" class="max-w-44" data-test="priority-filter">
-                    <flux:select.option value="">{{ __('All priorities') }}</flux:select.option>
-                    @foreach (\App\Enums\Priority::ordered() as $priority)
-                        <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+            <div class="flex items-center gap-2">
+                <flux:dropdown align="end">
+                    <flux:button icon="funnel" data-test="board-filters">
+                        {{ __('Filters') }}
+                        @if ($this->activeFilterCount > 0)
+                            <flux:badge size="sm" color="blue" class="ms-1">{{ $this->activeFilterCount }}</flux:badge>
+                        @endif
+                    </flux:button>
+
+                    <flux:popover class="flex w-64 flex-col gap-3">
+                        <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
+                        <flux:select wire:model.live="priorityFilter" size="sm" :label="__('Priority')" data-test="priority-filter">
+                            <flux:select.option value="">{{ __('All priorities') }}</flux:select.option>
+                            @foreach (\App\Enums\Priority::ordered() as $priority)
+                                <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </flux:popover>
+                </flux:dropdown>
+
+                <flux:dropdown align="end">
+                    <flux:button icon="adjustments-horizontal" :aria-label="__('Display options')" data-test="board-display" />
+
+                    <flux:popover class="flex w-64 flex-col gap-3">
+                        <x-live-updates-toggle />
+                    </flux:popover>
+                </flux:dropdown>
+
                 <flux:button variant="primary" icon="plus" wire:click="$dispatch('open-create-task', { projectId: {{ $this->project->id }} })" data-test="new-task">{{ __('New task') }}</flux:button>
             </div>
         </div>

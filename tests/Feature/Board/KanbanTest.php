@@ -223,6 +223,19 @@ it('filters the board by priority', function () {
         ->and($tasks->first()->priority)->toBe(Priority::Highest);
 });
 
+it('counts the active board filters for the filter badge', function () {
+    $component = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC']);
+
+    expect($component->instance()->activeFilterCount())->toBe(0);
+
+    $component->set('showArchived', true);
+    expect($component->instance()->activeFilterCount())->toBe(1);
+
+    $component->set('priorityFilter', Priority::Highest->value);
+    expect($component->instance()->activeFilterCount())->toBe(2);
+});
+
 it('creates a root task from the create dialog', function () {
     Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)
