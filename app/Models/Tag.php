@@ -107,4 +107,55 @@ class Tag extends Model
     {
         return $this->morphedByMany(Task::class, 'taggable');
     }
+
+    /**
+     * Rename the tag, logging the change against its project. Returns false (and
+     * does nothing) when the name is blank or unchanged.
+     */
+    public function rename(string $newName): bool
+    {
+        $newName = trim($newName);
+
+        if ($newName === '' || $newName === $this->name) {
+            return false;
+        }
+
+        $oldName = $this->name;
+        $this->update(['name' => $newName]);
+        $this->project->recordActivity('tag_renamed', 'tags', $oldName, $newName);
+
+        return true;
+    }
+
+    /**
+     * Change the tag's color, logging the change against its project. Returns
+     * false (and does nothing) when the color is unchanged.
+     */
+    public function recolor(string $newColor): bool
+    {
+        if ($newColor === $this->color) {
+            return false;
+        }
+
+        $oldColor = $this->color;
+        $this->update(['color' => $newColor]);
+        $this->project->recordActivity(
+            'tag_recolored',
+            'tags',
+            json_encode(['name' => $this->name, 'color' => $oldColor], JSON_THROW_ON_ERROR),
+            json_encode(['name' => $this->name, 'color' => $newColor], JSON_THROW_ON_ERROR),
+        );
+
+        return true;
+    }
+
+    /**
+     * Delete the tag, first logging the deletion against its project so the
+     * entry survives (the tag — and its activities — would otherwise be gone).
+     */
+    public function deleteWithActivity(): void
+    {
+        $this->project->recordActivity('tag_deleted', 'tags', $this->name, null);
+        $this->delete();
+    }
 }
