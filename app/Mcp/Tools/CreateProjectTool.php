@@ -3,7 +3,6 @@
 namespace App\Mcp\Tools;
 
 use App\Authorization\ProjectRoleProvisioner;
-use App\Enums\ProjectRole;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
 use App\Models\User;
@@ -64,9 +63,9 @@ class CreateProjectTool extends Tool
             'description' => $validated['description'] ?? null,
         ]);
 
-        $project->members()->attach($user->getAuthIdentifier(), ['role' => ProjectRole::Owner->value]);
+        $project->members()->attach($user->getAuthIdentifier());
 
-        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail((int) $user->getAuthIdentifier()), ProjectRole::Owner->value);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail((int) $user->getAuthIdentifier()), 'owner');
 
         return Response::structured([
             'short_name' => $project->short_name,

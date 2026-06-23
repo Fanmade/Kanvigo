@@ -5,7 +5,7 @@ use App\Models\User;
 
 it('renders the key pages without browser errors', function () {
     $user = User::factory()->create();
-    Project::factory()->create()->members()->attach($user);
+    Project::factory()->withMember($user)->create();
 
     $this->actingAs($user);
 

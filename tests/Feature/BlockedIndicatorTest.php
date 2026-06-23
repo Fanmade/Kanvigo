@@ -15,7 +15,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
 });
 
 test('a task blocked by an unfinished task is flagged', function () {

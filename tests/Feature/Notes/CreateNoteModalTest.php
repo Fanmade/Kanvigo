@@ -43,7 +43,7 @@ it('requires a title', function () {
 
 it('attaches a note to a project and makes it public', function () {
     $project = Project::factory()->create();
-    $project->members()->attach($this->user);
+    joinProject($project, $this->user);
 
     Livewire::actingAs($this->user)
         ->test(CreateNoteModal::class)
@@ -61,7 +61,7 @@ it('attaches a note to a project and makes it public', function () {
 
 it('resets the public toggle when the project is cleared', function () {
     $project = Project::factory()->create();
-    $project->members()->attach($this->user);
+    joinProject($project, $this->user);
 
     Livewire::actingAs($this->user)
         ->test(CreateNoteModal::class)

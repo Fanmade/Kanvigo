@@ -15,7 +15,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
 });
 
 it('preselects the project passed as context', function () {
@@ -106,7 +106,7 @@ it('keeps a terminal parent selectable when a subtask is added to it', function 
 it('resets the parent and assignee selection when the project changes', function () {
     $parent = Task::factory()->for($this->project)->create();
     $other = Project::factory()->create(['short_name' => 'XYZ']);
-    $other->members()->attach($this->member);
+    joinProject($other, $this->member);
 
     Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)
@@ -193,7 +193,7 @@ it('suggests an existing tag matching the query', function () {
 
 it('assigns chosen project members and subscribes them', function () {
     $assignee = User::factory()->create();
-    $this->project->members()->attach($assignee);
+    joinProject($this->project, $assignee);
 
     Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)

@@ -58,7 +58,7 @@ it('cannot delete another user\'s note', function () {
 
 it('toggles the visibility of an attached note', function () {
     $project = Project::factory()->create();
-    $project->members()->attach($this->user);
+    joinProject($project, $this->user);
     $note = Note::factory()->for($this->user)->attachedTo($project)->create();
 
     Livewire::actingAs($this->user)

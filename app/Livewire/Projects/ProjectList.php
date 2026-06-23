@@ -3,7 +3,6 @@
 namespace App\Livewire\Projects;
 
 use App\Authorization\ProjectRoleProvisioner;
-use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
 use Flux\Flux;
@@ -69,9 +68,9 @@ class ProjectList extends Component
         ]);
 
         $project = Project::create($validated);
-        $project->members()->attach(Auth::id(), ['role' => ProjectRole::Owner->value]);
+        $project->members()->attach(Auth::id());
 
-        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail(Auth::id()), ProjectRole::Owner->value);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail(Auth::id()), 'owner');
 
         Flux::toast(text: __('Project created.'), variant: 'success');
 

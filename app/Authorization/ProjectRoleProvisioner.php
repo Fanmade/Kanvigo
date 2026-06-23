@@ -2,7 +2,6 @@
 
 namespace App\Authorization;
 
-use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
@@ -11,8 +10,7 @@ use Fanmade\DelegatedPermissions\RoleManager;
 
 /**
  * Provisions a project's delegated role tree (owner → admin → member) on top of
- * the delegated-permissions package, mirroring the legacy {@see ProjectRole}
- * during the migration (KAN-232). Self-bootstrapping: it seeds the permission
+ * the delegated-permissions package. Self-bootstrapping: it seeds the permission
  * catalog and the global system role on demand.
  */
 class ProjectRoleProvisioner
@@ -99,9 +97,9 @@ class ProjectRoleProvisioner
     }
 
     /**
-     * Sync a user's package role for a project to a single project role (owner|
-     * admin|member), or remove them from the project's tree when $roleName is null.
-     * Mirrors the legacy project_user.role pivot during the migration (KAN-232).
+     * Sync a user's role for a project to a single project role (owner|admin|
+     * member, or a custom role name), or remove them from the project's tree
+     * when $roleName is null. A user holds at most one project-scoped role.
      */
     public function syncMember(Project $project, User $user, ?string $roleName): void
     {

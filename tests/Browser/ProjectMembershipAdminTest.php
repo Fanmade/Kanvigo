@@ -1,7 +1,6 @@
 <?php
 
 use App\Authorization\ProjectRoleProvisioner;
-use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
 
@@ -22,5 +21,5 @@ it('lets a system admin add a user to a project from user administration', funct
         ->waitForText('Member added.')
         ->assertNoJavascriptErrors();
 
-    expect($project->roleFor($user))->toBe(ProjectRole::Member);
+    expect($project->roleNameFor($user))->toBe('member');
 });

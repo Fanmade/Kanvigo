@@ -13,7 +13,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
 
     $this->view = fn () => Livewire::actingAs($this->member)
         ->test(ProjectShow::class, ['short_name' => 'ABC']);

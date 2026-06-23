@@ -13,7 +13,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC', 'title' => 'Acme Board']);
-    $this->project->members()->attach($this->user);
+    joinProject($this->project, $this->user);
     $this->task = Task::factory()->for($this->project)->create(['title' => 'Deploy fix']);
 });
 
@@ -86,7 +86,7 @@ it('pins a compact reference jump just like the dashed form', function () {
 
 it('surfaces every accessible task that carries a bare task number', function () {
     $other = Project::factory()->create(['short_name' => 'DEF']);
-    $other->members()->attach($this->user);
+    joinProject($other, $this->user);
     $otherTask = Task::factory()->for($other)->create(['title' => 'Other fix']);
 
     // Both first tasks share task_number 1.
@@ -102,7 +102,7 @@ it('surfaces every accessible task that carries a bare task number', function ()
 
 it('prioritizes and pins the current project task on a bare-number search', function () {
     $other = Project::factory()->create(['short_name' => 'DEF']);
-    $other->members()->attach($this->user);
+    joinProject($other, $this->user);
     $otherTask = Task::factory()->for($other)->create(['title' => 'Other fix']);
 
     $results = app(GlobalSearch::class)

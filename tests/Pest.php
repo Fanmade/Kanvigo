@@ -1,5 +1,8 @@
 <?php
 
+use App\Authorization\ProjectRoleProvisioner;
+use App\Models\Project;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -59,4 +62,23 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Grant one or more users membership of a project with a package role
+ * (default: member). Mirrors how the app provisions members (KAN-243): a
+ * project_user row plus a delegated-permissions role assignment, so the
+ * members resolve real project access through the package.
+ *
+ * @param  User|int|array<int, User|int>  $users
+ */
+function joinProject(Project $project, User|int|array $users, string $role = 'member'): void
+{
+    $provisioner = app(ProjectRoleProvisioner::class);
+
+    foreach (is_array($users) ? $users : [$users] as $user) {
+        $user = $user instanceof User ? $user : User::findOrFail($user);
+        $project->members()->syncWithoutDetaching([$user->id]);
+        $provisioner->syncMember($project, $user, $role);
+    }
 }

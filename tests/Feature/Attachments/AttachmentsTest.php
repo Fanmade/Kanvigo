@@ -19,7 +19,7 @@ beforeEach(function () {
 
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create();
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
 });
 
 it('uploads dropped files onto a project and stores them on the configured disk', function () {
@@ -162,7 +162,7 @@ it('returns 404 for the thumbnail of an attachment without one', function () {
 
 it('returns 404 when the project short name does not match the attachment', function () {
     $other = Project::factory()->create();
-    $other->members()->attach($this->member);
+    joinProject($other, $this->member);
 
     Storage::disk('attachments')->put('attachments/report.pdf', 'data');
 

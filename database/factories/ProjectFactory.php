@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Enums\ProjectRole;
+use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -28,26 +28,31 @@ class ProjectFactory extends Factory
     }
 
     /**
-     * Grant the given users access to the project after creation.
+     * Grant the given users access to the project as members after creation.
      *
      * @param  array<int, User>|Collection<int, User>  $users
      */
     public function withMembers(iterable $users): static
     {
         return $this->afterCreating(function (Project $project) use ($users): void {
-            $project->members()->syncWithoutDetaching(
-                collect($users)->pluck('id')->all()
-            );
+            $provisioner = app(ProjectRoleProvisioner::class);
+
+            foreach ($users as $user) {
+                $project->members()->syncWithoutDetaching([$user->id]);
+                $provisioner->syncMember($project, $user, 'member');
+            }
         });
     }
 
     /**
-     * Grant the given user access to the project with a specific role.
+     * Grant the given user access to the project with a specific role
+     * (owner|admin|member, or a custom project role name).
      */
-    public function withMember(User $user, ProjectRole $role = ProjectRole::Member): static
+    public function withMember(User $user, string $role = 'member'): static
     {
         return $this->afterCreating(function (Project $project) use ($user, $role): void {
-            $project->members()->syncWithoutDetaching([$user->id => ['role' => $role->value]]);
+            $project->members()->syncWithoutDetaching([$user->id]);
+            app(ProjectRoleProvisioner::class)->syncMember($project, $user, $role);
         });
     }
 
@@ -56,6 +61,6 @@ class ProjectFactory extends Factory
      */
     public function withOwner(User $user): static
     {
-        return $this->withMember($user, ProjectRole::Owner);
+        return $this->withMember($user, 'owner');
     }
 }

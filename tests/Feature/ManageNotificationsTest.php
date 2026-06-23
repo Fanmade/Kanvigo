@@ -15,7 +15,7 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->actor = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach([$this->user->id, $this->actor->id]);
+    joinProject($this->project, [$this->user->id, $this->actor->id]);
     $this->task = Task::factory()->for($this->project)->status(Status::Planned)->create();
 
     $this->project->subscribe($this->user);
@@ -57,7 +57,7 @@ it('unsubscribes from an item on the spot', function () {
 it('ignores an unsubscribe for an item the user is not subscribed to', function () {
     $stranger = User::factory()->create();
     $otherProject = Project::factory()->create();
-    $otherProject->members()->attach($stranger);
+    joinProject($otherProject, $stranger);
     $otherTask = Task::factory()->for($otherProject)->create();
     $otherTask->subscribe($stranger);
 

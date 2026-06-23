@@ -14,7 +14,7 @@ it('shows tasks from visible projects and hides others', function () {
     $user = User::factory()->create();
 
     $mine = Project::factory()->create();
-    $mine->members()->attach($user);
+    joinProject($mine, $user);
     Task::factory()->for($mine)->create(['title' => 'Visible task']);
 
     $foreign = Project::factory()->create();
@@ -30,7 +30,7 @@ it('shows tasks from visible projects and hides others', function () {
 it('moves a task on the global board and logs it', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->status(Status::Planned)->create();
 
     Livewire::actingAs($user)
@@ -57,7 +57,7 @@ it('forbids moving a task in a project the user cannot access', function () {
 it('keeps canceled tasks off the global board', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($user);
+    joinProject($project, $user);
     Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Active work']);
     Task::factory()->for($project)->canceled()->create(['title' => 'Abandoned work']);
 

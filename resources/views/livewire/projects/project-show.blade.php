@@ -186,12 +186,12 @@
 
                 <div class="flex flex-col gap-2" data-test="members-list">
                     @foreach ($this->members as $member)
-                        @php($role = \App\Enums\ProjectRole::from($member->pivot->role))
+                        @php($roleName = $member->roles->first()?->name)
                         <div class="flex items-center justify-between gap-3" wire:key="member-{{ $member->id }}" data-test="member-row-{{ $member->id }}">
                             <flux:text class="min-w-0 truncate">{{ $member->name }}</flux:text>
 
-                            @if ($role === \App\Enums\ProjectRole::Owner || $member->id === auth()->id())
-                                <flux:badge size="sm" data-test="member-role-{{ $member->id }}">{{ $role->label() }}</flux:badge>
+                            @if ($roleName === 'owner' || $member->id === auth()->id())
+                                <flux:badge size="sm" data-test="member-role-{{ $member->id }}">{{ $this->roleLabel($roleName) }}</flux:badge>
                             @else
                                 <div class="flex items-center gap-1.5">
                                     <flux:select
@@ -200,8 +200,9 @@
                                         wire:change="setMemberRole({{ $member->id }}, $event.target.value)"
                                         data-test="member-role-select-{{ $member->id }}"
                                     >
-                                        <flux:select.option value="member" :selected="$role === \App\Enums\ProjectRole::Member">{{ __('Member') }}</flux:select.option>
-                                        <flux:select.option value="admin" :selected="$role === \App\Enums\ProjectRole::Admin">{{ __('Admin') }}</flux:select.option>
+                                        @foreach ($this->assignableRoles as $assignable)
+                                            <flux:select.option value="{{ $assignable->name }}" :selected="$roleName === $assignable->name">{{ $this->roleLabel($assignable->name) }}</flux:select.option>
+                                        @endforeach
                                     </flux:select>
 
                                     <flux:button

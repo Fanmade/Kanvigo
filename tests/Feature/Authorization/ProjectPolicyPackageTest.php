@@ -1,7 +1,6 @@
 <?php
 
 use App\Authorization\ProjectRoleProvisioner;
-use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,8 +22,7 @@ it('resolves ProjectPolicy through package roles without a legacy pivot row', fu
         ->and($admin->can('delete', $project))->toBeTrue()
         ->and($admin->can('manageMembers', $project))->toBeFalse();
 
-    expect($project->roleFor($admin))->toBe(ProjectRole::Admin)
-        ->and($project->isAdmin($admin))->toBeTrue()
+    expect($project->roleNameFor($admin))->toBe('admin')
         ->and($project->isOwner($admin))->toBeFalse();
 });
 
@@ -34,10 +32,10 @@ it('grants the matching permissions when a member is synced up to admin', functi
         app(ProjectRoleProvisioner::class)->roleFor($project, 'member')
     );
 
-    app(ProjectRoleProvisioner::class)->syncMember($project, $member, ProjectRole::Admin->value);
+    app(ProjectRoleProvisioner::class)->syncMember($project, $member, 'admin');
 
     expect($member->can('manageSettings', $project))->toBeTrue()
-        ->and($project->roleFor($member))->toBe(ProjectRole::Admin);
+        ->and($project->roleNameFor($member))->toBe('admin');
 });
 
 it('drops all project access when a member is unsynced', function () {
@@ -49,5 +47,5 @@ it('drops all project access when a member is unsynced', function () {
     app(ProjectRoleProvisioner::class)->syncMember($project, $member, null);
 
     expect($member->can('view', $project))->toBeFalse()
-        ->and($project->roleFor($member))->toBeNull();
+        ->and($project->roleNameFor($member))->toBeNull();
 });

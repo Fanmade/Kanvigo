@@ -19,7 +19,7 @@ it('captures a note from the dashboard and lists it', function () {
 it('renders public notes in the project Notes section', function () {
     $owner = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($owner);
+    joinProject($project, $owner);
     Note::factory()->for($owner)->publicTo($project)->create(['title' => 'Shared on the project']);
 
     $this->actingAs($owner);

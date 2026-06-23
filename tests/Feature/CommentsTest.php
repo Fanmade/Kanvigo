@@ -14,7 +14,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create();
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
     $this->task = Task::factory()->for($this->project)->create();
     $this->subtask = Task::factory()->for($this->project)->childOf($this->task)->create();
 });
@@ -133,7 +133,7 @@ it('lets the author edit their own comment', function () {
 
 it('forbids editing another users comment', function () {
     $other = User::factory()->create();
-    $this->project->members()->attach($other);
+    joinProject($this->project, $other);
     $comment = $this->task->comments()->create(['user_id' => $other->id, 'body' => 'Not mine']);
 
     Livewire::actingAs($this->member)
@@ -176,7 +176,7 @@ it('tombstones a comment with replies, keeping the author and storing the reason
 
 it('forbids deleting another users comment', function () {
     $other = User::factory()->create();
-    $this->project->members()->attach($other);
+    joinProject($this->project, $other);
     $comment = $this->task->comments()->create(['user_id' => $other->id, 'body' => 'Theirs']);
 
     Livewire::actingAs($this->member)

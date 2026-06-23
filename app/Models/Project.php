@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Authorization\ProjectRoleProvisioner;
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
 use App\Concerns\HasSubscribers;
@@ -9,7 +10,6 @@ use App\Concerns\LogsActivity;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use App\Contracts\Subscribable;
-use App\Enums\ProjectRole;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -116,41 +116,26 @@ class Project extends Model implements Subscribable
     }
 
     /**
-     * The users granted access to this project, each carrying their role.
+     * The users granted access to this project.
      *
      * @return BelongsToMany<User, $this>
      */
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(User::class)->withTimestamps();
     }
 
     /**
-     * The given user's role on this project, or null if they are not a member.
+     * The name of the delegated-permissions role the given user holds on this
+     * project, or null if they hold none. A user has at most one project-scoped
+     * role, enforced by {@see ProjectRoleProvisioner::syncMember()}.
      */
-    public function roleFor(User $user): ?ProjectRole
+    public function roleNameFor(User $user): ?string
     {
-        // Package role assignments are authoritative once present (KAN-232).
-        $names = $user->roles()
+        return $user->roles()
             ->where('scope_type', $this->getMorphClass())
             ->where('scope_id', $this->getKey())
-            ->pluck('name');
-
-        $fromPackage = collect(ProjectRole::cases())
-            ->filter(static fn (ProjectRole $role): bool => $names->contains($role->value))
-            ->sortByDesc(static fn (ProjectRole $role): int => $role->rank())
-            ->first();
-
-        if ($fromPackage !== null) {
-            return $fromPackage;
-        }
-
-        // Bridge: fall back to the legacy pivot for memberships not yet synced
-        // to the package. Removed together with project_user.role in KAN-243.
-        $member = $this->members()->whereKey($user->id)->first();
-        $role = $member?->pivot->getAttribute('role');
-
-        return is_string($role) ? ProjectRole::from($role) : null;
+            ->value('name');
     }
 
     /**
@@ -158,23 +143,6 @@ class Project extends Model implements Subscribable
      */
     public function isOwner(User $user): bool
     {
-        return $this->roleFor($user) === ProjectRole::Owner;
-    }
-
-    /**
-     * Whether the user administers this project (an admin or the owner).
-     */
-    public function isAdmin(User $user): bool
-    {
-        return $this->userHasRole($user, ProjectRole::Admin);
-    }
-
-    /**
-     * Whether the user is a member of this project with at least the given role.
-     * The reusable building block for gating per-project actions by role.
-     */
-    public function userHasRole(User $user, ProjectRole $minimum): bool
-    {
-        return (bool) $this->roleFor($user)?->atLeast($minimum);
+        return $this->roleNameFor($user) === 'owner';
     }
 }

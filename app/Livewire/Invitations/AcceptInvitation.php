@@ -4,7 +4,6 @@ namespace App\Livewire\Invitations;
 
 use App\Authorization\ProjectRoleProvisioner;
 use App\Concerns\PasswordValidationRules;
-use App\Enums\ProjectRole;
 use App\Models\Invitation;
 use App\Models\Project;
 use App\Models\User;
@@ -69,7 +68,7 @@ class AcceptInvitation extends Component
 
             $provisioner = app(ProjectRoleProvisioner::class);
             foreach (Project::whereKey($this->invitation->project_ids)->get() as $project) {
-                $provisioner->syncMember($project, $user, ProjectRole::Member->value);
+                $provisioner->syncMember($project, $user, 'member');
             }
 
             $this->invitation->forceFill(['accepted_at' => now()])->save();

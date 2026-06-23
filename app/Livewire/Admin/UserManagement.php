@@ -4,7 +4,6 @@ namespace App\Livewire\Admin;
 
 use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\Permission;
-use App\Enums\ProjectRole;
 use App\Mail\InvitationMail;
 use App\Models\Invitation;
 use App\Models\Project;
@@ -12,7 +11,6 @@ use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -295,10 +293,16 @@ class UserManagement extends Component
             return [];
         }
 
+        $user = User::find($this->managingProjectsId);
+
+        if ($user === null) {
+            return [];
+        }
+
         $roles = [];
 
-        foreach (DB::table('project_user')->where('user_id', $this->managingProjectsId)->get(['project_id', 'role']) as $row) {
-            $roles[(int) $row->project_id] = (string) $row->role;
+        foreach ($user->roles()->where('scope_type', (new Project)->getMorphClass())->get() as $role) {
+            $roles[(int) $role->scope_id] = (string) $role->name;
         }
 
         return $roles;
@@ -318,8 +322,8 @@ class UserManagement extends Component
             return;
         }
 
-        $project->members()->attach($user->id, ['role' => ProjectRole::Member->value]);
-        app(ProjectRoleProvisioner::class)->syncMember($project, $user, ProjectRole::Member->value);
+        $project->members()->attach($user->id);
+        app(ProjectRoleProvisioner::class)->syncMember($project, $user, 'member');
 
         unset($this->managedUser, $this->managedUserRoles, $this->users);
 
@@ -337,7 +341,7 @@ class UserManagement extends Component
 
         $validated = validator(
             ['role' => $role],
-            ['role' => ['required', Rule::in([ProjectRole::Admin->value, ProjectRole::Member->value])]],
+            ['role' => ['required', Rule::in(['admin', 'member'])]],
         )->validate();
 
         $user = User::findOrFail($this->managingProjectsId);
@@ -346,7 +350,6 @@ class UserManagement extends Component
             return;
         }
 
-        $project->members()->updateExistingPivot($user->id, ['role' => $validated['role']]);
         app(ProjectRoleProvisioner::class)->syncMember($project, $user, $validated['role']);
 
         unset($this->managedUser, $this->managedUserRoles);
