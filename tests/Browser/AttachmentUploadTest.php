@@ -6,7 +6,7 @@ use App\Models\User;
 it('warns when a dropped file is larger than the upload limit', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($user);
+    joinProject($project, $user);
 
     $this->actingAs($user);
 

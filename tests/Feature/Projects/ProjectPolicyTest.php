@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,14 +13,15 @@ uses(RefreshDatabase::class);
  */
 function projectWithEveryRole(): array
 {
-    $project = Project::factory()->create();
     $owner = User::factory()->create();
     $admin = User::factory()->create();
     $member = User::factory()->create();
 
-    $project->members()->attach($owner, ['role' => ProjectRole::Owner->value]);
-    $project->members()->attach($admin, ['role' => ProjectRole::Admin->value]);
-    $project->members()->attach($member, ['role' => ProjectRole::Member->value]);
+    $project = Project::factory()
+        ->withOwner($owner)
+        ->withMember($admin, 'admin')
+        ->withMember($member)
+        ->create();
 
     return [
         'project' => $project,

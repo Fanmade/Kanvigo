@@ -28,7 +28,7 @@ beforeEach(function () {
 
     $this->user = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach($this->user);
+    joinProject($this->project, $this->user);
 
     // A parent + child so the cached graph carries the adjacency-list collection
     // and the `ancestors` relation; a tag (MorphPivot) and an assignee (Pivot)

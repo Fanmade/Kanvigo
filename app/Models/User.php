@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Permission;
 use Database\Factories\UserFactory;
+use Fanmade\DelegatedPermissions\Concerns\HasRoles;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -49,6 +50,12 @@ class User extends Authenticatable implements PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
 
+    // The package's per-project permission check, aliased so it doesn't collide
+    // with the account-level hasPermission(Permission) above.
+    use HasRoles {
+        hasPermission as hasScopedPermission;
+    }
+
     /**
      * Detach a user's collaborative relationships when their account is removed,
      * so a soft-deleted account no longer holds project access, task assignments
@@ -65,6 +72,7 @@ class User extends Authenticatable implements PasskeyUser
             }
 
             $user->projects()->detach();
+            $user->roles()->detach();
             $user->assignedTasks()->detach();
             $user->subscribedProjects()->detach();
             $user->subscribedTasks()->detach();
@@ -145,7 +153,7 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Project::class)->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(Project::class)->withTimestamps();
     }
 
     /**
@@ -186,6 +194,13 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function hasPermission(Permission $permission): bool
     {
+        // Account permissions live in the package's global catalog (KAN-242), so
+        // the system role grants them as a unified break-glass. Direct per-user
+        // grants are still stored in `user_permissions`.
+        if ($this->hasScopedPermission($permission->value)) {
+            return true;
+        }
+
         return $this->permissions->contains(
             static fn (UserPermission $userPermission): bool => $userPermission->permission === $permission
         );

@@ -18,7 +18,7 @@ function userProjectTag(): array
 {
     $user = User::factory()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $tag = Tag::factory()->for($project)->create(['name' => 'Important', 'color' => 'sky']);
 
     test()->actingAs($user);

@@ -156,23 +156,26 @@
             <div class="flex max-h-96 flex-col gap-2 overflow-y-auto" data-test="manage-projects-list">
                 @foreach ($this->manageableProjects as $project)
                     @php($roleValue = $this->managedUserRoles[$project->id] ?? null)
-                    @php($role = $roleValue ? \App\Enums\ProjectRole::from($roleValue) : null)
                     <div class="flex items-center justify-between gap-3" wire:key="mp-{{ $project->id }}" data-test="manage-project-row-{{ $project->id }}">
                         <flux:text class="min-w-0 truncate">{{ $project->title }} <span class="text-zinc-400">{{ $project->short_name }}</span></flux:text>
 
-                        @if ($role === \App\Enums\ProjectRole::Owner)
-                            <flux:badge size="sm" data-test="mp-role-{{ $project->id }}">{{ $role->label() }}</flux:badge>
-                        @elseif ($role !== null)
+                        @if ($roleValue === 'owner')
+                            <flux:badge size="sm" data-test="mp-role-{{ $project->id }}">{{ \Illuminate\Support\Str::headline($roleValue) }}</flux:badge>
+                        @elseif ($roleValue !== null)
                             <div class="flex items-center gap-1.5">
-                                <flux:select
-                                    size="sm"
-                                    class="max-w-28"
-                                    wire:change="setUserProjectRole({{ $project->id }}, $event.target.value)"
-                                    data-test="mp-role-select-{{ $project->id }}"
-                                >
-                                    <flux:select.option value="member" :selected="$role === \App\Enums\ProjectRole::Member">{{ __('Member') }}</flux:select.option>
-                                    <flux:select.option value="admin" :selected="$role === \App\Enums\ProjectRole::Admin">{{ __('Admin') }}</flux:select.option>
-                                </flux:select>
+                                @if (in_array($roleValue, ['admin', 'member'], true))
+                                    <flux:select
+                                        size="sm"
+                                        class="max-w-28"
+                                        wire:change="setUserProjectRole({{ $project->id }}, $event.target.value)"
+                                        data-test="mp-role-select-{{ $project->id }}"
+                                    >
+                                        <flux:select.option value="member" :selected="$roleValue === 'member'">{{ __('Member') }}</flux:select.option>
+                                        <flux:select.option value="admin" :selected="$roleValue === 'admin'">{{ __('Admin') }}</flux:select.option>
+                                    </flux:select>
+                                @else
+                                    <flux:badge size="sm" data-test="mp-role-{{ $project->id }}">{{ \Illuminate\Support\Str::headline($roleValue) }}</flux:badge>
+                                @endif
 
                                 <flux:button type="button" size="xs" variant="ghost" icon="x-mark" :aria-label="__('Remove member')" wire:click="removeUserFromProject({{ $project->id }})" data-test="mp-remove-{{ $project->id }}" />
                             </div>

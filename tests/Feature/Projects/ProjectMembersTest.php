@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\ProjectRole;
+use App\Authorization\ProjectRoleProvisioner;
 use App\Livewire\Projects\ProjectShow;
 use App\Models\Project;
 use App\Models\User;
@@ -19,11 +19,24 @@ function ownerMemberProject(): array
 {
     $owner = User::factory()->create();
     $member = User::factory()->create();
-    $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($owner, ['role' => ProjectRole::Owner->value]);
-    $project->members()->attach($member, ['role' => ProjectRole::Member->value]);
+    $project = Project::factory()
+        ->withOwner($owner)
+        ->withMember($member)
+        ->create(['short_name' => 'ABC']);
 
     return [$owner, $member, $project];
+}
+
+/**
+ * Add a user to the project with the given package role.
+ */
+function memberWithRole(Project $project, string $role): User
+{
+    $user = User::factory()->create();
+    $project->members()->attach($user);
+    app(ProjectRoleProvisioner::class)->syncMember($project, $user, $role);
+
+    return $user;
 }
 
 function showAs(User $user, Project $project): Testable
@@ -35,47 +48,46 @@ it('lets the owner promote a member to admin and demote them back', function () 
     [$owner, $member, $project] = ownerMemberProject();
 
     showAs($owner, $project)
-        ->call('setMemberRole', $member->id, ProjectRole::Admin->value)
+        ->call('setMemberRole', $member->id, 'admin')
         ->assertHasNoErrors();
-    expect($project->roleFor($member))->toBe(ProjectRole::Admin);
+    expect($project->roleNameFor($member))->toBe('admin');
 
-    showAs($owner, $project)->call('setMemberRole', $member->id, ProjectRole::Member->value);
-    expect($project->roleFor($member))->toBe(ProjectRole::Member);
+    showAs($owner, $project)->call('setMemberRole', $member->id, 'member');
+    expect($project->roleNameFor($member))->toBe('member');
 });
 
 it('forbids an admin or member from changing roles', function () {
     [$owner, $member, $project] = ownerMemberProject();
-    $admin = User::factory()->create();
-    $project->members()->attach($admin, ['role' => ProjectRole::Admin->value]);
+    $admin = memberWithRole($project, 'admin');
 
     showAs($admin, $project)
-        ->call('setMemberRole', $member->id, ProjectRole::Admin->value)
+        ->call('setMemberRole', $member->id, 'admin')
         ->assertForbidden();
 
     showAs($member, $project)
-        ->call('setMemberRole', $admin->id, ProjectRole::Member->value)
+        ->call('setMemberRole', $admin->id, 'member')
         ->assertForbidden();
 
-    expect($project->roleFor($member))->toBe(ProjectRole::Member)
-        ->and($project->roleFor($admin))->toBe(ProjectRole::Admin);
+    expect($project->roleNameFor($member))->toBe('member')
+        ->and($project->roleNameFor($admin))->toBe('admin');
 });
 
 it('does not let the owner change their own role', function () {
     [$owner, , $project] = ownerMemberProject();
 
-    showAs($owner, $project)->call('setMemberRole', $owner->id, ProjectRole::Member->value);
+    showAs($owner, $project)->call('setMemberRole', $owner->id, 'member');
 
-    expect($project->roleFor($owner))->toBe(ProjectRole::Owner);
+    expect($project->roleNameFor($owner))->toBe('owner');
 });
 
 it('does not let ownership be handed out through the role control', function () {
     [$owner, $member, $project] = ownerMemberProject();
 
     showAs($owner, $project)
-        ->call('setMemberRole', $member->id, ProjectRole::Owner->value)
+        ->call('setMemberRole', $member->id, 'owner')
         ->assertHasErrors('role');
 
-    expect($project->roleFor($member))->toBe(ProjectRole::Member);
+    expect($project->roleNameFor($member))->toBe('member');
 });
 
 it('lets the owner add an existing user to the project as a member', function () {
@@ -84,7 +96,7 @@ it('lets the owner add an existing user to the project as a member', function ()
 
     showAs($owner, $project)->call('addMember', $newcomer->id);
 
-    expect($project->roleFor($newcomer))->toBe(ProjectRole::Member);
+    expect($project->roleNameFor($newcomer))->toBe('member');
 });
 
 it('forbids a non-owner from adding members', function () {
@@ -124,8 +136,7 @@ it('offers only matching non-members in the add picker', function () {
 
 it('shows the manage-members control only to the owner', function () {
     [$owner, $member, $project] = ownerMemberProject();
-    $admin = User::factory()->create();
-    $project->members()->attach($admin, ['role' => ProjectRole::Admin->value]);
+    $admin = memberWithRole($project, 'admin');
 
     showAs($owner, $project)->assertSee('manage-members', false);
     showAs($admin, $project)->assertDontSee('manage-members', false);

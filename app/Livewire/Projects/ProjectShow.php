@@ -2,17 +2,19 @@
 
 namespace App\Livewire\Projects;
 
+use App\Authorization\ProjectRoleProvisioner;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\HasLiveUpdates;
 use App\Concerns\ManagesNotes;
-use App\Enums\ProjectRole;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use Fanmade\DelegatedPermissions\Models\Role;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -39,6 +41,8 @@ class ProjectShow extends Component
     public bool $showArchived = false;
 
     public bool $managingMembers = false;
+
+    public bool $managingRoles = false;
 
     public string $memberQuery = '';
 
@@ -205,20 +209,61 @@ class ProjectShow extends Component
     }
 
     /**
-     * The project's members, ordered by name, each carrying their role for the
-     * member-management panel.
+     * The project's members, ordered by name, each with their project-scoped
+     * role eager-loaded for the member-management panel.
      *
      * @return EloquentCollection<int, User>
      */
     #[Computed]
     public function members(): EloquentCollection
     {
-        return $this->project()->members()->orderBy('name')->get();
+        $project = $this->project();
+
+        return $project->members()
+            ->with(['roles' => static fn ($query) => $query
+                ->where('scope_type', $project->getMorphClass())
+                ->where('scope_id', $project->getKey())])
+            ->orderBy('name')
+            ->get();
     }
 
     /**
-     * Change a member's role. Owner-only, and limited to admin/member — the
-     * owner can neither change their own role nor hand out ownership here.
+     * The roles a member may be assigned — every project role except owner, so
+     * ownership cannot be handed out here. Includes the custom roles defined for
+     * the project. The seeded roles sort first, custom roles after, by name.
+     *
+     * @return EloquentCollection<int, Role>
+     */
+    #[Computed]
+    public function assignableRoles(): EloquentCollection
+    {
+        $project = $this->project();
+
+        return Role::query()
+            ->where('scope_type', $project->getMorphClass())
+            ->where('scope_id', $project->getKey())
+            ->where('name', '!=', 'owner')
+            ->get()
+            ->sortBy(static fn (Role $role): string => sprintf(
+                '%d-%s',
+                in_array($role->name, ['admin', 'member'], true) ? 0 : 1,
+                $role->name,
+            ))
+            ->values();
+    }
+
+    /**
+     * A human-readable label for a role name (e.g. "member" → "Member").
+     */
+    public function roleLabel(?string $name): string
+    {
+        return $name === null ? '' : Str::headline($name);
+    }
+
+    /**
+     * Change a member's role. Requires manage-members, and is limited to the
+     * project's assignable (non-owner) roles — the owner can neither change their
+     * own role nor hand out ownership here.
      */
     public function setMemberRole(int $userId, string $role): void
     {
@@ -231,14 +276,16 @@ class ProjectShow extends Component
 
         $validated = validator(
             ['role' => $role],
-            ['role' => ['required', Rule::in([ProjectRole::Admin->value, ProjectRole::Member->value])]],
+            ['role' => ['required', Rule::in($this->assignableRoles()->pluck('name')->all())]],
         )->validate();
 
-        if (! $project->members()->whereKey($userId)->exists()) {
+        $member = User::find($userId);
+
+        if ($member === null || ! $project->members()->whereKey($userId)->exists() || $project->isOwner($member)) {
             return;
         }
 
-        $project->members()->updateExistingPivot($userId, ['role' => $validated['role']]);
+        app(ProjectRoleProvisioner::class)->syncMember($project, $member, $validated['role']);
 
         unset($this->members);
 
@@ -282,7 +329,8 @@ class ProjectShow extends Component
             return;
         }
 
-        $project->members()->attach($userId, ['role' => ProjectRole::Member->value]);
+        $project->members()->attach($userId);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail($userId), 'member');
 
         $this->memberQuery = '';
         unset($this->members, $this->addableUsers);
@@ -304,6 +352,7 @@ class ProjectShow extends Component
         }
 
         $project->members()->detach($userId);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail($userId), null);
 
         unset($this->members, $this->addableUsers);
 

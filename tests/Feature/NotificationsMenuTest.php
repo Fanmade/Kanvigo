@@ -16,7 +16,7 @@ beforeEach(function () {
     $this->watcher = User::factory()->create();
     $this->actor = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach([$this->watcher->id, $this->actor->id]);
+    joinProject($this->project, [$this->watcher->id, $this->actor->id]);
     $this->task = Task::factory()->for($this->project)->status(Status::Planned)->create();
     $this->task->subscribe($this->watcher);
 

@@ -12,7 +12,7 @@ it('renders the project description as formatted, clamped rich text on the card'
         'description' => '<p>Intro paragraph with <strong>bold</strong> and a <a href="https://example.com">link</a>.</p>'
             .'<p>Second paragraph.</p><p>Third paragraph.</p><p>Fourth paragraph that should be clamped away.</p>',
     ]);
-    $project->members()->attach($user);
+    joinProject($project, $user);
 
     $this->actingAs($user);
 

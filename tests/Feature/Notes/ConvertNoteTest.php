@@ -12,7 +12,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach($this->user);
+    joinProject($this->project, $this->user);
 });
 
 it('prefills the task dialog from the note', function () {

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7cdd4c483ba9f5f86437e2eb01b3c6d5",
+    "content-hash": "37e6505ee22cce03112d7418fdc20b3d",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -659,6 +659,67 @@
                 }
             ],
             "time": "2025-03-06T22:45:56+00:00"
+        },
+        {
+            "name": "fanmade/laravel-delegated-permissions",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Fanmade/laravel-delegated-permissions.git",
+                "reference": "459b67cd701e8fa350839555fea1f61e816f378a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Fanmade/laravel-delegated-permissions/zipball/459b67cd701e8fa350839555fea1f61e816f378a",
+                "reference": "459b67cd701e8fa350839555fea1f61e816f378a",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^12.0 || ^13.0",
+                "illuminate/container": "^12.0 || ^13.0",
+                "illuminate/contracts": "^12.0 || ^13.0",
+                "illuminate/database": "^12.0 || ^13.0",
+                "illuminate/support": "^12.0 || ^13.0",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.0",
+                "laravel/pint": "^1.0",
+                "orchestra/testbench": "^10.0 || ^11.0",
+                "pestphp/pest": "^4.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Fanmade\\DelegatedPermissions\\DelegatedPermissionsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Fanmade\\DelegatedPermissions\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Inheritance-based, scoped authorization for Laravel: each role delegates a subset of its own permissions to its children, and revoking cascades down the tree.",
+            "homepage": "https://github.com/Fanmade/laravel-delegated-permissions",
+            "keywords": [
+                "authorization",
+                "delegation",
+                "laravel",
+                "permissions",
+                "rbac",
+                "roles"
+            ],
+            "support": {
+                "issues": "https://github.com/Fanmade/laravel-delegated-permissions/issues",
+                "source": "https://github.com/Fanmade/laravel-delegated-permissions/tree/v0.1.0"
+            },
+            "time": "2026-06-23T20:09:21+00:00"
         },
         {
             "name": "fruitcake/php-cors",

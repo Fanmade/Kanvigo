@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\ProjectRole;
+use App\Authorization\ProjectRoleProvisioner;
 use App\Livewire\Admin\UserManagement;
 use App\Models\Project;
 use App\Models\User;
@@ -9,8 +9,18 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-it('lets an admin add a user to a project as a member', function () {
-    $admin = User::factory()->canManageUsers()->create();
+/**
+ * An account admin who also holds the global system role — the break-glass path
+ * for managing any project's roster from the admin panel (KAN-240).
+ */
+function systemAdmin(): User
+{
+    return User::factory()->canManageUsers()->create()
+        ->assignRole(app(ProjectRoleProvisioner::class)->systemRole());
+}
+
+it('lets a system admin add a user to a project as a member', function () {
+    $admin = systemAdmin();
     $user = User::factory()->create();
     $project = Project::factory()->create();
 
@@ -19,51 +29,61 @@ it('lets an admin add a user to a project as a member', function () {
         ->call('manageProjects', $user->id)
         ->call('addUserToProject', $project->id);
 
-    expect($project->roleFor($user))->toBe(ProjectRole::Member);
+    expect($project->roleNameFor($user))->toBe('member');
 });
 
-it('lets an admin change a user\'s project role and remove them', function () {
-    $admin = User::factory()->canManageUsers()->create();
+it('lets a system admin change a user\'s project role and remove them', function () {
+    $admin = systemAdmin();
     $user = User::factory()->create();
-    $project = Project::factory()->create();
-    $project->members()->attach($user, ['role' => ProjectRole::Member->value]);
+    $project = Project::factory()->withMember($user)->create();
 
     $component = Livewire::actingAs($admin)
         ->test(UserManagement::class)
         ->call('manageProjects', $user->id);
 
-    $component->call('setUserProjectRole', $project->id, ProjectRole::Admin->value);
-    expect($project->roleFor($user))->toBe(ProjectRole::Admin);
+    $component->call('setUserProjectRole', $project->id, 'admin');
+    expect($project->roleNameFor($user))->toBe('admin');
 
     $component->call('removeUserFromProject', $project->id);
     expect($project->members()->whereKey($user->id)->exists())->toBeFalse();
 });
 
-it('does not let an admin re-role or remove a project owner', function () {
-    $admin = User::factory()->canManageUsers()->create();
+it('does not let a system admin re-role or remove a project owner', function () {
+    $admin = systemAdmin();
     $owner = User::factory()->create();
-    $project = Project::factory()->create();
-    $project->members()->attach($owner, ['role' => ProjectRole::Owner->value]);
+    $project = Project::factory()->withOwner($owner)->create();
 
     $component = Livewire::actingAs($admin)
         ->test(UserManagement::class)
         ->call('manageProjects', $owner->id);
 
-    $component->call('setUserProjectRole', $project->id, ProjectRole::Member->value);
+    $component->call('setUserProjectRole', $project->id, 'member');
     $component->call('removeUserFromProject', $project->id);
 
-    expect($project->roleFor($owner))->toBe(ProjectRole::Owner)
+    expect($project->roleNameFor($owner))->toBe('owner')
         ->and($project->members()->whereKey($owner->id)->exists())->toBeTrue();
+});
+
+it('forbids a plain manage-users admin from managing an arbitrary project roster', function () {
+    $admin = User::factory()->canManageUsers()->create(); // no system role, not a member
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+
+    Livewire::actingAs($admin)
+        ->test(UserManagement::class)
+        ->call('manageProjects', $user->id)
+        ->call('addUserToProject', $project->id)
+        ->assertForbidden();
+
+    expect($project->roleNameFor($user))->toBeNull();
 });
 
 it('exposes the managed user\'s roles per project', function () {
     $admin = User::factory()->canManageUsers()->create();
     $user = User::factory()->create();
-    $adminProject = Project::factory()->create();
-    $memberProject = Project::factory()->create();
+    $adminProject = Project::factory()->withMember($user, 'admin')->create();
+    $memberProject = Project::factory()->withMember($user)->create();
     Project::factory()->create(); // user is not in this one
-    $adminProject->members()->attach($user, ['role' => ProjectRole::Admin->value]);
-    $memberProject->members()->attach($user, ['role' => ProjectRole::Member->value]);
 
     $roles = Livewire::actingAs($admin)
         ->test(UserManagement::class)

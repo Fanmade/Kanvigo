@@ -12,7 +12,7 @@ it('auto-refreshes the board and suspends while dragging', function () {
 
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Task Alpha']);
 
     $this->actingAs($user);
@@ -44,7 +44,7 @@ it('does not auto-refresh while live updates are off', function () {
     // (avoids racing a tick against the toggle's round-trip).
     $user->setPreference(ProjectBoard::LIVE_UPDATES_PREFERENCE_KEY, false);
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Task Alpha']);
 
     $this->actingAs($user);

@@ -20,7 +20,7 @@ it('logs creation of projects and tasks', function () {
 it('logs assignee changes with the acting user', function () {
     $member = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($member);
+    joinProject($project, $member);
     $task = Task::factory()->for($project)->create();
 
     Livewire::actingAs($member)
@@ -40,7 +40,7 @@ it('logs assignee changes with the acting user', function () {
 it('attributes a web-session action to no token', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->create();
 
     $this->actingAs($user);
@@ -52,7 +52,7 @@ it('attributes a web-session action to no token', function () {
 it('attributes a token-driven action to the token name', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->create();
 
     $user->withAccessToken($user->createToken('Claude')->accessToken);
@@ -68,7 +68,7 @@ it('records the names of added and removed task assignees', function () {
     $alice = User::factory()->create(['name' => 'Alice']);
     $bob = User::factory()->create(['name' => 'Bob']);
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach([$actor->id, $alice->id, $bob->id]);
+    joinProject($project, [$actor->id, $alice->id, $bob->id]);
     $task = Task::factory()->for($project)->create();
     $task->assignees()->attach($alice->id);
 

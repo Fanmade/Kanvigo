@@ -20,7 +20,7 @@ beforeEach(function () {
     $this->member = User::factory()->create();
 
     $this->project = Project::factory()->create();
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
     $this->task = Task::factory()->for($this->project)->create();
 
     // A project the member is NOT a part of — the target of the IDOR.

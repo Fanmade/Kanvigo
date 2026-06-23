@@ -16,7 +16,7 @@ use App\Models\User;
 it('extracts pasted images from clipboard items as well as files', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->status(Status::ToDo)->create(['description' => '<p>Start</p>']);
 
     $this->actingAs($user);

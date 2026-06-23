@@ -15,7 +15,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::factory()->create();
-    $this->project->members()->attach($this->user);
+    joinProject($this->project, $this->user);
 });
 
 it('lists in-progress and to-do tasks before completed ones', function () {

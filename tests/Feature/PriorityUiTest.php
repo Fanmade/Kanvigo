@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
 });
 
 it('creates a task with a chosen priority from the create dialog', function () {

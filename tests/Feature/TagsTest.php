@@ -20,7 +20,7 @@ function memberAndTask(): array
 {
     $member = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($member);
+    joinProject($project, $member);
     $task = Task::factory()->for($project)->create();
 
     return [$member, $task];
@@ -245,7 +245,7 @@ it('does not suggest tags that belong to other projects', function () {
 it('adds a tag to a subtask too', function () {
     $member = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'XYZ']);
-    $project->members()->attach($member);
+    joinProject($project, $member);
     $parent = Task::factory()->for($project)->create();
     $subtask = Task::factory()->for($project)->childOf($parent)->create();
 

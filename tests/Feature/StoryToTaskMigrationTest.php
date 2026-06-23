@@ -100,7 +100,7 @@ it('migrates a story and its tasks into a correct task tree with relations intac
 
     $project = Project::factory()->create(['short_name' => 'ABC']);
     $member = User::factory()->create();
-    $project->members()->attach($member);
+    joinProject($project, $member);
     $now = now();
 
     $storyId = DB::table('stories')->insertGetId([

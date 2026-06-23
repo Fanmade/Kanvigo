@@ -9,7 +9,7 @@ use App\Models\User;
 it('cancels a task with a reason through the UI, warning about open subtasks', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->status(Status::ToDo)->create();
     Task::factory()->for($project)->childOf($task)->status(Status::ToDo)->create();
 
@@ -38,7 +38,7 @@ it('cancels a task with a reason through the UI, warning about open subtasks', f
 it('reopens a canceled task through the UI', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->canceled(CancelReason::WontFix, 'No longer needed')->create();
 
     $this->actingAs($user);

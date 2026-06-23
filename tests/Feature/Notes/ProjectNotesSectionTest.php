@@ -14,7 +14,7 @@ beforeEach(function () {
     $this->owner = User::factory()->create();
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach([$this->owner->id, $this->member->id]);
+    joinProject($this->project, [$this->owner->id, $this->member->id]);
 
     $this->view = fn (User $user) => Livewire::actingAs($user)
         ->test(ProjectShow::class, ['short_name' => 'ABC']);

@@ -13,7 +13,7 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool
     {
-        return $project->members()->whereKey($user->id)->exists();
+        return $user->hasScopedPermission('view-project', $project);
     }
 
     /**
@@ -39,7 +39,7 @@ class ProjectPolicy
      */
     public function manageSettings(User $user, Project $project): bool
     {
-        return $project->isAdmin($user);
+        return $user->hasScopedPermission('manage-settings', $project);
     }
 
     /**
@@ -47,15 +47,16 @@ class ProjectPolicy
      */
     public function delete(User $user, Project $project): bool
     {
-        return $project->isAdmin($user);
+        return $user->hasScopedPermission('delete-project', $project);
     }
 
     /**
      * Determine whether the user can manage the project's members and their
-     * roles. Restricted to the owner.
+     * roles. Restricted to holders of the manage-members permission (the owner,
+     * or any custom role granted it).
      */
     public function manageMembers(User $user, Project $project): bool
     {
-        return $project->isOwner($user);
+        return $user->hasScopedPermission('manage-members', $project);
     }
 }

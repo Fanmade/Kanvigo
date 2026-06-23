@@ -25,7 +25,7 @@ it('lets an authorised inviter send an invitation and mails a signed link', func
 
     $inviter = User::factory()->canInviteUsers()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($inviter);
+    joinProject($project, $inviter);
 
     Livewire::actingAs($inviter)
         ->test(InviteUser::class)
@@ -59,7 +59,7 @@ it('cannot grant access to projects the inviter does not belong to', function ()
 it('accepts a valid invitation and creates a verified, project-scoped user', function () {
     $inviter = User::factory()->canInviteUsers()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($inviter);
+    joinProject($project, $inviter);
 
     $invitation = Invitation::create([
         'email' => 'new@example.com',

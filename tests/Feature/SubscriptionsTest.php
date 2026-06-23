@@ -17,7 +17,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->member = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
     $this->task = Task::factory()->for($this->project)->status(Status::Planned)->create();
 });
 
@@ -55,7 +55,7 @@ it('notifies subscribers but not the actor when an item is updated', function ()
     Notification::fake();
 
     $watcher = User::factory()->create();
-    $this->project->members()->attach($watcher);
+    joinProject($this->project, $watcher);
     $this->task->subscribe($watcher);
     $this->task->subscribe($this->member);
 
@@ -71,7 +71,7 @@ it('notifies project subscribers about task updates', function () {
     Notification::fake();
 
     $watcher = User::factory()->create();
-    $this->project->members()->attach($watcher);
+    joinProject($this->project, $watcher);
     $this->project->subscribe($watcher); // subscribed at the project level
 
     Livewire::actingAs($this->member)

@@ -8,7 +8,7 @@ use App\Models\User;
 it('changes a task status from the badge dropdown', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->status(Status::Planned)->create();
 
     $this->actingAs($user);
@@ -27,7 +27,7 @@ it('changes a task status from the badge dropdown', function () {
 it('assigns the current user with the one-click button, then hides it', function () {
     $user = User::factory()->create(['name' => 'Casey Member']);
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->create();
 
     $this->actingAs($user);
@@ -46,7 +46,7 @@ it('assigns the current user with the one-click button, then hides it', function
 it('reveals the dependency form only when adding', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->create();
 
     $this->actingAs($user);
@@ -63,7 +63,7 @@ it('reveals the dependency form only when adding', function () {
 it('keeps the blocked dependencies header within the sidebar in German', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->create();
     $task->addBlocker(Task::factory()->for($project)->status(Status::Planned)->create());
 

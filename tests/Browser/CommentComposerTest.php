@@ -7,7 +7,7 @@ use App\Models\User;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::factory()->create(['short_name' => 'ABC']);
-    $this->project->members()->attach($this->user);
+    joinProject($this->project, $this->user);
     $this->task = Task::factory()->for($this->project)->create();
 });
 

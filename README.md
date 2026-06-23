@@ -118,16 +118,22 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   (reversible, blocks sign-in) or remove accounts. Removed accounts are
   soft-deleted with their assignments dropped; comments they wrote are kept as the
   work of a "deleted user".
-- **Project roles & membership** — each membership carries a role: owner (the
-  project's creator), admin or member. Every member can contribute — create and
-  work on tasks, comment, attach files — while editing the project's own settings
-  (title, short name, description) and deleting it are reserved for admins and the
-  owner. The owner adds, removes and re-roles members from the project page;
-  account administrators can manage any user's project memberships from the
-  user-administration area.
+- **Project roles & membership** — each member holds a per-project role. Three
+  roles are seeded — owner (the project's creator), admin and member — and an
+  owner can define **custom roles** for a project, each delegating any subset of
+  the owner's own project permissions (view, contribute, manage settings, delete,
+  manage members, invite, manage roles). What a member may do follows from the
+  permissions their role holds: every member can contribute — create and work on
+  tasks, comment, attach files — while editing the project's settings (title,
+  short name, description) and deleting it require the matching permission, held
+  by admins, the owner, and any custom role granted it. The owner adds, removes
+  and assigns roles — including custom ones — from the project page. Managing a
+  user's memberships from the user-administration area requires the
+  member-management permission on the project in question (or the system role),
+  so account administration alone does not grant the run of every project.
 - **Authorization** via native Gates (`create-projects`, `invite-users`,
-  `create-api-tokens`, `manage-users`) and Policies that cascade through project
-  membership and per-project roles.
+  `create-api-tokens`, `manage-users`) and Policies that resolve project access
+  through inheritance-based, per-project delegated permissions.
 - **API tokens** — permitted users mint personal Sanctum tokens (read-only or
   read & write) for MCP/API access and revoke them from Settings.
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer

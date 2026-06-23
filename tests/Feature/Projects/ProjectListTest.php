@@ -28,8 +28,8 @@ it('lists only the projects the user belongs to, ordered by title', function () 
 
     $beta = Project::factory()->create(['title' => 'Beta']);
     $alpha = Project::factory()->create(['title' => 'Alpha']);
-    $beta->members()->attach($user);
-    $alpha->members()->attach($user);
+    joinProject($beta, $user);
+    joinProject($alpha, $user);
 
     Project::factory()->create(['title' => 'Not Mine']);
 
@@ -48,7 +48,7 @@ it('renders the project description as sanitized rich text, clamped, on the card
         'title' => 'Documented',
         'description' => '<p>Hello <strong>world</strong></p>',
     ]);
-    $project->members()->attach($user);
+    joinProject($project, $user);
 
     Livewire::actingAs($user)
         ->test(ProjectList::class)
