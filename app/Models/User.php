@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Permission;
 use Database\Factories\UserFactory;
+use Fanmade\DelegatedPermissions\Concerns\HasRoles;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -48,6 +49,12 @@ class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
+
+    // The package's per-project permission check, aliased so it doesn't collide
+    // with the account-level hasPermission(Permission) above.
+    use HasRoles {
+        hasPermission as hasScopedPermission;
+    }
 
     /**
      * Detach a user's collaborative relationships when their account is removed,

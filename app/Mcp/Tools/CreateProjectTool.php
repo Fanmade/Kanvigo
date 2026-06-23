@@ -2,9 +2,11 @@
 
 namespace App\Mcp\Tools;
 
+use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\ProjectRole;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Support\Facades\Validator;
@@ -63,6 +65,9 @@ class CreateProjectTool extends Tool
         ]);
 
         $project->members()->attach($user->getAuthIdentifier(), ['role' => ProjectRole::Owner->value]);
+
+        $owner = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+        User::findOrFail((int) $user->getAuthIdentifier())->assignRole($owner);
 
         return Response::structured([
             'short_name' => $project->short_name,
