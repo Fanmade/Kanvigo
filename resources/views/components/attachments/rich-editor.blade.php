@@ -8,9 +8,9 @@
 --}}
 <div
     x-data="richEditor"
-    x-on:paste.capture="if (imageFiles($event.clipboardData?.files).length) { $event.preventDefault(); $event.stopPropagation(); handle($event.clipboardData.files); }"
+    x-on:paste.capture="handlePaste($event)"
     x-on:dragover.prevent
-    x-on:drop.capture.prevent="if (imageFiles($event.dataTransfer?.files).length) { $event.stopPropagation(); handle($event.dataTransfer.files); }"
+    x-on:drop.capture.prevent="handleDrop($event)"
 >
     <flux:editor
         wire:model="{{ $property }}"

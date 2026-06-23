@@ -258,6 +258,54 @@ document.addEventListener('alpine:init', () => {
             return Array.from(list || []).filter((file) => file.type.startsWith('image/'));
         },
 
+        /**
+         * Extract image files from a paste/drop's DataTransfer.
+         *
+         * Desktop browsers expose pasted images on `.files`, but mobile browsers
+         * (e.g. Android Chrome) leave `.files` empty and only populate `.items`,
+         * where each file must be unwrapped with `getAsFile()`. Try `.files`
+         * first, then fall back to `.items` so paste works on both.
+         */
+        filesFrom(dataTransfer) {
+            if (!dataTransfer) {
+                return [];
+            }
+
+            const fromFiles = this.imageFiles(dataTransfer.files);
+
+            if (fromFiles.length) {
+                return fromFiles;
+            }
+
+            const fromItems = Array.from(dataTransfer.items || [])
+                .filter((item) => item.kind === 'file')
+                .map((item) => item.getAsFile())
+                .filter(Boolean);
+
+            return this.imageFiles(fromItems);
+        },
+
+        handlePaste(event) {
+            const files = this.filesFrom(event.clipboardData);
+
+            if (!files.length) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            this.handle(files);
+        },
+
+        handleDrop(event) {
+            const files = this.filesFrom(event.dataTransfer);
+
+            if (files.length) {
+                event.stopPropagation();
+                this.handle(files);
+            }
+        },
+
         editor() {
             return this.$el.querySelector('[data-flux-editor]')?.__editor ?? null;
         },
