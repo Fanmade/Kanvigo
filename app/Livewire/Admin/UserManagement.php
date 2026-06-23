@@ -309,10 +309,10 @@ class UserManagement extends Component
      */
     public function addUserToProject(int $projectId): void
     {
-        $this->authorize('manage-users');
+        $project = Project::findOrFail($projectId);
+        $this->authorize('manage-members', $project);
 
         $user = User::findOrFail($this->managingProjectsId);
-        $project = Project::findOrFail($projectId);
 
         if ($project->members()->whereKey($user->id)->exists()) {
             return;
@@ -332,7 +332,8 @@ class UserManagement extends Component
      */
     public function setUserProjectRole(int $projectId, string $role): void
     {
-        $this->authorize('manage-users');
+        $project = Project::findOrFail($projectId);
+        $this->authorize('manage-members', $project);
 
         $validated = validator(
             ['role' => $role],
@@ -340,7 +341,6 @@ class UserManagement extends Component
         )->validate();
 
         $user = User::findOrFail($this->managingProjectsId);
-        $project = Project::findOrFail($projectId);
 
         if (! $project->members()->whereKey($user->id)->exists() || $project->isOwner($user)) {
             return;
@@ -359,10 +359,10 @@ class UserManagement extends Component
      */
     public function removeUserFromProject(int $projectId): void
     {
-        $this->authorize('manage-users');
+        $project = Project::findOrFail($projectId);
+        $this->authorize('manage-members', $project);
 
         $user = User::findOrFail($this->managingProjectsId);
-        $project = Project::findOrFail($projectId);
 
         if (! $project->members()->whereKey($user->id)->exists() || $project->isOwner($user)) {
             return;

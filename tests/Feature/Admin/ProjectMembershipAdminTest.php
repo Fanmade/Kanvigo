@@ -1,5 +1,6 @@
 <?php
 
+use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\ProjectRole;
 use App\Livewire\Admin\UserManagement;
 use App\Models\Project;
@@ -9,8 +10,18 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-it('lets an admin add a user to a project as a member', function () {
-    $admin = User::factory()->canManageUsers()->create();
+/**
+ * An account admin who also holds the global system role — the break-glass path
+ * for managing any project's roster from the admin panel (KAN-240).
+ */
+function systemAdmin(): User
+{
+    return User::factory()->canManageUsers()->create()
+        ->assignRole(app(ProjectRoleProvisioner::class)->systemRole());
+}
+
+it('lets a system admin add a user to a project as a member', function () {
+    $admin = systemAdmin();
     $user = User::factory()->create();
     $project = Project::factory()->create();
 
@@ -22,8 +33,8 @@ it('lets an admin add a user to a project as a member', function () {
     expect($project->roleFor($user))->toBe(ProjectRole::Member);
 });
 
-it('lets an admin change a user\'s project role and remove them', function () {
-    $admin = User::factory()->canManageUsers()->create();
+it('lets a system admin change a user\'s project role and remove them', function () {
+    $admin = systemAdmin();
     $user = User::factory()->create();
     $project = Project::factory()->create();
     $project->members()->attach($user, ['role' => ProjectRole::Member->value]);
@@ -39,8 +50,8 @@ it('lets an admin change a user\'s project role and remove them', function () {
     expect($project->members()->whereKey($user->id)->exists())->toBeFalse();
 });
 
-it('does not let an admin re-role or remove a project owner', function () {
-    $admin = User::factory()->canManageUsers()->create();
+it('does not let a system admin re-role or remove a project owner', function () {
+    $admin = systemAdmin();
     $owner = User::factory()->create();
     $project = Project::factory()->create();
     $project->members()->attach($owner, ['role' => ProjectRole::Owner->value]);
@@ -54,6 +65,20 @@ it('does not let an admin re-role or remove a project owner', function () {
 
     expect($project->roleFor($owner))->toBe(ProjectRole::Owner)
         ->and($project->members()->whereKey($owner->id)->exists())->toBeTrue();
+});
+
+it('forbids a plain manage-users admin from managing an arbitrary project roster', function () {
+    $admin = User::factory()->canManageUsers()->create(); // no system role, not a member
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+
+    Livewire::actingAs($admin)
+        ->test(UserManagement::class)
+        ->call('manageProjects', $user->id)
+        ->call('addUserToProject', $project->id)
+        ->assertForbidden();
+
+    expect($project->roleFor($user))->toBeNull();
 });
 
 it('exposes the managed user\'s roles per project', function () {

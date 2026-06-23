@@ -123,8 +123,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   work on tasks, comment, attach files — while editing the project's own settings
   (title, short name, description) and deleting it are reserved for admins and the
   owner. The owner adds, removes and re-roles members from the project page;
-  account administrators can manage any user's project memberships from the
-  user-administration area.
+  managing a user's memberships from the user-administration area requires the
+  member-management permission on the project in question (or the system role),
+  so account administration alone does not grant the run of every project.
 - **Authorization** via native Gates (`create-projects`, `invite-users`,
   `create-api-tokens`, `manage-users`) and Policies that cascade through project
   membership and per-project roles.
