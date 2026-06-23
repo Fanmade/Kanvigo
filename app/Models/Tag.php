@@ -59,6 +59,38 @@ class Tag extends Model
     }
 
     /**
+     * The single, shared way to resolve a tag within a project. Lookup is
+     * case-insensitive — "Bug" and "bug" resolve to the same tag — and the
+     * first casing created wins; a brand-new tag keeps the casing it was typed
+     * with and gets the given color (or a name-derived default). Every entry
+     * point (create dialog, task rail, MCP tools) goes through here so they all
+     * dedupe identically.
+     */
+    public static function findOrCreateForProject(int $projectId, string $name, ?string $color = null): self
+    {
+        $name = trim($name);
+
+        $existing = self::query()
+            ->where('project_id', $projectId)
+            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $tag = new self(['project_id' => $projectId, 'name' => $name]);
+
+        if ($color !== null) {
+            $tag->color = $color;
+        }
+
+        $tag->save();
+
+        return $tag;
+    }
+
+    /**
      * The project this tag belongs to.
      *
      * @return BelongsTo<Project, $this>

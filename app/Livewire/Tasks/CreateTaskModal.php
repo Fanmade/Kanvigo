@@ -547,9 +547,10 @@ class CreateTaskModal extends Component
         }
 
         $tagIds = collect($this->tagNames)
-            ->map(fn (string $name): int => Tag::firstOrCreate(
-                ['project_id' => $task->project_id, 'name' => trim($name)],
-                ['color' => $this->tagColors[$name] ?? Tag::colorForName($name)],
+            ->map(fn (string $name): int => Tag::findOrCreateForProject(
+                $task->project_id,
+                $name,
+                $this->tagColors[$name] ?? Tag::colorForName($name),
             )->getKey())
             ->all();
 

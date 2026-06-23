@@ -35,7 +35,7 @@ trait HasTags
             ->map(static fn (string $name) => trim($name))
             ->filter()
             ->unique(static fn (string $name) => mb_strtolower($name))
-            ->map(static fn (string $name) => Tag::firstOrCreate(['project_id' => $projectId, 'name' => $name])->getKey())
+            ->map(static fn (string $name) => Tag::findOrCreateForProject($projectId, $name)->getKey())
             ->all();
 
         return $this->tags()->sync($ids);

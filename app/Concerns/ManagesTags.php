@@ -102,7 +102,7 @@ trait ManagesTags
             return;
         }
 
-        $tag = Tag::firstOrCreate(['project_id' => $item->project_id, 'name' => $name]);
+        $tag = Tag::findOrCreateForProject($item->project_id, $name);
 
         if ($item->tags()->whereKey($tag->getKey())->exists()) {
             return;
@@ -161,12 +161,14 @@ trait ManagesTags
             'newTagColor' => ['required', 'string', 'in:'.implode(',', [...Tag::PALETTE, 'zinc'])],
         ]);
 
-        $tag = Tag::firstOrCreate(
-            ['project_id' => $item->project_id, 'name' => $validated['newTagName']],
-            ['color' => $validated['newTagColor']],
+        $tag = Tag::findOrCreateForProject(
+            $item->project_id,
+            $validated['newTagName'],
+            $validated['newTagColor'],
         );
 
-        // Honor the chosen color even when the tag already existed.
+        // Honor the chosen color even when the tag already existed (possibly
+        // under a different casing).
         if ($tag->color !== $validated['newTagColor']) {
             $tag->update(['color' => $validated['newTagColor']]);
         }

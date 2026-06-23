@@ -75,6 +75,30 @@ it('scopes tags per project, so the same name in two projects is two distinct ta
         ->and($tagB->project_id)->toBe($taskB->project_id);
 });
 
+it('resolves tags case-insensitively within a project, keeping the first casing', function () {
+    $project = Project::factory()->create();
+    $task = Task::factory()->for($project)->create();
+    $other = Task::factory()->for($project)->create();
+
+    $task->syncTags('Bug');
+    $other->syncTags('bug');
+
+    expect(Tag::where('project_id', $project->id)->count())->toBe(1)
+        ->and(Tag::where('project_id', $project->id)->sole()->name)->toBe('Bug')
+        ->and($task->tags()->sole()->is($other->tags()->sole()))->toBeTrue();
+});
+
+it('treats a case variant as the same tag when added through the rail', function () {
+    [$member, $task] = memberAndTask();
+
+    taskView($member, $task)
+        ->call('addTag', 'Bug')
+        ->call('addTag', 'bug');
+
+    expect($task->fresh()->tags()->count())->toBe(1)
+        ->and(Tag::where('project_id', $task->project_id)->count())->toBe(1);
+});
+
 it('detaches tags removed from the list', function () {
     $task = Task::factory()->create();
 
