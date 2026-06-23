@@ -15,20 +15,20 @@
                 <flux:text>{{ __('You are not a member of any projects yet.') }}</flux:text>
             </flux:card>
         @else
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($this->projects as $project)
-                    <a href="{{ route('project.show', $project) }}" wire:navigate class="block">
+                    <a href="{{ route('project.show', $project) }}" wire:navigate class="block min-w-0">
                         <flux:card class="h-full transition hover:shadow-md">
-                            <div class="flex items-center gap-2">
+                            <div class="flex min-w-0 items-center gap-2">
                                 <flux:badge color="indigo" size="sm">{{ $project->short_name }}</flux:badge>
-                                <flux:heading size="lg">{{ $project->title }}</flux:heading>
+                                <flux:heading size="lg" class="min-w-0 truncate">{{ $project->title }}</flux:heading>
                             </div>
                             @if ($project->description)
                                 {{-- Render the stored rich-text description (sanitized) rather than
                                      dumping its raw markup, clamped to a few lines so cards stay even. --}}
                                 <x-rich-text
                                     :content="$project->description"
-                                    class="mt-2 line-clamp-3 text-sm text-zinc-500 [&_*]:my-0 dark:text-zinc-400"
+                                    class="mt-2 line-clamp-3 text-sm break-words text-zinc-500 [&_*]:my-0 dark:text-zinc-400"
                                     data-test="project-card-description"
                                 />
                             @endif
