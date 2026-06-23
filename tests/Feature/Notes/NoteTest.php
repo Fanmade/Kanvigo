@@ -51,7 +51,7 @@ describe('the view policy', function () {
         $this->member = User::factory()->create();
         $this->stranger = User::factory()->create();
         $this->project = Project::factory()->create();
-        $this->project->members()->attach([$this->owner->id, $this->member->id]);
+        joinProject($this->project, [$this->owner->id, $this->member->id]);
     });
 
     it('lets the owner view their own private note', function () {

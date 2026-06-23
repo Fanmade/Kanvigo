@@ -11,7 +11,7 @@ uses(RefreshDatabase::class);
 it('creates a subtask from the task detail page and shows it in the list', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $parent = Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Parent task']);
 
     $this->actingAs($user);
@@ -33,7 +33,7 @@ it('creates a subtask from the task detail page and shows it in the list', funct
 it('assigns the creator from the create-task modal with one click', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $parent = Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Parent task']);
 
     $this->actingAs($user);
@@ -56,7 +56,7 @@ it('assigns the creator from the create-task modal with one click', function () 
 it('shows the subtree progress rollup on the detail page', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $parent = Task::factory()->for($project)->create();
     Task::factory()->for($project)->childOf($parent)->status(Status::Done)->create();
     Task::factory()->for($project)->childOf($parent)->status(Status::ToDo)->create();

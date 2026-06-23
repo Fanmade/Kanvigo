@@ -70,7 +70,7 @@ it('notifies subscribers, but not the actor, when a task is canceled', function 
     Notification::fake();
 
     $watcher = User::factory()->create();
-    $this->project->members()->attach($watcher);
+    joinProject($this->project, $watcher);
     $this->task->subscribe($watcher);
     $this->task->subscribe($this->actor);
 

@@ -8,7 +8,7 @@ use App\Models\User;
 it('adds an existing tag from the suggestion list', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->create();
 
     // An existing tag in this project so it shows up as a suggestion.
@@ -32,7 +32,7 @@ it('adds an existing tag from the suggestion list', function () {
 it('creates a new tag with a chosen color through the modal', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach($user);
+    joinProject($project, $user);
     $task = Task::factory()->for($project)->create();
 
     $this->actingAs($user);

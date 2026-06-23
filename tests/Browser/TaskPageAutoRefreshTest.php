@@ -11,7 +11,7 @@ it('auto-refreshes comments but pauses while the editor is focused', function ()
     $member = User::factory()->create();
     $other = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
-    $project->members()->attach([$member->id, $other->id]);
+    joinProject($project, [$member->id, $other->id]);
     $task = Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Live task']);
 
     $this->actingAs($member);

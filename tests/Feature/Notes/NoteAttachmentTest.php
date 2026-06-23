@@ -52,7 +52,7 @@ it('serves a public note attachment to a project member', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create();
     $project = Project::factory()->create();
-    $project->members()->attach([$owner->id, $member->id]);
+    joinProject($project, [$owner->id, $member->id]);
 
     $attachment = noteInlineAttachment(Note::factory()->for($owner)->publicTo($project)->create());
 
@@ -64,7 +64,7 @@ it('serves a public note attachment to a project member', function () {
 it('denies a public note attachment to a non-member', function () {
     $owner = User::factory()->create();
     $project = Project::factory()->create();
-    $project->members()->attach($owner);
+    joinProject($project, $owner);
 
     $attachment = noteInlineAttachment(Note::factory()->for($owner)->publicTo($project)->create());
 

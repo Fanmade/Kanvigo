@@ -9,7 +9,7 @@ it('auto-refreshes project comments but pauses while the editor is focused', fun
     $member = User::factory()->create();
     $other = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC', 'title' => 'Acme']);
-    $project->members()->attach([$member->id, $other->id]);
+    joinProject($project, [$member->id, $other->id]);
 
     $this->actingAs($member);
 

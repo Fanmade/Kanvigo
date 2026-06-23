@@ -12,7 +12,7 @@ beforeEach(function () {
     $this->task = Task::factory()->for($this->project)->create();
 
     $this->member = User::factory()->create();
-    $this->project->members()->attach($this->member);
+    joinProject($this->project, $this->member);
 
     $this->stranger = User::factory()->create();
 });
