@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Enums\ProjectRole;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -61,7 +62,7 @@ class CreateProjectTool extends Tool
             'description' => $validated['description'] ?? null,
         ]);
 
-        $project->members()->attach($user->getAuthIdentifier());
+        $project->members()->attach($user->getAuthIdentifier(), ['role' => ProjectRole::Owner->value]);
 
         return Response::structured([
             'short_name' => $project->short_name,

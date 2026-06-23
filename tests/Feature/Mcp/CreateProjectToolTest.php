@@ -23,7 +23,7 @@ it('creates a project and adds the user as a member with a write token', functio
         ->assertSee('NEW');
 
     assertDatabaseHas('projects', ['short_name' => 'NEW', 'title' => 'New Project']);
-    assertDatabaseHas('project_user', ['user_id' => $user->id]);
+    assertDatabaseHas('project_user', ['user_id' => $user->id, 'role' => 'owner']);
 });
 
 it('uppercases the provided short_name', function () {

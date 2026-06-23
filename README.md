@@ -117,9 +117,14 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   invitations, and deactivate (reversible, blocks sign-in) or
   remove accounts. Removed accounts are soft-deleted with their assignments
   dropped; comments they wrote are kept as the work of a "deleted user".
+- **Project roles** — each membership carries a role: owner (the project's
+  creator), admin or member. Every member can contribute — create and work on
+  tasks, comment, attach files — while editing the project's own settings (title,
+  short name, description) and deleting it are reserved for admins and the owner.
+  The owner manages members' roles from the project page.
 - **Authorization** via native Gates (`create-projects`, `invite-users`,
   `create-api-tokens`, `manage-users`) and Policies that cascade through project
-  membership.
+  membership and per-project roles.
 - **API tokens** — permitted users mint personal Sanctum tokens (read-only or
   read & write) for MCP/API access and revoke them from Settings.
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer

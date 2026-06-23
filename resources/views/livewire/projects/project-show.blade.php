@@ -14,11 +14,14 @@
             <flux:button size="sm" variant="primary" icon="view-columns" :href="route('project.board', $this->project)" wire:navigate>
                 {{ __('Board') }}
             </flux:button>
-            @can('update', $this->project)
+            @can('manageSettings', $this->project)
                 <flux:dropdown align="end">
                     <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')" data-test="project-actions" />
                     <flux:menu>
                         <flux:menu.item icon="pencil-square" wire:click="edit" data-test="edit-project">{{ __('Edit') }}</flux:menu.item>
+                        @can('manageMembers', $this->project)
+                            <flux:menu.item icon="users" wire:click="$set('managingMembers', true)" data-test="manage-members">{{ __('Manage members') }}</flux:menu.item>
+                        @endcan
                     </flux:menu>
                 </flux:dropdown>
             @endcan
@@ -141,4 +144,35 @@
     @endif
 
     <livewire:comments.comment-list :commentable="$this->project" :wire:key="'comments-project-'.$this->project->id" />
+
+    @can('manageMembers', $this->project)
+        <flux:modal wire:model="managingMembers" class="md:w-96" data-test="members-modal">
+            <div class="flex flex-col gap-4">
+                <flux:heading size="lg">{{ __('Manage members') }}</flux:heading>
+
+                <div class="flex flex-col gap-2" data-test="members-list">
+                    @foreach ($this->members as $member)
+                        @php($role = \App\Enums\ProjectRole::from($member->pivot->role))
+                        <div class="flex items-center justify-between gap-3" wire:key="member-{{ $member->id }}" data-test="member-row-{{ $member->id }}">
+                            <flux:text class="min-w-0 truncate">{{ $member->name }}</flux:text>
+
+                            @if ($role === \App\Enums\ProjectRole::Owner || $member->id === auth()->id())
+                                <flux:badge size="sm" data-test="member-role-{{ $member->id }}">{{ $role->label() }}</flux:badge>
+                            @else
+                                <flux:select
+                                    size="sm"
+                                    class="max-w-32"
+                                    wire:change="setMemberRole({{ $member->id }}, $event.target.value)"
+                                    data-test="member-role-select-{{ $member->id }}"
+                                >
+                                    <flux:select.option value="member" :selected="$role === \App\Enums\ProjectRole::Member">{{ __('Member') }}</flux:select.option>
+                                    <flux:select.option value="admin" :selected="$role === \App\Enums\ProjectRole::Admin">{{ __('Admin') }}</flux:select.option>
+                                </flux:select>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </flux:modal>
+    @endcan
 </div>

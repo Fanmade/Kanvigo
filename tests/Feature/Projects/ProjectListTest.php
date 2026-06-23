@@ -92,7 +92,9 @@ it('creates a project, attaches the creator and redirects to it', function () {
 
     expect($project)->not->toBeNull()
         ->and($project->title)->toBe('My Cool Project')
-        ->and($project->members()->whereKey($user->id)->exists())->toBeTrue();
+        ->and($project->members()->whereKey($user->id)->exists())->toBeTrue()
+        // The creator owns the project they just made.
+        ->and($project->isOwner($user))->toBeTrue();
 });
 
 it('forbids creating a project without the create-projects permission', function () {

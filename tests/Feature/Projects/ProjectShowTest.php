@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ProjectRole;
 use App\Enums\Status;
 use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Tasks\CreateTaskModal;
@@ -14,7 +15,9 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::factory()->create(['description' => 'Project blurb']);
-    $this->project->members()->attach($this->user);
+    // The sole member is the project's owner (its creator), so settings-edit
+    // tests in this file act with the privilege real owners have.
+    $this->project->members()->attach($this->user, ['role' => ProjectRole::Owner->value]);
 });
 
 it('caps and scrolls the project description', function () {

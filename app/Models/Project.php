@@ -9,6 +9,7 @@ use App\Concerns\LogsActivity;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use App\Contracts\Subscribable;
+use App\Enums\ProjectRole;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -115,12 +116,48 @@ class Project extends Model implements Subscribable
     }
 
     /**
-     * The users granted access to this project.
+     * The users granted access to this project, each carrying their role.
      *
      * @return BelongsToMany<User, $this>
      */
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps();
+    }
+
+    /**
+     * The given user's role on this project, or null if they are not a member.
+     */
+    public function roleFor(User $user): ?ProjectRole
+    {
+        $member = $this->members()->whereKey($user->id)->first();
+        $role = $member?->pivot->getAttribute('role');
+
+        return is_string($role) ? ProjectRole::from($role) : null;
+    }
+
+    /**
+     * Whether the user owns this project.
+     */
+    public function isOwner(User $user): bool
+    {
+        return $this->roleFor($user) === ProjectRole::Owner;
+    }
+
+    /**
+     * Whether the user administers this project (an admin or the owner).
+     */
+    public function isAdmin(User $user): bool
+    {
+        return $this->userHasRole($user, ProjectRole::Admin);
+    }
+
+    /**
+     * Whether the user is a member of this project with at least the given role.
+     * The reusable building block for gating per-project actions by role.
+     */
+    public function userHasRole(User $user, ProjectRole $minimum): bool
+    {
+        return (bool) $this->roleFor($user)?->atLeast($minimum);
     }
 }

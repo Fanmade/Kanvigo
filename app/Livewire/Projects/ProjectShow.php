@@ -5,9 +5,11 @@ namespace App\Livewire\Projects;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\HasLiveUpdates;
 use App\Concerns\ManagesNotes;
+use App\Enums\ProjectRole;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -35,6 +37,8 @@ class ProjectShow extends Component
     public string $description = '';
 
     public bool $showArchived = false;
+
+    public bool $managingMembers = false;
 
     public function mount(string $short_name): void
     {
@@ -156,7 +160,7 @@ class ProjectShow extends Component
 
     public function edit(): void
     {
-        $this->authorize('update', $this->project());
+        $this->authorize('manageSettings', $this->project());
 
         $this->title = $this->project()->title;
         $this->short_name = $this->project()->short_name;
@@ -168,7 +172,7 @@ class ProjectShow extends Component
     {
         $project = $this->project();
 
-        $this->authorize('update', $project);
+        $this->authorize('manageSettings', $project);
 
         $this->short_name = strtoupper($this->short_name);
 
@@ -196,6 +200,47 @@ class ProjectShow extends Component
             $this->shortName = $validated['short_name'];
             $this->redirectRoute('project.show', ['short_name' => $validated['short_name']], navigate: true);
         }
+    }
+
+    /**
+     * The project's members, ordered by name, each carrying their role for the
+     * member-management panel.
+     *
+     * @return EloquentCollection<int, User>
+     */
+    #[Computed]
+    public function members(): EloquentCollection
+    {
+        return $this->project()->members()->orderBy('name')->get();
+    }
+
+    /**
+     * Change a member's role. Owner-only, and limited to admin/member — the
+     * owner can neither change their own role nor hand out ownership here.
+     */
+    public function setMemberRole(int $userId, string $role): void
+    {
+        $project = $this->project();
+        $this->authorize('manageMembers', $project);
+
+        if ($userId === auth()->id()) {
+            return;
+        }
+
+        $validated = validator(
+            ['role' => $role],
+            ['role' => ['required', Rule::in([ProjectRole::Admin->value, ProjectRole::Member->value])]],
+        )->validate();
+
+        if (! $project->members()->whereKey($userId)->exists()) {
+            return;
+        }
+
+        $project->members()->updateExistingPivot($userId, ['role' => $validated['role']]);
+
+        unset($this->members);
+
+        Flux::toast(variant: 'success', text: __('Member role updated.'));
     }
 
     /**

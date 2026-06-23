@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -38,5 +39,23 @@ class ProjectFactory extends Factory
                 collect($users)->pluck('id')->all()
             );
         });
+    }
+
+    /**
+     * Grant the given user access to the project with a specific role.
+     */
+    public function withMember(User $user, ProjectRole $role = ProjectRole::Member): static
+    {
+        return $this->afterCreating(function (Project $project) use ($user, $role): void {
+            $project->members()->syncWithoutDetaching([$user->id => ['role' => $role->value]]);
+        });
+    }
+
+    /**
+     * Grant the given user ownership of the project.
+     */
+    public function withOwner(User $user): static
+    {
+        return $this->withMember($user, ProjectRole::Owner);
     }
 }
