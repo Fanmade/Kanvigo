@@ -5,10 +5,10 @@
             {{ $this->project->short_name }} · {{ $this->project->title }}
         </a>
 
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <flux:heading size="xl">{{ __('Board') }}</flux:heading>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <x-live-updates-toggle />
                 <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
                 <flux:select wire:model.live="priorityFilter" size="sm" class="max-w-44" data-test="priority-filter">
