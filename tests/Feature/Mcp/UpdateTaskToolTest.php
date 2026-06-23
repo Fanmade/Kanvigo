@@ -32,6 +32,20 @@ it('updates a task title and description', function () {
     assertDatabaseHas('tasks', ['id' => $task->id, 'title' => 'New title']);
 });
 
+it('decodes an HTML-escaped ampersand when updating the title', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create(['title' => 'Old']);
+
+    KanvigoServer::tool(UpdateTaskTool::class, [
+        'reference' => $task->reference,
+        'title' => 'Policy &amp; helpers',
+    ])->assertOk();
+
+    assertDatabaseHas('tasks', ['id' => $task->id, 'title' => 'Policy & helpers']);
+});
+
 it('changes the task status and records the activity', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);

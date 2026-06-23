@@ -39,6 +39,15 @@ it('attaches a note to a project and makes it public', function () {
     assertDatabaseHas('notes', ['title' => 'Shared', 'project_id' => $project->id, 'is_public' => true]);
 });
 
+it('decodes an HTML-escaped ampersand in the note title', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+
+    KanvigoServer::tool(CreateNoteTool::class, ['title' => 'Ben &amp; Jerry'])->assertOk();
+
+    assertDatabaseHas('notes', ['user_id' => $user->id, 'title' => 'Ben & Jerry']);
+});
+
 it('keeps a note private when made public without a project', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);

@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Authorization\ProjectRoleProvisioner;
+use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
 use App\Models\User;
@@ -19,6 +20,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Creates a new project and adds the authenticated user as a member. Requires a write-access token and the "create-projects" permission.')]
 class CreateProjectTool extends Tool
 {
+    use NormalizesPlainText;
     use RequiresWriteAccess;
 
     /**
@@ -58,7 +60,7 @@ class CreateProjectTool extends Tool
         ]);
 
         $project = Project::create([
-            'title' => $validated['title'],
+            'title' => $this->decodePlainText($validated['title']),
             'short_name' => $validated['short_name'],
             'description' => $validated['description'] ?? null,
         ]);

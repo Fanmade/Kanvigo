@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Actions\UpdateNote;
+use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\PresentsNotes;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Note;
@@ -18,6 +19,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Updates one of the authenticated user\'s own notes, by its numeric id. Any of title, body, the attached project and public flag may be changed; omitted fields are left as-is. Pass "project" as a project short_name to attach (or move) the note, or as an empty value to detach it. A note can only be public while attached to a project — detaching or never attaching forces it private. Requires a write-access token; only the note\'s owner may update it.')]
 class UpdateNoteTool extends Tool
 {
+    use NormalizesPlainText;
     use PresentsNotes;
     use RequiresWriteAccess;
 
@@ -45,7 +47,7 @@ class UpdateNoteTool extends Tool
             return Response::error('No note with id '.$validated['id'].' exists, or you do not own it.');
         }
 
-        $title = $request->has('title') ? $validated['title'] : $note->title;
+        $title = $request->has('title') ? $this->decodePlainText($validated['title']) : $note->title;
         $body = $request->has('body') ? ($validated['body'] ?? null) : $note->body;
         $isPublic = $request->has('public') ? (bool) ($validated['public'] ?? false) : $note->is_public;
 

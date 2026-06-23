@@ -41,6 +41,18 @@ it('uppercases the provided short_name', function () {
     assertDatabaseHas('projects', ['short_name' => 'LOW']);
 });
 
+it('decodes an HTML-escaped ampersand in the project title', function () {
+    $user = User::factory()->canCreateProjects()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+
+    KanvigoServer::tool(CreateProjectTool::class, [
+        'title' => 'Research &amp; Development',
+        'short_name' => 'RND',
+    ])->assertOk();
+
+    assertDatabaseHas('projects', ['short_name' => 'RND', 'title' => 'Research & Development']);
+});
+
 it('denies project creation without the create-projects permission', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);

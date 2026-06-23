@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Actions\CreateTask;
 use App\Enums\Priority;
 use App\Enums\Status;
+use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -21,6 +22,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Creates a task in a project, identified by its short_name (e.g. "PROJ"). The task is top-level by default, or nested under a parent task when a "parent" task reference (e.g. "PROJ-42") is given. Requires a write-access token; the user must be a member of the project.')]
 class CreateTaskTool extends Tool
 {
+    use NormalizesPlainText;
     use RequiresWriteAccess;
 
     /**
@@ -75,7 +77,7 @@ class CreateTaskTool extends Tool
         try {
             $task = app(CreateTask::class)->handle(
                 $project,
-                $validated['title'],
+                $this->decodePlainText($validated['title']),
                 $validated['description'] ?? null,
                 isset($validated['priority']) ? Priority::fromName($validated['priority']) : null,
                 isset($validated['status']) ? Status::from($validated['status']) : null,

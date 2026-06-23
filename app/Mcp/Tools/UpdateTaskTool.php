@@ -7,6 +7,7 @@ use App\Actions\ChangeTaskStatus;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
+use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\RecordsTagChanges;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
@@ -22,6 +23,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Updates a task\'s title, description, priority, status and/or tags, identified by its reference (e.g. "PROJ-42"). Can also cancel the task with a reason (cancel_reason, optionally cancel_message) — which cancels its open subtasks too — or reopen a canceled task (reopen=true). Status, cancellation and tag changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
 class UpdateTaskTool extends Tool
 {
+    use NormalizesPlainText;
     use RecordsTagChanges;
     use RequiresWriteAccess;
 
@@ -65,7 +67,7 @@ class UpdateTaskTool extends Tool
         $updates = [];
 
         if ($request->has('title')) {
-            $updates['title'] = $validated['title'];
+            $updates['title'] = $this->decodePlainText($validated['title']);
         }
 
         if ($request->has('description')) {

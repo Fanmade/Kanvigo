@@ -32,6 +32,38 @@ it('creates a task in a project the user can access', function () {
     assertDatabaseHas('tasks', ['project_id' => $project->id, 'title' => 'A task', 'status' => Status::ToDo->value]);
 });
 
+it('decodes an HTML-escaped ampersand in the title back to a plain character', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+
+    KanvigoServer::tool(CreateTaskTool::class, [
+        'reference' => $project->short_name,
+        'title' => 'Policy &amp; role helpers &lt;v2&gt;',
+    ])->assertOk();
+
+    assertDatabaseHas('tasks', [
+        'project_id' => $project->id,
+        'title' => 'Policy & role helpers <v2>',
+    ]);
+});
+
+it('keeps a deliberately double-escaped entity as a single entity in the title', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+
+    KanvigoServer::tool(CreateTaskTool::class, [
+        'reference' => $project->short_name,
+        'title' => "Unnecessary '&amp;amp;' in titles",
+    ])->assertOk();
+
+    assertDatabaseHas('tasks', [
+        'project_id' => $project->id,
+        'title' => "Unnecessary '&amp;' in titles",
+    ]);
+});
+
 it('sanitizes an HTML description written through the tool', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
