@@ -145,12 +145,41 @@ class Dashboard extends Component
     /**
      * Integer tick values for the progress chart's Y axis.
      *
+     * Capped to a handful of evenly spaced, "nice" steps (1/2/5 × 10ⁿ) so the
+     * axis stays readable instead of printing a label for every single count.
+     *
      * @return array<int, int>
      */
     #[Computed]
     public function progressTicks(): array
     {
-        return range(0, max(1, (int) collect($this->progress())->max('count')));
+        $max = max(1, (int) collect($this->progress())->max('count'));
+        $step = $this->niceTickStep($max);
+
+        $ticks = [];
+        for ($value = 0; $value <= $max; $value += $step) {
+            $ticks[] = $value;
+        }
+
+        return $ticks;
+    }
+
+    /**
+     * The smallest "nice" step (1, 2 or 5 × 10ⁿ) that splits the range into no
+     * more than roughly {@see $targetTicks} intervals.
+     */
+    private function niceTickStep(int $max, int $targetTicks = 5): int
+    {
+        $rawStep = max(1, (int) ceil($max / $targetTicks));
+        $magnitude = 10 ** (int) floor(log10($rawStep));
+
+        foreach ([1, 2, 5] as $factor) {
+            if ($factor * $magnitude >= $rawStep) {
+                return $factor * $magnitude;
+            }
+        }
+
+        return 10 * $magnitude;
     }
 
     /**

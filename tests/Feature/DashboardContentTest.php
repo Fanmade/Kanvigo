@@ -126,6 +126,26 @@ it('builds a 14-day completion series from the user activity', function () {
         ->and(collect($progress)->firstWhere('date', now()->subDays(7)->toDateString())['count'])->toBe(1);
 });
 
+it('caps the progress chart Y-axis to a few evenly spaced ticks', function () {
+    $task = Task::factory()->for($this->project)->create();
+
+    // A busy day with 26 completions would naively render 27 axis labels.
+    for ($i = 0; $i < 26; $i++) {
+        $task->activities()->create(['user_id' => $this->user->id, 'action' => 'status_changed', 'field' => 'status', 'new_value' => Status::Done->value]);
+    }
+
+    $ticks = Livewire::actingAs($this->user)->test(Dashboard::class)->instance()->progressTicks();
+
+    expect($ticks)->toBe([0, 10, 20])
+        ->and(count($ticks))->toBeLessThanOrEqual(6);
+});
+
+it('always shows at least a 0 and 1 tick when there is no activity', function () {
+    $ticks = Livewire::actingAs($this->user)->test(Dashboard::class)->instance()->progressTicks();
+
+    expect($ticks)->toBe([0, 1]);
+});
+
 it('ignores canceled tasks in the active list and status counts', function () {
     $canceled = Task::factory()->for($this->project)->canceled()->create(['title' => 'Abandoned']);
     $canceled->assignees()->attach($this->user);
