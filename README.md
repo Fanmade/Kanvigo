@@ -38,7 +38,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   a project, a parent task or the command palette. Pick the target project and an
   optional parent task (offered only where nesting stays within the depth limit) —
   both preselected from the page you opened it on — set the title, a rich-text
-  description, priority, status and due date, and add tags and assignees inline. A "Create another" option keeps the dialog open — retaining
+  description, priority, status, an optional type and due date, and add tags and
+  assignees inline. A "Create another" option keeps the dialog open — retaining
   the project, parent, priority and status — to add several tasks in a row. After
   creating, a dismissible toast links straight to the new task.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
@@ -97,6 +98,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   A per-project tag page lets members rename and recolor tags (renaming onto an
   existing tag merges the two), while admins and owners can delete them; every
   change is recorded in the activity log.
+- **Task types** — classify a task by an optional type, scoped to its project and
+  shown as a colored icon badge on its board card. Each project starts with a
+  sensible default set (Feature, Bug, Chore); pick one when creating a task.
 - **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
   default) on tasks, with new subtasks inheriting their parent task's priority.
   Board columns are ordered by priority and can be filtered to a single level.

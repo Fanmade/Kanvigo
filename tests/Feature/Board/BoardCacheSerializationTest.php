@@ -6,6 +6,7 @@ use App\Livewire\Projects\ProjectBoard;
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use App\Support\BoardCache;
 use Illuminate\Database\Eloquent\Collection;
@@ -32,11 +33,13 @@ beforeEach(function () {
 
     // A parent + child so the cached graph carries the adjacency-list collection
     // and the `ancestors` relation; a tag (MorphPivot) and an assignee (Pivot)
-    // so every class in the serialized graph is exercised.
+    // so every class in the serialized graph is exercised; and a task type so the
+    // board's eager-loaded `taskType` relation puts a TaskType in the graph too.
     $parent = Task::factory()->for($this->project)->status(Status::ToDo)->create();
     $child = Task::factory()->for($this->project)->childOf($parent)->status(Status::ToDo)->create();
     $child->assignees()->attach($this->user);
     $child->tags()->attach(Tag::factory()->create());
+    $child->taskType()->associate(TaskType::factory()->for($this->project)->create())->save();
 });
 
 it('round-trips the project board graph through the serialized cache store', function () {

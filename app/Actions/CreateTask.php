@@ -7,6 +7,7 @@ use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskType;
 
 /**
  * The single source of truth for task creation, shared by the board, the task
@@ -25,6 +26,7 @@ class CreateTask
         ?Status $status = null,
         ?string $dueDate = null,
         ?Task $parent = null,
+        ?TaskType $type = null,
     ): Task {
         $task = $project->tasks()->make([
             'title' => $title,
@@ -38,6 +40,10 @@ class CreateTask
 
         if ($parent !== null) {
             $task->parent_id = $parent->getKey();
+        }
+
+        if ($type !== null) {
+            $task->task_type_id = $type->getKey();
         }
 
         $task->status = $status ?? Status::Planned;

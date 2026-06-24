@@ -78,7 +78,7 @@ class ProjectBoard extends Component
 
         return BoardCache::remember(
             "board:proj:{$project->id}:tasks:v".BoardCache::version($project->id),
-            static fn (): Collection => $project->tasks()->with(['assignees', 'tags', 'ancestors'])->get()
+            static fn (): Collection => $project->tasks()->with(['assignees', 'tags', 'taskType', 'ancestors'])->get()
                 ->each(static fn (Task $task) => $task->setRelation('project', $project)),
         );
     }

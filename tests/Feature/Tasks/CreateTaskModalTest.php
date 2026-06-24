@@ -6,6 +6,7 @@ use App\Livewire\Tasks\CreateTaskModal;
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -311,4 +312,70 @@ it('rejects creating a task in a project the user cannot access', function () {
         ->set('title', 'Sneaky')
         ->call('save')
         ->assertStatus(404);
+});
+
+it('creates a task with the chosen type', function () {
+    $type = TaskType::factory()->for($this->project)->create(['name' => 'Bug']);
+
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'A defect')
+        ->set('typeId', $type->id)
+        ->call('save');
+
+    $task = $this->project->tasks()->where('title', 'A defect')->first();
+
+    expect($task->task_type_id)->toBe($type->id);
+});
+
+it('creates an untyped task when no type is chosen', function () {
+    TaskType::factory()->for($this->project)->create();
+
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'No type here')
+        ->call('save');
+
+    expect($this->project->tasks()->where('title', 'No type here')->first()->task_type_id)->toBeNull();
+});
+
+it('rejects a type belonging to a different project', function () {
+    $foreignType = TaskType::factory()->for(Project::factory())->create();
+
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'Cross-project type')
+        ->set('typeId', $foreignType->id)
+        ->call('save')
+        ->assertHasErrors('typeId');
+
+    expect($this->project->tasks()->where('title', 'Cross-project type')->exists())->toBeFalse();
+});
+
+it('clears the chosen type when the project changes', function () {
+    $type = TaskType::factory()->for($this->project)->create();
+    $other = Project::factory()->create(['short_name' => 'XYZ']);
+    joinProject($other, $this->member);
+
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->set('projectId', $this->project->id)
+        ->set('typeId', $type->id)
+        ->set('projectId', $other->id)
+        ->assertSet('typeId', null);
+});
+
+it('only offers the selected project\'s task types', function () {
+    $own = TaskType::factory()->for($this->project)->create(['name' => 'Feature']);
+    TaskType::factory()->for(Project::factory())->create(['name' => 'Foreign']);
+
+    $types = Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->set('projectId', $this->project->id)
+        ->instance()->taskTypes();
+
+    expect($types->pluck('id')->all())->toBe([$own->id]);
 });

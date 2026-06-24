@@ -40,8 +40,9 @@
 
             <flux:editor wire:model="description" :label="__('Description')" data-test="create-task-description" />
 
-            {{-- Priority + status --}}
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {{-- Priority, status and (when the project has any) type --}}
+            @php($hasTaskTypes = $this->projectId && count($this->taskTypes) > 0)
+            <div @class(['grid grid-cols-1 gap-4', 'sm:grid-cols-3' => $hasTaskTypes, 'sm:grid-cols-2' => ! $hasTaskTypes])>
                 <flux:select wire:model="priority" :label="__('Priority')" data-test="create-task-priority">
                     @foreach (\App\Enums\Priority::ordered() as $priority)
                         <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
@@ -53,6 +54,15 @@
                         <flux:select.option :value="$status->value">{{ $status->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
+
+                @if ($hasTaskTypes)
+                    <flux:select wire:model="typeId" :label="__('Type')" :placeholder="__('No type')" data-test="create-task-type">
+                        <flux:select.option value="">{{ __('No type') }}</flux:select.option>
+                        @foreach ($this->taskTypes as $type)
+                            <flux:select.option :value="$type->id">{{ $type->name }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @endif
             </div>
 
             {{-- Tags, due date and assignees: compact label + value + one-click control --}}

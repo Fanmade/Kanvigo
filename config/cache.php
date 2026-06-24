@@ -3,6 +3,7 @@
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
@@ -149,6 +150,7 @@ return [
         Project::class,
         Tag::class,
         Task::class,
+        TaskType::class,
         User::class,
         Collection::class,
         MorphPivot::class,

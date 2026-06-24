@@ -53,7 +53,7 @@ class Board extends Component
             'board:user:'.Auth::id().':tasks:'.BoardCache::versionFor($projectIds),
             static fn (): Collection => Task::query()
                 ->whereIn('project_id', $projectIds)
-                ->with(['project', 'assignees', 'tags', 'ancestors'])
+                ->with(['project', 'assignees', 'tags', 'taskType', 'ancestors'])
                 ->get()
                 ->sortBy(static fn (Task $task): string => sprintf(
                     '%s-%05d',

@@ -6,6 +6,7 @@ use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Tasks\CreateTaskModal;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -315,6 +316,15 @@ it('requires a title to create a task', function () {
         ->set('title', '')
         ->call('save')
         ->assertHasErrors(['title' => 'required']);
+});
+
+it('renders a typed task\'s type badge on its card', function () {
+    $type = TaskType::factory()->for($this->project)->create(['name' => 'Bugfix']);
+    $this->task->taskType()->associate($type)->save();
+
+    Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->assertSee('Bugfix');
 });
 
 it('keeps canceled tasks off the project board lanes', function () {

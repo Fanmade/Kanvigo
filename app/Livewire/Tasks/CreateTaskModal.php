@@ -10,12 +10,14 @@ use App\Models\Note;
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -67,6 +69,12 @@ class CreateTaskModal extends Component
     public int $priority;
 
     public string $status = '';
+
+    /**
+     * The chosen task type, or null for an untyped task. Scoped to the selected
+     * project's configured types.
+     */
+    public ?int $typeId = null;
 
     public string $dueDate = '';
 
@@ -238,6 +246,26 @@ class CreateTaskModal extends Component
     }
 
     /**
+     * The selected project's configured task types, offered in the type picker.
+     *
+     * @return Collection<int, TaskType>
+     */
+    #[Computed]
+    public function taskTypes(): Collection
+    {
+        $project = $this->selectedProject();
+
+        if ($project === null) {
+            /** @var Collection<int, TaskType> $empty */
+            $empty = new Collection;
+
+            return $empty;
+        }
+
+        return $project->taskTypes()->get();
+    }
+
+    /**
      * Up to eight most-used tags matching the current query and not already
      * staged, offered as suggestions in the tag input.
      *
@@ -387,6 +415,7 @@ class CreateTaskModal extends Component
             'description' => ['nullable', 'string'],
             'priority' => ['required', new Enum(Priority::class)],
             'status' => ['required', 'string', 'in:'.collect(Status::columns())->map->value->implode(',')],
+            'typeId' => ['nullable', 'integer', Rule::exists('task_types', 'id')->where('project_id', $this->projectId)],
             'dueDate' => ['nullable', 'date'],
             'tagNames' => ['array'],
             'tagNames.*' => ['string', 'max:255'],
@@ -402,6 +431,10 @@ class CreateTaskModal extends Component
 
         $parent = $this->resolveParent($project, $validated['parentId'] ?? null);
 
+        $type = $validated['typeId'] !== null
+            ? $project->taskTypes()->whereKey($validated['typeId'])->first()
+            : null;
+
         $task = app(CreateTask::class)->handle(
             $project,
             $validated['title'],
@@ -410,6 +443,7 @@ class CreateTaskModal extends Component
             Status::from($validated['status']),
             $validated['dueDate'] ?: null,
             $parent,
+            $type,
         );
 
         $this->applyTags($task);
@@ -476,9 +510,10 @@ class CreateTaskModal extends Component
      */
     public function updatedProjectId(): void
     {
-        unset($this->parentOptions, $this->members);
+        unset($this->parentOptions, $this->members, $this->taskTypes);
         $this->parentId = null;
         $this->assigneeIds = [];
+        $this->typeId = null;
     }
 
     /**
@@ -488,12 +523,12 @@ class CreateTaskModal extends Component
     {
         $this->reset(
             'projectId', 'parentId', 'fromNoteId', 'title', 'description', 'dueDate', 'createAnother',
-            'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
+            'typeId', 'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
         );
         $this->priority = Priority::default()->value;
         $this->status = Status::Planned->value;
         $this->newTagColor = 'zinc';
-        unset($this->parentOptions, $this->members, $this->tagSuggestions);
+        unset($this->parentOptions, $this->members, $this->taskTypes, $this->tagSuggestions);
     }
 
     /**
@@ -504,7 +539,7 @@ class CreateTaskModal extends Component
     {
         $this->reset(
             'fromNoteId', 'title', 'description', 'dueDate',
-            'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
+            'typeId', 'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
         );
         $this->newTagColor = 'zinc';
         unset($this->tagSuggestions);

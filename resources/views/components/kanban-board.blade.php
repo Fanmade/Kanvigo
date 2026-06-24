@@ -122,6 +122,7 @@
                                     </flux:badge>
                                 </flux:tooltip>
                             @endif
+                            <x-task-type-badge :type="$task->taskType" />
                             <x-priority-badge :priority="$task->priority" />
                             <x-due-date-badge :date="$task->due_date" />
                             <x-tag-badges :tags="$task->tags" />
