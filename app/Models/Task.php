@@ -48,6 +48,7 @@ use Illuminate\Support\Collection;
  * @property float $position
  * @property Carbon|null $due_date
  * @property Carbon|null $archived_at
+ * @property Carbon|null $completed_at
  * @property Carbon|null $canceled_at
  * @property CancelReason|null $cancel_reason
  * @property string|null $cancel_message
@@ -89,6 +90,16 @@ class Task extends Model implements Dependable, Mentionable, Subscribable
             }
         });
 
+        // Track when a task entered Done so auto-archiving can measure how long it
+        // has sat there. Cleared whenever it leaves Done (including on cancel).
+        static::saving(static function (Task $task): void {
+            if ($task->status === Status::Done) {
+                $task->completed_at ??= Carbon::now();
+            } else {
+                $task->completed_at = null;
+            }
+        });
+
         // Any task row change (status, position, title, archived, create, …)
         // invalidates the cached boards showing its project. Pivot changes
         // (tags/assignees/dependencies) bump via recordActivity() instead.
@@ -117,6 +128,7 @@ class Task extends Model implements Dependable, Mentionable, Subscribable
             'position' => 'double',
             'due_date' => 'date',
             'archived_at' => 'datetime',
+            'completed_at' => 'datetime',
             'canceled_at' => 'datetime',
             'cancel_reason' => CancelReason::class,
         ];

@@ -16,6 +16,13 @@ return [
 
     'tasks' => [
         'max_depth' => (int) env('KANVIGO_TASK_MAX_DEPTH', 3),
+
+        /*
+         * Default number of days a task may sit in "Done" before it is
+         * auto-archived off the board. Projects may override this (their
+         * "auto_archive_days"); 0 disables auto-archiving.
+         */
+        'auto_archive_days' => (int) env('KANVIGO_AUTO_ARCHIVE_DAYS', 30),
     ],
 
     /*

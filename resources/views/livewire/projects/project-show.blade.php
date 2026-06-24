@@ -50,6 +50,15 @@
             />
             <x-attachments.rich-editor :label="__('Description')" :mentionables-url="$this->mentionablesUrl" />
             <x-attachments.upload-button />
+            <flux:input
+                type="number"
+                min="0"
+                wire:model="autoArchiveDays"
+                :label="__('Auto-archive Done tasks after (days)')"
+                :description="__('Tasks left in Done this many days are archived off the board. Leave blank to use the default, or 0 to disable for this project.')"
+                :placeholder="__('Default')"
+                data-test="project-auto-archive-days"
+            />
             <div class="flex gap-2">
                 <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
                 <flux:button variant="ghost" wire:click="$set('editing', false)">{{ __('Cancel') }}</flux:button>

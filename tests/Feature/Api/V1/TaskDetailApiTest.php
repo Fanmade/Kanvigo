@@ -17,7 +17,7 @@ beforeEach(function () {
 
 it('returns full task detail on show', function () {
     $task = Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Parent']);
-    $blocker = Task::factory()->for($this->project)->create();
+    $blocker = Task::factory()->for($this->project)->status(Status::ToDo)->create();
     $task->addBlocker($blocker);
     $child = Task::factory()->for($this->project)->childOf($task)->create(['title' => 'Child']);
 

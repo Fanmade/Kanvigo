@@ -45,6 +45,12 @@ class ProjectShow extends Component
 
     public string $description = '';
 
+    /**
+     * Per-project auto-archive threshold in days: null inherits the global
+     * default, 0 disables auto-archiving for this project.
+     */
+    public ?int $autoArchiveDays = null;
+
     public bool $showArchived = false;
 
     /**
@@ -335,6 +341,7 @@ class ProjectShow extends Component
         $this->title = $this->project()->title;
         $this->short_name = $this->project()->short_name;
         $this->description = (string) $this->project()->description;
+        $this->autoArchiveDays = $this->project()->auto_archive_days;
         $this->editing = true;
     }
 
@@ -354,11 +361,17 @@ class ProjectShow extends Component
                 Rule::unique('projects', 'short_name')->ignore($project->id),
             ],
             'description' => ['nullable', 'string'],
+            'autoArchiveDays' => ['nullable', 'integer', 'min:0', 'max:3650'],
         ]);
 
         $shortNameChanged = $project->short_name !== $validated['short_name'];
 
-        $project->update($validated);
+        $project->update([
+            'title' => $validated['title'],
+            'short_name' => $validated['short_name'],
+            'description' => $validated['description'],
+            'auto_archive_days' => $validated['autoArchiveDays'],
+        ]);
 
         $this->editing = false;
         unset($this->project);

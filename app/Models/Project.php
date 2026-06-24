@@ -25,10 +25,11 @@ use Illuminate\Support\Carbon;
  * @property string $title
  * @property string $short_name
  * @property string|null $description
+ * @property int|null $auto_archive_days
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['title', 'short_name', 'description'])]
+#[Fillable(['title', 'short_name', 'description', 'auto_archive_days'])]
 class Project extends Model implements Mentionable, Subscribable
 {
     /** @use HasFactory<ProjectFactory> */
@@ -65,6 +66,28 @@ class Project extends Model implements Mentionable, Subscribable
     public function getRouteKeyName(): string
     {
         return 'short_name';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'auto_archive_days' => 'integer',
+        ];
+    }
+
+    /**
+     * The effective number of days a Done task may sit before it is auto-archived
+     * in this project, or null when auto-archiving is disabled. A per-project
+     * value overrides the global default; an explicit 0 disables it here.
+     */
+    public function autoArchiveThresholdDays(): ?int
+    {
+        $days = $this->auto_archive_days ?? (int) config('kanvigo.tasks.auto_archive_days', 0);
+
+        return $days > 0 ? $days : null;
     }
 
     /**

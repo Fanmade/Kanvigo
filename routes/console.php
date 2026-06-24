@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('attachments:prune-inline')->daily();
+Schedule::command('tasks:auto-archive')->daily();

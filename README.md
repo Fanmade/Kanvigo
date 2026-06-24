@@ -68,7 +68,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Archiving** — archive finished tasks to clear them from the
   board and project overview without deleting them. Archived items are hidden by
   default and revealed with a "Show archived" toggle; archiving keeps a task's
-  status and is fully reversible.
+  status and is fully reversible. Tasks left in **Done** beyond a threshold are
+  auto-archived by a daily job — configurable per project (and a global default),
+  or set to 0 to turn it off for a project.
 - **Dashboard** — per-status task counts, a 14-day completion chart, and a "My
   tasks" list for picking the next thing to work on: your in-progress and to-do
   tasks plus unassigned to-do tasks across your projects (work assigned to others
