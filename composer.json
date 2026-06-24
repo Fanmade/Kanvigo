@@ -1,13 +1,28 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/livewire-starter-kit",
+    "name": "fanmade/kanvigo",
     "type": "project",
-    "description": "The official Laravel starter kit for Livewire.",
+    "description": "A minimalist, invitation-only Kanban project-management tool built on Laravel, Livewire and Flux UI.",
     "keywords": [
+        "kanban",
+        "project-management",
+        "task-management",
+        "agile",
         "laravel",
-        "framework"
+        "livewire"
     ],
     "license": "MIT",
+    "homepage": "https://github.com/Fanmade/Kanvigo",
+    "authors": [
+        {
+            "name": "Ben",
+            "email": "dev@reuterben.de"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/Fanmade/Kanvigo/issues",
+        "source": "https://github.com/Fanmade/Kanvigo"
+    },
     "require": {
         "php": "^8.4",
         "ext-gd": "*",
