@@ -77,6 +77,7 @@
                                     wire:model.live.debounce.200ms="tagQuery"
                                     :placeholder="__('Find or create a tag')"
                                     x-on:keydown.enter.prevent="$wire.tagEnter($event.target.value)"
+                                    x-init="$el.closest('[popover]')?.addEventListener('toggle', (e) => { if (e.newState === 'open') requestAnimationFrame(() => $el.focus()); })"
                                     data-test="create-task-tag-input"
                                 />
 
