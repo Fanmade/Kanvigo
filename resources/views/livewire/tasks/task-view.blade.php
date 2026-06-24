@@ -1,4 +1,4 @@
-<div class="mx-auto flex w-full max-w-5xl flex-col gap-6">
+<div class="app-content mx-auto flex w-full max-w-5xl flex-col gap-6">
     <x-live-refresh :interval-ms="$this->livePollIntervalMs()" />
 
     <div class="flex items-center justify-between gap-2">

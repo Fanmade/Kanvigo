@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark', 'full-width' => auth()->user()?->preference('full_width', false)])>
     <!--suppress HtmlRequiredTitleElement -->
     <head>
         @include('partials.head')

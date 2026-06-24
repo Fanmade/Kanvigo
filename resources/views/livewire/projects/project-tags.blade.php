@@ -1,4 +1,4 @@
-<div class="mx-auto flex w-full max-w-4xl flex-col gap-6" data-test="project-tags">
+<div class="app-content mx-auto flex w-full max-w-4xl flex-col gap-6" data-test="project-tags">
     {{-- Header --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div class="flex min-w-0 items-center gap-3">

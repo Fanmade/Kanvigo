@@ -21,6 +21,12 @@
                     <flux:radio value="de" icon="language">{{ __('German') }}</flux:radio>
                 </flux:radio.group>
             </flux:field>
+
+            <flux:field variant="inline">
+                <flux:switch wire:model.live="fullWidth" data-test="full-width-toggle" />
+                <flux:label>{{ __('Full-width layout') }}</flux:label>
+                <flux:description>{{ __('Use the entire screen width instead of a centered column. Best on large displays.') }}</flux:description>
+            </flux:field>
         </div>
     </x-settings.layout>
 </section>

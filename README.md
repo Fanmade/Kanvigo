@@ -153,6 +153,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   list, get, update and convert-to-task), referenced by a numeric note id.
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
+- **Full-width layout** — an Appearance setting to let page content span the whole
+  screen instead of the default centered reading column, for large displays.
 
 ## Tech stack
 

@@ -1,4 +1,4 @@
-<div class="mx-auto flex w-full max-w-3xl flex-col gap-6">
+<div class="app-content mx-auto flex w-full max-w-3xl flex-col gap-6">
     <div>
         <flux:heading size="xl">{{ __('Notifications') }}</flux:heading>
         <flux:subheading>{{ __('Everything you are subscribed to. Disable any to stop receiving updates.') }}</flux:subheading>

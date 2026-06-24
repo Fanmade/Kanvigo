@@ -136,3 +136,14 @@ select:focus[data-flux-control] {
 body.kanban-dragging [data-task-list] {
     @apply rounded-lg outline-2 outline-dashed outline-brand-300/70 transition-colors;
 }
+
+/* ---------------------------------------------------------------------------
+   Full-width layout preference (Appearance settings)
+   --------------------------------------------------------------------------- */
+
+/* When the viewer opts into a full-width layout, drop the centered reading-column
+   cap on page containers so content spans the whole screen. This sits outside any
+   cascade layer so it reliably overrides the Tailwind `max-w-*` utility. */
+html.full-width .app-content {
+    max-width: none;
+}
