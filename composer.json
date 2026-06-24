@@ -12,6 +12,8 @@
         "php": "^8.4",
         "ext-gd": "*",
         "ext-imagick": "*",
+        "ext-dom": "*",
+        "ext-libxml": "*",
         "fanmade/laravel-delegated-permissions": "^0.1.0",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",
