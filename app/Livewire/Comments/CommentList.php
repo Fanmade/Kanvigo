@@ -71,6 +71,19 @@ class CommentList extends Component
     }
 
     /**
+     * The endpoint the comment editor fetches @mention / #reference suggestions
+     * from (a project comments against itself; a task against its project).
+     */
+    #[Computed]
+    public function mentionablesUrl(): string
+    {
+        $commentable = $this->commentable();
+        $project = $commentable instanceof Task ? $commentable->project : $commentable;
+
+        return route('project.mentionables', $project);
+    }
+
+    /**
      * Top-level comments (newest first) with their replies eager-loaded.
      *
      * @return Collection<int, Comment>

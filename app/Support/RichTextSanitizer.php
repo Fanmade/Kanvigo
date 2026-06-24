@@ -23,7 +23,11 @@ class RichTextSanitizer
     {
         $config = (new HtmlSanitizerConfig)
             ->allowSafeElements()
-            ->allowElement('a', ['href', 'title', 'target', 'rel'])
+            // `a` also carries reference links (#KAN-42) and `span` carries user
+            // mentions (@name); both are atomic inline nodes tagged with
+            // data-type/data-id so they survive sanitisation and stay parseable.
+            ->allowElement('a', ['href', 'title', 'target', 'rel', 'class', 'data-type', 'data-id', 'data-label'])
+            ->allowElement('span', ['class', 'data-type', 'data-id', 'data-label'])
             ->allowElement('img', ['src', 'alt', 'title'])
             ->allowElement('del')
             ->allowElement('s')

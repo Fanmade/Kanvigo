@@ -131,6 +131,15 @@ class ProjectShow extends Component
     }
 
     /**
+     * The endpoint the editor fetches @mention / #reference suggestions from.
+     */
+    #[Computed]
+    public function mentionablesUrl(): string
+    {
+        return route('project.mentionables', $this->project());
+    }
+
+    /**
      * Active (non-archived) top-level tasks that are still in progress, after the
      * active priority/tag/assignee filters.
      *

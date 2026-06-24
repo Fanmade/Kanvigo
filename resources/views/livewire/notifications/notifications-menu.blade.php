@@ -34,6 +34,7 @@
                     'tags_changed' => __('updated the tags of'),
                     'parent_changed' => __('moved'),
                     'commented' => __('commented on'),
+                    'mentioned' => __('mentioned you in'),
                     default => __('updated'),
                 })
                 <flux:menu.item wire:click="open('{{ $notification->id }}')" class="!h-auto">

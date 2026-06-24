@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Concerns\HasMentions;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
+use App\Contracts\Mentionable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,10 +27,33 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $user
  */
 #[Fillable(['user_id', 'body', 'parent_id'])]
-class Comment extends Model
+class Comment extends Model implements Mentionable
 {
+    use HasMentions;
     use PrunesInlineAttachments;
     use SanitizesRichText;
+
+    /**
+     * A comment's mentionable users are those of the project or task it is on, so
+     * you can only @mention people with access to the surrounding item.
+     *
+     * @return list<int>
+     */
+    public function mentionableUserIds(): array
+    {
+        $commentable = $this->commentable;
+
+        return $commentable instanceof Mentionable ? $commentable->mentionableUserIds() : [];
+    }
+
+    /**
+     * A comment's mentions belong to the task or project it is on (where the
+     * notification links and the subscription is recorded).
+     */
+    protected function mentionSubject(): Project|Task
+    {
+        return $this->inlineAttachmentOwner();
+    }
 
     /**
      * @return array<string, string>

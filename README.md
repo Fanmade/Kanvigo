@@ -107,6 +107,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   Self-links and cycles are rejected. Available in the UI and through the MCP tools.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
+- **Mentions & references** — in any description or comment, type `@` to mention a
+  project member (they are notified and auto-subscribed to the item) and `#` to
+  reference a task, picked from an autocomplete of the project's members and tasks.
+  References render as links to the task wherever the content is shown.
 - **Rich-text descriptions & comments** — task/project descriptions and comments are
   edited with a Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) supporting
   headings, lists, links, quotes, code and inline images pasted or dropped straight in.

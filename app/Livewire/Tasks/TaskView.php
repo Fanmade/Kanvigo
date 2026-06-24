@@ -121,6 +121,15 @@ class TaskView extends Component
         return $this->task();
     }
 
+    /**
+     * The endpoint the editor fetches @mention / #reference suggestions from.
+     */
+    #[Computed]
+    public function mentionablesUrl(): string
+    {
+        return route('project.mentionables', $this->task()->project);
+    }
+
     protected function dependable(): Task
     {
         return $this->task();

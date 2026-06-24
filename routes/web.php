@@ -4,6 +4,7 @@ use App\Http\Controllers\AttachmentDownloadController;
 use App\Http\Controllers\AttachmentThumbnailController;
 use App\Http\Controllers\AttachmentViewController;
 use App\Http\Controllers\AvatarController;
+use App\Http\Controllers\MentionSuggestionsController;
 use App\Http\Controllers\NoteAttachmentController;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
@@ -79,6 +80,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('/{short_name}/tags', ProjectTags::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.tags');
+
+    Route::get('/{short_name}/mentionables', MentionSuggestionsController::class)
+        ->where('short_name', '[A-Z]{2,4}')
+        ->name('project.mentionables');
 
     Route::livewire('/{short_name}-{task_number}', TaskView::class)
         ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])

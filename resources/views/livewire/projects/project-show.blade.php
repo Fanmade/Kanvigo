@@ -47,7 +47,7 @@
                 maxlength="4"
                 class="uppercase"
             />
-            <x-attachments.rich-editor :label="__('Description')" />
+            <x-attachments.rich-editor :label="__('Description')" :mentionables-url="$this->mentionablesUrl" />
             <x-attachments.upload-button />
             <div class="flex gap-2">
                 <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>

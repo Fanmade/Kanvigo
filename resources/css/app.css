@@ -147,3 +147,34 @@ body.kanban-dragging [data-task-list] {
 html.full-width .app-content {
     max-width: none;
 }
+
+/* ---------------------------------------------------------------------------
+   @mentions and #references (rich text + editor autocomplete)
+   --------------------------------------------------------------------------- */
+
+/* A user @mention: a subtle inline pill. */
+.mention {
+    @apply rounded font-medium text-brand-600 dark:text-brand-300;
+}
+
+/* A #task reference renders as a monospace link to the task. */
+.reference {
+    @apply font-medium text-brand-600 no-underline hover:underline dark:text-brand-300;
+}
+
+/* The caret-anchored autocomplete popup (see resources/js/mentions.js). */
+.mention-suggestions {
+    @apply fixed z-50 flex max-h-56 w-64 flex-col overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800;
+}
+
+.mention-suggestion {
+    @apply cursor-pointer truncate rounded-md px-2 py-1.5 text-start text-sm text-zinc-700 dark:text-zinc-200;
+}
+
+.mention-suggestion.is-active {
+    @apply bg-zinc-100 dark:bg-zinc-700;
+}
+
+.mention-suggestion-ref {
+    @apply font-mono text-xs text-zinc-500 dark:text-zinc-400;
+}

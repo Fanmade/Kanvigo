@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
+use App\Concerns\HasMentions;
 use App\Concerns\HasSubscribers;
 use App\Concerns\LogsActivity;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
+use App\Contracts\Mentionable;
 use App\Contracts\Subscribable;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -27,12 +29,30 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['title', 'short_name', 'description'])]
-class Project extends Model implements Subscribable
+class Project extends Model implements Mentionable, Subscribable
 {
     /** @use HasFactory<ProjectFactory> */
-    use HasAttachments, HasComments, HasFactory, HasSubscribers, LogsActivity, PrunesInlineAttachments, SanitizesRichText;
+    use HasAttachments, HasComments, HasFactory, HasMentions, HasSubscribers, LogsActivity, PrunesInlineAttachments, SanitizesRichText;
 
     public function inlineAttachmentOwner(): Project|Task
+    {
+        return $this;
+    }
+
+    /**
+     * A project's @mentions are limited to its members.
+     *
+     * @return list<int>
+     */
+    public function mentionableUserIds(): array
+    {
+        return array_values(array_map('intval', $this->members()->pluck('users.id')->all()));
+    }
+
+    /**
+     * A project is its own mention subject.
+     */
+    protected function mentionSubject(): Project|Task
     {
         return $this;
     }

@@ -39,7 +39,7 @@
                     wire:submit="addComment"
                     class="flex flex-col gap-2"
                 >
-                    <x-attachments.rich-editor property="body" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a comment…')" />
+                    <x-attachments.rich-editor property="body" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a comment…')" :mentionables-url="$this->mentionablesUrl" />
                     <div class="flex justify-end gap-2">
                         <flux:button type="button" size="sm" variant="ghost" x-on:click="expanded = false">
                             {{ __('Cancel') }}
@@ -55,17 +55,17 @@
                 @forelse ($this->comments as $comment)
                     @php($threadIds = $comment->replies->pluck('id')->push($comment->id))
                     <flux:card class="flex flex-col gap-3" wire:key="comment-{{ $comment->id }}">
-                        <x-comment :comment="$comment" :editing-id="$editingId" :confirming-delete="$confirmingDelete" />
+                        <x-comment :comment="$comment" :editing-id="$editingId" :confirming-delete="$confirmingDelete" :mentionables-url="$this->mentionablesUrl" />
 
                         @foreach ($comment->replies as $reply)
                             <div class="ms-6 border-s-2 border-zinc-100 ps-3 dark:border-zinc-700" wire:key="reply-{{ $reply->id }}">
-                                <x-comment :comment="$reply" :editing-id="$editingId" :confirming-delete="$confirmingDelete" />
+                                <x-comment :comment="$reply" :editing-id="$editingId" :confirming-delete="$confirmingDelete" :mentionables-url="$this->mentionablesUrl" />
                             </div>
                         @endforeach
 
                         @if ($threadIds->contains($replyingTo))
                             <form wire:submit="addReply" class="ms-6 flex flex-col gap-2">
-                                <x-attachments.rich-editor property="replyBody" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a reply…')" />
+                                <x-attachments.rich-editor property="replyBody" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a reply…')" :mentionables-url="$this->mentionablesUrl" />
                                 <div class="flex justify-end gap-2">
                                     <flux:button type="button" size="sm" variant="ghost" wire:click="cancelReply">{{ __('Cancel') }}</flux:button>
                                     <flux:button type="submit" size="sm" variant="primary">{{ __('Reply') }}</flux:button>

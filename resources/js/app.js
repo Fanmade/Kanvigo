@@ -1,6 +1,7 @@
 import { mergeAttributes } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
 import Sortable from 'sortablejs';
+import { mentionExtensions } from './mentions';
 
 /**
  * The Tiptap Image node, extended so an inline image can link to its full-size
@@ -43,6 +44,7 @@ const LinkedImage = Image.extend({
 document.addEventListener('flux:editor', (e) => {
     e.detail.registerExtensions([
         LinkedImage.configure({ HTMLAttributes: { class: 'rounded-lg' } }),
+        ...mentionExtensions,
     ]);
 
     e.detail.init(({ editor }) => {
