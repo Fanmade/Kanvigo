@@ -45,9 +45,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   In progress, Done), per project or globally across every project you can see.
   Dragging is smoothly animated with highlighted drop targets and works on touch;
   each card also has a keyboard-accessible "Move to" menu. Cards keep the order
-  you arrange them in within each column. The board refreshes automatically as
-  others make changes — a per-user "Live updates" toggle turns this off — and
-  never refreshes mid-drag.
+  you arrange them in within each column. Each column has its own search box to
+  filter that column's cards by title or reference. The board refreshes
+  automatically as others make changes — a per-user "Live updates" toggle turns
+  this off — and never refreshes mid-drag.
 - **Project overview** — each project page lists its top-level tasks grouped into
   open and completed, and shows every root task's direct subtasks as quick links to
   drill straight into them. The lists and comments update automatically as others

@@ -223,6 +223,65 @@ it('filters the board by priority', function () {
         ->and($tasks->first()->priority)->toBe(Priority::Highest);
 });
 
+it('filters a single column by its own title search', function () {
+    $this->task->update(['title' => 'Polish the board']);
+    $other = Task::factory()->for($this->project)->status(Status::Planned)->create(['title' => 'Unrelated work']);
+
+    $columns = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('columnSearch.'.Status::Planned->value, 'polish')
+        ->instance()->columns();
+
+    $ids = collect($columns)->firstWhere('status', Status::Planned)['tasks']
+        ->pluck('id')->all();
+
+    expect($ids)->toBe([$this->task->id])
+        ->and($ids)->not->toContain($other->id);
+});
+
+it('filters a column by task reference', function () {
+    $match = $this->task; // ABC-1
+    Task::factory()->for($this->project)->status(Status::Planned)->create();
+
+    $columns = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('columnSearch.'.Status::Planned->value, $match->reference)
+        ->instance()->columns();
+
+    $ids = collect($columns)->firstWhere('status', Status::Planned)['tasks']
+        ->pluck('id')->all();
+
+    expect($ids)->toBe([$match->id]);
+});
+
+it('searches each column independently', function () {
+    $this->task->update(['title' => 'Keep me planned']);
+    $done = Task::factory()->for($this->project)->status(Status::Done)->create(['title' => 'Finished thing']);
+
+    // A term that only matches the Done card; it must not empty the Planned column.
+    $columns = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('columnSearch.'.Status::Done->value, 'finished')
+        ->instance()->columns();
+
+    $planned = collect($columns)->firstWhere('status', Status::Planned)['tasks']->pluck('id')->all();
+    $doneIds = collect($columns)->firstWhere('status', Status::Done)['tasks']->pluck('id')->all();
+
+    expect($planned)->toBe([$this->task->id])
+        ->and($doneIds)->toBe([$done->id]);
+});
+
+it('renders a per-column search input keyed by status', function () {
+    $html = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->html();
+
+    expect($html)
+        ->toContain('data-test="column-'.Status::Planned->value.'"')
+        ->toContain('data-test="column-search-'.Status::Planned->value.'"')
+        ->toContain('data-test="column-search-'.Status::Done->value.'"');
+});
+
 it('counts the active board filters for the filter badge', function () {
     $component = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC']);

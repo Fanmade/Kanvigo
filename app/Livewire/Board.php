@@ -28,6 +28,14 @@ class Board extends Component
     public bool $showArchived = false;
 
     /**
+     * Per-column text search, keyed by `Status->value`. Each lane filters its
+     * own cards by title or reference, independent of the others.
+     *
+     * @var array<string, string>
+     */
+    public array $columnSearch = [];
+
+    /**
      * Every task across the user's accessible projects, ordered by project then
      * task number, with the data the cards need. Cached per user under the
      * combined project version, so an idle poll is a cheap version read + cache
@@ -72,7 +80,7 @@ class Board extends Component
             $tasks = $tasks->reject(static fn (Task $task): bool => $task->isArchived())->values();
         }
 
-        return $this->buildColumns($tasks);
+        return $this->buildColumns($tasks, $this->columnSearch);
     }
 
     /**

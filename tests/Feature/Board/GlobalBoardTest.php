@@ -67,3 +67,21 @@ it('keeps canceled tasks off the global board', function () {
         ->assertSee('Active work')
         ->assertDontSee('Abandoned work');
 });
+
+it('filters a column by title search on the global board', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    joinProject($project, $user);
+    $match = Task::factory()->for($project)->status(Status::Planned)->create(['title' => 'Polish the board']);
+    Task::factory()->for($project)->status(Status::Planned)->create(['title' => 'Unrelated work']);
+
+    $columns = Livewire::actingAs($user)
+        ->test(Board::class)
+        ->set('columnSearch.'.Status::Planned->value, 'polish')
+        ->instance()->columns();
+
+    $ids = collect($columns)->firstWhere('status', Status::Planned)['tasks']
+        ->pluck('id')->all();
+
+    expect($ids)->toBe([$match->id]);
+});

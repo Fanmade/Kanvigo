@@ -17,10 +17,15 @@ trait BuildsKanbanColumns
      * with the id as a stable tie-breaker. Project context travels with each
      * task's reference, so the board is no longer grouped by project.
      *
+     * An optional per-column text search (keyed by `Status->value`) narrows a
+     * column to the cards whose title or reference contains the term, so each
+     * lane can be filtered independently without scanning the whole list.
+     *
      * @param  Collection<int, Task>  $tasks
+     * @param  array<string, string|null>  $search
      * @return array<int, array{status: Status, tasks: Collection<int, Task>}>
      */
-    protected function buildColumns(Collection $tasks): array
+    protected function buildColumns(Collection $tasks, array $search = []): array
     {
         // Canceled tasks are terminal and never belong on an active board lane, so
         // drop them up front. (Done tasks keep their Done column; only the
@@ -36,18 +41,40 @@ trait BuildsKanbanColumns
         $columns = [];
 
         foreach (Status::columns() as $status) {
+            $columnTasks = $tasks->where('status', $status)
+                ->sortBy([
+                    ['position', 'asc'],
+                    ['id', 'asc'],
+                ])
+                ->values();
+
             $columns[] = [
                 'status' => $status,
-                'tasks' => $tasks->where('status', $status)
-                    ->sortBy([
-                        ['position', 'asc'],
-                        ['id', 'asc'],
-                    ])
-                    ->values(),
+                'tasks' => $this->filterColumnBySearch($columnTasks, $search[$status->value] ?? null),
             ];
         }
 
         return $columns;
+    }
+
+    /**
+     * Narrow a single column's tasks to those whose title or reference contains
+     * the (case-insensitive) search term. A blank term leaves the column intact.
+     *
+     * @param  Collection<int, Task>  $tasks
+     * @return Collection<int, Task>
+     */
+    protected function filterColumnBySearch(Collection $tasks, ?string $term): Collection
+    {
+        $term = mb_strtolower(trim((string) $term));
+
+        if ($term === '') {
+            return $tasks;
+        }
+
+        return $tasks->filter(static fn (Task $task): bool => str_contains(mb_strtolower($task->title), $term)
+            || str_contains(mb_strtolower($task->reference), $term))
+            ->values();
     }
 
     /**

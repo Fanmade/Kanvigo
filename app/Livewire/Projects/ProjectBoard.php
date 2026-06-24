@@ -30,6 +30,14 @@ class ProjectBoard extends Component
 
     public bool $showArchived = false;
 
+    /**
+     * Per-column text search, keyed by `Status->value`. Each lane filters its
+     * own cards by title or reference, independent of the others.
+     *
+     * @var array<string, string>
+     */
+    public array $columnSearch = [];
+
     public function mount(string $short_name): void
     {
         $this->shortName = $short_name;
@@ -94,7 +102,7 @@ class ProjectBoard extends Component
             $tasks = $tasks->filter(fn (Task $task): bool => $task->priority->value === $this->priorityFilter);
         }
 
-        return $this->buildColumns($tasks);
+        return $this->buildColumns($tasks, $this->columnSearch);
     }
 
     /**

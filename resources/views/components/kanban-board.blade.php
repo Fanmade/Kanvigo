@@ -3,14 +3,28 @@
 <div class="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
     @foreach ($columns as $column)
         @php($statusValue = $column['status']->value)
-        <div class="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
-            <div class="flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-zinc-700">
-                <flux:badge size="sm" :color="$column['status']->color()" :icon="$column['status']->icon()">
-                    {{ $column['status']->label() }}
-                </flux:badge>
-                <flux:text size="sm" class="text-zinc-400">
-                    {{ $column['tasks']->count() }}
-                </flux:text>
+        <div
+            data-test="column-{{ $statusValue }}"
+            class="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50"
+        >
+            <div class="flex flex-col gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700">
+                <div class="flex items-center justify-between">
+                    <flux:badge size="sm" :color="$column['status']->color()" :icon="$column['status']->icon()">
+                        {{ $column['status']->label() }}
+                    </flux:badge>
+                    <flux:text size="sm" class="text-zinc-400">
+                        {{ $column['tasks']->count() }}
+                    </flux:text>
+                </div>
+                <flux:input
+                    wire:model.live.debounce.300ms="columnSearch.{{ $statusValue }}"
+                    size="sm"
+                    icon="magnifying-glass"
+                    clearable
+                    :placeholder="__('Search…')"
+                    :aria-label="__('Search the :status column', ['status' => $column['status']->label()])"
+                    data-test="column-search-{{ $statusValue }}"
+                />
             </div>
 
             <div
