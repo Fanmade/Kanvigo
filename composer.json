@@ -45,6 +45,7 @@
         "symfony/html-sanitizer": "^8.1"
     },
     "require-dev": {
+        "dedoc/scramble": "^0.13.29",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
         "laravel/boost": "^2.4",

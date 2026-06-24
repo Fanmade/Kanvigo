@@ -166,6 +166,12 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   and any cancellation reason, and agents can read attachments — including inline
   description images — by their id. Personal notes have their own tools (create,
   list, get, update and convert-to-task), referenced by a numeric note id.
+- **REST API** — a versioned, documented HTTP API under `/api/v1` for projects,
+  tasks and comments, authenticated with the same personal access tokens (Bearer;
+  read tokens for the GET endpoints, write tokens to create and update). Responses
+  are consistent JSON resources, lists are paginated, and access is scoped to the
+  caller's projects exactly like the rest of the app. Interactive OpenAPI docs live
+  at `/docs/api` (local only). See [docs/api.md](docs/api.md).
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 - **Full-width layout** — an Appearance setting to let page content span the whole
