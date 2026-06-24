@@ -28,13 +28,15 @@
                 </flux:sidebar.group>
 
                 @if (auth()->user()->projects->isNotEmpty())
-                    <flux:sidebar.group :heading="__('My projects')" class="grid">
+                    <flux:sidebar.group :heading="__('My projects')" class="grid min-w-0 grid-cols-1">
                         @foreach (auth()->user()->projects()->orderBy('title')->get() as $project)
                             <flux:sidebar.item
                                 icon="folder"
-                                :href="route('project.show', $project)"
-                                :current="request()->fullUrlIs(route('project.show', $project))"
+                                :href="route('project.board', $project)"
+                                :current="request()->fullUrlIs(route('project.board', $project))"
                                 wire:navigate
+                                :title="$project->short_name.' · '.$project->title"
+                                data-test="nav-project-{{ $project->id }}"
                             >
                                 {{ $project->short_name }} · {{ $project->title }}
                             </flux:sidebar.item>
