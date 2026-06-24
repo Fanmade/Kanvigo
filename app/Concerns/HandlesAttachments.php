@@ -11,6 +11,7 @@ use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
@@ -87,9 +88,23 @@ trait HandlesAttachments
 
         $maxSize = (int) config('attachments.max_size');
 
-        $this->validate([
-            'inlineImage' => ['image', "max:{$maxSize}"],
-        ]);
+        // A rejected file (e.g. a HEIC/AVIF phone photo, which the `image` rule
+        // doesn't accept) must not leave the editor stuck on its "Uploading…"
+        // spinner with no feedback: surface a toast and bail instead of throwing.
+        try {
+            $this->validate([
+                'inlineImage' => ['image', "max:{$maxSize}"],
+            ]);
+        } catch (ValidationException) {
+            $this->reset('inlineImage');
+
+            Flux::toast(
+                variant: 'danger',
+                text: __('That image could not be added. Please use a JPG, PNG, GIF or WebP image.'),
+            );
+
+            return null;
+        }
 
         $attachment = $this->storeAttachment($this->inlineImage, $attachable, isInline: true);
         $this->reset('inlineImage');

@@ -37,6 +37,21 @@ it('uploads an image pasted into a comment as an inline attachment on the task',
     ]);
 });
 
+it('toasts and attaches nothing when an inline image is rejected (KAN-249)', function () {
+    // A HEIC phone photo isn't accepted by the `image` rule; the editor must not
+    // be left stuck on its spinner — it should toast and add no attachment.
+    $component = Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task])
+        ->set('inlineImage', UploadedFile::fake()->create('photo.heic', 200, 'image/heic'))
+        ->call('addInlineImage')
+        ->assertHasNoErrors()
+        ->assertReturned(null)
+        ->assertDispatched('toast-show', fn (string $event, array $params): bool => ($params['dataset']['variant'] ?? null) === 'danger');
+
+    expect($this->task->attachments()->where('is_inline', true)->count())->toBe(0)
+        ->and($component->get('inlineImage'))->toBeNull();
+});
+
 it('lets a member comment on a task and logs the activity', function () {
     Livewire::actingAs($this->member)
         ->test(CommentList::class, ['commentable' => $this->task])

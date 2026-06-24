@@ -7,7 +7,7 @@
     `richEditor` Alpine component. See resources/js/app.js.
 --}}
 <div
-    x-data="richEditor"
+    x-data="richEditor({ uploadFailedMessage: @js(__('Upload failed. Please try again.')) })"
     x-on:paste.capture="handlePaste($event)"
     x-on:dragover.prevent
     x-on:drop.capture.prevent="handleDrop($event)"

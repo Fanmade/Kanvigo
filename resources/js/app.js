@@ -251,8 +251,9 @@ document.addEventListener('alpine:init', () => {
      * stored image at the cursor using the Tiptap instance captured in the
      * `flux:editor` listener above.
      */
-    window.Alpine.data('richEditor', () => ({
+    window.Alpine.data('richEditor', (config = {}) => ({
         uploading: false,
+        uploadFailedMessage: config.uploadFailedMessage ?? '',
 
         imageFiles(list) {
             return Array.from(list || []).filter((file) => file.type.startsWith('image/'));
@@ -310,6 +311,10 @@ document.addEventListener('alpine:init', () => {
             return this.$el.querySelector('[data-flux-editor]')?.__editor ?? null;
         },
 
+        notifyUploadFailed() {
+            this.$flux?.toast({ variant: 'danger', text: this.uploadFailedMessage });
+        },
+
         async embed(file) {
             this.uploading = true;
 
@@ -317,16 +322,29 @@ document.addEventListener('alpine:init', () => {
                 this.$wire.upload(
                     'inlineImage',
                     file,
-                    () => this.$wire.addInlineImage().then((image) => {
-                        if (image?.src) {
-                            this.editor()?.chain().focus()
-                                .setImage({ src: image.src, href: image.href ?? null })
-                                .run();
-                        }
+                    // Upload succeeded. addInlineImage() inserts the image, or — when
+                    // the file is rejected (e.g. a HEIC photo) — toasts server-side
+                    // and returns null. Either way release the spinner.
+                    () => this.$wire.addInlineImage()
+                        .then((image) => {
+                            if (image?.src) {
+                                this.editor()?.chain().focus()
+                                    .setImage({ src: image.src, href: image.href ?? null })
+                                    .run();
+                            }
 
+                            resolve();
+                        })
+                        .catch(() => {
+                            this.notifyUploadFailed();
+                            resolve();
+                        }),
+                    // The upload itself failed (e.g. the file exceeds the limit) —
+                    // surface it instead of leaving the spinner stuck silently.
+                    () => {
+                        this.notifyUploadFailed();
                         resolve();
-                    }),
-                    () => resolve(),
+                    },
                 );
             });
 

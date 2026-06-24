@@ -435,6 +435,7 @@
   "Task updated.": "Aufgabe aktualisiert.",
   "Tasks": "Aufgaben",
   "Thanks": "Danke",
+  "That image could not be added. Please use a JPG, PNG, GIF or WebP image.": "Dieses Bild konnte nicht hinzugefügt werden. Bitte verwende ein JPG-, PNG-, GIF- oder WebP-Bild.",
   "That image could not be processed.": "Dieses Bild konnte nicht verarbeitet werden.",
   "That would make an item depend on itself or create a cycle.": "Das würde ein Element von sich selbst abhängig machen oder einen Zyklus erzeugen.",
   "The parent task was moved to In progress.": "Die übergeordnete Aufgabe wurde in Bearbeitung genommen.",

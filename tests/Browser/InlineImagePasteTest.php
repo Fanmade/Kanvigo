@@ -28,7 +28,7 @@ it('extracts pasted images from clipboard items as well as files', function () {
 
     $result = $page->script(<<<'JS'
         (function () {
-            const data = window.Alpine.$data(document.querySelector('[x-data="richEditor"]'));
+            const data = window.Alpine.$data(document.querySelector('[x-data^="richEditor"]'));
             const img = () => new File([new Uint8Array([1, 2, 3])], 'x.png', { type: 'image/png' });
 
             return JSON.stringify({
