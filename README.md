@@ -52,8 +52,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Project overview** — each project page lists its top-level tasks and shows
   every root task's direct subtasks as quick links to drill straight into them. The
   task list is collapsible (collapsed by default) and filterable — closed (Done &
-  Canceled) and archived tasks are hidden until you opt in. The lists and comments
-  update automatically as others make changes (Live updates).
+  Canceled) and archived tasks are hidden until you opt in, and it can be narrowed
+  by priority, tags or assignees — selecting several at once, matching any or all
+  of them. The lists and comments update automatically as others make changes
+  (Live updates).
 - **Completion progress bars** — any task with subtasks shows a progress rollup
   based on the share of its descendant tasks done, on the project overview (per
   root task) and on the task's detail page.

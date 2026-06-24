@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Tasks\CreateTaskModal;
@@ -213,6 +214,89 @@ it('hides closed tasks by default and reveals them via the filter', function () 
         ->set('showClosed', true)
         ->assertSeeHtml('data-test="closed-tasks"')
         ->assertSee('Done thing');
+});
+
+it('filters the task list by one or several priorities', function () {
+    $high = Task::factory()->for($this->project)->status(Status::ToDo)->priority(Priority::High)->create();
+    $low = Task::factory()->for($this->project)->status(Status::ToDo)->priority(Priority::Low)->create();
+    $medium = Task::factory()->for($this->project)->status(Status::ToDo)->priority(Priority::Medium)->create();
+
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
+
+    // A single priority.
+    expect($component->set('priorityFilters', [Priority::High->value])->instance()->openTasks()->pluck('id'))
+        ->toContain($high->id)->not->toContain($low->id)->not->toContain($medium->id);
+
+    // Several priorities at once (any of).
+    expect($component->set('priorityFilters', [Priority::High->value, Priority::Low->value])->instance()->openTasks()->pluck('id'))
+        ->toContain($high->id)->toContain($low->id)->not->toContain($medium->id);
+});
+
+it('filters the task list by tags, matching any or all', function () {
+    $bug = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $bug->syncTags('Bug');
+    $both = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $both->syncTags('Bug,UI/UX');
+    Task::factory()->for($this->project)->status(Status::ToDo)->create(); // untagged
+
+    $bugId = $this->project->tags()->where('name', 'Bug')->value('id');
+    $uiId = $this->project->tags()->where('name', 'UI/UX')->value('id');
+
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('tagFilters', [$bugId, $uiId]);
+
+    // "Any" keeps tasks carrying at least one of the tags.
+    expect($component->set('tagMatch', 'any')->instance()->openTasks()->pluck('id'))
+        ->toContain($bug->id)->toContain($both->id)->toHaveCount(2);
+
+    // "All" keeps only tasks carrying every selected tag.
+    expect($component->set('tagMatch', 'all')->instance()->openTasks()->pluck('id'))
+        ->toContain($both->id)->not->toContain($bug->id)->toHaveCount(1);
+});
+
+it('filters the task list by assignees, matching any or all', function () {
+    [$alice, $bob] = User::factory()->count(2)->create();
+
+    $aliceOnly = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $aliceOnly->assignees()->attach($alice->id);
+    $both = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $both->assignees()->attach([$alice->id, $bob->id]);
+    Task::factory()->for($this->project)->status(Status::ToDo)->create(); // unassigned
+
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('assigneeFilters', [$alice->id, $bob->id]);
+
+    // "Any" keeps tasks assigned to at least one of the people.
+    expect($component->set('assigneeMatch', 'any')->instance()->openTasks()->pluck('id'))
+        ->toContain($aliceOnly->id)->toContain($both->id)->toHaveCount(2);
+
+    // "All" keeps only tasks assigned to everyone selected.
+    expect($component->set('assigneeMatch', 'all')->instance()->openTasks()->pluck('id'))
+        ->toContain($both->id)->not->toContain($aliceOnly->id)->toHaveCount(1);
+});
+
+it('counts active task-list filters for the badge', function () {
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
+
+    expect($component->instance()->activeTaskFilterCount())->toBe(0);
+
+    $component->set('priorityFilters', [Priority::High->value]);
+    expect($component->instance()->activeTaskFilterCount())->toBe(1);
+
+    $component->set('showClosed', true);
+    expect($component->instance()->activeTaskFilterCount())->toBe(2);
+});
+
+it('renders the task filters control when expanded', function () {
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('tasksCollapsed', false)
+        ->assertSeeHtml('data-test="task-filters"')
+        ->assertSeeHtml('data-test="priority-filter"');
 });
 
 it('forbids non-members', function () {

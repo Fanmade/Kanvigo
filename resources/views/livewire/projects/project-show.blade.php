@@ -91,12 +91,68 @@
 
         @unless ($tasksCollapsed)
             <div id="project-tasks-body" class="flex flex-col gap-4" data-test="project-tasks-body">
-                {{-- Filters: closed and archived tasks are hidden until opted in. --}}
-                <div class="flex flex-wrap items-center gap-4">
-                    <flux:switch wire:model.live="showClosed" :label="__('Show closed')" align="left" data-test="show-closed" />
-                    @if ($this->archivedTasks->isNotEmpty())
-                        <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
-                    @endif
+                {{-- Filters: closed and archived tasks are hidden until opted in;
+                     priority/tag/assignee narrow the list like the board. --}}
+                <div class="flex flex-wrap items-center gap-3">
+                    <flux:dropdown align="start">
+                        <flux:button size="sm" icon="funnel" data-test="task-filters">
+                            {{ __('Filters') }}
+                            @if ($this->activeTaskFilterCount > 0)
+                                <flux:badge size="sm" color="blue" class="ms-1">{{ $this->activeTaskFilterCount }}</flux:badge>
+                            @endif
+                        </flux:button>
+
+                        <flux:popover class="flex max-h-[28rem] w-72 flex-col gap-4 overflow-y-auto">
+                            <flux:switch wire:model.live="showClosed" :label="__('Show closed')" align="left" data-test="show-closed" />
+                            @if ($this->hasArchivedRootTasks)
+                                <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
+                            @endif
+
+                            {{-- A task has one priority, so this is always "any of the selected". --}}
+                            <flux:field>
+                                <flux:label>{{ __('Priority') }}</flux:label>
+                                <flux:checkbox.group wire:model.live="priorityFilters" data-test="priority-filter" class="flex flex-col gap-1">
+                                    @foreach (\App\Enums\Priority::ordered() as $priority)
+                                        <flux:checkbox :value="$priority->value" :label="$priority->label()" />
+                                    @endforeach
+                                </flux:checkbox.group>
+                            </flux:field>
+
+                            @if ($this->projectTags->isNotEmpty())
+                                <flux:field>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <flux:label class="mb-0">{{ __('Tags') }}</flux:label>
+                                        <flux:radio.group wire:model.live="tagMatch" variant="segmented" size="sm" data-test="tag-match">
+                                            <flux:radio value="any">{{ __('Any') }}</flux:radio>
+                                            <flux:radio value="all">{{ __('All') }}</flux:radio>
+                                        </flux:radio.group>
+                                    </div>
+                                    <flux:checkbox.group wire:model.live="tagFilters" data-test="tag-filter" class="flex max-h-36 flex-col gap-1 overflow-y-auto">
+                                        @foreach ($this->projectTags as $tag)
+                                            <flux:checkbox :value="$tag->id" :label="$tag->name" />
+                                        @endforeach
+                                    </flux:checkbox.group>
+                                </flux:field>
+                            @endif
+
+                            @if ($this->members->isNotEmpty())
+                                <flux:field>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <flux:label class="mb-0">{{ __('Assignees') }}</flux:label>
+                                        <flux:radio.group wire:model.live="assigneeMatch" variant="segmented" size="sm" data-test="assignee-match">
+                                            <flux:radio value="any">{{ __('Any') }}</flux:radio>
+                                            <flux:radio value="all">{{ __('All') }}</flux:radio>
+                                        </flux:radio.group>
+                                    </div>
+                                    <flux:checkbox.group wire:model.live="assigneeFilters" data-test="assignee-filter" class="flex max-h-36 flex-col gap-1 overflow-y-auto">
+                                        @foreach ($this->members as $member)
+                                            <flux:checkbox :value="$member->id" :label="$member->name" />
+                                        @endforeach
+                                    </flux:checkbox.group>
+                                </flux:field>
+                            @endif
+                        </flux:popover>
+                    </flux:dropdown>
                 </div>
 
                 {{-- Open tasks --}}

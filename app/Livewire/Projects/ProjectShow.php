@@ -8,6 +8,7 @@ use App\Concerns\HasLiveUpdates;
 use App\Concerns\ManagesNotes;
 use App\Models\Note;
 use App\Models\Project;
+use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Role;
@@ -59,6 +60,34 @@ class ProjectShow extends Component
      */
     public bool $showClosed = false;
 
+    /**
+     * Narrowing task-list filters. Each is multi-valued; an empty list means "all".
+     * A task has a single priority, so the priority filter is always "any of".
+     *
+     * @var list<int|string>
+     */
+    public array $priorityFilters = [];
+
+    /**
+     * Selected tag ids, with the match mode controlling whether a task must carry
+     * any of them or all of them.
+     *
+     * @var list<int|string>
+     */
+    public array $tagFilters = [];
+
+    public string $tagMatch = 'any';
+
+    /**
+     * Selected assignee ids, with the match mode controlling whether a task must be
+     * assigned to any of them or all of them.
+     *
+     * @var list<int|string>
+     */
+    public array $assigneeFilters = [];
+
+    public string $assigneeMatch = 'any';
+
     public bool $managingMembers = false;
 
     public bool $managingRoles = false;
@@ -102,44 +131,139 @@ class ProjectShow extends Component
     }
 
     /**
-     * Active (non-archived) top-level tasks that are still in progress.
+     * Active (non-archived) top-level tasks that are still in progress, after the
+     * active priority/tag/assignee filters.
      *
      * @return Collection<int, Task>
      */
     #[Computed]
     public function openTasks(): Collection
     {
-        return $this->project()->rootTasks
-            ->reject(static fn (Task $task): bool => $task->isArchived())
-            ->reject(static fn (Task $task): bool => $task->status->isTerminal())
-            ->values();
+        return $this->filterTasks(
+            $this->project()->rootTasks
+                ->reject(static fn (Task $task): bool => $task->isArchived())
+                ->reject(static fn (Task $task): bool => $task->status->isTerminal())
+        );
     }
 
     /**
-     * Active (non-archived) top-level tasks that are done or canceled.
+     * Active (non-archived) top-level tasks that are done or canceled, after the
+     * active priority/tag/assignee filters.
      *
      * @return Collection<int, Task>
      */
     #[Computed]
     public function completedTasks(): Collection
     {
-        return $this->project()->rootTasks
-            ->reject(static fn (Task $task): bool => $task->isArchived())
-            ->filter(static fn (Task $task): bool => $task->status->isTerminal())
-            ->values();
+        return $this->filterTasks(
+            $this->project()->rootTasks
+                ->reject(static fn (Task $task): bool => $task->isArchived())
+                ->filter(static fn (Task $task): bool => $task->status->isTerminal())
+        );
     }
 
     /**
-     * Archived top-level tasks, surfaced only behind the "Show archived" toggle.
+     * Archived top-level tasks, surfaced only behind the "Show archived" toggle,
+     * after the active priority/tag/assignee filters.
      *
      * @return Collection<int, Task>
      */
     #[Computed]
     public function archivedTasks(): Collection
     {
-        return $this->project()->rootTasks
-            ->filter(static fn (Task $task): bool => $task->isArchived())
-            ->values();
+        return $this->filterTasks(
+            $this->project()->rootTasks
+                ->filter(static fn (Task $task): bool => $task->isArchived())
+        );
+    }
+
+    /**
+     * Apply the active priority/tag/assignee filters to a set of root tasks. An
+     * empty filter is a no-op, so the default view shows everything. Priority is
+     * "any of" (a task has one priority); tags and assignees honour their match
+     * mode — "any" keeps a task sharing at least one selection, "all" requires
+     * every selection to be present.
+     *
+     * @param  Collection<int, Task>  $tasks
+     * @return Collection<int, Task>
+     */
+    protected function filterTasks(Collection $tasks): Collection
+    {
+        if ($this->priorityFilters !== []) {
+            $priorities = array_map('intval', $this->priorityFilters);
+            $tasks = $tasks->filter(static fn (Task $task): bool => in_array($task->priority->value, $priorities, true));
+        }
+
+        if ($this->tagFilters !== []) {
+            $tagIds = array_map('intval', $this->tagFilters);
+            $tasks = $tasks->filter(fn (Task $task): bool => $this->matchesIds(
+                $task->tags->pluck('id')->all(),
+                $tagIds,
+                $this->tagMatch,
+            ));
+        }
+
+        if ($this->assigneeFilters !== []) {
+            $userIds = array_map('intval', $this->assigneeFilters);
+            $tasks = $tasks->filter(fn (Task $task): bool => $this->matchesIds(
+                $task->assignees->pluck('id')->all(),
+                $userIds,
+                $this->assigneeMatch,
+            ));
+        }
+
+        return $tasks->values();
+    }
+
+    /**
+     * Whether a task's ids satisfy the selected ids under the given match mode:
+     * "all" requires every selected id to be present, otherwise at least one.
+     *
+     * @param  array<array-key, mixed>  $taskIds
+     * @param  list<int>  $selectedIds
+     */
+    protected function matchesIds(array $taskIds, array $selectedIds, string $match): bool
+    {
+        $present = array_intersect($selectedIds, array_map('intval', $taskIds));
+
+        return $match === 'all'
+            ? count($present) === count($selectedIds)
+            : $present !== [];
+    }
+
+    /**
+     * How many task-list filters are currently narrowing the view, for the count
+     * badge on the "Filters" button.
+     */
+    #[Computed]
+    public function activeTaskFilterCount(): int
+    {
+        return ($this->priorityFilters !== [] ? 1 : 0)
+            + ($this->tagFilters !== [] ? 1 : 0)
+            + ($this->assigneeFilters !== [] ? 1 : 0)
+            + ($this->showClosed ? 1 : 0)
+            + ($this->showArchived ? 1 : 0);
+    }
+
+    /**
+     * Whether the project has any archived root tasks at all (ignoring filters),
+     * so the "Show archived" toggle only appears when it can do something.
+     */
+    #[Computed]
+    public function hasArchivedRootTasks(): bool
+    {
+        return $this->project()->rootTasks->contains(static fn (Task $task): bool => $task->isArchived());
+    }
+
+    /**
+     * The project's tags, for the task-list tag filter.
+     *
+     * @return EloquentCollection<int, Tag>
+     */
+    #[Computed]
+    public function projectTags(): EloquentCollection
+    {
+        return $this->project()->tags()->orderBy('name')->get();
     }
 
     /**
