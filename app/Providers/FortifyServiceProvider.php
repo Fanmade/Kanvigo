@@ -91,5 +91,9 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('mcp', static function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
+
+        RateLimiter::for('api', static function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }
