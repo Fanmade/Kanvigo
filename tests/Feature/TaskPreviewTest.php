@@ -16,7 +16,7 @@ it('serves a task preview to someone who can see the task', function () {
     $task = Task::factory()->for($project)->status(Status::InProgress)->create(['title' => 'Wire the preview']);
     $task->assignees()->attach($member->id);
     Task::factory()->for($project)->childOf($task)->status(Status::Done)->create();
-    Task::factory()->for($project)->childOf($task)->create();
+    Task::factory()->for($project)->childOf($task)->status(Status::ToDo)->create();
 
     $this->actingAs($member)
         ->getJson(route('task.preview', ['short_name' => $project->short_name, 'task_number' => $task->task_number]))
@@ -38,7 +38,7 @@ it('localizes the progress label', function () {
 
     $task = Task::factory()->for($project)->create();
     Task::factory()->for($project)->childOf($task)->status(Status::Done)->create();
-    Task::factory()->for($project)->childOf($task)->create();
+    Task::factory()->for($project)->childOf($task)->status(Status::ToDo)->create();
 
     $this->actingAs($member)
         ->withSession(['locale' => 'de'])
