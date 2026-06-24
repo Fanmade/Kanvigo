@@ -6,6 +6,7 @@ use App\Http\Controllers\AttachmentViewController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\MentionSuggestionsController;
 use App\Http\Controllers\NoteAttachmentController;
+use App\Http\Controllers\TaskPreviewController;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
 use App\Livewire\Dashboard;
@@ -84,6 +85,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::get('/{short_name}/mentionables', MentionSuggestionsController::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.mentionables');
+
+    Route::get('/{short_name}-{task_number}/preview', TaskPreviewController::class)
+        ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])
+        ->name('task.preview');
 
     Route::livewire('/{short_name}-{task_number}', TaskView::class)
         ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])

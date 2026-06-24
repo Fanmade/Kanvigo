@@ -2,6 +2,7 @@ import { mergeAttributes } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
 import Sortable from 'sortablejs';
 import { mentionExtensions } from './mentions';
+import './references';
 
 /**
  * The Tiptap Image node, extended so an inline image can link to its full-size

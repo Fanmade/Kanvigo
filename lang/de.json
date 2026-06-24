@@ -4,6 +4,7 @@
   "2FA recovery codes": "2FA-Wiederherstellungscodes",
   ":count pending": ":count ausstehend",
   ":count task|:count tasks": ":count Aufgabe|:count Aufgaben",
+  ":done/:total done": ":done/:total erledigt",
   ":name has invited you to collaborate on Kanvigo.": ":name hat dich eingeladen, bei Kanvigo mitzuarbeiten.",
   ":name is too large. The maximum file size is :size.": ":name ist zu groß. Die maximale Dateigröße beträgt :size.",
   "A custom role can hold any of the project permissions.": "Eine benutzerdefinierte Rolle kann beliebige Projektberechtigungen erhalten.",
