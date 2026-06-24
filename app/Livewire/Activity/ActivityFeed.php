@@ -111,6 +111,7 @@ class ActivityFeed extends Component
                 'old' => $this->priorityLabel($activity->old_value),
                 'new' => $this->priorityLabel($activity->new_value),
             ]),
+            'type_changed' => $this->typeDescription($activity->old_value, $activity->new_value),
             'assignee_changed' => $this->assigneeDescription($newValues, $oldValues),
             'dependency_changed' => $this->dependencyDescription($newValues, $oldValues),
             'tags_changed' => $this->tagDescription($newValues, $oldValues),
@@ -137,6 +138,19 @@ class ActivityFeed extends Component
             $new !== null && $old !== null => __('moved this from :old to :new', ['old' => $old, 'new' => $new]),
             $new !== null => __('moved this under :new', ['new' => $new]),
             default => __('moved this to the top level'),
+        };
+    }
+
+    /**
+     * Describe a task-type change from the old and new type names (either may be
+     * null — set from untyped, or cleared to untyped).
+     */
+    private function typeDescription(?string $old, ?string $new): string
+    {
+        return match (true) {
+            $new !== null && $old !== null => __('changed type from :old to :new', ['old' => $old, 'new' => $new]),
+            $new !== null => __('set the type to :new', ['new' => $new]),
+            default => __('cleared the type'),
         };
     }
 

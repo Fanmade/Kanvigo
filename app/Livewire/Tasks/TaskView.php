@@ -16,6 +16,7 @@ use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
@@ -52,6 +53,12 @@ class TaskView extends Component
     public string $status = Status::Planned->value;
 
     public int $priority;
+
+    /**
+     * The task's chosen type, or null when untyped. Scoped to the project's
+     * configured types.
+     */
+    public ?int $typeId = null;
 
     /** @var array<int, int> */
     public array $assigneeIds = [];
@@ -97,6 +104,7 @@ class TaskView extends Component
 
         $this->status = $task->status->value;
         $this->priority = $task->priority->value;
+        $this->typeId = $task->task_type_id;
         $this->assigneeIds = $task->assignees->pluck('id')->all();
     }
 
@@ -106,7 +114,7 @@ class TaskView extends Component
         $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
         $task = Task::query()
-            ->with(['assignees', 'tags', 'project', 'parent', 'ancestors', 'children', 'descendants'])
+            ->with(['assignees', 'tags', 'taskType', 'project', 'parent', 'ancestors', 'children', 'descendants'])
             ->where('project_id', $project->id)
             ->where('task_number', $this->taskNumber)
             ->firstOrFail();
@@ -434,6 +442,50 @@ class TaskView extends Component
 
         unset($this->task);
         Flux::toast(text: __('Priority updated.'), variant: 'success');
+    }
+
+    /**
+     * The project's configured task types, offered in the type control.
+     *
+     * @return Collection<int, TaskType>
+     */
+    #[Computed]
+    public function taskTypes(): Collection
+    {
+        return $this->task()->project->taskTypes()->get();
+    }
+
+    public function updatedTypeId(mixed $value): void
+    {
+        $task = $this->task();
+        $this->authorize('update', $task);
+
+        $newId = ($value === '' || $value === null) ? null : (int) $value;
+
+        if ($newId === $task->task_type_id) {
+            return;
+        }
+
+        // Only the task's own project types are assignable; an unknown id reverts
+        // the control rather than clearing or mis-setting the type.
+        $newType = $newId !== null
+            ? $task->project->taskTypes()->whereKey($newId)->first()
+            : null;
+
+        if ($newId !== null && $newType === null) {
+            $this->typeId = $task->task_type_id;
+
+            return;
+        }
+
+        $oldName = $task->taskType?->name;
+
+        $task->task_type_id = $newType?->getKey();
+        $task->save();
+        $task->recordActivity('type_changed', 'type', $oldName, $newType?->name);
+
+        unset($this->task);
+        Flux::toast(text: __('Type updated.'), variant: 'success');
     }
 
     public function updatedAssigneeIds(): void

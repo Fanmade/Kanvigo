@@ -30,6 +30,7 @@
                     'created' => __('created'),
                     'status_changed' => __('changed the status of'),
                     'priority_changed' => __('changed the priority of'),
+                    'type_changed' => __('changed the type of'),
                     'assignee_changed' => __('updated the assignees of'),
                     'tags_changed' => __('updated the tags of'),
                     'parent_changed' => __('moved'),

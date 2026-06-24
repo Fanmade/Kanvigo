@@ -175,6 +175,16 @@
                         <x-priority-control :priority="$this->task->priority" :can-edit="$canUpdate" />
                     </x-rail-row>
 
+                    @if ($this->taskTypes->isNotEmpty() || $this->task->taskType)
+                        <x-rail-row :label="__('Type')">
+                            <x-task-type-control
+                                :type="$this->task->taskType"
+                                :types="$this->taskTypes"
+                                :can-edit="$canUpdate"
+                            />
+                        </x-rail-row>
+                    @endif
+
                     <x-rail-row :label="__('Assignees')">
                         @if ($canUpdate && ! $this->task->assignees->contains('id', auth()->id()))
                             <flux:tooltip :content="__('Assign to me')">

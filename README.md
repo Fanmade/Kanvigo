@@ -100,8 +100,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   change is recorded in the activity log.
 - **Task types** — classify a task by an optional type, scoped to its project and
   shown as a colored icon badge on its board card. Each project starts with a
-  sensible default set (Feature, Bug, Chore); pick one when creating a task, and
-  filter the board to a single type.
+  sensible default set (Feature, Bug, Chore); pick one when creating a task or
+  change it later from the task page, and filter the board to a single type.
 - **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
   default) on tasks, with new subtasks inheriting their parent task's priority.
   Board columns are ordered by priority and can be filtered to a single level.
