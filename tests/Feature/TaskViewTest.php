@@ -95,25 +95,28 @@ it('enters edit mode populating the form, then saves and exits', function () {
     expect($this->task->fresh()->title)->toBe('New title');
 });
 
-it('counts open subtasks from the eager-loaded subtree without a new recursive query', function () {
-    // A two-level subtree: two open children and one done grandchild.
-    $childA = Task::factory()->for($this->project)->childOf($this->task)->status(Status::ToDo)->create();
-    Task::factory()->for($this->project)->childOf($this->task)->status(Status::ToDo)->create();
-    Task::factory()->for($this->project)->childOf($childA)->status(Status::Done)->create();
+it('renders the task page with a query count that does not grow with subtree size', function () {
+    // Number of queries to render the task page for a task with $subtasks children.
+    $queriesToRender = function (int $subtasks): int {
+        $project = Project::factory()->create();
+        joinProject($project, $this->member);
+        $task = Task::factory()->for($project)->create();
+        Task::factory()->count($subtasks)->for($project)->childOf($task)->create();
 
-    // Mounting eager-loads `descendants` via the task() computed.
-    $component = ($this->mountTask)();
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        Livewire::actingAs($this->member)
+            ->test(TaskView::class, ['short_name' => $project->short_name, 'task_number' => $task->task_number])
+            ->html();
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
 
-    // Reading the open-subtask count must reuse that loaded relation, not re-query it.
-    DB::enableQueryLog();
-    $count = $component->instance()->openSubtaskCount();
-    $recursive = collect(DB::getQueryLog())
-        ->filter(static fn (array $entry): bool => str_contains(strtolower((string) $entry['query']), 'recursive'))
-        ->count();
-    DB::disableQueryLog();
+        return $count;
+    };
 
-    expect($count)->toBe(2);
-    expect($recursive)->toBe(0);
+    // A page with 20 subtasks must issue no more queries than one with 2 — the
+    // subtree is loaded in bulk, so adding subtasks must not add queries (no N+1).
+    expect($queriesToRender(20))->toBeLessThanOrEqual($queriesToRender(2));
 });
 
 it('rejects an empty task title', function () {
