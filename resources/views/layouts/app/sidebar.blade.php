@@ -27,9 +27,10 @@
                     </flux:sidebar.item>
                 </flux:sidebar.group>
 
-                @if (auth()->user()->projects->isNotEmpty())
+                @php($sidebarProjects = auth()->user()->projects->sortBy('title'))
+                @if ($sidebarProjects->isNotEmpty())
                     <flux:sidebar.group :heading="__('My projects')" class="grid min-w-0 grid-cols-1">
-                        @foreach (auth()->user()->projects()->orderBy('title')->get() as $project)
+                        @foreach ($sidebarProjects as $project)
                             <flux:sidebar.item
                                 icon="folder"
                                 :href="route('project.board', $project)"

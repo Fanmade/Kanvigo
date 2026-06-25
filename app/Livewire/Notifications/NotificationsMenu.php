@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
+/**
+ * @property-read int $unreadCount
+ */
 class NotificationsMenu extends Component
 {
     #[Computed]
@@ -23,7 +26,7 @@ class NotificationsMenu extends Component
     #[Computed]
     public function unreadBadge(): ?string
     {
-        $count = $this->unreadCount();
+        $count = $this->unreadCount;
 
         if ($count === 0) {
             return null;
