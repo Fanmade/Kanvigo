@@ -60,29 +60,51 @@ it('records a dependency activity capturing the direction and related reference'
         ->and($activity->old_value)->toBeNull();
 });
 
+it('offers no candidates until a search term is entered', function () {
+    expect(($this->mountTask)()->instance()->dependencyCandidates)->toBeEmpty();
+});
+
 it('offers same-project tasks as candidates, searchable by reference and title, excluding itself', function () {
     $this->other->update(['title' => 'Database migration']);
-    $this->parent->update(['title' => 'Backend setup']);
 
-    $candidates = ($this->mountTask)()->instance()->dependencyCandidates;
+    $component = ($this->mountTask)();
 
-    $references = $candidates->pluck('reference')->all();
+    // Searchable by a title substring...
+    $byTitle = $component->set('dependencyReference', 'Database')->instance()->dependencyCandidates;
+    expect($byTitle->pluck('reference')->all())->toContain($this->other->reference);
 
-    expect($references)->toContain($this->other->reference)
-        ->toContain($this->parent->reference)
-        ->not->toContain($this->task->reference);
+    // ...the label combines reference and title.
+    $label = $byTitle->firstWhere('reference', $this->other->reference)['label'];
+    expect($label)->toContain($this->other->reference)->toContain('Database migration');
 
-    // The label combines reference and title so the combobox can match either.
-    $otherLabel = $candidates->firstWhere('reference', $this->other->reference)['label'];
-    expect($otherLabel)->toContain($this->other->reference)->toContain('Database migration');
+    // ...and by the task number.
+    $byNumber = $component->set('dependencyReference', (string) $this->other->task_number)->instance()->dependencyCandidates;
+    expect($byNumber->pluck('reference')->all())->toContain($this->other->reference);
+
+    // Never offers the viewed task itself, even when its own title matches.
+    $this->task->update(['title' => 'Database cleanup']);
+    $self = $component->set('dependencyReference', 'Database')->instance()->dependencyCandidates;
+    expect($self->pluck('reference')->all())->not->toContain($this->task->reference);
 });
 
 it('does not offer items from other projects as candidates', function () {
-    $hidden = Task::factory()->for(Project::factory())->create();
+    $hidden = Task::factory()->for(Project::factory())->create(['title' => 'Hidden cross-project task']);
 
-    $candidates = ($this->mountTask)()->instance()->dependencyCandidates;
+    $candidates = ($this->mountTask)()
+        ->set('dependencyReference', 'Hidden cross-project')
+        ->instance()->dependencyCandidates;
 
     expect($candidates->pluck('reference')->all())->not->toContain($hidden->reference);
+});
+
+it('caps the candidate list so the picker query stays bounded', function () {
+    Task::factory()->count(15)->for($this->project)->create(['title' => 'Searchable widget']);
+
+    $candidates = ($this->mountTask)()
+        ->set('dependencyReference', 'Searchable widget')
+        ->instance()->dependencyCandidates;
+
+    expect($candidates->count())->toBeLessThanOrEqual(10);
 });
 
 it('rejects an unknown reference', function () {

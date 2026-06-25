@@ -359,3 +359,27 @@ it('renders the overview with a query count that does not grow with subtree size
     // the subtree loads in bulk, so adding subtasks must not add queries (no N+1).
     expect($queriesToRender(20))->toBeLessThanOrEqual($queriesToRender(2));
 });
+
+it('renders the overview with a query count that does not grow with the number of root tasks', function () {
+    $queriesForRoots = function (int $roots): int {
+        $project = Project::factory()->withOwner($this->user)->create();
+        foreach (range(1, $roots) as $ignored) {
+            $root = Task::factory()->for($project)->create();
+            Task::factory()->count(2)->for($project)->childOf($root)->create();
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        Livewire::actingAs($this->user)
+            ->test(ProjectShow::class, ['short_name' => $project->short_name])
+            ->set('tasksCollapsed', false);
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $count;
+    };
+
+    // Each root card rolls up its own progress() from the eager-loaded subtree, so
+    // adding root tasks must not add queries (no per-card progress() N+1).
+    expect($queriesForRoots(8))->toBeLessThanOrEqual($queriesForRoots(2));
+});

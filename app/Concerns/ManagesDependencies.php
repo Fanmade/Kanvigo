@@ -87,23 +87,40 @@ trait ManagesDependencies
     }
 
     /**
-     * The tasks in the same project that can be linked as a dependency, each as
-     * a reference plus a label searchable by reference or title. Excludes the
-     * viewed item itself.
+     * Same-project tasks matching the typed reference/title, offered as
+     * suggestions for the dependency picker. Empty until the user types, and
+     * capped so the query stays bounded on large projects. Matches a title
+     * substring or an exact task number, and never offers the viewed item.
      *
      * @return BaseCollection<int, array{reference: non-falsy-string, label: non-falsy-string}>
      */
     #[Computed]
     public function dependencyCandidates(): BaseCollection
     {
+        $term = trim($this->dependencyReference);
+
+        if ($term === '') {
+            return new BaseCollection;
+        }
+
         $item = $this->dependable();
         $project = $item->project;
+        $digits = (string) preg_replace('/\D+/', '', $term);
 
         return Task::query()
             ->where('project_id', $project->id)
-            ->with('project')
+            ->whereKeyNot($item->getKey())
+            ->where(static function ($query) use ($term, $digits): void {
+                $query->whereLike('title', '%'.$term.'%');
+
+                if ($digits !== '') {
+                    $query->orWhere('task_number', (int) $digits);
+                }
+            })
+            ->orderBy('task_number')
+            ->limit(10)
             ->get()
-            ->reject(static fn (Task $task): bool => $task->is($item))
+            ->each(static fn (Task $task) => $task->setRelation('project', $project))
             ->map(static fn (Task $task): array => [
                 'reference' => $task->reference,
                 'label' => $task->reference.' · '.$task->title,
