@@ -504,6 +504,7 @@
   "Title": "Titel",
   "To do": "Zu erledigen",
   "To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app.": "Um die Aktivierung der Zwei-Faktor-Authentifizierung abzuschließen, scanne den QR-Code oder gib den Einrichtungsschlüssel in deiner Authenticator-App ein.",
+  "Toggle sidebar": "Seitenleiste umschalten",
   "Token created": "Token erstellt",
   "Token name": "Token-Name",
   "Tokens that can be used to access the API on your behalf": "Token, mit denen in deinem Namen auf die API zugegriffen werden kann",
