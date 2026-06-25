@@ -76,6 +76,19 @@
                 @empty
                     <flux:text size="sm" class="text-zinc-400">{{ __('No comments yet.') }}</flux:text>
                 @endforelse
+
+                @if ($this->hasMoreComments)
+                    <flux:button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        wire:click="showMore"
+                        class="self-center"
+                        data-test="show-more-comments"
+                    >
+                        {{ __('Show older comments') }}
+                    </flux:button>
+                @endif
             </div>
         </div>
     @endunless

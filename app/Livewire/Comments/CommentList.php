@@ -20,7 +20,19 @@ class CommentList extends Component
 
     public const string COLLAPSED_PREFERENCE_KEY = 'comments_collapsed';
 
+    /**
+     * How many top-level comments are revealed per "show older" step (and the
+     * initial window). Keeps the list — and the per-poll re-fetch — bounded on
+     * busy items instead of loading the entire history every render.
+     */
+    public const int PER_PAGE = 10;
+
     public bool $collapsed = false;
+
+    /**
+     * The number of top-level comments currently shown, grown by {@see showMore()}.
+     */
+    public int $visible = self::PER_PAGE;
 
     public string $body = '';
 
@@ -95,6 +107,7 @@ class CommentList extends Component
             ->whereNull('parent_id')
             ->with(['user', 'replies.user'])
             ->latest()
+            ->limit($this->visible)
             ->get();
     }
 
@@ -108,6 +121,25 @@ class CommentList extends Component
     }
 
     /**
+     * Whether older top-level comments remain beyond the current window.
+     */
+    #[Computed]
+    public function hasMoreComments(): bool
+    {
+        return $this->commentCount() > $this->visible;
+    }
+
+    /**
+     * Reveal the next page of older top-level comments.
+     */
+    public function showMore(): void
+    {
+        $this->visible += self::PER_PAGE;
+
+        unset($this->comments, $this->hasMoreComments);
+    }
+
+    /**
      * Live-updates tick: pull in comments added by others. The task-page poll
      * that fires this already skips ticks while a comment editor is focused, so a
      * draft is never lost.
@@ -115,7 +147,7 @@ class CommentList extends Component
     #[On('live-refresh')]
     public function liveRefresh(): void
     {
-        unset($this->comments, $this->commentCount);
+        unset($this->comments, $this->commentCount, $this->hasMoreComments);
     }
 
     public function addComment(): void
@@ -208,7 +240,7 @@ class CommentList extends Component
         }
 
         $this->reset('confirmingDelete', 'deleteReason');
-        unset($this->comments);
+        unset($this->comments, $this->commentCount, $this->hasMoreComments);
     }
 
     public function addReply(): void
@@ -243,6 +275,6 @@ class CommentList extends Component
 
         $commentable->recordActivity('commented');
 
-        unset($this->comments);
+        unset($this->comments, $this->commentCount, $this->hasMoreComments);
     }
 }

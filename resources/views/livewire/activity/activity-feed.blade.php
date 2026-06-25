@@ -31,5 +31,18 @@
                 <li><flux:text size="sm" class="text-zinc-400">{{ __('No activity yet.') }}</flux:text></li>
             @endforelse
         </ul>
+
+        @if ($this->hasMoreActivities)
+            <flux:button
+                type="button"
+                size="sm"
+                variant="ghost"
+                wire:click="showMore"
+                class="mt-3 self-center"
+                data-test="show-more-activity"
+            >
+                {{ __('Show older activity') }}
+            </flux:button>
+        @endif
     @endunless
 </flux:card>

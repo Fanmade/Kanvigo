@@ -247,3 +247,30 @@ it('applies the collapsed preference across all commentable types', function () 
         ->test(CommentList::class, ['commentable' => $this->subtask])
         ->assertSet('collapsed', true);
 });
+
+it('shows only the first page of comments and reveals older ones on demand', function () {
+    foreach (range(1, CommentList::PER_PAGE + 3) as $i) {
+        $this->task->comments()->create(['user_id' => $this->member->id, 'body' => "Comment {$i}"]);
+    }
+
+    $component = Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task]);
+
+    // Only the first page is loaded, even though more exist (bounded per-render load).
+    expect($component->instance()->comments())->toHaveCount(CommentList::PER_PAGE)
+        ->and($component->instance()->hasMoreComments())->toBeTrue();
+
+    $component->call('showMore');
+
+    expect($component->instance()->comments())->toHaveCount(CommentList::PER_PAGE + 3)
+        ->and($component->instance()->hasMoreComments())->toBeFalse();
+});
+
+it('does not offer to show more when comments fit in one page', function () {
+    $this->task->comments()->create(['user_id' => $this->member->id, 'body' => 'Only one']);
+
+    $component = Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task]);
+
+    expect($component->instance()->hasMoreComments())->toBeFalse();
+});

@@ -226,3 +226,23 @@ it('forbids non-members from viewing the feed', function () {
         ->test(ActivityFeed::class, ['subject' => $this->task])
         ->assertForbidden();
 });
+
+it('shows only the first page of activity and reveals older entries on demand', function () {
+    // The task factory already logged one "created" activity; add a full page more.
+    foreach (range(1, ActivityFeed::PER_PAGE) as $ignored) {
+        $this->task->recordActivity('commented');
+    }
+
+    $component = Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task]);
+
+    // Only the first page loads, even though more exist (bounded per-render load).
+    expect($component->instance()->activities())->toHaveCount(ActivityFeed::PER_PAGE)
+        ->and($component->instance()->hasMoreActivities())->toBeTrue();
+
+    $component->call('showMore');
+
+    // PER_PAGE "commented" + 1 "created" are now all visible.
+    expect($component->instance()->activities())->toHaveCount(ActivityFeed::PER_PAGE + 1)
+        ->and($component->instance()->hasMoreActivities())->toBeFalse();
+});

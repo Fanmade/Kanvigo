@@ -29,7 +29,19 @@ class ActivityFeed extends Component
 
     public const string COLLAPSED_PREFERENCE_KEY = 'activities_collapsed';
 
+    /**
+     * How many activity entries are revealed per "show older" step (and the
+     * initial window). Bounds the load — and the per-poll re-fetch — instead of
+     * pulling the entire history every render.
+     */
+    public const int PER_PAGE = 15;
+
     public bool $collapsed = true;
+
+    /**
+     * The number of activity entries currently shown, grown by {@see showMore()}.
+     */
+    public int $visible = self::PER_PAGE;
 
     public function mount(Project|Task $subject): void
     {
@@ -67,7 +79,7 @@ class ActivityFeed extends Component
     #[On('live-refresh')]
     public function liveRefresh(): void
     {
-        unset($this->activities, $this->activityCount, $this->descriptions);
+        unset($this->activities, $this->activityCount, $this->descriptions, $this->hasMoreActivities);
     }
 
     /**
@@ -97,7 +109,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function activities(): Collection
     {
-        return $this->subject()->activities()->with('user')->get();
+        return $this->subject()->activities()->with('user')->limit($this->visible)->get();
     }
 
     /**
@@ -107,6 +119,25 @@ class ActivityFeed extends Component
     public function activityCount(): int
     {
         return $this->subject()->activities()->count();
+    }
+
+    /**
+     * Whether older activity remains beyond the current window.
+     */
+    #[Computed]
+    public function hasMoreActivities(): bool
+    {
+        return $this->activityCount() > $this->visible;
+    }
+
+    /**
+     * Reveal the next page of older activity.
+     */
+    public function showMore(): void
+    {
+        $this->visible += self::PER_PAGE;
+
+        unset($this->activities, $this->descriptions, $this->hasMoreActivities);
     }
 
     /**
