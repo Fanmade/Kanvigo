@@ -51,6 +51,7 @@ class TaskType extends Model
         'chat-bubble-left-right', 'server-stack', 'fire', 'link', 'document-text',
         'arrow-trending-up', 'bell', 'command-line', 'credit-card', 'computer-desktop',
         'device-phone-mobile', 'device-tablet', 'finger-print', 'information-circle',
+        'question-mark-circle', 'chart-pie', 'cake', 'clipboard-document-list',
         'key', 'language', 'lifebuoy', 'lock-closed', 'map-pin', 'moon',
         'paper-airplane', 'scale', 'scissors', 'share', 'shopping-bag', 'shopping-cart',
         'signal', 'speaker-wave', 'truck', 'user-group', 'user-circle', 'view-columns',
