@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\Support\RichTextSanitizer;
 use Carbon\CarbonImmutable;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +27,24 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->invalidateUnreadNotificationCountOnChange();
+    }
+
+    /**
+     * Bust a user's cached unread-notification count whenever their notifications
+     * change — created (a new unread arrives), updated (marked read) or deleted —
+     * so {@see User::unreadNotificationCount()} stays correct while remaining a
+     * cache hit on the hot path.
+     */
+    protected function invalidateUnreadNotificationCountOnChange(): void
+    {
+        $forget = static function (DatabaseNotification $notification): void {
+            User::forgetUnreadNotificationCount($notification->notifiable_id);
+        };
+
+        DatabaseNotification::created($forget);
+        DatabaseNotification::updated($forget);
+        DatabaseNotification::deleted($forget);
     }
 
     /**

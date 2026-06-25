@@ -73,3 +73,34 @@ it('opens a notification, marks it read and redirects to the item', function () 
 
     expect($notification->fresh()->read_at)->not->toBeNull();
 });
+
+it('caches the unread count and busts it as notifications change', function () {
+    $user = User::factory()->create();
+
+    expect($user->unreadNotificationCount())->toBe(0);
+
+    // A new notification fires the created event, busting the cache.
+    $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'test',
+        'data' => ['url' => null, 'reference' => 'ABC-1'],
+        'read_at' => null,
+    ]);
+    expect($user->unreadNotificationCount())->toBe(1);
+
+    // Marking it read fires the updated event, busting the cache again.
+    $user->unreadNotifications->markAsRead();
+    expect($user->unreadNotificationCount())->toBe(0);
+
+    // Deleting an unread notification fires the deleted event, busting it too.
+    $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'test',
+        'data' => ['url' => null, 'reference' => 'ABC-2'],
+        'read_at' => null,
+    ]);
+    expect($user->unreadNotificationCount())->toBe(1);
+
+    $user->unreadNotifications()->first()->delete();
+    expect($user->unreadNotificationCount())->toBe(0);
+});

@@ -16,7 +16,7 @@ class NotificationsMenu extends Component
     #[Computed]
     public function unreadCount(): int
     {
-        return Auth::user()->unreadNotifications()->count();
+        return Auth::user()->unreadNotificationCount();
     }
 
     /**

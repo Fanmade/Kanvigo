@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
@@ -264,6 +265,37 @@ class User extends Authenticatable implements PasskeyUser
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class);
+    }
+
+    /**
+     * The number of unread notifications, read on every authenticated page for
+     * the nav badge. Cached per user so it is a cheap cache hit instead of a
+     * `count(*)` each request; {@see forgetUnreadNotificationCount()} busts it
+     * whenever the user's notifications change (created, read, or deleted).
+     */
+    public function unreadNotificationCount(): int
+    {
+        return Cache::rememberForever(
+            self::unreadNotificationCacheKey($this->getKey()),
+            fn (): int => $this->unreadNotifications()->count(),
+        );
+    }
+
+    /**
+     * Drop the cached unread-notification count for a user, forcing a recount on
+     * the next read. Called from the notification model's lifecycle events.
+     */
+    public static function forgetUnreadNotificationCount(int|string $userId): void
+    {
+        Cache::forget(self::unreadNotificationCacheKey($userId));
+    }
+
+    /**
+     * The cache key holding a user's unread-notification count.
+     */
+    private static function unreadNotificationCacheKey(int|string $userId): string
+    {
+        return 'notifications:unread:'.$userId;
     }
 
     /**
