@@ -158,7 +158,7 @@
 
                 <livewire:comments.comment-list :commentable="$this->task" :wire:key="'comments-task-'.$this->task->id" />
 
-                <livewire:activity.activity-feed :subject="$this->task" :wire:key="'activity-task-'.$this->task->id" />
+                <livewire:activity.activity-feed lazy :subject="$this->task" :wire:key="'activity-task-'.$this->task->id" />
             </div>
 
             {{-- Metadata rail --}}

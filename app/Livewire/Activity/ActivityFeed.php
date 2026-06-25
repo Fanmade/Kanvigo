@@ -16,6 +16,13 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * The activity feed loads lazily where it is embedded (a `lazy` tag attribute):
+ * it renders a lightweight {@see placeholder()} with the page and only fetches
+ * its activities once it scrolls into view (Livewire's lazy loading uses an
+ * intersection observer). It also stays collapsed by default, so even once
+ * loaded the full activity list is fetched only when the user expands it.
+ */
 class ActivityFeed extends Component
 {
     use ResolvesMorphSubject;
@@ -29,6 +36,28 @@ class ActivityFeed extends Component
         $this->initMorphSubject($subject);
 
         $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, true);
+    }
+
+    /**
+     * Lightweight skeleton shown in place of the feed until it scrolls into view
+     * and the real component loads. Mirrors the collapsed card's header so the
+     * page layout doesn't shift when the feed resolves.
+     */
+    public function placeholder(): string
+    {
+        $label = e(__('Activity'));
+
+        return <<<HTML
+        <div
+            class="rounded-xl border border-zinc-200/70 bg-white p-4 dark:border-white/10 dark:bg-zinc-800"
+            data-test="activity-placeholder"
+        >
+            <div class="flex items-center gap-2">
+                <div class="size-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{$label}</span>
+            </div>
+        </div>
+        HTML;
     }
 
     /**
