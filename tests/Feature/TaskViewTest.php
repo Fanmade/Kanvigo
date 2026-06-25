@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 use function Pest\Laravel\assertDatabaseHas;
@@ -92,6 +93,27 @@ it('enters edit mode populating the form, then saves and exits', function () {
         ->assertSet('editing', false);
 
     expect($this->task->fresh()->title)->toBe('New title');
+});
+
+it('counts open subtasks from the eager-loaded subtree without a new recursive query', function () {
+    // A two-level subtree: two open children and one done grandchild.
+    $childA = Task::factory()->for($this->project)->childOf($this->task)->status(Status::ToDo)->create();
+    Task::factory()->for($this->project)->childOf($this->task)->status(Status::ToDo)->create();
+    Task::factory()->for($this->project)->childOf($childA)->status(Status::Done)->create();
+
+    // Mounting eager-loads `descendants` via the task() computed.
+    $component = ($this->mountTask)();
+
+    // Reading the open-subtask count must reuse that loaded relation, not re-query it.
+    DB::enableQueryLog();
+    $count = $component->instance()->openSubtaskCount();
+    $recursive = collect(DB::getQueryLog())
+        ->filter(static fn (array $entry): bool => str_contains(strtolower((string) $entry['query']), 'recursive'))
+        ->count();
+    DB::disableQueryLog();
+
+    expect($count)->toBe(2);
+    expect($recursive)->toBe(0);
 });
 
 it('rejects an empty task title', function () {
