@@ -19,7 +19,7 @@
                     <div class="text-zinc-600 dark:text-zinc-300">
                         <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $activity->user?->name ?? __('System') }}</span>
                         {{ $this->descriptions[$activity->id] }}
-                        <span class="text-zinc-400">· {{ $activity->created_at?->diffForHumans() }}</span>
+                        <span class="text-zinc-400">· <x-relative-time :date="$activity->created_at" /></span>
                         {{-- A token-driven action is flagged generically: the token's name is
                              private to its owner, so it is never surfaced to other members. --}}
                         @if ($activity->token_name)

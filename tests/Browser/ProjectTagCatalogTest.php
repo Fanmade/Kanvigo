@@ -41,7 +41,7 @@ it('reaches the tag page from the project header', function () {
 
     $page->click('@project-actions')
         ->click('@manage-tags-link')
-        ->waitForText('Rename, recolor and delete')
+        ->waitForText('Rename, recolor, merge and delete')
         ->assertVisible('@project-tags')
         ->assertNoJavascriptErrors();
 });

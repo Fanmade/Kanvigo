@@ -47,7 +47,7 @@
                                 {{ $label }}
                                 <span class="font-mono text-xs text-zinc-500">{{ $data['reference'] }}</span>
                             </p>
-                            <p class="text-xs text-zinc-400">{{ $notification->created_at?->diffForHumans() }}</p>
+                            <p class="text-xs text-zinc-400"><x-relative-time :date="$notification->created_at" /></p>
                         </div>
                     </div>
                 </flux:menu.item>

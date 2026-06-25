@@ -239,7 +239,7 @@
                         </div>
                         <div class="flex items-center justify-between gap-2">
                             <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">{{ __('Updated') }}</flux:text>
-                            <flux:text size="sm">{{ $this->task->updated_at->diffForHumans() }}</flux:text>
+                            <flux:text size="sm"><x-relative-time :date="$this->task->updated_at" /></flux:text>
                         </div>
                     </div>
                 </flux:card>
