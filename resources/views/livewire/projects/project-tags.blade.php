@@ -151,40 +151,7 @@
                 <flux:error name="editColor" />
             </div>
 
-            <div class="flex flex-col gap-1.5">
-                <flux:label>{{ __('Icon') }}</flux:label>
-                <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto rounded-lg border border-zinc-200 p-2 dark:border-white/10" data-test="edit-tag-icon-picker">
-                    <button
-                        type="button"
-                        wire:click="clearIcon"
-                        @class([
-                            'flex size-8 cursor-pointer items-center justify-center rounded-lg border',
-                            'border-zinc-900 dark:border-white' => $editIcon === null,
-                            'border-zinc-200 dark:border-white/10' => $editIcon !== null,
-                        ])
-                        aria-label="{{ __('No icon') }}"
-                        data-test="edit-tag-icon-none"
-                    >
-                        <flux:icon icon="no-symbol" variant="micro" class="text-zinc-400" />
-                    </button>
-                    @foreach ($this->icons as $iconName)
-                        <button
-                            type="button"
-                            wire:click="$set('editIcon', '{{ $iconName }}')"
-                            @class([
-                                'flex size-8 cursor-pointer items-center justify-center rounded-lg border',
-                                'border-zinc-900 dark:border-white' => $editIcon === $iconName,
-                                'border-zinc-200 dark:border-white/10' => $editIcon !== $iconName,
-                            ])
-                            aria-label="{{ $iconName }}"
-                            data-test="edit-tag-icon-{{ $iconName }}"
-                        >
-                            <flux:icon :icon="$iconName" variant="micro" class="text-zinc-600 dark:text-zinc-300" />
-                        </button>
-                    @endforeach
-                </div>
-                <flux:error name="editIcon" />
-            </div>
+            <x-icon-picker name="editIcon" :selected="$editIcon" test="edit-tag" clear="clearIcon" />
 
             @php($previewIcon = in_array($editIcon, \App\Models\TaskType::ICONS, true) ? $editIcon : null)
             <div class="flex items-center gap-2">

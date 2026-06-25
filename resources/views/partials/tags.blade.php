@@ -121,10 +121,13 @@
                     <flux:error name="newTagColor" />
                 </div>
 
+                <x-icon-picker name="newTagIcon" :selected="$newTagIcon" test="tag" />
+
+                @php($previewIcon = in_array($newTagIcon, \App\Models\TaskType::ICONS, true) ? $newTagIcon : null)
                 <div class="flex items-center gap-2">
                     <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
                     <flux:badge size="sm" color="zinc" variant="pill">
-                        <x-tag-dot :color="$newTagColor" class="me-1.5 size-2" />{{ $newTagName !== '' ? $newTagName : __('tag') }}
+                        <x-tag-dot :color="$newTagColor" :icon="$previewIcon" class="me-1.5" />{{ $newTagName !== '' ? $newTagName : __('tag') }}
                     </flux:badge>
                 </div>
 

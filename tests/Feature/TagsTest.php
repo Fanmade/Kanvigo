@@ -203,6 +203,36 @@ it('rejects a create-tag color outside the palette', function () {
     expect(Tag::where('name', 'design')->exists())->toBeFalse();
 });
 
+it('creates a tag with the chosen icon through the rail modal and applies it', function () {
+    [$member, $task] = memberAndTask();
+
+    taskView($member, $task)
+        ->set('newTagName', 'design')
+        ->set('newTagColor', 'violet')
+        ->set('newTagIcon', 'paint-brush')
+        ->call('createTag')
+        ->assertSet('showTagModal', false)
+        ->assertHasNoErrors();
+
+    $tag = Tag::where('name', 'design')->sole();
+
+    expect($tag->icon)->toBe('paint-brush')
+        ->and($tag->color)->toBe('violet')
+        ->and($task->fresh()->tags->pluck('name')->all())->toBe(['design']);
+});
+
+it('rejects a create-tag icon outside the allowed set', function () {
+    [$member, $task] = memberAndTask();
+
+    taskView($member, $task)
+        ->set('newTagName', 'design')
+        ->set('newTagIcon', 'not-a-real-icon')
+        ->call('createTag')
+        ->assertHasErrors('newTagIcon');
+
+    expect(Tag::where('name', 'design')->exists())->toBeFalse();
+});
+
 it('prefills the create-tag modal from the typed text', function () {
     [$member, $task] = memberAndTask();
 

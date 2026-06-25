@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Models\Tag;
 use App\Models\Task;
+use App\Models\TaskType;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
@@ -24,6 +25,12 @@ trait ManagesTags
     public string $newTagName = '';
 
     public string $newTagColor = 'zinc';
+
+    /**
+     * The chosen icon, or null for a colour-only tag. Declared null (not a
+     * non-null default) so clearing it survives Livewire's omit-null hydration.
+     */
+    public ?string $newTagIcon = null;
 
     /**
      * The task whose tags are being managed.
@@ -142,9 +149,10 @@ trait ManagesTags
     {
         $this->authorize('update', $this->taggable());
 
-        $this->resetErrorBag(['newTagName', 'newTagColor']);
+        $this->resetErrorBag(['newTagName', 'newTagColor', 'newTagIcon']);
         $this->newTagName = trim($name);
         $this->newTagColor = Tag::colorForName($this->newTagName !== '' ? $this->newTagName : 'tag');
+        $this->newTagIcon = null;
         $this->showTagModal = true;
     }
 
@@ -159,18 +167,24 @@ trait ManagesTags
         $validated = $this->validate([
             'newTagName' => ['required', 'string', 'max:255'],
             'newTagColor' => ['required', 'string', 'in:'.implode(',', [...Tag::PALETTE, 'zinc'])],
+            'newTagIcon' => ['nullable', 'string', 'in:'.implode(',', TaskType::ICONS)],
         ]);
 
         $tag = Tag::findOrCreateForProject(
             $item->project_id,
             $validated['newTagName'],
             $validated['newTagColor'],
+            $this->newTagIcon,
         );
 
-        // Honor the chosen color even when the tag already existed (possibly
-        // under a different casing).
+        // Honor the chosen color and icon even when the tag already existed
+        // (possibly under a different casing), so the modal's choices stick.
         if ($tag->color !== $validated['newTagColor']) {
             $tag->update(['color' => $validated['newTagColor']]);
+        }
+
+        if ($tag->icon !== $this->newTagIcon) {
+            $tag->update(['icon' => $this->newTagIcon]);
         }
 
         if (! $item->tags()->whereKey($tag->getKey())->exists()) {
@@ -178,7 +192,7 @@ trait ManagesTags
             $item->recordTagChange([$tag->name], []);
         }
 
-        $this->reset('showTagModal', 'newTagName');
+        $this->reset('showTagModal', 'newTagName', 'newTagIcon');
         $this->newTagColor = 'zinc';
 
         $this->refreshTags();
