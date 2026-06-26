@@ -7,24 +7,44 @@
             data-test="column-{{ $statusValue }}"
             class="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50"
         >
-            <div class="flex flex-col gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700">
-                <div class="flex items-center justify-between">
+            {{-- The per-column search collapses to a single icon to keep the
+                 header compact, expanding to a focused input on demand. It starts
+                 open whenever the column already has an active search term. --}}
+            <div
+                class="flex flex-col gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700"
+                x-data="{ expanded: @js(trim((string) ($column['search'] ?? '')) !== '') }"
+            >
+                <div class="flex items-center justify-between gap-2">
                     <flux:badge size="sm" :color="$column['status']->color()" :icon="$column['status']->icon()">
                         {{ $column['status']->label() }}
                     </flux:badge>
-                    <flux:text size="sm" class="text-zinc-400">
-                        {{ $column['tasks']->count() }}
-                    </flux:text>
+                    <div class="flex items-center gap-1.5">
+                        <flux:button
+                            x-show="! expanded"
+                            size="xs"
+                            variant="subtle"
+                            icon="magnifying-glass"
+                            x-on:click="expanded = true; $nextTick(() => $refs.columnSearch.querySelector('input')?.focus())"
+                            :aria-label="__('Search the :status column', ['status' => $column['status']->label()])"
+                            data-test="column-search-toggle-{{ $statusValue }}"
+                        />
+                        <flux:text size="sm" class="text-zinc-400">
+                            {{ $column['tasks']->count() }}
+                        </flux:text>
+                    </div>
                 </div>
-                <flux:input
-                    wire:model.live.debounce.300ms="columnSearch.{{ $statusValue }}"
-                    size="sm"
-                    icon="magnifying-glass"
-                    clearable
-                    :placeholder="__('Search…')"
-                    :aria-label="__('Search the :status column', ['status' => $column['status']->label()])"
-                    data-test="column-search-{{ $statusValue }}"
-                />
+                <div x-show="expanded" x-cloak x-ref="columnSearch">
+                    <flux:input
+                        wire:model.live.debounce.300ms="columnSearch.{{ $statusValue }}"
+                        size="sm"
+                        icon="magnifying-glass"
+                        clearable
+                        :placeholder="__('Search…')"
+                        :aria-label="__('Search the :status column', ['status' => $column['status']->label()])"
+                        data-test="column-search-{{ $statusValue }}"
+                        x-on:blur="if (! $event.target.value) expanded = false"
+                    />
+                </div>
             </div>
 
             <div

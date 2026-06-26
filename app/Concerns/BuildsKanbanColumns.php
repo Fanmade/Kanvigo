@@ -23,7 +23,7 @@ trait BuildsKanbanColumns
      *
      * @param  Collection<int, Task>  $tasks
      * @param  array<string, string|null>  $search
-     * @return array<int, array{status: Status, tasks: Collection<int, Task>}>
+     * @return array<int, array{status: Status, tasks: Collection<int, Task>, search: string|null}>
      */
     protected function buildColumns(Collection $tasks, array $search = []): array
     {
@@ -48,9 +48,12 @@ trait BuildsKanbanColumns
                 ])
                 ->values();
 
+            $term = $search[$status->value] ?? null;
+
             $columns[] = [
                 'status' => $status,
-                'tasks' => $this->filterColumnBySearch($columnTasks, $search[$status->value] ?? null),
+                'tasks' => $this->filterColumnBySearch($columnTasks, $term),
+                'search' => $term,
             ];
         }
 

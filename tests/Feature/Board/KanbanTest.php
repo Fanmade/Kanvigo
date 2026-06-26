@@ -283,6 +283,20 @@ it('renders a per-column search input keyed by status', function () {
         ->toContain('data-test="column-search-'.Status::Done->value.'"');
 });
 
+it('starts a column search collapsed, but expanded when it has an active term', function () {
+    // KAN-282: the search is an icon by default and only expands to an input on
+    // demand — except a column that already carries a search term renders open
+    // so the active filter stays visible across re-renders.
+    $component = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC']);
+
+    expect($component->html())->not->toContain('expanded: true');
+
+    $component->set('columnSearch.'.Status::Planned->value, 'polish');
+
+    expect($component->html())->toContain('expanded: true');
+});
+
 it('counts the active board filters for the filter badge', function () {
     $component = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC']);
