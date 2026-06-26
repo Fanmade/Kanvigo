@@ -44,6 +44,48 @@ it('only lists projects the user is a member of', function () {
     expect($projects->pluck('id')->all())->toBe([$this->project->id]);
 });
 
+it('names the project field in a friendly way when it is missing', function () {
+    // KAN-280: the camelCase property must not leak into the message as
+    // "project id" — it should read "project". projectId stays null here
+    // (no open() call), as it does when the dialog is launched without context.
+    $message = Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->set('title', 'No project chosen')
+        ->call('save')
+        ->assertHasErrors(['projectId' => 'required'])
+        ->errors()
+        ->first('projectId');
+
+    expect($message)->toBe('The project field is required.')
+        ->and($message)->not->toContain('project id');
+});
+
+it('clears the project-required error as soon as a project is chosen', function () {
+    // KAN-280: leaving the stale "project is required" message after the user
+    // picks a project is the ugly layout the ticket is about.
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->set('title', 'Pick me')
+        ->call('save')
+        ->assertHasErrors(['projectId' => 'required'])
+        ->set('projectId', $this->project->id)
+        ->assertHasNoErrors('projectId');
+});
+
+it('renders the project placeholder option exactly once', function () {
+    // KAN-280: a Flux :placeholder plus an explicit empty option rendered two
+    // identical "Select a project" entries, only the second of which worked.
+    joinProject(Project::factory()->create(['short_name' => 'XYZ']), $this->member);
+
+    $html = Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open')
+        ->assertSet('projectId', null) // two projects → nothing preselected
+        ->html();
+
+    expect(substr_count($html, __('Select a project')))->toBe(1);
+});
+
 it('creates a nested task under the chosen parent', function () {
     $parent = Task::factory()->for($this->project)->create();
 

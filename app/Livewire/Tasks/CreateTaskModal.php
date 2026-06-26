@@ -430,6 +430,28 @@ class CreateTaskModal extends Component
         }
     }
 
+    /**
+     * Human-readable names for the camelCase form properties, so validation
+     * messages read "The project field is required." rather than leaking the
+     * internal attribute name ("project id").
+     *
+     * @return array<string, string>
+     */
+    protected function validationAttributes(): array
+    {
+        return [
+            'projectId' => __('project'),
+            'parentId' => __('parent task'),
+            'typeId' => __('type'),
+            'dueDate' => __('due date'),
+            'assigneeIds' => __('assignees'),
+            'tagNames' => __('tags'),
+            'newTagName' => __('name'),
+            'newTagColor' => __('color'),
+            'newTagIcon' => __('icon'),
+        ];
+    }
+
     public function save(): void
     {
         $validated = $this->validate([
@@ -538,6 +560,12 @@ class CreateTaskModal extends Component
         $this->parentId = null;
         $this->assigneeIds = [];
         $this->typeId = null;
+
+        // Clear the "project is required" error the moment a project is chosen,
+        // so the layout settles instead of leaving a stale message behind.
+        if ($this->projectId !== null) {
+            $this->resetErrorBag('projectId');
+        }
     }
 
     /**

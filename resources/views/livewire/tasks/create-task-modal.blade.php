@@ -7,7 +7,8 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 @if (count($this->projects) > 1)
                     <flux:select wire:model.live="projectId" :label="__('Project')"
-                                 :placeholder="__('Select a project')" data-test="create-task-project">
+                                 data-test="create-task-project">
+                        <flux:select.option value="">{{ __('Select a project') }}</flux:select.option>
                         @foreach ($this->projects as $project)
                             <flux:select.option :value="$project->id">{{ $project->short_name }}
                                 · {{ $project->title }}</flux:select.option>
