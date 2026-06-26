@@ -10,28 +10,35 @@ use Fanmade\DelegatedPermissions\PermissionResolver;
 use Fanmade\DelegatedPermissions\RoleManager;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Per-project role management: view the project's roles and the permissions they
- * hold, and define custom roles by delegating a subset of the owner's permissions.
- * Restricted to holders of the project `manage-roles` permission.
+ * Per-project role management with constrained delegation. A manager sees only
+ * the roles they may act on — the role(s) they hold and everything beneath them,
+ * never an ancestor and never the system root. New roles are created under a
+ * chosen parent and bounded by that parent's permissions; only roles strictly
+ * below the manager (custom, non-base) may be deleted. Restricted to holders of
+ * the project `manage-roles` permission.
  */
 class ProjectRoles extends Component
 {
     use AuthorizesRequests;
 
     /** The seeded base roles, which may not be deleted here. */
-    private const array PROTECTED_ROLES = ['owner', 'admin', 'member'];
+    private const array PROTECTED_ROLES = ['owner', 'admin', 'member', 'viewer'];
 
     #[Locked]
     public int $projectId;
 
     public string $name = '';
+
+    public ?int $parentId = null;
 
     /** @var array<int, int> */
     public array $permissionIds = [];
@@ -40,6 +47,11 @@ class ProjectRoles extends Component
     {
         $this->projectId = $project->id;
         $this->authorize('manage-roles', $project);
+
+        // Default the parent to the manager's own (highest) role.
+        $this->parentId = Auth::user()->rolesIn($project)
+            ->reject(static fn (Role $role): bool => (bool) $role->is_system)
+            ->first()?->id;
     }
 
     #[Computed]
@@ -49,37 +61,90 @@ class ProjectRoles extends Component
     }
 
     /**
-     * The project's roles, the seeded base first.
+     * The roles the manager may see and act on, base roles first.
      *
-     * @return \Illuminate\Support\Collection<int, Role>
+     * @return EloquentCollection<int, Role>
      */
     #[Computed]
-    public function roles(): \Illuminate\Support\Collection
+    public function roles(): EloquentCollection
     {
-        return Role::query()
-            ->where('scope_type', $this->project()->getMorphClass())
-            ->where('scope_id', $this->projectId)
-            ->get()
+        return Auth::user()->visibleRoles($this->project())
             ->sortBy(fn (Role $role): string => sprintf('%d-%s', $this->isProtected($role) ? 0 : 1, $role->name))
             ->values();
     }
 
     /**
-     * The project permission catalog, offered when defining a role.
+     * Roles the manager may delegate from — the same visible set.
      *
-     * @return Collection<int, Permission>
+     * @return EloquentCollection<int, Role>
      */
     #[Computed]
-    public function permissions(): Collection
+    public function assignableParents(): EloquentCollection
+    {
+        return $this->roles();
+    }
+
+    /**
+     * The currently chosen parent role, if any.
+     */
+    #[Computed]
+    public function parentRole(): ?Role
+    {
+        return $this->assignableParents()->firstWhere('id', $this->parentId);
+    }
+
+    /**
+     * The chosen parent's permissions, grouped for the picker — a child may only
+     * be granted a subset of its parent. Empty until a parent is chosen.
+     *
+     * @return array<string, list<Permission>>
+     */
+    #[Computed]
+    public function permissionGroups(): array
+    {
+        $parent = $this->parentRole();
+
+        if ($parent === null) {
+            return [];
+        }
+
+        $allowed = app(PermissionResolver::class)->permissionsFor($parent);
+        $byName = $this->permissions()->keyBy('name');
+
+        $groups = [];
+
+        foreach (ProjectRoleProvisioner::GROUPS as $group => $names) {
+            $perms = [];
+
+            foreach ($names as $name) {
+                if ($allowed->contains($name) && $byName->has($name)) {
+                    $perms[] = $byName->get($name);
+                }
+            }
+
+            if ($perms !== []) {
+                $groups[$group] = $perms;
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * The project permission catalog as Permission models.
+     *
+     * @return EloquentCollection<int, Permission>
+     */
+    #[Computed]
+    public function permissions(): EloquentCollection
     {
         return Permission::query()
             ->whereIn('name', ProjectRoleProvisioner::CATALOG)
-            ->orderBy('name')
             ->get();
     }
 
     /**
-     * The effective permission names each role holds, keyed by role id.
+     * The effective permission names each visible role holds, keyed by role id.
      *
      * @return array<int, array<int, string>>
      */
@@ -93,6 +158,22 @@ class ProjectRoles extends Component
         )->all();
     }
 
+    /**
+     * The ids of roles the manager may delete: strictly below them (visible but
+     * not one of their own roles) and not a seeded base role.
+     *
+     * @return Collection<int, int>
+     */
+    #[Computed]
+    public function deletableRoleIds(): Collection
+    {
+        $heldIds = Auth::user()->rolesIn($this->project())->pluck('id');
+
+        return $this->roles()
+            ->reject(fn (Role $role): bool => $this->isProtected($role) || $heldIds->contains($role->id))
+            ->pluck('id');
+    }
+
     public function createRole(RoleManager $roles): void
     {
         $project = $this->project();
@@ -100,23 +181,43 @@ class ProjectRoles extends Component
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
+            'parentId' => ['required', 'integer'],
             'permissionIds' => ['array'],
             'permissionIds.*' => ['integer'],
         ]);
 
-        if ($this->roles()->contains(static fn (Role $role): bool => $role->name === $validated['name'])) {
+        $parent = $this->assignableParents()->firstWhere('id', $validated['parentId']);
+
+        if ($parent === null) {
+            $this->addError('parentId', __('Choose a parent role you manage.'));
+
+            return;
+        }
+
+        $exists = Role::query()
+            ->where('scope_type', $project->getMorphClass())
+            ->where('scope_id', $project->id)
+            ->where('name', $validated['name'])
+            ->exists();
+
+        if ($exists) {
             $this->addError('name', __('A role with that name already exists.'));
 
             return;
         }
 
-        $owner = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
-        $names = Permission::query()->whereKey($validated['permissionIds'] ?? [])->pluck('name')->all();
+        // Bound the chosen permissions to the parent (the picker already filters,
+        // this is the safety net so a tampered id can't escalate).
+        $allowed = app(PermissionResolver::class)->permissionsFor($parent);
+        $names = Permission::query()->whereKey($validated['permissionIds'] ?? [])->pluck('name')
+            ->filter(static fn (string $name): bool => $allowed->contains($name))
+            ->values()
+            ->all();
 
-        $roles->createRole($validated['name'], $owner, $names, $project);
+        $roles->createRole($validated['name'], $parent, $names, $project);
 
         $this->reset('name', 'permissionIds');
-        unset($this->roles, $this->permissionsByRole);
+        unset($this->roles, $this->permissionsByRole, $this->deletableRoleIds);
 
         Flux::toast(variant: 'success', text: __('Role created.'));
     }
@@ -126,21 +227,19 @@ class ProjectRoles extends Component
         $project = $this->project();
         $this->authorize('manage-roles', $project);
 
-        $role = Role::query()
-            ->where('scope_type', $project->getMorphClass())
-            ->where('scope_id', $project->id)
-            ->whereKey($roleId)
-            ->firstOrFail();
-
-        if ($this->isProtected($role)) {
+        // Only roles strictly below the manager, and never a seeded base role.
+        if (! $this->deletableRoleIds()->contains($roleId)) {
             return;
         }
 
-        $roles->deleteRole($role);
+        $role = $this->roles()->firstWhere('id', $roleId);
 
-        unset($this->roles, $this->permissionsByRole);
+        if ($role !== null) {
+            $roles->deleteRole($role);
+            unset($this->roles, $this->permissionsByRole, $this->deletableRoleIds);
 
-        Flux::toast(variant: 'success', text: __('Role deleted.'));
+            Flux::toast(variant: 'success', text: __('Role deleted.'));
+        }
     }
 
     private function isProtected(Role $role): bool

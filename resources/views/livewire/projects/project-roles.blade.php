@@ -9,7 +9,7 @@
                     </flux:text>
                 </div>
 
-                @unless (in_array($role->name, ['owner', 'admin', 'member'], true))
+                @if ($this->deletableRoleIds->contains($role->id))
                     <flux:button
                         size="xs"
                         variant="ghost"
@@ -19,7 +19,7 @@
                         wire:confirm="{{ __('Delete this role?') }}"
                         data-test="delete-role-{{ $role->id }}"
                     />
-                @endunless
+                @endif
             </div>
         @endforeach
     </div>
@@ -27,16 +27,36 @@
     <form wire:submit="createRole" class="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-white/10" data-test="create-role-form">
         <flux:heading size="sm">{{ __('Add a custom role') }}</flux:heading>
 
-        <flux:input wire:model="name" :label="__('Name')" data-test="role-name" />
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <flux:input wire:model="name" :label="__('Name')" data-test="role-name" />
+
+            <flux:select wire:model.live="parentId" :label="__('Parent role')" data-test="role-parent">
+                @foreach ($this->assignableParents as $parent)
+                    <flux:select.option :value="$parent->id">{{ $parent->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
+        <flux:error name="parentId" />
+        <flux:error name="name" />
 
         <flux:field>
             <flux:label>{{ __('Permissions') }}</flux:label>
-            <flux:checkbox.group wire:model="permissionIds" class="grid grid-cols-2 gap-1">
-                @foreach ($this->permissions as $permission)
-                    <flux:checkbox value="{{ $permission->id }}" :label="$permission->name" data-test="role-permission-{{ $permission->name }}" />
-                @endforeach
+            <flux:description>{{ __('A new role can hold any subset of its parent role\'s permissions.') }}</flux:description>
+
+            <flux:checkbox.group wire:model="permissionIds" class="mt-2 flex flex-col gap-3">
+                @forelse ($this->permissionGroups as $group => $permissions)
+                    <div class="flex flex-col gap-1" wire:key="perm-group-{{ \Illuminate\Support\Str::slug($group) }}">
+                        <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
+                        <div class="grid grid-cols-2 gap-1">
+                            @foreach ($permissions as $permission)
+                                <flux:checkbox value="{{ $permission->id }}" :label="$permission->name" data-test="role-permission-{{ $permission->name }}" />
+                            @endforeach
+                        </div>
+                    </div>
+                @empty
+                    <flux:text size="sm" class="text-zinc-400">{{ __('Choose a parent role to see the permissions you can delegate.') }}</flux:text>
+                @endforelse
             </flux:checkbox.group>
-            <flux:description>{{ __('A custom role can hold any of the project permissions.') }}</flux:description>
         </flux:field>
 
         <flux:button type="submit" variant="primary" data-test="save-role">{{ __('Add role') }}</flux:button>
