@@ -69,11 +69,11 @@ it('keeps the blocked dependencies header within the sidebar in German', functio
 
     $this->actingAs($user);
 
-    // German labels (Abhängigkeiten / Blockiert / Hinzufügen) are longer than the
+    // German labels (Beziehungen / Blockiert / Hinzufügen) are longer than the
     // English ones and used to overflow the fixed-width sidebar panel.
     $page = visit("/{$project->short_name}-{$task->task_number}")->withLocale('de-DE');
 
-    $page->assertSee('Abhängigkeiten')
+    $page->assertSee('Beziehungen')
         ->assertVisible('@blocked-badge')
         ->assertScript(
             "(() => { const el = document.querySelector('[data-test=dependencies]'); return el.scrollWidth <= el.clientWidth; })()",

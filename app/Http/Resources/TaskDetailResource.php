@@ -34,8 +34,7 @@ class TaskDetailResource extends TaskResource
                 'name' => $user->name,
                 'email' => $user->email,
             ])->values()->all(),
-            'blocked_by' => $this->blockers()->map(static fn (Task $task): string => $task->reference)->values()->all(),
-            'blocks' => $this->blocking()->map(static fn (Task $task): string => $task->reference)->values()->all(),
+            ...$this->relationshipReferences(),
             'children' => $this->children->map(static fn (Task $child): array => [
                 'reference' => $shortName.'-'.$child->task_number,
                 'title' => $child->title,

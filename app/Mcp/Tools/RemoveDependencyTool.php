@@ -15,7 +15,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Removes the dependency link between two tasks (or projects), in whichever direction it exists. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Removes the relationship link between two tasks, of whatever type and in whichever direction it exists. Requires a write-access token; the user must be a member of the project.')]
 class RemoveDependencyTool extends Tool
 {
     use ExposesDependencies;
@@ -60,16 +60,16 @@ class RemoveDependencyTool extends Tool
             return Response::error('No dependency exists between "'.$item->reference.'" and "'.$related->reference.'".');
         }
 
-        // Direction from the item's perspective: as the dependent it is
-        // "blocked_by" the related item, otherwise it "blocks" it.
-        $direction = $dependency->dependent_type === $item->getMorphClass() && $dependency->dependent_id === $item->getKey()
-            ? 'blocked_by'
-            : 'blocks';
+        // The relationship keyword from the item's perspective — it is the
+        // subject (outward) end when it is the blocker side of the link.
+        $itemIsBlocker = $dependency->blocker_type === $item->getMorphClass() && $dependency->blocker_id === $item->getKey();
+        $keyword = $dependency->type->keyword($itemIsBlocker);
 
         $dependency->delete();
 
         $item->unsetRelation('dependencyLinks');
-        $item->recordDependencyChange(false, $direction, $related->reference);
+        $item->unsetRelation('dependentLinks');
+        $item->recordDependencyChange(false, $keyword, $related->reference);
 
         return Response::structured([
             'reference' => $item->reference,
@@ -106,9 +106,7 @@ class RemoveDependencyTool extends Tool
         return [
             'reference' => $schema->string()->description('The reference of the changed task.')->required(),
             'related' => $schema->string()->description('The reference of the related task that was unlinked.')->required(),
-            'blocked_by' => $schema->array()->items($schema->string())->description('References of the tasks that still block the changed item.')->required(),
-            'blocks' => $schema->array()->items($schema->string())->description('References of the tasks that the changed item still blocks.')->required(),
-            'is_blocked' => $schema->boolean()->description('Whether the changed item still has a blocker that is not yet complete.')->required(),
+            ...$this->dependencySchema($schema),
         ];
     }
 }

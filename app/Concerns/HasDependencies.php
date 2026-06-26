@@ -2,6 +2,7 @@
 
 namespace App\Concerns;
 
+use App\Enums\RelationshipType;
 use App\Models\Dependency;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Builder;
@@ -66,6 +67,10 @@ trait HasDependencies
         $blockers = [];
 
         foreach ($this->dependencyLinks as $link) {
+            if (! $link->type->isBlocking()) {
+                continue;
+            }
+
             $blocker = $link->blocker;
 
             if ($blocker instanceof Task) {
@@ -86,6 +91,10 @@ trait HasDependencies
         $blocking = [];
 
         foreach ($this->dependentLinks as $link) {
+            if (! $link->type->isBlocking()) {
+                continue;
+            }
+
             $dependent = $link->dependent;
 
             if ($dependent instanceof Task) {
@@ -105,6 +114,80 @@ trait HasDependencies
     }
 
     /**
+     * This item's relationships grouped by keyword (from its perspective), as the
+     * references of the related tasks. Every keyword is present, mapping to a
+     * possibly-empty list — e.g. `['blocked_by' => ['KAN-3'], 'blocks' => [], …]`.
+     *
+     * @return array<string, list<string>>
+     */
+    public function relationshipReferences(): array
+    {
+        /** @var array<string, list<string>> $grouped */
+        $grouped = array_fill_keys(RelationshipType::keywords(), []);
+
+        foreach ($this->dependencyLinks as $link) {
+            $related = $link->blocker;
+
+            if ($related instanceof Task) {
+                $grouped[$link->type->keyword(asSubject: false)][] = $related->reference;
+            }
+        }
+
+        foreach ($this->dependentLinks as $link) {
+            $related = $link->dependent;
+
+            if ($related instanceof Task) {
+                $grouped[$link->type->keyword(asSubject: true)][] = $related->reference;
+            }
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Record a typed relationship between this item and the given one, creating
+     * the link if it does not already exist. `$asSubject` says whether this item
+     * is the subject (outward) end — e.g. for {@see RelationshipType::Blocks} the
+     * subject blocks the object. Symmetric types ignore it and are stored
+     * canonically so the same link is never stored twice.
+     *
+     * @throws InvalidArgumentException when the link would be a self-relationship or close a blocking cycle.
+     */
+    public function addRelationship(Task $related, RelationshipType $type, bool $asSubject): Dependency
+    {
+        if ($related->is($this)) {
+            throw new InvalidArgumentException('A relationship cannot link an item to itself.');
+        }
+
+        if ($type->isSymmetric()) {
+            [$dependent, $blocker] = $this->getKey() <= $related->getKey()
+                ? [$this, $related]
+                : [$related, $this];
+        } elseif ($asSubject) {
+            [$dependent, $blocker] = [$related, $this];
+        } else {
+            [$dependent, $blocker] = [$this, $related];
+        }
+
+        if ($type->isBlocking() && $dependent->wouldCreateCycleWith($blocker)) {
+            throw new InvalidArgumentException('A dependency cannot create a cycle.');
+        }
+
+        $dependency = Dependency::firstOrCreate([
+            'dependent_type' => $dependent->getMorphClass(),
+            'dependent_id' => $dependent->getKey(),
+            'blocker_type' => $blocker->getMorphClass(),
+            'blocker_id' => $blocker->getKey(),
+            'type' => $type->value,
+        ]);
+
+        $this->unsetRelation('dependencyLinks');
+        $this->unsetRelation('dependentLinks');
+
+        return $dependency;
+    }
+
+    /**
      * Record that this item is blocked by the given one, creating the link if it
      * does not already exist.
      *
@@ -112,30 +195,19 @@ trait HasDependencies
      */
     public function addBlocker(Task $blocker): Dependency
     {
-        if ($this->wouldCreateCycleWith($blocker)) {
-            throw new InvalidArgumentException('A dependency cannot create a cycle.');
-        }
-
-        $dependency = Dependency::firstOrCreate([
-            'dependent_type' => $this->getMorphClass(),
-            'dependent_id' => $this->getKey(),
-            'blocker_type' => $blocker->getMorphClass(),
-            'blocker_id' => $blocker->getKey(),
-        ]);
-
-        $this->unsetRelation('dependencyLinks');
-
-        return $dependency;
+        return $this->addRelationship($blocker, RelationshipType::Blocks, asSubject: false);
     }
 
     /**
-     * Remove the link recording that this item is blocked by the given one.
+     * Remove the blocking link recording that this item is blocked by the given
+     * one. Non-blocking relationships between the two are left untouched.
      */
     public function removeBlocker(Task $blocker): void
     {
         $this->dependencyLinks()
             ->where('blocker_type', $blocker->getMorphClass())
             ->where('blocker_id', $blocker->getKey())
+            ->where('type', RelationshipType::Blocks->value)
             ->delete();
 
         $this->unsetRelation('dependencyLinks');

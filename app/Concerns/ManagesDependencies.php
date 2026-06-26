@@ -3,11 +3,11 @@
 namespace App\Concerns;
 
 use App\Contracts\Dependable;
+use App\Enums\RelationshipType;
 use App\Models\Dependency;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Flux\Flux;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -30,60 +30,88 @@ trait ManagesDependencies
     abstract protected function dependable(): Task;
 
     /**
-     * The dependency links where the viewed item is blocked, with the blocking
-     * item (and the relations needed to render its reference) eager-loaded.
+     * The viewed item's relationships, grouped by keyword in display order. Each
+     * group carries a heading and the links to render (the related task plus the
+     * link id used to remove it). Links where the item is the dependent (object)
+     * end and where it is the blocker (subject) end are both gathered, so a
+     * symmetric "relates" link appears once regardless of which end the item is.
      *
-     * @return Collection<int, Dependency>
+     * @return BaseCollection<int, array{keyword: string, heading: string, links: BaseCollection<int, array{link: Dependency, related: Task}>}>
      */
     #[Computed]
-    public function blockerLinks(): Collection
+    public function relationshipGroups(): BaseCollection
     {
-        return $this->dependable()->dependencyLinks()->with('blocker')->get();
+        $item = $this->dependable();
+
+        /** @var list<array{link: Dependency, related: Task, keyword: string}> $rows */
+        $rows = [];
+
+        foreach ($item->dependencyLinks()->with('blocker')->get() as $link) {
+            $related = $link->blocker;
+
+            if ($related instanceof Task) {
+                $rows[] = ['link' => $link, 'related' => $related, 'keyword' => $link->type->keyword(asSubject: false)];
+            }
+        }
+
+        foreach ($item->dependentLinks()->with('dependent')->get() as $link) {
+            $related = $link->dependent;
+
+            if ($related instanceof Task) {
+                $rows[] = ['link' => $link, 'related' => $related, 'keyword' => $link->type->keyword(asSubject: true)];
+            }
+        }
+
+        $byKeyword = collect($rows)->groupBy('keyword');
+
+        $groups = [];
+
+        foreach (RelationshipType::keywords() as $keyword) {
+            $group = $byKeyword->get($keyword);
+            $resolved = RelationshipType::fromKeyword($keyword);
+
+            if ($group === null || $resolved === null) {
+                continue;
+            }
+
+            [$type, $asSubject] = $resolved;
+
+            $groups[] = [
+                'keyword' => $keyword,
+                'heading' => $type->groupHeading($asSubject),
+                'links' => $group
+                    ->map(static fn (array $row): array => ['link' => $row['link'], 'related' => $row['related']])
+                    ->values(),
+            ];
+        }
+
+        return collect($groups);
     }
 
     /**
-     * The dependency links where the viewed item is the blocker, with the blocked
-     * item eager-loaded.
+     * The relationship options offered in the add form: keyword => label.
      *
-     * @return Collection<int, Dependency>
+     * @return array<string, string>
      */
     #[Computed]
-    public function blockingLinks(): Collection
+    public function relationshipOptions(): array
     {
-        return $this->dependable()->dependentLinks()->with('dependent')->get();
+        return RelationshipType::options();
     }
 
     /**
-     * The blocker links whose blocking item still exists, ready to render.
-     *
-     * @return BaseCollection<int, Dependency>
-     */
-    #[Computed]
-    public function presentBlockerLinks(): BaseCollection
-    {
-        return $this->blockerLinks()->filter(static fn (Dependency $link): bool => $link->blocker !== null)->values();
-    }
-
-    /**
-     * The blocking links whose dependent item still exists, ready to render.
-     *
-     * @return BaseCollection<int, Dependency>
-     */
-    #[Computed]
-    public function presentBlockingLinks(): BaseCollection
-    {
-        return $this->blockingLinks()->filter(static fn (Dependency $link): bool => $link->dependent !== null)->values();
-    }
-
-    /**
-     * Whether the viewed item has an unfinished blocker.
+     * Whether the viewed item has an unfinished blocker. Only blocking links
+     * count — informational links (relates, duplicates, …) never block.
      */
     #[Computed]
     public function isBlocked(): bool
     {
-        return $this->blockerLinks()->contains(
-            static fn (Dependency $link): bool => $link->blocker instanceof Dependable && ! $link->blocker->isComplete()
-        );
+        return $this->dependable()
+            ->dependencyLinks()
+            ->where('type', RelationshipType::Blocks->value)
+            ->with('blocker')
+            ->get()
+            ->contains(static fn (Dependency $link): bool => $link->blocker instanceof Dependable && ! $link->blocker->isComplete());
     }
 
     /**
@@ -147,7 +175,7 @@ trait ManagesDependencies
 
         $this->validate([
             'dependencyReference' => ['required', 'string'],
-            'dependencyDirection' => ['required', 'in:blocked_by,blocks'],
+            'dependencyDirection' => ['required', 'in:'.implode(',', RelationshipType::keywords())],
         ]);
 
         $related = ReferenceResolver::commentable(trim($this->dependencyReference));
@@ -164,25 +192,20 @@ trait ManagesDependencies
             return;
         }
 
-        // "blocked_by": the viewed item depends on the related one. "blocks":
-        // the related item depends on the viewed one.
-        [$dependent, $blocker] = $this->dependencyDirection === 'blocks'
-            ? [$related, $item]
-            : [$item, $related];
+        [$type, $asSubject] = RelationshipType::fromKeyword($this->dependencyDirection);
 
         try {
-            $dependent->addBlocker($blocker);
+            $item->addRelationship($related, $type, $asSubject);
         } catch (InvalidArgumentException) {
             $this->addError('dependencyReference', __('That would make an item depend on itself or create a cycle.'));
 
             return;
         }
 
-        $direction = $this->dependencyDirection === 'blocks' ? 'blocks' : 'blocked_by';
-        $item->recordDependencyChange(true, $direction, $related->reference);
+        $item->recordDependencyChange(true, $this->dependencyDirection, $related->reference);
 
         $this->reset('dependencyReference');
-        unset($this->blockerLinks, $this->blockingLinks, $this->presentBlockerLinks, $this->presentBlockingLinks, $this->isBlocked);
+        unset($this->relationshipGroups, $this->isBlocked);
 
         Flux::toast(variant: 'success', text: __('Dependency added.'));
     }
@@ -203,18 +226,19 @@ trait ManagesDependencies
 
         abort_unless($itemIsDependent || $itemIsBlocker, 404);
 
-        // From the item's perspective: as the dependent it is "blocked_by" its
-        // blocker; as the blocker it "blocks" its dependent.
-        $direction = $itemIsDependent ? 'blocked_by' : 'blocks';
         $related = $itemIsDependent ? $dependency->blocker : $dependency->dependent;
 
         abort_unless($related instanceof Task, 404);
 
+        // The relationship keyword from this item's perspective — it is the
+        // subject (outward) end when it is the blocker side of the link.
+        $keyword = $dependency->type->keyword($itemIsBlocker);
+
         $dependency->delete();
 
-        $item->recordDependencyChange(false, $direction, $related->reference);
+        $item->recordDependencyChange(false, $keyword, $related->reference);
 
-        unset($this->blockerLinks, $this->blockingLinks, $this->presentBlockerLinks, $this->presentBlockingLinks, $this->isBlocked);
+        unset($this->relationshipGroups, $this->isBlocked);
 
         Flux::toast(variant: 'success', text: __('Dependency removed.'));
     }

@@ -46,6 +46,21 @@ it('adds a blocks dependency by reference', function () {
     expect($this->task->fresh()->blocking()->pluck('id'))->toContain($this->other->id);
 });
 
+it('adds a non-blocking duplicates relationship and records its keyword', function () {
+    ($this->mountTask)()
+        ->set('dependencyDirection', 'duplicates')
+        ->set('dependencyReference', $this->other->reference)
+        ->call('addDependency')
+        ->assertHasNoErrors();
+
+    $activity = $this->task->activities()->where('action', 'dependency_changed')->first();
+
+    expect(Dependency::where('type', 'duplicates')->count())->toBe(1)
+        ->and($this->task->fresh()->isBlocked())->toBeFalse()
+        ->and(json_decode((string) $activity->new_value, true))
+        ->toBe(['direction' => 'duplicates', 'reference' => $this->other->reference]);
+});
+
 it('records a dependency activity capturing the direction and related reference', function () {
     ($this->mountTask)()
         ->set('dependencyDirection', 'blocked_by')

@@ -5,6 +5,7 @@ namespace App\Livewire\Activity;
 use App\Concerns\ResolvesMorphSubject;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
+use App\Enums\RelationshipType;
 use App\Enums\Status;
 use App\Models\Activity;
 use App\Models\Project;
@@ -296,12 +297,16 @@ class ActivityFeed extends Component
      */
     private function dependencyDescription(array $added, array $removed): string
     {
-        return match (true) {
-            ($added['direction'] ?? null) === 'blocked_by' => __('is now blocked by :ref', ['ref' => $added['reference'] ?? '']),
-            ($added['direction'] ?? null) === 'blocks' => __('now blocks :ref', ['ref' => $added['reference'] ?? '']),
-            ($removed['direction'] ?? null) === 'blocked_by' => __('is no longer blocked by :ref', ['ref' => $removed['reference'] ?? '']),
-            ($removed['direction'] ?? null) === 'blocks' => __('no longer blocks :ref', ['ref' => $removed['reference'] ?? '']),
-            default => __('updated the dependencies'),
-        };
+        $linked = ($added['direction'] ?? null) !== null;
+        $payload = $linked ? $added : $removed;
+        $resolved = RelationshipType::fromKeyword($payload['direction'] ?? '');
+
+        if ($resolved === null) {
+            return __('updated the dependencies');
+        }
+
+        [$type, $asSubject] = $resolved;
+
+        return $type->activityDescription($linked, $asSubject, $payload['reference'] ?? '');
     }
 }

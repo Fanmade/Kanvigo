@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\RelationshipType;
 use App\Enums\Status;
 use App\Models\Dependency;
 use App\Models\Task;
@@ -31,6 +32,7 @@ class BlockedTasks
         $links = Dependency::query()
             ->where('dependent_type', $taskMorph)
             ->whereIn('dependent_id', $taskIds)
+            ->where('type', RelationshipType::Blocks->value)
             ->get(['dependent_id', 'blocker_type', 'blocker_id']);
 
         if ($links->isEmpty()) {

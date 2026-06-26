@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Contracts\Subscribable;
+use App\Enums\RelationshipType;
 use App\Models\Activity;
 use App\Models\Task;
 use App\Models\User;
@@ -132,12 +133,13 @@ trait LogsActivity
     }
 
     /**
-     * Record a dependency link being added or removed. The direction and the
-     * related reference are captured from this item's perspective, so the trail
-     * can read "is now blocked by KAN-3" or "no longer blocks KAN2".
+     * Record a relationship link being added or removed. The relationship keyword
+     * (e.g. "blocked_by", "duplicates", "relates") and the related reference are
+     * captured from this item's perspective, so the trail can read "is now
+     * blocked by KAN-3" or "no longer duplicates KAN-2".
      *
      * @param  bool  $linked  true when the link was added, false when removed
-     * @param  'blocked_by'|'blocks'  $direction  the relationship from this item
+     * @param  string  $direction  the relationship keyword from this item's perspective ({@see RelationshipType::keywords()})
      * @param  string  $reference  the related item's reference
      */
     public function recordDependencyChange(bool $linked, string $direction, string $reference): Activity

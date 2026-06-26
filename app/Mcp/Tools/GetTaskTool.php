@@ -124,9 +124,7 @@ class GetTaskTool extends Tool
                 'done' => $schema->integer()->description('How many descendant tasks are done.')->required(),
                 'total' => $schema->integer()->description('The total number of descendant tasks (the whole subtree below this task).')->required(),
             ])->description('Completion rolled up from this task\'s subtree.')->required(),
-            'blocked_by' => $schema->array()->items($schema->string())->description('References of the tasks and projects that block this task; it should not be started until they are complete.')->required(),
-            'blocks' => $schema->array()->items($schema->string())->description('References of the tasks and projects that this task blocks.')->required(),
-            'is_blocked' => $schema->boolean()->description('Whether any of this task\'s blockers is not yet complete.')->required(),
+            ...$this->dependencySchema($schema),
             'assignees' => $schema->array()->items($schema->object([
                 'name' => $schema->string()->description('The assignee name.')->required(),
                 'email' => $schema->string()->description('The assignee email address.')->required(),

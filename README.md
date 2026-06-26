@@ -112,10 +112,13 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   default) on tasks, with new subtasks inheriting their parent task's priority.
   Board columns are ordered by priority and can be filtered to a single level.
 - **Due dates** on tasks, highlighted on the board when overdue.
-- **Dependencies** — mark a task as blocked by, or blocking, another task (by
-  reference). Blockers and blocked items are listed on the task view,
-  and a card is flagged "Blocked" on the board while any blocker is unfinished.
-  Self-links and cycles are rejected. Available in the UI and through the MCP tools.
+- **Relationships** — link a task to another (by reference) with a typed
+  relationship: blocks / blocked by, relates to (symmetric), duplicates /
+  duplicated by, clones / cloned by, or causes / caused by. Only blocking links
+  affect scheduling — a card is flagged "Blocked" on the board while any blocker
+  is unfinished, and blocking cycles (and self-links) are rejected; the other
+  types are purely informational. Relationships are grouped by type on the task
+  view, and available through the REST and MCP APIs.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
 - **Mentions & references** — in any description or comment, type `@` to mention a

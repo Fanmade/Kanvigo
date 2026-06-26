@@ -41,6 +41,35 @@ it('links a blocks dependency', function () {
         ->assertJsonPath('data.blocks', [$this->b->reference]);
 });
 
+it('links a symmetric relates relationship without blocking', function () {
+    Sanctum::actingAs($this->user, ['read', 'write']);
+
+    $this->postJson("/api/v1/tasks/{$this->a->reference}/dependencies", [
+        'related' => $this->b->reference,
+        'direction' => 'relates',
+    ])
+        ->assertCreated()
+        ->assertJsonPath('data.relates', [$this->b->reference])
+        ->assertJsonPath('data.is_blocked', false);
+
+    // It reads the same from the other end.
+    Sanctum::actingAs($this->user, ['read']);
+    $this->getJson("/api/v1/tasks/{$this->b->reference}")
+        ->assertOk()
+        ->assertJsonPath('data.relates', [$this->a->reference]);
+});
+
+it('links a directed duplicates relationship', function () {
+    Sanctum::actingAs($this->user, ['read', 'write']);
+
+    $this->postJson("/api/v1/tasks/{$this->a->reference}/dependencies", [
+        'related' => $this->b->reference,
+        'direction' => 'duplicates',
+    ])
+        ->assertCreated()
+        ->assertJsonPath('data.duplicates', [$this->b->reference]);
+});
+
 it('rejects a cycle', function () {
     $this->a->addBlocker($this->b); // a is blocked by b
     Sanctum::actingAs($this->user, ['read', 'write']);

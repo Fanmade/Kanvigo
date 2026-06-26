@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RelationshipType;
 use App\Enums\Status;
 use App\Models\Dependency;
 use App\Models\Project;
@@ -24,6 +25,48 @@ test('a task lists its blockers and the tasks it blocks', function () {
 
     expect($task->blockers()->pluck('id'))->toContain($blocker->id)
         ->and($blocker->blocking()->pluck('id'))->toContain($task->id);
+});
+
+test('a non-blocking relationship never blocks the task', function () {
+    $project = Project::factory()->create();
+    $task = Task::factory()->for($project)->status(Status::ToDo)->create();
+    $other = Task::factory()->for($project)->status(Status::ToDo)->create();
+
+    // "duplicates" is informational — the unfinished related task must not block.
+    $task->addRelationship($other, RelationshipType::Duplicates, asSubject: true);
+
+    expect($task->fresh()->isBlocked())->toBeFalse()
+        ->and(Dependency::where('type', 'duplicates')->count())->toBe(1);
+});
+
+test('a symmetric relates link is stored once regardless of which side adds it', function () {
+    $project = Project::factory()->create();
+    $a = Task::factory()->for($project)->create();
+    $b = Task::factory()->for($project)->create();
+
+    $a->addRelationship($b, RelationshipType::Relates, asSubject: true);
+    $b->addRelationship($a, RelationshipType::Relates, asSubject: true);
+
+    expect(Dependency::where('type', 'relates')->count())->toBe(1)
+        ->and($a->fresh()->relationshipReferences()['relates'])->toBe([$b->reference])
+        ->and($b->fresh()->relationshipReferences()['relates'])->toBe([$a->reference]);
+});
+
+test('relationshipReferences groups the related tasks by keyword', function () {
+    $project = Project::factory()->create();
+    $task = Task::factory()->for($project)->create();
+    $dup = Task::factory()->for($project)->create();
+    $blocker = Task::factory()->for($project)->status(Status::ToDo)->create();
+
+    $task->addRelationship($dup, RelationshipType::Duplicates, asSubject: true);
+    $task->addBlocker($blocker);
+
+    $refs = $task->fresh()->relationshipReferences();
+
+    expect($refs['duplicates'])->toBe([$dup->reference])
+        ->and($refs['blocked_by'])->toBe([$blocker->reference])
+        ->and($refs['blocks'])->toBe([])
+        ->and($refs['relates'])->toBe([]);
 });
 
 test('dependencies work between tasks regardless of nesting', function () {

@@ -97,6 +97,32 @@ it('links a blocked_by dependency and records the activity', function () {
         ->toBe(['direction' => 'blocked_by', 'reference' => $blocker->reference]);
 });
 
+it('links a typed, non-blocking relationship and reports it by keyword', function () {
+    Sanctum::actingAs($this->user, ['read', 'write']);
+    $task = Task::factory()->for($this->project)->create();
+    $dup = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+
+    KanvigoServer::tool(AddDependencyTool::class, [
+        'reference' => $task->reference,
+        'related_reference' => $dup->reference,
+        'direction' => 'duplicates',
+    ])
+        ->assertOk()
+        ->assertSee('"duplicates":["'.$dup->reference.'"]')
+        ->assertSee('"is_blocked":false');
+
+    assertDatabaseHas('dependencies', [
+        'blocker_id' => $task->id,
+        'dependent_id' => $dup->id,
+        'type' => 'duplicates',
+    ]);
+
+    // The related task reports the inverse keyword from its own perspective.
+    KanvigoServer::actingAs($this->user)->tool(GetTaskTool::class, ['reference' => $dup->reference])
+        ->assertOk()
+        ->assertSee('"duplicated_by":["'.$task->reference.'"]');
+});
+
 it('links a blocks dependency in the reverse direction', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
     $task = Task::factory()->for($this->project)->create();

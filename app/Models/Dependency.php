@@ -2,22 +2,36 @@
 
 namespace App\Models;
 
+use App\Enums\RelationshipType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * A directed dependency link: the {@see dependent} item is blocked by the
- * {@see blocker} item, which must be completed first. Both ends are polymorphic.
+ * A directed relationship link between two items. The {@see blocker} end is the
+ * subject (outward) side and the {@see dependent} end is the object (inward)
+ * side; the {@see $type} says how they relate. For the default "blocks" type the
+ * blocker must be completed before the dependent. Both ends are polymorphic.
  *
  * @property int $id
  * @property string $dependent_type
  * @property int $dependent_id
  * @property string $blocker_type
  * @property int $blocker_id
+ * @property RelationshipType $type
  */
 class Dependency extends Model
 {
     protected $guarded = [];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'type' => RelationshipType::class,
+        ];
+    }
 
     /**
      * The blocked item (a Task).

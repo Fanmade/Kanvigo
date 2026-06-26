@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\RelationshipType;
 use App\Http\Controllers\Controller;
 use App\Models\Dependency;
 use App\Models\Task;
@@ -18,27 +19,25 @@ use InvalidArgumentException;
 class DependencyController extends Controller
 {
     /**
-     * Link a dependency between the task at {reference} and a related task. With
-     * direction "blocked_by" the task is blocked by the related one; with "blocks"
-     * it blocks the related one. Self-dependencies and cycles are rejected.
+     * Link a typed relationship between the task at {reference} and a related
+     * task. The "direction" keyword reads from the task to the related one —
+     * "blocked_by", "blocks", "relates", "duplicates", "duplicated_by",
+     * "clones", "cloned_by", "causes", "caused_by". Only blocking links affect
+     * whether a task is blocked; self-links and blocking cycles are rejected.
      */
     public function store(Request $request, string $reference): JsonResponse
     {
         $validated = $request->validate([
             'related' => ['required', 'string'],
-            'direction' => ['required', Rule::in(['blocked_by', 'blocks'])],
+            'direction' => ['required', Rule::in(RelationshipType::keywords())],
         ]);
 
         [$item, $related] = $this->resolvePair($reference, $validated['related']);
 
-        // "blocked_by": the item depends on the related one. "blocks": the related
-        // item depends on the item.
-        [$dependent, $blocker] = $validated['direction'] === 'blocks'
-            ? [$related, $item]
-            : [$item, $related];
+        [$type, $asSubject] = RelationshipType::fromKeyword($validated['direction']);
 
         try {
-            $dependent->addBlocker($blocker);
+            $item->addRelationship($related, $type, $asSubject);
         } catch (InvalidArgumentException) {
             throw ValidationException::withMessages([
                 'related' => __('That would make an item depend on itself or create a cycle.'),
@@ -68,16 +67,16 @@ class DependencyController extends Controller
 
         abort_if($dependency === null, 404);
 
-        // Direction from the item's perspective: as the dependent it is
-        // "blocked_by" the related item, otherwise it "blocks" it.
-        $direction = $dependency->dependent_type === $item->getMorphClass() && $dependency->dependent_id === $item->getKey()
-            ? 'blocked_by'
-            : 'blocks';
+        // The relationship keyword from the item's perspective — it is the
+        // subject (outward) end when it is the blocker side of the link.
+        $itemIsBlocker = $dependency->blocker_type === $item->getMorphClass() && $dependency->blocker_id === $item->getKey();
+        $keyword = $dependency->type->keyword($itemIsBlocker);
 
         $dependency->delete();
 
         $item->unsetRelation('dependencyLinks');
-        $item->recordDependencyChange(false, $direction, $relatedTask->reference);
+        $item->unsetRelation('dependentLinks');
+        $item->recordDependencyChange(false, $keyword, $relatedTask->reference);
 
         return response()->json(['data' => $this->payload($item)]);
     }
@@ -105,7 +104,7 @@ class DependencyController extends Controller
      * what it blocks, and whether it is currently blocked — eager-loading the
      * linked items in one pass to keep reference resolution N+1-free.
      *
-     * @return array{reference: string, blocked_by: array<int, string>, blocks: array<int, string>, is_blocked: bool}
+     * @return array<string, string|array<int, string>|bool>
      */
     private function payload(Task $item): array
     {
@@ -120,8 +119,7 @@ class DependencyController extends Controller
 
         return [
             'reference' => $item->reference,
-            'blocked_by' => $item->blockers()->map(static fn (Task $blocker): string => $blocker->reference)->values()->all(),
-            'blocks' => $item->blocking()->map(static fn (Task $blocked): string => $blocked->reference)->values()->all(),
+            ...$item->relationshipReferences(),
             'is_blocked' => $item->isBlocked(),
         ];
     }
