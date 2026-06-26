@@ -20,7 +20,6 @@
                 <flux:select
                     wire:model.live="projectId"
                     :label="__('Project')"
-                    :placeholder="__('None (private note)')"
                     data-test="create-note-project"
                 >
                     <flux:select.option value="">{{ __('None (private note)') }}</flux:select.option>

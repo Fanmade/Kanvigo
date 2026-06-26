@@ -61,8 +61,7 @@
                 </flux:select>
 
                 @if ($hasTaskTypes)
-                    <flux:select wire:model="typeId" :label="__('Type')" :placeholder="__('No type')"
-                                 data-test="create-task-type">
+                    <flux:select wire:model="typeId" :label="__('Type')" data-test="create-task-type">
                         <flux:select.option value="">{{ __('No type') }}</flux:select.option>
                         @foreach ($this->taskTypes as $type)
                             <flux:select.option :value="$type->id">{{ $type->name }}</flux:select.option>
