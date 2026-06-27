@@ -24,6 +24,23 @@ it('falls back to a title-cased label for a permission outside the catalog', fun
     expect(PermissionCatalog::label('some-unknown-permission'))->toBe('Some Unknown Permission');
 });
 
+it('has a short picker label for every catalog permission', function () {
+    foreach (ProjectRoleProvisioner::CATALOG as $permission) {
+        expect(PermissionCatalog::PICKER_LABELS)->toHaveKey($permission);
+    }
+});
+
+it('has a German translation for every picker label', function () {
+    $german = json_decode(file_get_contents(lang_path('de.json')), true, flags: JSON_THROW_ON_ERROR);
+
+    $missing = array_values(array_filter(
+        PermissionCatalog::PICKER_LABELS,
+        static fn (string $label): bool => ! array_key_exists($label, $german),
+    ));
+
+    expect($missing)->toBe([], 'Missing German translations for picker labels: '.implode(', ', $missing));
+});
+
 it('only describes permissions that exist in the catalog', function () {
     expect(array_keys(PermissionCatalog::DESCRIPTIONS))
         ->each->toBeIn(ProjectRoleProvisioner::CATALOG);

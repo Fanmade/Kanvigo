@@ -45,7 +45,14 @@
                                     <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
                                     <div class="flex flex-col gap-1">
                                         @foreach ($permissions as $permission)
-                                            <flux:checkbox value="{{ $permission->id }}" :label="$this->permissionLabel($permission->name)" :description="$this->permissionDescription($permission->name)" data-test="edit-permission-{{ $permission->name }}" />
+                                            <div class="flex items-center gap-1.5">
+                                                <flux:checkbox value="{{ $permission->id }}" :label="$this->permissionPickerLabel($permission->name)" data-test="edit-permission-{{ $permission->name }}" />
+                                                @if ($description = $this->permissionDescription($permission->name))
+                                                    <flux:tooltip :content="$description">
+                                                        <flux:icon.question-mark-circle variant="micro" class="cursor-help text-zinc-400" tabindex="0" data-test="edit-permission-hint-{{ $permission->name }}" />
+                                                    </flux:tooltip>
+                                                @endif
+                                            </div>
                                         @endforeach
                                     </div>
                                 </div>
@@ -87,7 +94,14 @@
                         <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
                         <div class="flex flex-col gap-1">
                             @foreach ($permissions as $permission)
-                                <flux:checkbox value="{{ $permission->id }}" :label="$this->permissionLabel($permission->name)" :description="$this->permissionDescription($permission->name)" data-test="role-permission-{{ $permission->name }}" />
+                                <div class="flex items-center gap-1.5">
+                                    <flux:checkbox value="{{ $permission->id }}" :label="$this->permissionPickerLabel($permission->name)" data-test="role-permission-{{ $permission->name }}" />
+                                    @if ($description = $this->permissionDescription($permission->name))
+                                        <flux:tooltip :content="$description">
+                                            <flux:icon.question-mark-circle variant="micro" class="cursor-help text-zinc-400" tabindex="0" data-test="role-permission-hint-{{ $permission->name }}" />
+                                        </flux:tooltip>
+                                    @endif
+                                </div>
                             @endforeach
                         </div>
                     </div>

@@ -210,8 +210,17 @@ class ProjectRoles extends Component
     }
 
     /**
-     * The optional translated description for a permission name, shown as helper
-     * text under its checkbox. Null when the permission has no description.
+     * The short label for a permission in the role picker, where the group
+     * heading already names the subject. Defers to {@see PermissionCatalog}.
+     */
+    public function permissionPickerLabel(string $name): string
+    {
+        return PermissionCatalog::pickerLabel($name);
+    }
+
+    /**
+     * The optional translated description for a permission name, surfaced behind
+     * a hint icon in the picker. Null when the permission has no description.
      */
     public function permissionDescription(string $name): ?string
     {
