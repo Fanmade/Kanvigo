@@ -74,12 +74,7 @@ class UserFactory extends Factory
      */
     public function admin(): static
     {
-        return $this->withPermission(
-            Permission::CreateProjects,
-            Permission::InviteUsers,
-            Permission::CreateApiTokens,
-            Permission::ManageUsers,
-        );
+        return $this->withPermission(...Permission::cases());
     }
 
     /**
