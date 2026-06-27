@@ -101,7 +101,7 @@ class Dashboard extends Component
             ->where('title', '!=', '')
             ->with(['project', 'convertedTask.project'])
             ->orderByDesc('is_pinned')
-            ->latest('updated_at')
+            ->orderByDesc('position')
             ->limit(self::NOTES_LIMIT)
             ->get();
     }

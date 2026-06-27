@@ -2,7 +2,9 @@
 
 namespace App\Concerns;
 
+use App\Models\Note;
 use Flux\Flux;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 
@@ -64,6 +66,69 @@ trait ManagesNotes
         $note->update(['is_pinned' => ! $note->is_pinned]);
 
         $this->forgetNotes();
+    }
+
+    /**
+     * Move one of the viewer's own notes up one slot in the list (KAN-320).
+     */
+    public function moveNoteUp(int $noteId): void
+    {
+        $this->swapNoteWithNeighbour($noteId, -1);
+    }
+
+    /**
+     * Move one of the viewer's own notes down one slot in the list.
+     */
+    public function moveNoteDown(int $noteId): void
+    {
+        $this->swapNoteWithNeighbour($noteId, 1);
+    }
+
+    /**
+     * Swap a note's position with the neighbour $offset steps away in the current
+     * order, persisting both. Reordering stays within a pin group — pinned notes
+     * always sort above the rest — so it's a no-op at a group boundary or the
+     * ends of the list.
+     */
+    protected function swapNoteWithNeighbour(int $noteId, int $offset): void
+    {
+        $note = Auth::user()->notes()->findOrFail($noteId);
+        $this->authorize('update', $note);
+
+        $ordered = $this->orderedOwnNotes();
+        $index = $ordered->search(static fn (Note $candidate): bool => $candidate->id === $noteId);
+
+        if ($index === false) {
+            return;
+        }
+
+        $current = $ordered->get($index);
+        $neighbour = $ordered->get($index + $offset);
+
+        if ($neighbour === null || $neighbour->is_pinned !== $current->is_pinned) {
+            return;
+        }
+
+        [$current->position, $neighbour->position] = [$neighbour->position, $current->position];
+        $current->save();
+        $neighbour->save();
+
+        $this->forgetNotes();
+    }
+
+    /**
+     * The viewer's own notes in display order (pinned first, then by position),
+     * matching the list — the basis for resolving a note's neighbour.
+     *
+     * @return Collection<int, Note>
+     */
+    protected function orderedOwnNotes(): Collection
+    {
+        return Auth::user()->notes()
+            ->where('title', '!=', '')
+            ->orderByDesc('is_pinned')
+            ->orderByDesc('position')
+            ->get();
     }
 
     /**

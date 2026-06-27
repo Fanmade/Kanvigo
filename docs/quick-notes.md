@@ -11,7 +11,9 @@ optional rich-text body — the same editor used for descriptions, with inline i
 The Notes page lists all your notes, newest first, where you can create, edit, share,
 convert and delete them; the dashboard panel shows the same notes in a compact view.
 **Pin** a note (the star) to keep it at the top of the list — pinned notes sort above
-the rest in both the Notes page and the dashboard panel.
+the rest in both the Notes page and the dashboard panel. On the Notes page you can also
+**reorder** notes with the up/down controls; ordering applies within each group, so
+pinned notes always stay above the unpinned ones.
 
 ## Privacy & sharing
 

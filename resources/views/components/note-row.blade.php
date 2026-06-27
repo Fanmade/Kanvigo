@@ -1,4 +1,4 @@
-@props(['note'])
+@props(['note', 'reorderable' => false])
 
 {{-- A single note row: title (opens the edit dialog), status badges and an
      actions menu. Shared by the dashboard panel and the Notes page; the owner
@@ -36,6 +36,27 @@
     </div>
 
     <div class="flex shrink-0 items-center gap-0.5">
+        @if ($reorderable)
+            <flux:button
+                size="xs"
+                variant="ghost"
+                icon="chevron-up"
+                class="text-zinc-400!"
+                wire:click="moveNoteUp({{ $note->id }})"
+                :aria-label="__('Move up')"
+                data-test="move-note-up-{{ $note->id }}"
+            />
+            <flux:button
+                size="xs"
+                variant="ghost"
+                icon="chevron-down"
+                class="text-zinc-400!"
+                wire:click="moveNoteDown({{ $note->id }})"
+                :aria-label="__('Move down')"
+                data-test="move-note-down-{{ $note->id }}"
+            />
+        @endif
+
         <flux:button
             size="xs"
             variant="ghost"

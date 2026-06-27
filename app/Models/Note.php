@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $project_id
  * @property bool $is_public
  * @property bool $is_pinned
+ * @property int $position
  * @property string $title
  * @property string|null $body
  * @property int|null $converted_task_id
@@ -48,6 +49,14 @@ class Note extends Model
                 $note->is_public = false;
             }
         });
+
+        // New notes append to the top of their owner's list: the next-highest
+        // position, so the default order (position descending) shows them first.
+        static::creating(static function (Note $note): void {
+            if (! array_key_exists('position', $note->getAttributes())) {
+                $note->position = (int) static::query()->where('user_id', $note->user_id)->max('position') + 1;
+            }
+        });
     }
 
     /**
@@ -58,6 +67,7 @@ class Note extends Model
         return [
             'is_public' => 'boolean',
             'is_pinned' => 'boolean',
+            'position' => 'integer',
         ];
     }
 

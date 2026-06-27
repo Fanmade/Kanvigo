@@ -35,14 +35,52 @@ it('lists the user\'s own notes, hiding others and empty drafts', function () {
     $component->assertSee('Grocery list')->assertDontSee('Someone else note');
 });
 
-it('orders notes by most recently updated first', function () {
-    $older = Note::factory()->for($this->user)->create(['title' => 'Older', 'updated_at' => now()->subDay()]);
-    $newer = Note::factory()->for($this->user)->create(['title' => 'Newer', 'updated_at' => now()]);
+it('places a newly created note at the top by default', function () {
+    $older = Note::factory()->for($this->user)->create(['title' => 'Older']);
+    $newer = Note::factory()->for($this->user)->create(['title' => 'Newer']);
+
+    expect($newer->position)->toBeGreaterThan($older->position);
 
     $ids = Livewire::actingAs($this->user)->test(NoteList::class)->instance()->notes()->pluck('id');
 
     expect($ids->first())->toBe($newer->id)
         ->and($ids->last())->toBe($older->id);
+});
+
+it('moves a note down and back up within the list', function () {
+    $a = Note::factory()->for($this->user)->create(['title' => 'A']);
+    $b = Note::factory()->for($this->user)->create(['title' => 'B']);
+    $c = Note::factory()->for($this->user)->create(['title' => 'C']);
+
+    // Newest-first default: C, B, A.
+    $component = Livewire::actingAs($this->user)->test(NoteList::class);
+    expect($component->instance()->notes()->pluck('id')->all())->toBe([$c->id, $b->id, $a->id]);
+
+    // Move C down one slot: B, C, A.
+    $component->call('moveNoteDown', $c->id);
+    expect($component->instance()->notes()->pluck('id')->all())->toBe([$b->id, $c->id, $a->id]);
+
+    // Move C back up: C, B, A.
+    $component->call('moveNoteUp', $c->id);
+    expect($component->instance()->notes()->pluck('id')->all())->toBe([$c->id, $b->id, $a->id]);
+});
+
+it('keeps reordering within the pin group — an unpinned note cannot jump above a pinned one', function () {
+    $pinned = Note::factory()->for($this->user)->pinned()->create(['title' => 'Pinned']);
+    $top = Note::factory()->for($this->user)->create(['title' => 'Top unpinned']);
+
+    // Order: Pinned, Top unpinned. Moving the unpinned note up is a no-op (it
+    // would cross into the pinned group).
+    $component = Livewire::actingAs($this->user)->test(NoteList::class)->call('moveNoteUp', $top->id);
+
+    expect($component->instance()->notes()->pluck('id')->all())->toBe([$pinned->id, $top->id]);
+});
+
+it('cannot reorder a note owned by someone else', function () {
+    $foreign = Note::factory()->create(['title' => 'Not yours']);
+
+    expect(fn () => Livewire::actingAs($this->user)->test(NoteList::class)->call('moveNoteUp', $foreign->id))
+        ->toThrow(ModelNotFoundException::class);
 });
 
 it('deletes one of the user\'s own notes from the page', function () {
