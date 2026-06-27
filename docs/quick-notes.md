@@ -10,6 +10,8 @@ dashboard, or the dedicated **Notes** page in the sidebar. A note has a title an
 optional rich-text body — the same editor used for descriptions, with inline images.
 The Notes page lists all your notes, newest first, where you can create, edit, share,
 convert and delete them; the dashboard panel shows the same notes in a compact view.
+**Pin** a note (the star) to keep it at the top of the list — pinned notes sort above
+the rest in both the Notes page and the dashboard panel.
 
 ## Privacy & sharing
 

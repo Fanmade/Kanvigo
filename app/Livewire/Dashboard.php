@@ -100,6 +100,7 @@ class Dashboard extends Component
         return Auth::user()->notes()
             ->where('title', '!=', '')
             ->with(['project', 'convertedTask.project'])
+            ->orderByDesc('is_pinned')
             ->latest('updated_at')
             ->limit(self::NOTES_LIMIT)
             ->get();

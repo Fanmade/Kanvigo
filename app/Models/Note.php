@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property int|null $project_id
  * @property bool $is_public
+ * @property bool $is_pinned
  * @property string $title
  * @property string|null $body
  * @property int|null $converted_task_id
@@ -31,7 +32,7 @@ use Illuminate\Support\Carbon;
  * @property-read Project|null $project
  * @property-read Task|null $convertedTask
  */
-#[Fillable(['title', 'body', 'project_id', 'is_public'])]
+#[Fillable(['title', 'body', 'project_id', 'is_public', 'is_pinned'])]
 class Note extends Model
 {
     /** @use HasFactory<NoteFactory> */
@@ -56,6 +57,7 @@ class Note extends Model
     {
         return [
             'is_public' => 'boolean',
+            'is_pinned' => 'boolean',
         ];
     }
 

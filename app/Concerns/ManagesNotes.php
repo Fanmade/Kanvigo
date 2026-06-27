@@ -53,6 +53,20 @@ trait ManagesNotes
     }
 
     /**
+     * Pin or unpin one of the viewer's own notes. Pinned notes sort to the top of
+     * the list (KAN-319).
+     */
+    public function togglePin(int $noteId): void
+    {
+        $note = Auth::user()->notes()->findOrFail($noteId);
+        $this->authorize('update', $note);
+
+        $note->update(['is_pinned' => ! $note->is_pinned]);
+
+        $this->forgetNotes();
+    }
+
+    /**
      * Refresh the note list after the dialog saves one.
      */
     #[On('note-saved')]

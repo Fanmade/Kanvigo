@@ -49,4 +49,12 @@ class NoteFactory extends Factory
             'is_public' => true,
         ]);
     }
+
+    /**
+     * Pinned to the top of the owner's notes list.
+     */
+    public function pinned(): static
+    {
+        return $this->state(fn (): array => ['is_pinned' => true]);
+    }
 }

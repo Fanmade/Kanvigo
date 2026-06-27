@@ -35,8 +35,19 @@
         </div>
     </div>
 
-    <flux:dropdown align="end">
-        <flux:button size="xs" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Note actions')" data-test="note-actions-{{ $note->id }}" />
+    <div class="flex shrink-0 items-center gap-0.5">
+        <flux:button
+            size="xs"
+            variant="ghost"
+            icon="star"
+            :class="$note->is_pinned ? 'text-amber-500!' : 'text-zinc-400!'"
+            wire:click="togglePin({{ $note->id }})"
+            :aria-label="$note->is_pinned ? __('Unpin note') : __('Pin note')"
+            data-test="toggle-pin-{{ $note->id }}"
+        />
+
+        <flux:dropdown align="end">
+            <flux:button size="xs" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Note actions')" data-test="note-actions-{{ $note->id }}" />
         <flux:menu>
             <flux:menu.item icon="pencil-square" wire:click="$dispatch('open-create-note', { noteId: {{ $note->id }} })">{{ __('Edit') }}</flux:menu.item>
             @unless ($note->convertedTask)
@@ -60,5 +71,6 @@
                 data-test="delete-note-{{ $note->id }}"
             >{{ __('Delete') }}</flux:menu.item>
         </flux:menu>
-    </flux:dropdown>
+        </flux:dropdown>
+    </div>
 </div>
