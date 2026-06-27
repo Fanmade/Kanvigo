@@ -13,7 +13,9 @@ convert and delete them; the dashboard panel shows the same notes in a compact v
 **Pin** a note (the star) to keep it at the top of the list — pinned notes sort above
 the rest in both the Notes page and the dashboard panel. On the Notes page you can also
 **reorder** notes with the up/down controls; ordering applies within each group, so
-pinned notes always stay above the unpinned ones.
+pinned notes always stay above the unpinned ones. **Search** your notes by title or
+body and **filter** by project (or to notes without a project) from the same page;
+reordering is offered only on the full, unfiltered list.
 
 ## Privacy & sharing
 

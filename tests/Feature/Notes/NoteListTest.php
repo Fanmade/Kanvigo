@@ -2,6 +2,7 @@
 
 use App\Livewire\Notes\NoteList;
 use App\Models\Note;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,6 +123,64 @@ it('sorts pinned notes above unpinned ones regardless of recency', function () {
 
     expect($ids->first())->toBe($pinned->id)
         ->and($ids->last())->toBe($recent->id);
+});
+
+it('searches notes by title and body, case-insensitively', function () {
+    $byTitle = Note::factory()->for($this->user)->create(['title' => 'Deployment checklist', 'body' => '<p>nothing here</p>']);
+    $byBody = Note::factory()->for($this->user)->create(['title' => 'Random', 'body' => '<p>remember to deploy on Friday</p>']);
+    Note::factory()->for($this->user)->create(['title' => 'Groceries', 'body' => '<p>milk</p>']);
+
+    $ids = Livewire::actingAs($this->user)->test(NoteList::class)
+        ->set('search', 'DEPLOY')
+        ->instance()->notes()->pluck('id');
+
+    expect($ids)->toContain($byTitle->id)
+        ->toContain($byBody->id)
+        ->toHaveCount(2);
+});
+
+it('filters notes by project', function () {
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $inProject = Note::factory()->for($this->user)->create(['title' => 'Attached', 'project_id' => $project->id]);
+    Note::factory()->for($this->user)->create(['title' => 'Loose note']);
+
+    $ids = Livewire::actingAs($this->user)->test(NoteList::class)
+        ->set('projectFilter', (string) $project->id)
+        ->instance()->notes()->pluck('id');
+
+    expect($ids)->toEqual(collect([$inProject->id]));
+});
+
+it('filters to notes without a project', function () {
+    $project = Project::factory()->create();
+    Note::factory()->for($this->user)->create(['title' => 'Attached', 'project_id' => $project->id]);
+    $loose = Note::factory()->for($this->user)->create(['title' => 'Loose note']);
+
+    $ids = Livewire::actingAs($this->user)->test(NoteList::class)
+        ->set('projectFilter', 'none')
+        ->instance()->notes()->pluck('id');
+
+    expect($ids)->toEqual(collect([$loose->id]));
+});
+
+it('hides the reorder controls while filtering', function () {
+    $note = Note::factory()->for($this->user)->create(['title' => 'Alpha']);
+
+    $component = Livewire::actingAs($this->user)->test(NoteList::class);
+    $component->assertSeeHtml('data-test="move-note-up-'.$note->id.'"');
+
+    // The note still matches the search, but reordering is off while filtering.
+    $component->set('search', 'Alpha')
+        ->assertSee('Alpha')
+        ->assertDontSeeHtml('data-test="move-note-up-'.$note->id.'"');
+});
+
+it('shows a filter-aware empty state when nothing matches', function () {
+    Note::factory()->for($this->user)->create(['title' => 'Alpha']);
+
+    Livewire::actingAs($this->user)->test(NoteList::class)
+        ->set('search', 'no-such-note')
+        ->assertSee('No notes match your search.');
 });
 
 it('refreshes the list when a note is saved elsewhere', function () {

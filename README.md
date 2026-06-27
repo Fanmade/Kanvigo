@@ -79,8 +79,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Quick notes** — jot a personal note from anywhere (the command palette, the
   dashboard Notes panel, or the dedicated **Notes** page in the sidebar), with a
   rich-text body and inline images. The Notes page lists all your notes with
-  create, edit, convert and delete in one place, pin favourites to the top, and
-  reorder them by hand. A note is private to you by
+  create, edit, convert and delete in one place, search and filter by project, pin
+  favourites to the top, and reorder them by hand. A note is private to you by
   default; attach it to a project you belong to and you can make it public, so
   that project's members can read it in the project's Notes section (read-only —
   only the owner edits, re-shares or deletes). Convert a note into a task in one
