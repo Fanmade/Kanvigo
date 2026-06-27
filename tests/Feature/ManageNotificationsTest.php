@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -41,6 +42,24 @@ it('lists subscriptions grouped with notification counts', function () {
         ->and($task)->not->toBeNull()
         ->and($task['total'])->toBe(1)
         ->and($task['unread'])->toBe(1);
+});
+
+it('groups the per-subject counts without an order-by clause', function () {
+    // The notifications relation defaults to `order by created_at`; left on the
+    // grouped aggregate it 500s on PostgreSQL ("must appear in the GROUP BY
+    // clause"). SQLite tolerates it, so guard the query shape directly (KAN-329).
+    DB::enableQueryLog();
+
+    Livewire::actingAs($this->user)->test(ManageNotifications::class)->instance()->rows();
+
+    $grouped = collect(DB::getQueryLog())
+        ->pluck('query')
+        ->first(static fn (string $query): bool => str_contains($query, 'group by'));
+
+    DB::disableQueryLog();
+
+    expect($grouped)->not->toBeNull()
+        ->and(strtolower($grouped))->not->toContain('order by');
 });
 
 it('unsubscribes from an item on the spot', function () {

@@ -28,6 +28,11 @@ class ManageNotifications extends Component
         // `subject_type` / `subject_id` written by the notification.
         $counts = $user->notifications()
             ->toBase()
+            // The notifications relation defaults to `order by created_at desc`.
+            // On a grouped aggregate PostgreSQL rejects ordering by an ungrouped,
+            // unaggregated column, and the order is meaningless here (we only
+            // build a keyed lookup), so drop it. (KAN-329)
+            ->reorder()
             ->groupBy('data->subject_type', 'data->subject_id')
             ->get([
                 'data->subject_type as subject_type',
