@@ -29,6 +29,7 @@
         "ext-imagick": "*",
         "ext-dom": "*",
         "ext-libxml": "*",
+        "ext-mbstring": "*",
         "fanmade/laravel-delegated-permissions": "^0.1.5",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",
