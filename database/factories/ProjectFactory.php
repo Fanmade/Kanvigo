@@ -45,14 +45,24 @@ class ProjectFactory extends Factory
     }
 
     /**
-     * Grant the given user access to the project with a specific role
-     * (owner|admin|member, or a custom project role name).
+     * Grant the given user access to the project with one or more roles
+     * (owner|admin|member|viewer, or a custom project role name). Pass an array
+     * to hold several at once (KAN-317).
+     *
+     * @param  string|list<string>  $role
      */
-    public function withMember(User $user, string $role = 'member'): static
+    public function withMember(User $user, string|array $role = 'member'): static
     {
         return $this->afterCreating(function (Project $project) use ($user, $role): void {
+            $provisioner = app(ProjectRoleProvisioner::class);
+            $roles = (array) $role;
+
             $project->members()->syncWithoutDetaching([$user->id]);
-            app(ProjectRoleProvisioner::class)->syncMember($project, $user, $role);
+            $provisioner->syncMember($project, $user, $roles[0]);
+
+            foreach (array_slice($roles, 1) as $extraRole) {
+                $provisioner->addRole($project, $user, $extraRole);
+            }
         });
     }
 

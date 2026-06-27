@@ -12,10 +12,12 @@ use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\BoardCache;
+use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -441,25 +443,21 @@ class ProjectShow extends Component
     }
 
     /**
-     * The roles a member may be assigned — every project role except owner, so
-     * ownership cannot be handed out here. Includes the custom roles defined for
-     * the project. The seeded roles sort first, custom roles after, by name.
+     * The roles a member may be assigned — every role the manager can see (per
+     * KAN-312 visibility) except owner, so ownership cannot be handed out here.
+     * Includes the project's custom roles. The seeded roles sort first, custom
+     * roles after, by name.
      *
      * @return Collection<int, Role>
      */
     #[Computed]
     public function assignableRoles(): Collection
     {
-        $project = $this->project();
-
-        return Role::query()
-            ->where('scope_type', $project->getMorphClass())
-            ->where('scope_id', $project->getKey())
-            ->where('name', '!=', 'owner')
-            ->get()
+        return Auth::user()->visibleRoles($this->project())
+            ->reject(static fn (Role $role): bool => $role->name === 'owner')
             ->sortBy(static fn (Role $role): string => sprintf(
                 '%d-%s',
-                in_array($role->name, ['admin', 'member'], true) ? 0 : 1,
+                in_array($role->name, ['admin', 'member', 'viewer'], true) ? 0 : 1,
                 $role->name,
             ))
             ->values();
@@ -474,11 +472,11 @@ class ProjectShow extends Component
     }
 
     /**
-     * Change a member's role. Requires manage-members, and is limited to the
-     * project's assignable (non-owner) roles — the owner can neither change their
-     * own role nor hand out ownership here.
+     * Grant a member an additional role, leaving their other roles intact.
+     * Requires manage-members, and is limited to the project's assignable
+     * (non-owner, visible) roles. Owners and the acting user are left untouched.
      */
-    public function setMemberRole(int $userId, string $role): void
+    public function addMemberRole(int $userId, string $role): void
     {
         $project = $this->project();
         $this->authorize('manageMembers', $project);
@@ -498,11 +496,43 @@ class ProjectShow extends Component
             return;
         }
 
-        app(ProjectRoleProvisioner::class)->syncMember($project, $member, $validated['role']);
+        try {
+            app(ProjectRoleProvisioner::class)->addRole($project, $member, $validated['role']);
+        } catch (RoleLimitExceeded) {
+            Flux::toast(variant: 'warning', text: __('This member already holds the maximum number of roles.'));
+
+            return;
+        }
 
         unset($this->members);
 
-        Flux::toast(variant: 'success', text: __('Member role updated.'));
+        Flux::toast(variant: 'success', text: __('Member role added.'));
+    }
+
+    /**
+     * Remove a single role from a member, leaving their other roles intact.
+     * Requires manage-members; the owner role and the acting user are untouched.
+     */
+    public function removeMemberRole(int $userId, string $role): void
+    {
+        $project = $this->project();
+        $this->authorize('manageMembers', $project);
+
+        if ($userId === auth()->id() || $role === 'owner') {
+            return;
+        }
+
+        $member = User::find($userId);
+
+        if ($member === null || ! $project->members()->whereKey($userId)->exists() || $project->isOwner($member)) {
+            return;
+        }
+
+        app(ProjectRoleProvisioner::class)->removeRole($project, $member, $role);
+
+        unset($this->members);
+
+        Flux::toast(variant: 'success', text: __('Member role removed.'));
     }
 
     /**

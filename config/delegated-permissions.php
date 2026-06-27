@@ -33,6 +33,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Roles per scope
+    |--------------------------------------------------------------------------
+    |
+    | How many roles a single authorizable may hold within one scope. A user may
+    | hold several project roles at once (e.g. Designer + Reviewer); their
+    | effective permissions are the union. Use a positive integer to cap it, or
+    | null/-1 for no limit. The system role is always exempt. We leave project
+    | scope unlimited and enforce the one-owner-per-project rule app-side, in the
+    | ProjectRoleProvisioner.
+    |
+    */
+
+    'max_roles_per_scope' => env('DELEGATED_PERMISSIONS_MAX_ROLES_PER_SCOPE'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Table names
     |--------------------------------------------------------------------------
     |

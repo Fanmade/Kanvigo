@@ -8,6 +8,7 @@ use App\Mail\InvitationMail;
 use App\Models\Invitation;
 use App\Models\Project;
 use App\Models\User;
+use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -282,9 +283,18 @@ class UserManagement extends Component
     }
 
     /**
-     * The managed user's role on each project they belong to, keyed by project id.
+     * The seeded non-owner roles an admin may assign here. Ownership is never
+     * handed out from this panel, and custom roles are managed per-project.
      *
-     * @return array<int, string>
+     * @var list<string>
+     */
+    public const array ASSIGNABLE_ROLES = ['admin', 'member', 'viewer'];
+
+    /**
+     * The names of every project role the managed user holds, keyed by project
+     * id. A user may hold several roles on one project, so each value is a list.
+     *
+     * @return array<int, list<string>>
      */
     #[Computed]
     public function managedUserRoles(): array
@@ -302,7 +312,7 @@ class UserManagement extends Component
         $roles = [];
 
         foreach ($user->roles()->where('scope_type', (new Project)->getMorphClass())->get() as $role) {
-            $roles[(int) $role->scope_id] = (string) $role->name;
+            $roles[(int) $role->scope_id][] = (string) $role->name;
         }
 
         return $roles;
@@ -331,17 +341,18 @@ class UserManagement extends Component
     }
 
     /**
-     * Change the managed user's role on a project. Limited to admin/member; the
-     * owner's role is not reassigned here.
+     * Grant the managed user an additional role on a project, leaving their
+     * other roles intact. Limited to the seeded non-owner roles; the owner's
+     * roles are not touched here.
      */
-    public function setUserProjectRole(int $projectId, string $role): void
+    public function addUserProjectRole(int $projectId, string $role): void
     {
         $project = Project::findOrFail($projectId);
         $this->authorize('manage-members', $project);
 
         $validated = validator(
             ['role' => $role],
-            ['role' => ['required', Rule::in(['admin', 'member'])]],
+            ['role' => ['required', Rule::in(self::ASSIGNABLE_ROLES)]],
         )->validate();
 
         $user = User::findOrFail($this->managingProjectsId);
@@ -350,11 +361,43 @@ class UserManagement extends Component
             return;
         }
 
-        app(ProjectRoleProvisioner::class)->syncMember($project, $user, $validated['role']);
+        try {
+            app(ProjectRoleProvisioner::class)->addRole($project, $user, $validated['role']);
+        } catch (RoleLimitExceeded) {
+            Flux::toast(text: __('This member already holds the maximum number of roles.'), variant: 'warning');
+
+            return;
+        }
 
         unset($this->managedUser, $this->managedUserRoles);
 
-        Flux::toast(text: __('Member role updated.'), variant: 'success');
+        Flux::toast(text: __('Member role added.'), variant: 'success');
+    }
+
+    /**
+     * Remove a single role from the managed user on a project, leaving their
+     * other roles intact. The owner role is never removed here.
+     */
+    public function removeUserProjectRole(int $projectId, string $role): void
+    {
+        $project = Project::findOrFail($projectId);
+        $this->authorize('manage-members', $project);
+
+        if ($role === 'owner') {
+            return;
+        }
+
+        $user = User::findOrFail($this->managingProjectsId);
+
+        if (! $project->members()->whereKey($user->id)->exists() || $project->isOwner($user)) {
+            return;
+        }
+
+        app(ProjectRoleProvisioner::class)->removeRole($project, $user, $role);
+
+        unset($this->managedUser, $this->managedUserRoles);
+
+        Flux::toast(text: __('Member role removed.'), variant: 'success');
     }
 
     /**

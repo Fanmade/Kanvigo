@@ -44,16 +44,16 @@ function showAs(User $user, Project $project): Testable
     return Livewire::actingAs($user)->test(ProjectShow::class, ['short_name' => $project->short_name]);
 }
 
-it('lets the owner promote a member to admin and demote them back', function () {
+it('lets the owner add a second role to a member and remove it again', function () {
     [$owner, $member, $project] = ownerMemberProject();
 
     showAs($owner, $project)
-        ->call('setMemberRole', $member->id, 'admin')
+        ->call('addMemberRole', $member->id, 'admin')
         ->assertHasNoErrors();
-    expect($project->roleNameFor($member))->toBe('admin');
+    expect($project->roleNamesFor($member))->toBe(['admin', 'member']);
 
-    showAs($owner, $project)->call('setMemberRole', $member->id, 'member');
-    expect($project->roleNameFor($member))->toBe('member');
+    showAs($owner, $project)->call('removeMemberRole', $member->id, 'admin');
+    expect($project->roleNamesFor($member))->toBe(['member']);
 });
 
 it('forbids an admin or member from changing roles', function () {
@@ -61,30 +61,30 @@ it('forbids an admin or member from changing roles', function () {
     $admin = memberWithRole($project, 'admin');
 
     showAs($admin, $project)
-        ->call('setMemberRole', $member->id, 'admin')
+        ->call('addMemberRole', $member->id, 'admin')
         ->assertForbidden();
 
     showAs($member, $project)
-        ->call('setMemberRole', $admin->id, 'member')
+        ->call('removeMemberRole', $admin->id, 'admin')
         ->assertForbidden();
 
     expect($project->roleNameFor($member))->toBe('member')
         ->and($project->roleNameFor($admin))->toBe('admin');
 });
 
-it('does not let the owner change their own role', function () {
+it('does not let the owner change their own roles', function () {
     [$owner, , $project] = ownerMemberProject();
 
-    showAs($owner, $project)->call('setMemberRole', $owner->id, 'member');
+    showAs($owner, $project)->call('addMemberRole', $owner->id, 'member');
 
-    expect($project->roleNameFor($owner))->toBe('owner');
+    expect($project->roleNamesFor($owner))->toBe(['owner']);
 });
 
 it('does not let ownership be handed out through the role control', function () {
     [$owner, $member, $project] = ownerMemberProject();
 
     showAs($owner, $project)
-        ->call('setMemberRole', $member->id, 'owner')
+        ->call('addMemberRole', $member->id, 'owner')
         ->assertHasErrors('role');
 
     expect($project->roleNameFor($member))->toBe('member');

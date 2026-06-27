@@ -277,36 +277,58 @@
 
                 <div class="flex flex-col gap-2" data-test="members-list">
                     @foreach ($this->members as $member)
-                        @php($roleName = $member->roles->first()?->name)
-                        <div class="flex items-center justify-between gap-3" wire:key="member-{{ $member->id }}" data-test="member-row-{{ $member->id }}">
-                            <flux:text class="min-w-0 truncate">{{ $member->name }}</flux:text>
+                        @php($heldNames = $member->roles->pluck('name'))
+                        @php($readonly = $member->id === auth()->id() || $heldNames->contains('owner'))
+                        @php($addable = $this->assignableRoles->reject(fn ($role) => $heldNames->contains($role->name)))
+                        <div class="flex items-start justify-between gap-3" wire:key="member-{{ $member->id }}" data-test="member-row-{{ $member->id }}">
+                            <flux:text class="min-w-0 truncate pt-1">{{ $member->name }}</flux:text>
 
-                            @if ($roleName === 'owner' || $member->id === auth()->id())
-                                <flux:badge size="sm" data-test="member-role-{{ $member->id }}">{{ $this->roleLabel($roleName) }}</flux:badge>
-                            @else
-                                <div class="flex items-center gap-1.5">
-                                    <flux:select
-                                        size="sm"
-                                        class="max-w-28"
-                                        wire:change="setMemberRole({{ $member->id }}, $event.target.value)"
-                                        data-test="member-role-select-{{ $member->id }}"
-                                    >
-                                        @foreach ($this->assignableRoles as $assignable)
-                                            <flux:select.option value="{{ $assignable->name }}" :selected="$roleName === $assignable->name">{{ $this->roleLabel($assignable->name) }}</flux:select.option>
-                                        @endforeach
-                                    </flux:select>
-
-                                    <flux:button
-                                        type="button"
-                                        size="xs"
-                                        variant="ghost"
-                                        icon="x-mark"
-                                        :aria-label="__('Remove member')"
-                                        wire:click="removeMember({{ $member->id }})"
-                                        data-test="remove-member-{{ $member->id }}"
-                                    />
+                            <div class="flex flex-col items-end gap-1.5">
+                                <div class="flex flex-wrap justify-end gap-1" data-test="member-roles-{{ $member->id }}">
+                                    @forelse ($member->roles as $role)
+                                        <flux:badge size="sm" data-test="member-role-{{ $member->id }}-{{ $role->name }}">
+                                            {{ $this->roleLabel($role->name) }}
+                                            @unless ($readonly)
+                                                <flux:badge.close
+                                                    wire:click="removeMemberRole({{ $member->id }}, '{{ $role->name }}')"
+                                                    :aria-label="__('Remove role')"
+                                                    data-test="remove-member-role-{{ $member->id }}-{{ $role->name }}"
+                                                />
+                                            @endunless
+                                        </flux:badge>
+                                    @empty
+                                        <flux:text size="sm" variant="subtle">{{ __('No roles') }}</flux:text>
+                                    @endforelse
                                 </div>
-                            @endif
+
+                                @unless ($readonly)
+                                    <div class="flex items-center gap-1.5">
+                                        @if ($addable->isNotEmpty())
+                                            <flux:select
+                                                size="sm"
+                                                class="max-w-32"
+                                                :placeholder="__('Add role…')"
+                                                wire:change="addMemberRole({{ $member->id }}, $event.target.value)"
+                                                data-test="add-member-role-{{ $member->id }}"
+                                            >
+                                                @foreach ($addable as $assignable)
+                                                    <flux:select.option value="{{ $assignable->name }}">{{ $this->roleLabel($assignable->name) }}</flux:select.option>
+                                                @endforeach
+                                            </flux:select>
+                                        @endif
+
+                                        <flux:button
+                                            type="button"
+                                            size="xs"
+                                            variant="ghost"
+                                            icon="x-mark"
+                                            :aria-label="__('Remove member')"
+                                            wire:click="removeMember({{ $member->id }})"
+                                            data-test="remove-member-{{ $member->id }}"
+                                        />
+                                    </div>
+                                @endunless
+                            </div>
                         </div>
                     @endforeach
                 </div>

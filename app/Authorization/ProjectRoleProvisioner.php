@@ -2,13 +2,17 @@
 
 namespace App\Authorization;
 
+use App\Authorization\Exceptions\OwnerAlreadyAssigned;
 use App\Models\Project;
 use App\Models\User;
+use Fanmade\DelegatedPermissions\DelegatedPermissions;
+use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\PermissionGroup;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Provisions a project's delegated role tree (owner → admin → member → viewer)
@@ -201,7 +205,10 @@ class ProjectRoleProvisioner
     /**
      * Sync a user's role for a project to a single project role (owner|admin|
      * member, or a custom role name), or remove them from the project's tree
-     * when $roleName is null. A user holds at most one project-scoped role.
+     * when $roleName is null. Replaces every project-scoped role the user holds,
+     * so it is the right tool for one-role flows — owner provisioning,
+     * invite-accept and the "add as member" path. Use {@see addRole()} /
+     * {@see removeRole()} for the multi-role member panel.
      */
     public function syncMember(Project $project, User $user, ?string $roleName): void
     {
@@ -216,5 +223,67 @@ class ProjectRoleProvisioner
         if ($roleName !== null) {
             $user->assignRole($roles[$roleName]);
         }
+    }
+
+    /**
+     * Add a project role (owner|admin|member|viewer, or a custom role name) to a
+     * user without disturbing the roles they already hold. Idempotent. Honours
+     * the configured per-scope role cap (the package throws
+     * {@see RoleLimitExceeded} when it
+     * would be exceeded), and the one-owner-per-project rule
+     * ({@see OwnerAlreadyAssigned} when a different user already owns it).
+     */
+    public function addRole(Project $project, User $user, string $roleName): void
+    {
+        $role = $this->projectRole($project, $roleName);
+
+        if ($role->name === 'owner' && $this->hasOtherOwner($project, $user)) {
+            throw OwnerAlreadyAssigned::for($project);
+        }
+
+        $user->assignRole($role);
+    }
+
+    /**
+     * Remove a single project role from a user, leaving their other project
+     * roles intact. A no-op if they do not hold it.
+     */
+    public function removeRole(Project $project, User $user, string $roleName): void
+    {
+        $role = $this->projectRole($project, $roleName);
+
+        $user->removeRole($role);
+    }
+
+    /**
+     * The project-scoped role of the given name — a base role (provisioning the
+     * tree if needed) or a custom one already defined on the project.
+     */
+    protected function projectRole(Project $project, string $roleName): Role
+    {
+        $base = $this->provision($project);
+
+        return $base[$roleName] ?? Role::query()
+            ->where('scope_type', $project->getMorphClass())
+            ->where('scope_id', $project->getKey())
+            ->where('name', $roleName)
+            ->firstOrFail();
+    }
+
+    /**
+     * Whether a user other than the given one already holds the owner role on
+     * the project.
+     */
+    protected function hasOtherOwner(Project $project, User $user): bool
+    {
+        $owner = $this->provision($project)['owner'];
+
+        return DB::table(DelegatedPermissions::table('role_assignments'))
+            ->where('role_id', $owner->getKey())
+            ->where(static function ($query) use ($user): void {
+                $query->where('authorizable_type', '!=', $user->getMorphClass())
+                    ->orWhere('authorizable_id', '!=', $user->getKey());
+            })
+            ->exists();
     }
 }

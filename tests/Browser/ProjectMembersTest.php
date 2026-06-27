@@ -3,7 +3,7 @@
 use App\Models\Project;
 use App\Models\User;
 
-it('lets the owner change a member\'s role through the management modal', function () {
+it('lets the owner add a role to a member through the management modal', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create(['name' => 'Casey Member']);
     $project = Project::factory()
@@ -18,11 +18,12 @@ it('lets the owner change a member\'s role through the management modal', functi
         ->click('@manage-members')
         ->assertSee('Manage members')
         ->assertSee('Casey Member')
-        ->select('@member-role-select-'.$member->id, 'admin')
-        ->waitForText('Member role updated.')
+        ->select('@add-member-role-'.$member->id, 'admin')
+        ->waitForText('Member role added.')
+        ->assertVisible('@member-role-'.$member->id.'-admin')
         ->assertNoJavascriptErrors();
 
-    expect($project->roleNameFor($member))->toBe('admin');
+    expect($project->roleNamesFor($member))->toBe(['admin', 'member']);
 });
 
 it('lets the owner add an existing user from the management modal', function () {

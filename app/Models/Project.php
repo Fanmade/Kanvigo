@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Authorization\ProjectRoleProvisioner;
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
 use App\Concerns\HasMentions;
@@ -34,6 +33,14 @@ class Project extends Model implements Mentionable, Subscribable
 {
     /** @use HasFactory<ProjectFactory> */
     use HasAttachments, HasComments, HasFactory, HasMentions, HasSubscribers, LogsActivity, PrunesInlineAttachments, SanitizesRichText;
+
+    /**
+     * Display precedence of the base project roles (lower wins). Custom roles
+     * have no entry and rank after the base roles, alphabetically.
+     *
+     * @var array<string, int>
+     */
+    private const array ROLE_RANK = ['owner' => 0, 'admin' => 1, 'member' => 2, 'viewer' => 3];
 
     public function inlineAttachmentOwner(): Project|Task
     {
@@ -179,16 +186,32 @@ class Project extends Model implements Mentionable, Subscribable
     }
 
     /**
-     * The name of the delegated-permissions role the given user holds on this
-     * project, or null if they hold none. A user has at most one project-scoped
-     * role, enforced by {@see ProjectRoleProvisioner::syncMember()}.
+     * The names of every delegated-permissions role the given user holds on this
+     * project (a user may hold several — e.g. Designer + Reviewer). Empty when
+     * they hold none. Ordered highest-first by {@see self::ROLE_RANK}.
+     *
+     * @return list<string>
+     */
+    public function roleNamesFor(User $user): array
+    {
+        $names = $user->roles()
+            ->where('scope_type', $this->getMorphClass())
+            ->where('scope_id', $this->getKey())
+            ->pluck('name')
+            ->map(static fn (mixed $name): string => (string) $name)
+            ->sortBy(static fn (string $name): string => sprintf('%d-%s', self::ROLE_RANK[$name] ?? 9, $name))
+            ->all();
+
+        return array_values($names);
+    }
+
+    /**
+     * The name of the user's highest-ranked role on this project, or null if they
+     * hold none — the role to show when a single label is needed.
      */
     public function roleNameFor(User $user): ?string
     {
-        return $user->roles()
-            ->where('scope_type', $this->getMorphClass())
-            ->where('scope_id', $this->getKey())
-            ->value('name');
+        return $this->roleNamesFor($user)[0] ?? null;
     }
 
     /**
@@ -196,6 +219,6 @@ class Project extends Model implements Mentionable, Subscribable
      */
     public function isOwner(User $user): bool
     {
-        return $this->roleNameFor($user) === 'owner';
+        return in_array('owner', $this->roleNamesFor($user), true);
     }
 }

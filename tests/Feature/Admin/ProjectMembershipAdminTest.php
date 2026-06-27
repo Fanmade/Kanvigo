@@ -41,8 +41,11 @@ it('lets a system admin change a user\'s project role and remove them', function
         ->test(UserManagement::class)
         ->call('manageProjects', $user->id);
 
-    $component->call('setUserProjectRole', $project->id, 'admin');
-    expect($project->roleNameFor($user))->toBe('admin');
+    $component->call('addUserProjectRole', $project->id, 'admin');
+    expect($project->roleNamesFor($user))->toBe(['admin', 'member']);
+
+    $component->call('removeUserProjectRole', $project->id, 'admin');
+    expect($project->roleNamesFor($user))->toBe(['member']);
 
     $component->call('removeUserFromProject', $project->id);
     expect($project->members()->whereKey($user->id)->exists())->toBeFalse();
@@ -57,7 +60,7 @@ it('does not let a system admin re-role or remove a project owner', function () 
         ->test(UserManagement::class)
         ->call('manageProjects', $owner->id);
 
-    $component->call('setUserProjectRole', $project->id, 'member');
+    $component->call('addUserProjectRole', $project->id, 'member');
     $component->call('removeUserFromProject', $project->id);
 
     expect($project->roleNameFor($owner))->toBe('owner')
@@ -91,8 +94,8 @@ it('exposes the managed user\'s roles per project', function () {
         ->instance()->managedUserRoles();
 
     expect($roles)->toBe([
-        $adminProject->id => 'admin',
-        $memberProject->id => 'member',
+        $adminProject->id => ['admin'],
+        $memberProject->id => ['member'],
     ]);
 });
 

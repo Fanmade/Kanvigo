@@ -66,21 +66,28 @@ function something()
 }
 
 /**
- * Grant one or more users membership of a project with a package role
- * (default: member). Mirrors how the app provisions members (KAN-243): a
- * project_user row plus a delegated-permissions role assignment, so the
- * members resolve real project access through the package.
+ * Grant one or more users membership of a project with one or more package
+ * roles (default: member). Mirrors how the app provisions members (KAN-243): a
+ * project_user row plus a delegated-permissions role assignment, so the members
+ * resolve real project access through the package. Pass an array of role names
+ * to hold several at once (KAN-317).
  *
  * @param  User|int|array<int, User|int>  $users
+ * @param  string|list<string>  $role
  */
-function joinProject(Project $project, User|int|array $users, string $role = 'member'): void
+function joinProject(Project $project, User|int|array $users, string|array $role = 'member'): void
 {
     $provisioner = app(ProjectRoleProvisioner::class);
+    $roles = array_values((array) $role);
 
     foreach (is_array($users) ? $users : [$users] as $user) {
         $user = $user instanceof User ? $user : User::findOrFail($user);
         $project->members()->syncWithoutDetaching([$user->id]);
-        $provisioner->syncMember($project, $user, $role);
+        $provisioner->syncMember($project, $user, $roles[0]);
+
+        foreach (array_slice($roles, 1) as $extraRole) {
+            $provisioner->addRole($project, $user, $extraRole);
+        }
     }
 }
 

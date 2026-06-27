@@ -150,17 +150,20 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   (reversible, blocks sign-in) or remove accounts. Removed accounts are
   soft-deleted with their assignments dropped; comments they wrote are kept as the
   work of a "deleted user".
-- **Project roles & membership** — each member holds a per-project role. Four
-  roles are seeded — owner (the project's creator), admin, member and a read-only
-  viewer — and anyone with the manage-roles permission can define **custom roles**
-  for a project. Every custom role is created under a chosen **parent role** and
+- **Project roles & membership** — each member holds one or more per-project
+  roles, and what they may do is the union of those roles' permissions (so you
+  can mix, say, Designer and Reviewer on the same person). Four roles are seeded
+  — owner (the project's creator), admin, member and a read-only viewer — and
+  anyone with the manage-roles permission can define **custom roles** for a
+  project. Each project has exactly one owner; ownership is never handed out as a
+  second role. Every custom role is created under a chosen **parent role** and
   may hold only a subset of that parent's permissions, so delegation can never
-  escalate beyond it. What a member may do follows from the permissions their role
-  holds: every member can contribute — create and work on tasks, comment, attach
-  files — while editing the project's settings (title, short name, description)
-  and deleting it require the matching permission, held by admins, the owner, and
-  any custom role granted it. From the project page a manager adds, removes and
-  assigns roles, **edits a custom role's permissions in place**, and can spin up a
+  escalate beyond it. What a member may do follows from the permissions their
+  roles hold: every member can contribute — create and work on tasks, comment,
+  attach files — while editing the project's settings (title, short name,
+  description) and deleting it require the matching permission, held by admins,
+  the owner, and any custom role granted it. From the project page a manager
+  adds and removes a member's roles as chips, **edits a custom role's permissions in place**, and can spin up a
   role from one-click **templates** (Product Owner, Designer, Developer, Reviewer)
   bounded by the chosen parent. A manager only ever sees the roles they hold and
   those beneath them — never a parent role or the system role. Managing a user's
