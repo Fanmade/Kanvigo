@@ -228,6 +228,34 @@ class ProjectRoles extends Component
     }
 
     /**
+     * Prefill the new-role permission selection with the permissions a visible
+     * role holds, bounded by the chosen parent (a child may only hold a subset
+     * of its parent). A quick starting point the manager can then adjust before
+     * creating the role.
+     */
+    public function selectRolePermissions(int $roleId, PermissionResolver $resolver): void
+    {
+        $this->authorize('manage-roles', $this->project());
+
+        $role = $this->roles()->firstWhere('id', $roleId);
+        $parent = $this->parentRole();
+
+        if ($role === null || $parent === null) {
+            return;
+        }
+
+        $allowed = $resolver->permissionsFor($parent);
+        $names = $resolver->permissionsFor($role)
+            ->filter(static fn (string $name): bool => $allowed->contains($name));
+
+        $this->permissionIds = Permission::query()
+            ->whereIn('name', $names->values()->all())
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    /**
      * The ids of roles the manager may delete: strictly below them (visible but
      * not one of their own roles) and not a seeded base role.
      *

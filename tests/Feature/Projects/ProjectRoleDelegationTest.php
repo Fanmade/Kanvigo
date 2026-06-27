@@ -202,3 +202,28 @@ it('does not create a second role when a template name is already taken', functi
 
     expect(Role::query()->where('scope_id', $project->id)->where('name', 'Reviewer')->count())->toBe(1);
 });
+
+it('prefills the new-role permissions from a role, capped by the chosen parent', function () {
+    $project = Project::factory()->create();
+    $owner = User::factory()->create();
+    joinProject($project, $owner, 'owner');
+
+    $provisioner = app(ProjectRoleProvisioner::class);
+    $ownerRole = $provisioner->roleFor($project, 'owner');
+    $memberRole = $provisioner->roleFor($project, 'member');
+
+    // Parent = member, copy from owner: the selection is capped to member's set.
+    $component = Livewire::actingAs($owner)
+        ->test(ProjectRoles::class, ['project' => $project])
+        ->set('parentId', $memberRole->id)
+        ->call('selectRolePermissions', $ownerRole->id);
+
+    $selected = Permission::query()
+        ->whereKey($component->get('permissionIds'))
+        ->pluck('name')
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($selected)->toBe(collect(ProjectRoleProvisioner::GRANTS['member'])->sort()->values()->all());
+});

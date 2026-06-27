@@ -88,6 +88,21 @@
             <flux:label>{{ __('Permissions') }}</flux:label>
             <flux:description>{{ __('A new role can hold any subset of its parent role\'s permissions.') }}</flux:description>
 
+            @if (! empty($this->permissionGroups))
+                <div class="mt-2 flex flex-wrap items-center gap-1.5" data-test="copy-role-permissions">
+                    <flux:text size="xs" class="me-0.5 text-zinc-400">{{ __('Start from:') }}</flux:text>
+                    @foreach ($this->roles as $role)
+                        <flux:button
+                            type="button"
+                            size="xs"
+                            variant="subtle"
+                            wire:click="selectRolePermissions({{ $role->id }})"
+                            data-test="use-role-permissions-{{ $role->id }}"
+                        >{{ \Illuminate\Support\Str::headline($role->name) }}</flux:button>
+                    @endforeach
+                </div>
+            @endif
+
             <flux:checkbox.group wire:model="permissionIds" class="mt-2 columns-1 gap-x-8 sm:columns-2 lg:columns-3">
                 @forelse ($this->permissionGroups as $group => $permissions)
                     <div class="mb-3 flex break-inside-avoid flex-col gap-1" wire:key="perm-group-{{ \Illuminate\Support\Str::slug($group) }}">
