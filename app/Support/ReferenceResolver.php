@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Activity;
 use App\Models\Project;
 use App\Models\Task;
 
@@ -39,6 +40,34 @@ class ReferenceResolver
             ->with(['assignees', 'project'])
             ->where('project_id', $project->id)
             ->where('task_number', (int) $taskNumber)
+            ->first();
+    }
+
+    /**
+     * Resolve an activity-log reference (e.g. "PROJ-42-log-2") into its entry —
+     * the 2nd activity recorded on task PROJ-42. The "-log-" infix keeps it from
+     * colliding with the task ("PROJ-42") and project ("PROJ") reference forms.
+     *
+     * Returns null when the reference is malformed or no matching entry exists.
+     */
+    public static function activity(string $reference): ?Activity
+    {
+        if (! preg_match('/^('.self::SHORT_NAME.')-(\d+)-LOG-(\d+)$/', strtoupper(trim($reference)), $matches)) {
+            return null;
+        }
+
+        [, $shortName, $taskNumber, $sequence] = $matches;
+
+        $task = self::task($shortName.'-'.$taskNumber);
+
+        if ($task === null) {
+            return null;
+        }
+
+        return Activity::query()
+            ->where('subject_type', $task->getMorphClass())
+            ->where('subject_id', $task->id)
+            ->where('sequence', (int) $sequence)
             ->first();
     }
 
