@@ -46,11 +46,55 @@ class PermissionCatalog
     ];
 
     /**
+     * Permission name => English description (the de.json translation key). A
+     * short clause explaining what granting the permission actually allows,
+     * shown as helper text under the checkbox. Optional — a permission whose
+     * label already says it all may be omitted.
+     *
+     * @var array<string, string>
+     */
+    public const array DESCRIPTIONS = [
+        'view-project' => 'See the project and its tasks',
+        'manage-settings' => "Edit the project's title, short name and description",
+        'delete-project' => 'Permanently delete the entire project',
+        'view-activity-log' => "See the project's activity history",
+        'manage-members' => 'Add or remove members and change their roles',
+        'invite-members' => 'Invite new people to the project by email',
+        'manage-roles' => "Create and edit the project's custom roles",
+        'create-task' => 'Add new tasks to the project',
+        'edit-task' => "Change a task's title, description and other details",
+        'delete-task' => 'Permanently delete tasks',
+        'close-task' => 'Move a task to Done',
+        'cancel-task' => 'Abandon a task with a reason',
+        'archive-task' => 'Archive tasks that are done',
+        'manage-dependencies' => 'Mark tasks as blocking or blocked by others',
+        'manage-tags' => "Create, rename and delete the project's tags",
+        'tag-tasks' => 'Add and remove tags on tasks',
+        'manage-attachments' => 'Upload and replace file attachments',
+        'delete-attachment' => 'Remove file attachments',
+        'create-comment' => 'Post comments on tasks',
+        'moderate-comments' => "Edit or delete other people's comments",
+    ];
+
+    /**
      * The translated, human-readable label for a permission name. Falls back to a
      * title-cased form of the raw name for anything outside the catalog.
      */
     public static function label(string $permission): string
     {
         return __(self::LABELS[$permission] ?? Str::headline($permission));
+    }
+
+    /**
+     * The translated description for a permission name, or null when none is
+     * defined (descriptions are optional).
+     */
+    public static function description(string $permission): ?string
+    {
+        if (! isset(self::DESCRIPTIONS[$permission])) {
+            return null;
+        }
+
+        return __(self::DESCRIPTIONS[$permission]);
     }
 }

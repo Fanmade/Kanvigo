@@ -210,6 +210,15 @@ class ProjectRoles extends Component
     }
 
     /**
+     * The optional translated description for a permission name, shown as helper
+     * text under its checkbox. Null when the permission has no description.
+     */
+    public function permissionDescription(string $name): ?string
+    {
+        return PermissionCatalog::description($name);
+    }
+
+    /**
      * The ids of roles the manager may delete: strictly below them (visible but
      * not one of their own roles) and not a seeded base role.
      *
