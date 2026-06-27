@@ -81,43 +81,6 @@ class ProjectRoleProvisioner
         'owner' => self::CATALOG,
     ];
 
-    /**
-     * One-click role presets a manager can instantiate under a chosen parent.
-     * Each is intersected with the parent's effective permissions at creation
-     * time, so a preset never escalates past its delegation bound — it is a
-     * convenient starting set, not a guaranteed one.
-     *
-     * @var array<string, list<string>>
-     */
-    public const array TEMPLATES = [
-        'Product Owner' => [
-            'view-project', 'view-activity-log', 'manage-settings',
-            'create-task', 'edit-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
-            'manage-tags', 'tag-tasks',
-            'create-comment', 'moderate-comments',
-        ],
-        'Designer' => [
-            'view-project', 'view-activity-log',
-            'create-task', 'edit-task', 'manage-dependencies',
-            'tag-tasks',
-            'manage-attachments', 'delete-attachment',
-            'create-comment',
-        ],
-        'Developer' => [
-            'view-project', 'view-activity-log',
-            'create-task', 'edit-task', 'close-task', 'manage-dependencies',
-            'tag-tasks',
-            'manage-attachments',
-            'create-comment',
-        ],
-        'Reviewer' => [
-            'view-project', 'view-activity-log',
-            'edit-task', 'close-task', 'cancel-task',
-            'tag-tasks',
-            'create-comment', 'moderate-comments',
-        ],
-    ];
-
     public function __construct(private readonly RoleManager $roles) {}
 
     /**

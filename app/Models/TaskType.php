@@ -39,6 +39,7 @@ class TaskType extends Model
     /**
      * The Heroicons offered when picking a type's icon — a curated set relevant to
      * classifying work, rather than the full Heroicon catalog.
+     *
      * @todo: This should not live in the model, but in a configuration file
      *
      * @var list<string>

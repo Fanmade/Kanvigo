@@ -81,6 +81,41 @@ class ProjectRoles extends Component
     }
 
     /**
+     * The visible roles flattened into hierarchy order: each entry is a role with
+     * its depth (number of visible ancestors), parent before children, so the
+     * list can indent a role under the parent it was delegated from.
+     *
+     * @return list<array{role: Role, depth: int}>
+     */
+    #[Computed]
+    public function roleTree(): array
+    {
+        $roles = $this->roles();
+        $byId = $roles->keyBy('id');
+        $childrenByParent = $roles->groupBy(static fn (Role $role): int => $role->parent_id ?? 0);
+
+        $ordered = [];
+
+        $visit = static function (Role $role, int $depth) use (&$visit, &$ordered, $childrenByParent): void {
+            $ordered[] = ['role' => $role, 'depth' => $depth];
+
+            foreach ($childrenByParent->get($role->id, collect()) as $child) {
+                $visit($child, $depth + 1);
+            }
+        };
+
+        // Start from each visible role whose parent is not itself visible (a root
+        // of the visible subtree), then walk down.
+        foreach ($roles as $role) {
+            if ($role->parent_id === null || ! $byId->has($role->parent_id)) {
+                $visit($role, 0);
+            }
+        }
+
+        return $ordered;
+    }
+
+    /**
      * Roles the manager may delegate from — the same visible set.
      *
      * @return EloquentCollection<int, Role>
@@ -284,17 +319,6 @@ class ProjectRoles extends Component
         return $this->deletableRoleIds();
     }
 
-    /**
-     * The available one-click role template names.
-     *
-     * @return list<string>
-     */
-    #[Computed]
-    public function templates(): array
-    {
-        return array_keys(ProjectRoleProvisioner::TEMPLATES);
-    }
-
     public function createRole(RoleManager $roles): void
     {
         $project = $this->project();
@@ -338,52 +362,6 @@ class ProjectRoles extends Component
         $roles->createRole($validated['name'], $parent, $names, $project);
 
         $this->reset('name', 'permissionIds');
-        $this->forgetRoleCaches();
-
-        Flux::toast(variant: 'success', text: __('Role created.'));
-    }
-
-    /**
-     * Instantiate a built-in role template under the chosen parent, granting
-     * only the template permissions the parent actually holds (so a template can
-     * never escalate past its delegation bound).
-     */
-    public function applyTemplate(RoleManager $roles, PermissionResolver $resolver, string $template): void
-    {
-        $project = $this->project();
-        $this->authorize('manage-roles', $project);
-
-        $names = ProjectRoleProvisioner::TEMPLATES[$template] ?? null;
-
-        if ($names === null) {
-            return;
-        }
-
-        $parent = $this->parentRole();
-
-        if ($parent === null) {
-            $this->addError('parentId', __('Choose a parent role you manage.'));
-
-            return;
-        }
-
-        $exists = Role::query()
-            ->where('scope_type', $project->getMorphClass())
-            ->where('scope_id', $project->id)
-            ->where('name', $template)
-            ->exists();
-
-        if ($exists) {
-            Flux::toast(variant: 'warning', text: __('A role with that name already exists.'));
-
-            return;
-        }
-
-        $allowed = $resolver->permissionsFor($parent);
-        $granted = array_values(array_filter($names, static fn (string $name): bool => $allowed->contains($name)));
-
-        $roles->createRole($template, $parent, $granted, $project);
-
         $this->forgetRoleCaches();
 
         Flux::toast(variant: 'success', text: __('Role created.'));
@@ -505,6 +483,7 @@ class ProjectRoles extends Component
     {
         unset(
             $this->roles,
+            $this->roleTree,
             $this->permissionsByRole,
             $this->deletableRoleIds,
             $this->editableRoleIds,

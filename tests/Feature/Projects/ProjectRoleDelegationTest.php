@@ -154,53 +154,30 @@ it('will not open a protected base role for editing', function () {
     expect($editingRoleId)->toBeNull();
 });
 
-it('instantiates a role template bounded by the chosen parent', function () {
-    $project = Project::factory()->create();
-
-    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
-
-    // Lead holds none of the attachment permissions, so a Designer template under
-    // it cannot grant them — the preset is intersected with the parent.
-    $lead = app(RoleManager::class)->createRole(
-        'Lead',
-        $ownerRole,
-        ['view-project', 'view-activity-log', 'create-task', 'edit-task', 'manage-roles'],
-        $project,
-    );
-    $manager = User::factory()->create()->assignRole($lead);
-
-    Livewire::actingAs($manager)
-        ->test(ProjectRoles::class, ['project' => $project])
-        ->set('parentId', $lead->id)
-        ->call('applyTemplate', 'Designer')
-        ->assertHasNoErrors();
-
-    $designer = Role::query()->where('scope_id', $project->id)->where('name', 'Designer')->first();
-
-    expect($designer)->not->toBeNull()
-        ->and($designer->parent_id)->toBe($lead->id);
-
-    $perms = app(PermissionResolver::class)->permissionsFor($designer)->all();
-
-    expect($perms)->toContain('view-project', 'create-task', 'edit-task')
-        ->and($perms)->not->toContain('manage-attachments', 'delete-attachment', 'tag-tasks');
-});
-
-it('does not create a second role when a template name is already taken', function () {
+it('orders the visible roles as a hierarchy with each role\'s depth', function () {
     $project = Project::factory()->create();
     $owner = User::factory()->create();
     joinProject($project, $owner, 'owner');
 
-    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    // A custom role delegated under member sits one level below it.
+    $memberRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
+    app(RoleManager::class)->createRole('Triager', $memberRole, ['view-project'], $project);
 
-    Livewire::actingAs($owner)
+    $tree = Livewire::actingAs($owner)
         ->test(ProjectRoles::class, ['project' => $project])
-        ->set('parentId', $ownerRole->id)
-        ->call('applyTemplate', 'Reviewer')
-        ->call('applyTemplate', 'Reviewer')
-        ->assertHasNoErrors();
+        ->instance()->roleTree();
 
-    expect(Role::query()->where('scope_id', $project->id)->where('name', 'Reviewer')->count())->toBe(1);
+    $depthByName = collect($tree)
+        ->mapWithKeys(static fn (array $node): array => [$node['role']->name => $node['depth']])
+        ->all();
+
+    expect($depthByName)->toMatchArray([
+        'owner' => 0,
+        'admin' => 1,
+        'member' => 2,
+        'viewer' => 3,
+        'Triager' => 3,
+    ]);
 });
 
 it('prefills the new-role permissions from a role, capped by the chosen parent', function () {
