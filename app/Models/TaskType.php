@@ -39,6 +39,7 @@ class TaskType extends Model
     /**
      * The Heroicons offered when picking a type's icon — a curated set relevant to
      * classifying work, rather than the full Heroicon catalog.
+     * @todo: This should not live in the model, but in a configuration file
      *
      * @var list<string>
      */
@@ -55,7 +56,7 @@ class TaskType extends Model
         'key', 'language', 'lifebuoy', 'lock-closed', 'map-pin', 'moon',
         'paper-airplane', 'scale', 'scissors', 'share', 'shopping-bag', 'shopping-cart',
         'signal', 'speaker-wave', 'truck', 'user-group', 'user-circle', 'view-columns',
-        'x-mark',
+        'x-mark', 'arrows-up-down',
     ];
 
     /**
