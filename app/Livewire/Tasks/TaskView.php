@@ -212,6 +212,43 @@ class TaskView extends Component
         unset($this->task);
     }
 
+    /**
+     * The status a one-click "advance" button would move the task to, or null
+     * when there is no next step or the viewer may not make it. Moving to Done
+     * needs `close`; every other step needs `updateStatus` (mirrors the checks in
+     * {@see updatedStatus()}).
+     */
+    #[Computed]
+    public function nextStatus(): ?Status
+    {
+        $task = $this->task;
+        $next = $task->status->next();
+
+        if ($next === null || $task->isCanceled()) {
+            return null;
+        }
+
+        $ability = $next === Status::Done ? 'close' : 'updateStatus';
+
+        return Auth::user()?->can($ability, $task) ? $next : null;
+    }
+
+    /**
+     * Advance the task to the next status in one click, routing through the same
+     * path as the status control so the cascade prompt, auth and logging all apply.
+     */
+    public function advanceStatus(): void
+    {
+        $next = $this->nextStatus();
+
+        if ($next === null) {
+            return;
+        }
+
+        $this->status = $next->value;
+        $this->updatedStatus($next->value);
+    }
+
     public function updatedStatus(string $value): void
     {
         $task = $this->task;
@@ -409,7 +446,7 @@ class TaskView extends Component
     {
         $result = app(ChangeTaskStatus::class)->handle($task, $new, $cascadeToChildren);
 
-        unset($this->task);
+        unset($this->task, $this->nextStatus);
         $this->status = $new->value;
         $this->parentBumpUndoStatus = $result->parentBumped ? (string) $result->parentPreviousStatus : '';
 

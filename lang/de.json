@@ -327,6 +327,7 @@
   "Move down": "Nach unten verschieben",
   "Move task": "Aufgabe verschieben",
   "Move to": "Verschieben nach",
+  "Move to :status": "Auf :status setzen",
   "Move up": "Nach oben verschieben",
   "moved": "verschob",
   "moved this from :old to :new": "hat diese Aufgabe von :old nach :new verschoben",

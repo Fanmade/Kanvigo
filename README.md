@@ -27,7 +27,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Focused item views** — the project and task pages keep the description
   front and centre, with metadata (status, priority, assignees, dependencies,
   dates) gathered in a compact side rail. Status and priority are badges that open
-  a dropdown to change them, and editing controls stay tucked away until needed.
+  a dropdown to change them — with a one-click button beside the status to advance
+  to the next step (To do → In progress → Done) — and editing controls stay tucked
+  away until needed.
 - **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}/board` for its
   board, and `/{SHORT}-{n}` for a task (e.g. `/ABC`, `/ABC/board`, `/ABC-42`).
 - **Command palette** (`⌘K` / `Ctrl+K`) — search projects and tasks by

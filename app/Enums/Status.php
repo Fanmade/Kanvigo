@@ -74,4 +74,19 @@ enum Status: string
             default => false,
         };
     }
+
+    /**
+     * The next status in the working progression (Planned → To do → In progress →
+     * Done), or null when there is none — Done is the end of the line and Canceled
+     * sits outside the progression.
+     */
+    public function next(): ?self
+    {
+        return match ($this) {
+            self::Planned => self::ToDo,
+            self::ToDo => self::InProgress,
+            self::InProgress => self::Done,
+            self::Done, self::Canceled => null,
+        };
+    }
 }

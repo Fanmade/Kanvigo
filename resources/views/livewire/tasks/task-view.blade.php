@@ -182,6 +182,19 @@
                             :status="$this->task->status"
                             :can-edit="auth()->user()->can('updateStatus', $this->task) && ! $this->task->isCanceled()"
                         />
+
+                        @if ($this->nextStatus)
+                            <flux:tooltip :content="__('Move to :status', ['status' => $this->nextStatus->label()])">
+                                <flux:button
+                                    size="xs"
+                                    variant="filled"
+                                    icon="arrow-right"
+                                    :aria-label="__('Move to :status', ['status' => $this->nextStatus->label()])"
+                                    wire:click="advanceStatus"
+                                    data-test="advance-status"
+                                />
+                            </flux:tooltip>
+                        @endif
                     </x-rail-row>
 
                     <x-rail-row :label="__('Priority')">
