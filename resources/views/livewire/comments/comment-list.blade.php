@@ -20,6 +20,7 @@
             <div
                 x-data="{ expanded: false }"
                 x-on:comment-added.window="expanded = false"
+                x-on:open-composer.window="expanded = true; $nextTick(() => { $refs.composer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); $refs.composer?.querySelector('[contenteditable]')?.focus(); })"
                 class="flex flex-col gap-2"
             >
                 <flux:input
@@ -39,6 +40,34 @@
                     wire:submit="addComment"
                     class="flex flex-col gap-2"
                 >
+                    @if ($this->referencedActivityEntries->isNotEmpty())
+                        <div class="flex flex-col gap-1.5" data-test="comment-references">
+                            <flux:text size="xs" class="text-zinc-500">{{ __('Referencing') }}</flux:text>
+                            @foreach ($this->referencedActivityEntries as $entry)
+                                <div
+                                    class="flex items-start gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-white/10 dark:bg-zinc-700/40"
+                                    wire:key="reference-{{ $entry->reference }}"
+                                    data-test="comment-reference"
+                                >
+                                    <div class="flex-1 text-zinc-600 dark:text-zinc-300">
+                                        <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $entry->user?->name ?? __('System') }}</span>
+                                        {{ \App\Support\ActivityDescriber::describe($entry) }}
+                                        <span class="text-zinc-400">· {{ $entry->reference }}</span>
+                                    </div>
+                                    <flux:button
+                                        type="button"
+                                        size="xs"
+                                        variant="ghost"
+                                        icon="x-mark"
+                                        wire:click="removeReference('{{ $entry->reference }}')"
+                                        :aria-label="__('Remove reference')"
+                                        data-test="remove-reference"
+                                    />
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
                     <x-attachments.rich-editor property="body" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a comment…')" :mentionables-url="$this->mentionablesUrl" />
                     <div class="flex justify-end gap-2">
                         <flux:button type="button" size="sm" variant="ghost" x-on:click="expanded = false">

@@ -4,9 +4,11 @@ namespace App\Livewire\Comments;
 
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ResolvesMorphSubject;
+use App\Models\Activity;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\ReferenceResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -47,6 +49,15 @@ class CommentList extends Component
     public ?int $confirmingDelete = null;
 
     public string $deleteReason = '';
+
+    /**
+     * Activity-log references (e.g. "KAN-42-log-2") the in-progress comment points
+     * at, added via the "Discuss" action on a feed entry. Attached to the comment
+     * when it is posted.
+     *
+     * @var list<string>
+     */
+    public array $referencedActivities = [];
 
     public function mount(Project|Task $commentable): void
     {
@@ -150,18 +161,86 @@ class CommentList extends Component
         unset($this->comments, $this->commentCount, $this->hasMoreComments);
     }
 
+    /**
+     * Reference an activity-log entry from the composer, triggered by the
+     * "Discuss" action on a feed entry. Opens the comments section and composer,
+     * adding the reference (deduplicated) so it is attached when posted. Unknown
+     * references are ignored.
+     */
+    #[On('discuss-activity')]
+    public function discussActivity(string $reference): void
+    {
+        if (ReferenceResolver::activity($reference) === null) {
+            return;
+        }
+
+        if (! in_array($reference, $this->referencedActivities, true)) {
+            $this->referencedActivities[] = $reference;
+            unset($this->referencedActivityEntries);
+        }
+
+        $this->collapsed = false;
+
+        // Open and focus the (Alpine-collapsed) composer in the blade.
+        $this->dispatch('open-composer');
+    }
+
+    /**
+     * Drop a referenced entry from the composer before the comment is posted.
+     */
+    public function removeReference(string $reference): void
+    {
+        $this->referencedActivities = array_values(
+            array_filter($this->referencedActivities, static fn (string $r): bool => $r !== $reference)
+        );
+
+        unset($this->referencedActivityEntries);
+    }
+
+    /**
+     * Resolve the composer's referenced activities to their models (skipping any
+     * that no longer exist) for the preview cards.
+     *
+     * @return Collection<int, Activity>
+     */
+    #[Computed]
+    public function referencedActivityEntries(): Collection
+    {
+        $entries = array_filter(array_map(
+            static fn (string $reference): ?Activity => ReferenceResolver::activity($reference),
+            $this->referencedActivities,
+        ));
+
+        return new Collection(array_values($entries));
+    }
+
     public function addComment(): void
     {
         $validated = $this->validate([
             'body' => ['required', 'string', 'max:5000'],
         ]);
 
-        $this->storeComment($validated['body']);
+        $comment = $this->storeComment($validated['body']);
+        $this->attachReferencedActivities($comment);
 
-        $this->reset('body');
+        $this->reset('body', 'referencedActivities');
+        unset($this->referencedActivityEntries);
 
         // Collapse the composer back to its input-styled trigger (see the blade).
         $this->dispatch('comment-added');
+    }
+
+    /**
+     * Attach the composer's referenced activity entries to a freshly posted
+     * comment (ignoring any that have since been deleted).
+     */
+    protected function attachReferencedActivities(Comment $comment): void
+    {
+        $ids = $this->referencedActivityEntries()->modelKeys();
+
+        if ($ids !== []) {
+            $comment->activities()->attach($ids);
+        }
     }
 
     public function startReply(int $commentId): void
@@ -260,14 +339,14 @@ class CommentList extends Component
     /**
      * Persist a comment (optionally as a reply) and log the activity.
      */
-    protected function storeComment(string $body, ?int $parentId = null): void
+    protected function storeComment(string $body, ?int $parentId = null): Comment
     {
         $commentable = $this->commentable();
         $project = $commentable instanceof Task ? $commentable->project : $commentable;
 
         $this->authorize('create-comment', $project);
 
-        $commentable->comments()->create([
+        $comment = $commentable->comments()->create([
             'user_id' => Auth::id(),
             'body' => $body,
             'parent_id' => $parentId,
@@ -276,5 +355,7 @@ class CommentList extends Component
         $commentable->recordActivity('commented');
 
         unset($this->comments, $this->commentCount, $this->hasMoreComments);
+
+        return $comment;
     }
 }

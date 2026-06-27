@@ -127,6 +127,19 @@ class ActivityFeed extends Component
     }
 
     /**
+     * The subject's reference (e.g. "KAN-42"), used to build the per-entry log
+     * reference for the "Discuss" action. Null for project subjects, which have
+     * no per-entry reference today (so the action is hidden there).
+     */
+    #[Computed]
+    public function subjectReference(): ?string
+    {
+        $subject = $this->subject();
+
+        return $subject instanceof Task ? $subject->reference : null;
+    }
+
+    /**
      * The subject's recorded activities (newest first) with their author.
      *
      * @return Collection<int, Activity>
