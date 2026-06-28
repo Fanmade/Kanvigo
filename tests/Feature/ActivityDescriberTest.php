@@ -27,6 +27,11 @@ it('describes simple lifecycle actions', function () {
         ->and(describeActivity('commented'))->toBe('added a comment');
 });
 
+it('describes a comment deletion, with and without a reason', function () {
+    expect(describeActivity('comment_deleted'))->toBe('deleted a comment')
+        ->and(describeActivity('comment_deleted', null, 'wrong task'))->toBe('deleted a comment: wrong task');
+});
+
 it('describes a status change with labels', function () {
     expect(describeActivity('status_changed', Status::ToDo->value, Status::Done->value))
         ->toBe('changed status from '.Status::ToDo->label().' to '.Status::Done->label());

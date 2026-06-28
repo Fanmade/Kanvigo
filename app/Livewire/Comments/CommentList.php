@@ -335,16 +335,22 @@ class CommentList extends Component
         $comment = $this->commentable()->comments()->findOrFail($this->confirmingDelete);
         $this->authorize('delete', $comment);
 
+        $reason = trim($this->deleteReason) ?: null;
+
         if ($comment->replies()->exists()) {
             // Keep the row (so replies survive) but tombstone its content.
             $comment->forceFill([
                 'is_deleted' => true,
                 'body' => '',
-                'delete_reason' => trim($this->deleteReason) ?: null,
+                'delete_reason' => $reason,
             ])->save();
         } else {
             $comment->delete();
         }
+
+        // Record the removal in the audit trail (with the reason, if given), the
+        // same way posting a comment logs a 'commented' entry.
+        $this->commentable()->recordActivity('comment_deleted', null, null, $reason);
 
         $this->reset('confirmingDelete', 'deleteReason');
         unset($this->comments, $this->commentCount, $this->hasMoreComments);

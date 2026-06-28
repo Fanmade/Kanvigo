@@ -68,6 +68,36 @@ it('lets a member comment on a task and logs the activity', function () {
         ->and($this->task->activities()->where('action', 'commented')->count())->toBe(1);
 });
 
+it('logs an activity when a comment is deleted, capturing the reason', function () {
+    $comment = $this->task->comments()->create(['user_id' => $this->member->id, 'body' => 'oops, wrong task']);
+
+    Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task])
+        ->call('confirmDelete', $comment->id)
+        ->set('deleteReason', 'posted on the wrong task')
+        ->call('deleteComment');
+
+    $activity = $this->task->activities()->where('action', 'comment_deleted')->first();
+
+    expect($this->task->comments()->count())->toBe(0)
+        ->and($activity)->not->toBeNull()
+        ->and($activity->user_id)->toBe($this->member->id)
+        ->and($activity->new_value)->toBe('posted on the wrong task');
+});
+
+it('logs the deletion even when the comment is tombstoned to keep its replies', function () {
+    $comment = $this->task->comments()->create(['user_id' => $this->member->id, 'body' => 'parent']);
+    $this->task->comments()->create(['user_id' => $this->member->id, 'body' => 'reply', 'parent_id' => $comment->id]);
+
+    Livewire::actingAs($this->member)
+        ->test(CommentList::class, ['commentable' => $this->task])
+        ->call('confirmDelete', $comment->id)
+        ->call('deleteComment');
+
+    expect($this->task->activities()->where('action', 'comment_deleted')->count())->toBe(1)
+        ->and($comment->fresh()->is_deleted)->toBeTrue();
+});
+
 it('supports comments on projects and subtasks', function () {
     Livewire::actingAs($this->member)
         ->test(CommentList::class, ['commentable' => $this->project])

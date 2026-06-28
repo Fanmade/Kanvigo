@@ -49,6 +49,9 @@ class ActivityDescriber
             'archived' => __('archived this'),
             'unarchived' => __('restored this from the archive'),
             'commented' => __('added a comment'),
+            'comment_deleted' => ($activity->new_value ?? '') !== ''
+                ? __('deleted a comment: :reason', ['reason' => (string) $activity->new_value])
+                : __('deleted a comment'),
             default => $activity->action,
         };
     }

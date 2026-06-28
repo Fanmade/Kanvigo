@@ -51,8 +51,9 @@ trait LogsActivity
 
         // Tag/assignee/dependency changes don't touch the task row (so the
         // saved() board-cache hook doesn't fire) but do change how its card
-        // renders — invalidate here. Comments don't appear on the board.
-        if ($this instanceof Task && $action !== 'commented') {
+        // renders — invalidate here. Comment activity (added or deleted) doesn't
+        // appear on the board, so it never needs to bust the cache.
+        if ($this instanceof Task && ! in_array($action, ['commented', 'comment_deleted'], true)) {
             BoardCache::touch($this->project_id);
         }
 

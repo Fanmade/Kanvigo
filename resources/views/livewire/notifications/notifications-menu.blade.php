@@ -35,6 +35,7 @@
                     'tags_changed' => __('updated the tags of'),
                     'parent_changed' => __('moved'),
                     'commented' => __('commented on'),
+                    'comment_deleted' => __('deleted a comment on'),
                     'mentioned' => __('mentioned you in'),
                     default => __('updated'),
                 })
