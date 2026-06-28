@@ -141,7 +141,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   project member (they are notified and auto-subscribed to the item) and `#` to
   reference a task, picked from an autocomplete of the project's members and tasks.
   Mentions render as links to the member's profile, and references as links to the
-  task — wherever the content is shown — the latter with a hover preview card of the
+  task — wherever the content is shown — each with a hover preview card: a mention
+  shows the user's name, avatar and their role in the project; a reference shows the
   task's title, status, priority, assignees and progress.
 - **Rich-text descriptions & comments** — task/project descriptions and comments are
   edited with a Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) supporting

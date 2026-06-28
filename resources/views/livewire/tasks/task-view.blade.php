@@ -122,7 +122,7 @@
                 <x-attachments.dropzone :enabled="$canUpdate">
                     <flux:card>
                         @if ($this->task->description)
-                            <x-expandable-description :content="$this->task->description" />
+                            <x-expandable-description :content="$this->task->description" :short-name="$this->task->project->short_name" />
                         @else
                             <flux:text class="italic text-zinc-400">{{ __('No description yet.') }}</flux:text>
                         @endif

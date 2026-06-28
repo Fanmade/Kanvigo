@@ -13,16 +13,21 @@ use Dom\HTMLDocument;
  * Mentions are saved as atomic inline spans carrying the user's id, e.g.
  * {@code <span class="mention" data-type="mention" data-id="5">@Name</span>}.
  * On output each becomes
- * {@code <a class="mention" data-type="mention" data-id="5" href="/users/5">@Name</a>}
+ * {@code <a class="mention" data-type="mention" data-id="5" href="/users/{public_id}">@Name</a>}
  * so it is clickable wherever the content is shown — mirroring how #task
  * references are already rendered as links. The rewrite runs on the saved HTML
  * (not the editor's transient state), so every write path — the Livewire editor,
  * the MCP/API — is covered uniformly, and the editor itself keeps editing the
  * plain spans.
+ *
+ * When the surrounding project is known (the content is shown on a project or
+ * task page), pass its short name so each link carries a {@code data-project}
+ * attribute — the @mention hovercard uses it to show the user's role in that
+ * project.
  */
 class MentionLinker
 {
-    public static function link(?string $html): string
+    public static function link(?string $html, ?string $projectShortName = null): string
     {
         $html ??= '';
 
@@ -56,6 +61,11 @@ class MentionLinker
             }
 
             $anchor->setAttribute('href', route('users.show', $publicIds[$id]));
+
+            if ($projectShortName !== null && $projectShortName !== '') {
+                $anchor->setAttribute('data-project', $projectShortName);
+            }
+
             $anchor->textContent = $span->textContent;
 
             $span->parentNode?->replaceChild($anchor, $span);

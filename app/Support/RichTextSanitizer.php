@@ -23,10 +23,12 @@ class RichTextSanitizer
     {
         $config = (new HtmlSanitizerConfig)
             ->allowSafeElements()
-            // `a` also carries reference links (#KAN-42) and `span` carries user
-            // mentions (@name); both are atomic inline nodes tagged with
-            // data-type/data-id so they survive sanitisation and stay parseable.
-            ->allowElement('a', ['href', 'title', 'target', 'rel', 'class', 'data-type', 'data-id', 'data-label'])
+            // `a` also carries reference links (#KAN-42) and user mentions
+            // (@name, rewritten from spans on output); both are atomic inline nodes
+            // tagged with data-type/data-id so they survive sanitisation and stay
+            // parseable. `data-project` scopes a mention's hovercard to the project
+            // it is shown in.
+            ->allowElement('a', ['href', 'title', 'target', 'rel', 'class', 'data-type', 'data-id', 'data-label', 'data-project'])
             ->allowElement('span', ['class', 'data-type', 'data-id', 'data-label'])
             ->allowElement('img', ['src', 'alt', 'title'])
             ->allowElement('del')

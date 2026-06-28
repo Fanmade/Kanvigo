@@ -1,4 +1,4 @@
-@props(['content'])
+@props(['content', 'shortName' => null])
 
 {{-- A rich-text (HTML) description capped to a default height (scrolling within
      its card so it never grows the page), with a Show more / Show less toggle to
@@ -19,7 +19,7 @@
         x-ref="body"
         :class="expanded ? 'max-h-none' : 'max-h-96 overflow-y-auto'"
     >
-        <x-rich-text :content="$content" />
+        <x-rich-text :content="$content" :short-name="$shortName" />
     </div>
 
     <button

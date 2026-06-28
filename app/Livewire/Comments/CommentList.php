@@ -101,10 +101,20 @@ class CommentList extends Component
     #[Computed]
     public function mentionablesUrl(): string
     {
-        $commentable = $this->commentable();
-        $project = $commentable instanceof Task ? $commentable->project : $commentable;
+        return route('project.mentionables', $this->project());
+    }
 
-        return route('project.mentionables', $project);
+    /**
+     * The project the comments live in (a task comments belong to its project),
+     * threaded to rendered comment bodies so each @mention link carries it for
+     * the hovercard's "role in this project".
+     */
+    #[Computed]
+    public function project(): Project
+    {
+        $commentable = $this->commentable();
+
+        return $commentable instanceof Task ? $commentable->project : $commentable;
     }
 
     /**

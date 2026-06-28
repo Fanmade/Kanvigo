@@ -1,4 +1,4 @@
-@props(['comment', 'editingId' => null, 'confirmingDelete' => null, 'mentionablesUrl' => null])
+@props(['comment', 'editingId' => null, 'confirmingDelete' => null, 'mentionablesUrl' => null, 'shortName' => null])
 
 <div class="flex flex-col gap-1">
     <div class="flex items-center justify-between gap-2">
@@ -49,7 +49,7 @@
             </div>
         </div>
     @else
-        <x-rich-text :content="$comment->body" class="text-sm" />
+        <x-rich-text :content="$comment->body" :short-name="$shortName" class="text-sm" />
 
         @if ($comment->activities->isNotEmpty())
             <div class="mt-1 flex flex-col gap-1" data-test="comment-activity-references">

@@ -28,6 +28,7 @@
                                      dumping its raw markup, clamped to a few lines so cards stay even. --}}
                                 <x-rich-text
                                     :content="$project->description"
+                                    :short-name="$project->short_name"
                                     class="mt-2 line-clamp-3 text-sm break-words text-zinc-500 [&_*]:my-0 dark:text-zinc-400"
                                     data-test="project-card-description"
                                 />

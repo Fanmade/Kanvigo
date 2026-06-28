@@ -210,3 +210,38 @@ html.full-width .app-content {
 .reference-hovercard-assignees {
     @apply truncate text-xs text-zinc-500 dark:text-zinc-400;
 }
+
+/* The @mention hovercard (see resources/js/mention-hovercard.js). */
+.mention-hovercard {
+    @apply fixed z-50 flex w-64 flex-col rounded-lg border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-800;
+}
+
+.mention-hovercard-header {
+    @apply flex items-start gap-3;
+}
+
+/* The name + roles share a column beside the avatar, so roles align under the
+   name rather than under the avatar. */
+.mention-hovercard-body {
+    @apply flex min-w-0 flex-col gap-1.5;
+}
+
+.mention-hovercard-avatar {
+    @apply size-8 shrink-0 rounded-full object-cover;
+}
+
+.mention-hovercard-initials {
+    @apply flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300;
+}
+
+.mention-hovercard-name {
+    @apply min-w-0 truncate pt-1 font-medium text-zinc-800 dark:text-zinc-100;
+}
+
+.mention-hovercard-roles {
+    @apply flex flex-wrap gap-1;
+}
+
+.mention-hovercard-role {
+    @apply rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300;
+}

@@ -84,11 +84,11 @@
                 @forelse ($this->comments as $comment)
                     @php($threadIds = $comment->replies->pluck('id')->push($comment->id))
                     <flux:card class="flex flex-col gap-3" wire:key="comment-{{ $comment->id }}">
-                        <x-comment :comment="$comment" :editing-id="$editingId" :confirming-delete="$confirmingDelete" :mentionables-url="$this->mentionablesUrl" />
+                        <x-comment :comment="$comment" :editing-id="$editingId" :confirming-delete="$confirmingDelete" :mentionables-url="$this->mentionablesUrl" :short-name="$this->project->short_name" />
 
                         @foreach ($comment->replies as $reply)
                             <div class="ms-6 border-s-2 border-zinc-100 ps-3 dark:border-zinc-700" wire:key="reply-{{ $reply->id }}">
-                                <x-comment :comment="$reply" :editing-id="$editingId" :confirming-delete="$confirmingDelete" :mentionables-url="$this->mentionablesUrl" />
+                                <x-comment :comment="$reply" :editing-id="$editingId" :confirming-delete="$confirmingDelete" :mentionables-url="$this->mentionablesUrl" :short-name="$this->project->short_name" />
                             </div>
                         @endforeach
 

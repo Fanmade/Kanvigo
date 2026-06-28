@@ -7,6 +7,7 @@ use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\MentionSuggestionsController;
 use App\Http\Controllers\NoteAttachmentController;
 use App\Http\Controllers\TaskPreviewController;
+use App\Http\Controllers\UserPreviewController;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
 use App\Livewire\Dashboard;
@@ -50,6 +51,9 @@ Route::middleware(['auth', 'verified'])->group(static function () {
 
     // A user's profile page, visible to members who share a project with them.
     Route::livewire('users/{user}', UserProfile::class)->name('users.show');
+
+    // Compact user preview for the @mention hovercard (mirrors task.preview).
+    Route::get('users/{user}/preview', UserPreviewController::class)->name('users.preview');
 
     /*
      * Attachment delivery is scoped under the owning project's short name and

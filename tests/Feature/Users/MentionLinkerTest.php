@@ -20,6 +20,30 @@ it('rewrites mention spans into links to the user profile', function () {
         ->not->toContain('href="'.route('users.show', $user->id).'/"');
 });
 
+it('tags the mention link with the project when given one', function () {
+    $user = User::factory()->create();
+    $html = '<span class="mention" data-type="mention" data-id="'.$user->id.'">@Ada</span>';
+
+    expect(MentionLinker::link($html, 'SHR'))
+        ->toContain('data-project="SHR"');
+});
+
+it('omits the project attribute when no project is given', function () {
+    $user = User::factory()->create();
+    $html = '<span class="mention" data-type="mention" data-id="'.$user->id.'">@Ada</span>';
+
+    expect(MentionLinker::link($html))->not->toContain('data-project');
+});
+
+it('keeps the project attribute through sanitization', function () {
+    $user = User::factory()->create();
+    $html = '<span class="mention" data-type="mention" data-id="'.$user->id.'">@Ada</span>';
+
+    $rendered = app(RichTextSanitizer::class)->sanitize(MentionLinker::link($html, 'SHR'));
+
+    expect($rendered)->toContain('data-project="SHR"');
+});
+
 it('leaves content without mentions untouched', function () {
     $html = '<p>Nothing to link here</p>';
 
