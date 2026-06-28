@@ -3,6 +3,15 @@
 {{-- Shared account actions. Rendered inside the top-right notifications menu and
      the bottom-left sidebar account menu so the two can't drift. --}}
 <flux:menu.item
+    :href="route('users.show', auth()->user())"
+    icon="user"
+    wire:navigate
+    :data-test="$testPrefix ? $testPrefix.'-profile' : null"
+>
+    {{ __('View profile') }}
+</flux:menu.item>
+
+<flux:menu.item
     :href="route('profile.edit')"
     icon="cog"
     wire:navigate

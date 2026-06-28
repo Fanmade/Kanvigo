@@ -3,6 +3,7 @@
 @php
     // A null relation with a populated user_id means the author's account was
     // removed; distinguish that from genuinely system-authored comments.
+    // TODO: Move that as a helper function to the comment class itself
     $authorName = $comment->user?->name ?? ($comment->user_id !== null ? __('Deleted user') : __('System'));
 @endphp
 
