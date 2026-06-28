@@ -94,6 +94,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Profile avatars** — upload a profile picture (cropped to a square) from
   profile settings; it shows wherever you appear — assignees, comment authors and
   member lists — with your initials as the fallback when you have none.
+- **User profiles** — every user has a profile page showing their avatar, the
+  projects you share with them, and their recent activity in projects you can see.
+  Mentions, comment authors and member lists link to it. A profile is visible only
+  to people who share a project with the user (and to admins who can see every
+  project).
 - **Comments** with one-level replies, editing, and soft-delete tombstones, written
   with the same rich-text editor as descriptions. The whole section can be collapsed,
   remembered per user. New comments and activity from others appear automatically
@@ -135,8 +140,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Mentions & references** — in any description or comment, type `@` to mention a
   project member (they are notified and auto-subscribed to the item) and `#` to
   reference a task, picked from an autocomplete of the project's members and tasks.
-  References render as links to the task wherever the content is shown, with a hover
-  preview card of the task's title, status, priority, assignees and progress.
+  Mentions render as links to the member's profile, and references as links to the
+  task — wherever the content is shown — the latter with a hover preview card of the
+  task's title, status, priority, assignees and progress.
 - **Rich-text descriptions & comments** — task/project descriptions and comments are
   edited with a Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) supporting
   headings, lists, links, quotes, code and inline images pasted or dropped straight in.

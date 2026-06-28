@@ -28,6 +28,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property string $email
  * @property string|null $avatar_path
@@ -65,6 +66,12 @@ class User extends Authenticatable implements PasskeyUser
      */
     protected static function booted(): void
     {
+        // Every user gets an opaque public identifier on creation; it is the
+        // route key, so profile and avatar URLs never expose the numeric id.
+        static::creating(static function (User $user): void {
+            $user->public_id ??= (string) Str::ulid();
+        });
+
         static::deleting(static function (User $user): void {
             if ($user->isForceDeleting()) {
                 $user->deleteAvatar();
@@ -93,6 +100,15 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'preferences' => 'array',
         ];
+    }
+
+    /**
+     * Resolve route-model bindings by the opaque public id rather than the
+     * primary key, keeping the sequential id out of profile and avatar URLs.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'public_id';
     }
 
     /**

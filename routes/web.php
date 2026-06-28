@@ -20,6 +20,7 @@ use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Projects\ProjectTags;
 use App\Livewire\Projects\ProjectTaskTypes;
 use App\Livewire\Tasks\TaskView;
+use App\Livewire\Users\UserProfile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,9 @@ Route::middleware(['auth', 'verified'])->group(static function () {
 
     // Avatars are stored privately and streamed only to authenticated viewers.
     Route::get('users/{user}/avatar', AvatarController::class)->name('avatar');
+
+    // A user's profile page, visible to members who share a project with them.
+    Route::livewire('users/{user}', UserProfile::class)->name('users.show');
 
     /*
      * Attachment delivery is scoped under the owning project's short name and

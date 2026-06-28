@@ -6,6 +6,7 @@ use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Subscriptions\SubscriptionToggle;
 use App\Livewire\Tasks\TaskView;
+use App\Livewire\Users\UserProfile;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -91,6 +92,16 @@ it('locks the SubscriptionToggle identifiers', function () {
         ->set('morphSubjectId', $this->foreignTask->id);
 })->throws(CannotUpdateLockedPropertyException::class);
 
+it('locks the UserProfile public id', function () {
+    $stranger = User::factory()->create();
+
+    // The member can always view their own profile; tampering aims it at a
+    // stranger they share no project with.
+    Livewire::actingAs($this->member)
+        ->test(UserProfile::class, ['user' => $this->member])
+        ->set('publicId', $stranger->public_id);
+})->throws(CannotUpdateLockedPropertyException::class);
+
 // ---------------------------------------------------------------------------
 // Layer 2 — defence in depth: read computeds re-authorize, so even a tampered
 // identifier (bypassing the lock) cannot disclose foreign data.
@@ -154,4 +165,15 @@ it('re-authorizes SubscriptionToggle reads against tampered identifiers', functi
     );
 
     expect(fn () => $instance->subscribable())->toThrow(AuthorizationException::class);
+});
+
+it('re-authorizes UserProfile reads against tampered identifiers', function () {
+    $stranger = User::factory()->create();
+
+    $instance = tamper(
+        Livewire::actingAs($this->member)->test(UserProfile::class, ['user' => $this->member]),
+        ['publicId' => $stranger->public_id],
+    );
+
+    expect(fn () => $instance->user())->toThrow(AuthorizationException::class);
 });

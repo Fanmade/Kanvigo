@@ -322,7 +322,7 @@
                         @php($addable = $this->assignableRoles->reject(fn ($role) => $heldNames->contains($role->name)))
                         <div class="flex items-start justify-between gap-3" wire:key="member-{{ $member->id }}"
                              data-test="member-row-{{ $member->id }}">
-                            <flux:text class="min-w-0 truncate pt-1">{{ $member->name }}</flux:text>
+                            <x-user-link :user="$member" class="min-w-0 truncate pt-1 text-sm">{{ $member->name }}</x-user-link>
 
                             <div class="flex flex-col items-end gap-1.5">
                                 <div class="flex flex-wrap justify-end gap-1"
