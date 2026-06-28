@@ -33,7 +33,7 @@
         @endif
     @elseif ($editingId === $comment->id)
         <form wire:submit="updateComment" class="flex flex-col gap-2">
-            <x-attachments.rich-editor property="editBody" toolbar="bold italic strike | bullet ordered | link" :mentionables-url="$mentionablesUrl" />
+            <x-attachments.rich-editor property="editBody" toolbar="bold italic strike | bullet ordered blockquote | link | align ~ undo redo" :mentionables-url="$mentionablesUrl" />
             <div class="flex justify-end gap-2">
                 <flux:button type="button" size="sm" variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
                 <flux:button type="submit" size="sm" variant="primary">{{ __('Save') }}</flux:button>
