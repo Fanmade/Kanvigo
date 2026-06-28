@@ -1,11 +1,8 @@
 @props(['comment'])
-
 @php
-    // A null relation with a populated user_id means the author's account was
-    // removed; distinguish that from genuinely system-authored comments.
-    // TODO: Move that as a helper function to the comment class itself
-    $authorName = $comment->user?->name ?? ($comment->user_id !== null ? __('Deleted user') : __('System'));
+/** @var \App\Models\Comment $comment */
 @endphp
+@php($authorName = $comment->authorName())
 
 <div class="flex items-center gap-2">
     <x-user-link :user="$comment->user" class="flex items-center gap-2">

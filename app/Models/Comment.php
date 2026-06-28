@@ -99,6 +99,22 @@ class Comment extends Model implements Mentionable
     }
 
     /**
+     * The display name for this comment's author: their name, or a tombstone
+     * label that distinguishes a removed account (a populated user_id whose user
+     * no longer resolves) from a genuinely system-authored comment (no user_id).
+     */
+    public function authorName(): string
+    {
+        $author = $this->user;
+
+        if ($author instanceof User) {
+            return $author->name;
+        }
+
+        return $this->user_id !== null ? __('Deleted user') : __('System');
+    }
+
+    /**
      * @return BelongsTo<Comment, $this>
      */
     public function parent(): BelongsTo
