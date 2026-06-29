@@ -54,14 +54,6 @@ class GetNoteTool extends Tool
      */
     public function outputSchema(JsonSchema $schema): array
     {
-        return [
-            'id' => $schema->integer()->description('The note id.')->required(),
-            'title' => $schema->string()->description('The note title.')->required(),
-            'body' => $schema->string()->description('The note body as HTML; may be null.'),
-            'project' => $schema->string()->description('The attached project short_name, or null.'),
-            'is_public' => $schema->boolean()->description('Whether the note is public to its project.')->required(),
-            'owned' => $schema->boolean()->description('Whether the authenticated user owns the note.')->required(),
-            'converted_task' => $schema->string()->description('The task reference this note was converted into, or null.'),
-        ];
+        return $this->noteSchema($schema);
     }
 }

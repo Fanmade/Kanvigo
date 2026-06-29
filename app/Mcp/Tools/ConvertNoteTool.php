@@ -104,14 +104,6 @@ class ConvertNoteTool extends Tool
      */
     public function outputSchema(JsonSchema $schema): array
     {
-        return [
-            'id' => $schema->integer()->description('The note id (the note is kept).')->required(),
-            'title' => $schema->string()->description('The note title.')->required(),
-            'body' => $schema->string()->description('The note body as HTML; may be null.'),
-            'project' => $schema->string()->description('The project the task was created in.'),
-            'is_public' => $schema->boolean()->description('Whether the note is public to its project.')->required(),
-            'owned' => $schema->boolean()->description('Whether the authenticated user owns the note.')->required(),
-            'converted_task' => $schema->string()->description('The reference of the task the note was converted into, e.g. "PROJ-42".')->required(),
-        ];
+        return $this->noteSchema($schema, convertedTaskRequired: true);
     }
 }

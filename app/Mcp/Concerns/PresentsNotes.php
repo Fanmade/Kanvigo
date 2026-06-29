@@ -4,6 +4,8 @@ namespace App\Mcp\Concerns;
 
 use App\Models\Note;
 use App\Models\User;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
 use RuntimeException;
 
@@ -45,5 +47,28 @@ trait PresentsNotes
         }
 
         return $payload;
+    }
+
+    /**
+     * The output-schema fields for a single note, shared by the note tools so
+     * their shapes never drift. Pass $convertedTaskRequired where the field is
+     * always present (the convert tool, which has just produced the task).
+     *
+     * @return array<string, Type>
+     */
+    protected function noteSchema(JsonSchema $schema, bool $convertedTaskRequired = false): array
+    {
+        $convertedTask = $schema->string()
+            ->description('The reference of the task this note was converted into (e.g. "PROJ-42"), or null.');
+
+        return [
+            'id' => $schema->integer()->description('The note id.')->required(),
+            'title' => $schema->string()->description('The note title.')->required(),
+            'body' => $schema->string()->description('The note body as HTML; may be null.'),
+            'project' => $schema->string()->description('The attached project short_name, or null.'),
+            'is_public' => $schema->boolean()->description('Whether the note is public to its project.')->required(),
+            'owned' => $schema->boolean()->description('Whether the authenticated user owns the note.')->required(),
+            'converted_task' => $convertedTaskRequired ? $convertedTask->required() : $convertedTask,
+        ];
     }
 }
