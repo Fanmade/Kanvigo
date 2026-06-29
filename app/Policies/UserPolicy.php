@@ -36,6 +36,18 @@ class UserPolicy
     }
 
     /**
+     * Determine whether the user can fetch another account's avatar image. Same
+     * boundary as viewing a profile, plus user administrators — who legitimately
+     * see every account's avatar in the management panel even without a shared
+     * project. A likeness stays within the collaboration (or admin) boundary
+     * rather than being readable by any authenticated user.
+     */
+    public function viewAvatar(User $user, User $target): bool
+    {
+        return $this->view($user, $target) || $user->hasPermission(Permission::ManageUsers);
+    }
+
+    /**
      * Determine whether the user can change another account's permissions.
      */
     public function update(User $user, User $target): bool
