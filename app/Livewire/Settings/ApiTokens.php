@@ -37,6 +37,8 @@ class ApiTokens extends Component
      */
     public function createToken(): void
     {
+        $this->authorize('create-api-tokens');
+
         $this->validate();
 
         $abilities = TokenAbility::abilitiesFor(TokenAbility::from($this->accessLevel));
@@ -57,6 +59,8 @@ class ApiTokens extends Component
      */
     public function revoke(int $tokenId): void
     {
+        $this->authorize('create-api-tokens');
+
         Auth::user()->tokens()->whereKey($tokenId)->delete();
 
         unset($this->tokens);

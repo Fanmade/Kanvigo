@@ -21,7 +21,11 @@ Route::middleware(['auth', 'verified'])->group(static function () {
         ])
         ->name('security.edit');
 
-    Route::livewire('settings/api-tokens', ApiTokens::class)->name('api-tokens.edit');
+    Route::livewire('settings/api-tokens', ApiTokens::class)
+        ->middleware([
+            'password.confirm',
+        ])
+        ->name('api-tokens.edit');
 });
 
 Route::get('.well-known/passkey-endpoints', static function () {

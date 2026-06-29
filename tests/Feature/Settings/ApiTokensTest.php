@@ -59,6 +59,23 @@ test('a user without permission is forbidden', function () {
         ->assertForbidden();
 });
 
+test('the api tokens page requires a recent password confirmation', function () {
+    $user = User::factory()->canCreateApiTokens()->create();
+
+    $this->actingAs($user)
+        ->get(route('api-tokens.edit'))
+        ->assertRedirect(route('password.confirm'));
+});
+
+test('the api tokens page renders once the password is confirmed', function () {
+    $user = User::factory()->canCreateApiTokens()->create();
+
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('api-tokens.edit'))
+        ->assertOk();
+});
+
 test('the token name is required', function () {
     $user = User::factory()->canCreateApiTokens()->create();
 
