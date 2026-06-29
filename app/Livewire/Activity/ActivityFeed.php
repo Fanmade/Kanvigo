@@ -140,6 +140,22 @@ class ActivityFeed extends Component
     }
 
     /**
+     * The subject, with the activity-log permission re-checked. Reading the log
+     * is a stronger grant than `view` (which {@see subject()} already re-asserts),
+     * so every post-mount path that loads entries — showMore(), live-refresh,
+     * focus — re-checks it too. A mid-session revocation then takes effect on the
+     * next interaction, not only on a fresh mount.
+     */
+    protected function activityLogSubject(): Project|Task
+    {
+        $subject = $this->subject();
+
+        $this->authorize('view-activity-log', $subject instanceof Task ? $subject->project : $subject);
+
+        return $subject;
+    }
+
+    /**
      * The subject's recorded activities (newest first) with their author.
      *
      * @return Collection<int, Activity>
@@ -147,7 +163,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function activities(): Collection
     {
-        return $this->subject()->activities()->with('user')->limit($this->visible)->get();
+        return $this->activityLogSubject()->activities()->with('user')->limit($this->visible)->get();
     }
 
     /**
@@ -156,7 +172,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function activityCount(): int
     {
-        return $this->subject()->activities()->count();
+        return $this->activityLogSubject()->activities()->count();
     }
 
     /**
