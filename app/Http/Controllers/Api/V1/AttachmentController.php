@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\StoreAttachment;
+use App\Http\Controllers\Api\V1\Concerns\ResolvesApiReferences;
 use App\Http\Controllers\Concerns\ServesScopedAttachments;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
-use App\Support\ReferenceResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
 {
+    use ResolvesApiReferences;
     use ServesScopedAttachments;
 
     /**
@@ -25,11 +26,7 @@ class AttachmentController extends Controller
      */
     public function indexForProject(string $short_name): AnonymousResourceCollection
     {
-        $project = ReferenceResolver::project($short_name);
-
-        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
-
-        return $this->list($project);
+        return $this->list($this->resolveProjectOr404($short_name));
     }
 
     /**
@@ -37,11 +34,7 @@ class AttachmentController extends Controller
      */
     public function indexForTask(string $reference): AnonymousResourceCollection
     {
-        $task = ReferenceResolver::task($reference);
-
-        abort_if($task === null || Auth::user()->cannot('view', $task), 404);
-
-        return $this->list($task);
+        return $this->list($this->resolveTaskOr404($reference));
     }
 
     /**
@@ -61,11 +54,7 @@ class AttachmentController extends Controller
      */
     public function storeOnProject(Request $request, string $short_name): JsonResponse
     {
-        $project = ReferenceResolver::project($short_name);
-
-        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
-
-        return $this->upload($request, $project);
+        return $this->upload($request, $this->resolveProjectOr404($short_name));
     }
 
     /**
@@ -73,11 +62,7 @@ class AttachmentController extends Controller
      */
     public function storeOnTask(Request $request, string $reference): JsonResponse
     {
-        $task = ReferenceResolver::task($reference);
-
-        abort_if($task === null || Auth::user()->cannot('view', $task), 404);
-
-        return $this->upload($request, $task);
+        return $this->upload($request, $this->resolveTaskOr404($reference));
     }
 
     /**

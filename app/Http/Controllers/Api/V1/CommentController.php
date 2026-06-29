@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\V1\Concerns\ResolvesApiReferences;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
-use App\Support\ReferenceResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,16 +16,14 @@ use Illuminate\Validation\ValidationException;
 
 class CommentController extends Controller
 {
+    use ResolvesApiReferences;
+
     /**
      * List a project's comments (top-level, newest first, with replies).
      */
     public function indexForProject(string $short_name): AnonymousResourceCollection
     {
-        $project = ReferenceResolver::project($short_name);
-
-        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
-
-        return $this->listComments($project);
+        return $this->listComments($this->resolveProjectOr404($short_name));
     }
 
     /**
@@ -33,11 +31,7 @@ class CommentController extends Controller
      */
     public function indexForTask(string $reference): AnonymousResourceCollection
     {
-        $task = ReferenceResolver::task($reference);
-
-        abort_if($task === null || Auth::user()->cannot('view', $task), 404);
-
-        return $this->listComments($task);
+        return $this->listComments($this->resolveTaskOr404($reference));
     }
 
     /**
@@ -45,9 +39,7 @@ class CommentController extends Controller
      */
     public function storeOnProject(Request $request, string $short_name): CommentResource
     {
-        $project = ReferenceResolver::project($short_name);
-
-        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
+        $project = $this->resolveProjectOr404($short_name);
         abort_if(Auth::user()->cannot('create-comment', $project), 403);
 
         return $this->addComment($request, $project);
@@ -58,9 +50,7 @@ class CommentController extends Controller
      */
     public function storeOnTask(Request $request, string $reference): CommentResource
     {
-        $task = ReferenceResolver::task($reference);
-
-        abort_if($task === null || Auth::user()->cannot('view', $task), 404);
+        $task = $this->resolveTaskOr404($reference);
         abort_if(Auth::user()->cannot('create-comment', $task->project), 403);
 
         return $this->addComment($request, $task);

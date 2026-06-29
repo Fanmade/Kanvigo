@@ -3,19 +3,20 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\RelationshipType;
+use App\Http\Controllers\Api\V1\Concerns\ResolvesApiReferences;
 use App\Http\Controllers\Controller;
 use App\Models\Dependency;
 use App\Models\Task;
-use App\Support\ReferenceResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class DependencyController extends Controller
 {
+    use ResolvesApiReferences;
+
     /**
      * Link a typed relationship between the task at {reference} and a related
      * task. The "direction" keyword reads from the task to the related one —
@@ -68,13 +69,10 @@ class DependencyController extends Controller
      */
     private function resolvePair(string $reference, string $relatedReference): array
     {
-        $item = ReferenceResolver::task($reference);
-        abort_if(! $item instanceof Task || Auth::user()->cannot('update', $item), 404);
-
-        $related = ReferenceResolver::task($relatedReference);
-        abort_if(! $related instanceof Task || Auth::user()->cannot('view', $related), 404);
-
-        return [$item, $related];
+        return [
+            $this->resolveTaskOr404($reference, 'update'),
+            $this->resolveTaskOr404($relatedReference),
+        ];
     }
 
     /**

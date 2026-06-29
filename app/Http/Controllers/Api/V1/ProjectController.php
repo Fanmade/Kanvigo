@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\CreateProject;
+use App\Http\Controllers\Api\V1\Concerns\ResolvesApiReferences;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
-use App\Support\ReferenceResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 
 class ProjectController extends Controller
 {
+    use ResolvesApiReferences;
+
     /**
      * List the projects the authenticated user is a member of, paginated.
      */
@@ -62,9 +64,7 @@ class ProjectController extends Controller
      */
     public function show(string $short_name): ProjectResource
     {
-        $project = ReferenceResolver::project($short_name);
-
-        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
+        $project = $this->resolveProjectOr404($short_name);
 
         $project->loadCount(['rootTasks', 'comments']);
 
@@ -77,9 +77,7 @@ class ProjectController extends Controller
      */
     public function update(Request $request, string $short_name): ProjectResource
     {
-        $project = ReferenceResolver::project($short_name);
-
-        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
+        $project = $this->resolveProjectOr404($short_name);
         abort_if(Auth::user()->cannot('manageSettings', $project), 403);
 
         if ($request->has('short_name')) {

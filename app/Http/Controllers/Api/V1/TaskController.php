@@ -9,6 +9,7 @@ use App\Concerns\HasTags;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
+use App\Http\Controllers\Api\V1\Concerns\ResolvesApiReferences;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TaskDetailResource;
 use App\Http\Resources\TaskResource;
@@ -28,6 +29,8 @@ use InvalidArgumentException;
 
 class TaskController extends Controller
 {
+    use ResolvesApiReferences;
+
     /**
      * The relations the task resource serializes.
      *
@@ -41,9 +44,7 @@ class TaskController extends Controller
      */
     public function index(Request $request, string $short_name): AnonymousResourceCollection
     {
-        $project = ReferenceResolver::project($short_name);
-
-        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
+        $project = $this->resolveProjectOr404($short_name);
 
         $validated = $request->validate([
             'status' => ['nullable', new Enum(Status::class)],
@@ -79,9 +80,7 @@ class TaskController extends Controller
      */
     public function store(Request $request, string $short_name): JsonResponse
     {
-        $project = ReferenceResolver::project($short_name);
-
-        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
+        $project = $this->resolveProjectOr404($short_name);
         abort_if(Auth::user()->cannot('create-task', $project), 403);
 
         // A task may only be created in a working status — "Canceled" is a
@@ -146,9 +145,7 @@ class TaskController extends Controller
      */
     public function update(Request $request, string $reference): TaskResource
     {
-        $task = ReferenceResolver::task($reference);
-
-        abort_if($task === null || Auth::user()->cannot('update', $task), 404);
+        $task = $this->resolveTaskOr404($reference, 'update');
 
         $workingStatuses = array_map(static fn (Status $status): string => $status->value, Status::columns());
 
@@ -220,9 +217,7 @@ class TaskController extends Controller
      */
     public function show(string $reference): TaskDetailResource
     {
-        $task = ReferenceResolver::task($reference);
-
-        abort_if($task === null || Auth::user()->cannot('view', $task), 404);
+        $task = $this->resolveTaskOr404($reference);
 
         return $this->detail($task);
     }
@@ -232,7 +227,7 @@ class TaskController extends Controller
      */
     public function cancel(Request $request, string $reference): TaskDetailResource
     {
-        $task = $this->resolveForCancel($reference);
+        $task = $this->resolveTaskOr404($reference, 'cancel');
 
         if ($task->isCanceled()) {
             throw ValidationException::withMessages(['cancel_reason' => __('This task is already canceled.')]);
@@ -257,7 +252,7 @@ class TaskController extends Controller
      */
     public function reopen(string $reference): TaskDetailResource
     {
-        $task = $this->resolveForCancel($reference);
+        $task = $this->resolveTaskOr404($reference, 'cancel');
 
         if (! $task->isCanceled()) {
             throw ValidationException::withMessages(['status' => __('This task is not canceled.')]);
@@ -275,7 +270,7 @@ class TaskController extends Controller
      */
     public function setAssignees(Request $request, string $reference): TaskDetailResource
     {
-        $task = $this->resolveForUpdate($reference);
+        $task = $this->resolveTaskOr404($reference, 'update');
 
         $validated = $request->validate([
             'assignee_ids' => ['present', 'array'],
@@ -294,31 +289,6 @@ class TaskController extends Controller
         $task->recordAssigneeChange($changes['attached'], $changes['detached']);
 
         return $this->detail($task->fresh());
-    }
-
-    /**
-     * Resolve a task the caller may update (404 when missing or inaccessible).
-     */
-    private function resolveForUpdate(string $reference): Task
-    {
-        $task = ReferenceResolver::task($reference);
-
-        abort_if($task === null || Auth::user()->cannot('update', $task), 404);
-
-        return $task;
-    }
-
-    /**
-     * Resolve a task the caller may cancel or reopen (404 when missing or not
-     * permitted).
-     */
-    private function resolveForCancel(string $reference): Task
-    {
-        $task = ReferenceResolver::task($reference);
-
-        abort_if($task === null || Auth::user()->cannot('cancel', $task), 404);
-
-        return $task;
     }
 
     /**
