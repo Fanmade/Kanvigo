@@ -5,7 +5,6 @@ namespace App\Mcp\Concerns;
 use App\Enums\RelationshipType;
 use App\Models\Task;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\JsonSchema\Types\Type;
 
 /**
@@ -25,19 +24,7 @@ trait ExposesDependencies
      */
     protected function dependencyPayload(Task $item): array
     {
-        $item->loadMissing([
-            'dependencyLinks.blocker' => static fn (MorphTo $morphTo) => $morphTo->morphWith([
-                Task::class => ['project'],
-            ]),
-            'dependentLinks.dependent' => static fn (MorphTo $morphTo) => $morphTo->morphWith([
-                Task::class => ['project'],
-            ]),
-        ]);
-
-        return [
-            ...$item->relationshipReferences(),
-            'is_blocked' => $item->isBlocked(),
-        ];
+        return $item->relationshipPayload();
     }
 
     /**

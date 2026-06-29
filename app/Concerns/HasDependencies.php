@@ -5,9 +5,11 @@ namespace App\Concerns;
 use App\Enums\RelationshipType;
 use App\Models\Dependency;
 use App\Models\Task;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -146,6 +148,39 @@ trait HasDependencies
         }
 
         return $grouped;
+    }
+
+    /**
+     * The eager-load spec for a task's relationship targets — the linked tasks and
+     * the project each needs to resolve its reference. Usable with both `with()`
+     * (a query) and `loadMissing()` (a loaded model) to keep reference resolution
+     * N+1-free.
+     *
+     * @return array<string, Closure>
+     */
+    public static function dependencyTargetsEagerLoad(): array
+    {
+        return [
+            'dependencyLinks.blocker' => static fn (MorphTo $morphTo) => $morphTo->morphWith([Task::class => ['project']]),
+            'dependentLinks.dependent' => static fn (MorphTo $morphTo) => $morphTo->morphWith([Task::class => ['project']]),
+        ];
+    }
+
+    /**
+     * The task's relationship payload for the API/MCP surfaces: every keyword
+     * mapped to its related references, plus the `is_blocked` flag, with the
+     * targets eager-loaded first.
+     *
+     * @return array<string, array<int, string>|bool>
+     */
+    public function relationshipPayload(): array
+    {
+        $this->loadMissing(self::dependencyTargetsEagerLoad());
+
+        return [
+            ...$this->relationshipReferences(),
+            'is_blocked' => $this->isBlocked(),
+        ];
     }
 
     /**

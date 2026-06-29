@@ -17,7 +17,6 @@ use App\Models\Tag;
 use App\Models\Task;
 use App\Models\TaskType;
 use App\Support\ReferenceResolver;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -329,8 +328,7 @@ class TaskController extends Controller
     {
         $task->loadMissing([
             'tags', 'project', 'parent', 'taskType', 'children', 'assignees', 'attachments',
-            'dependencyLinks.blocker' => static fn (MorphTo $morphTo) => $morphTo->morphWith([Task::class => ['project']]),
-            'dependentLinks.dependent' => static fn (MorphTo $morphTo) => $morphTo->morphWith([Task::class => ['project']]),
+            ...Task::dependencyTargetsEagerLoad(),
         ]);
 
         return new TaskDetailResource($task);

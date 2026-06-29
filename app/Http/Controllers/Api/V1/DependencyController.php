@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Dependency;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -87,19 +86,9 @@ class DependencyController extends Controller
      */
     private function payload(Task $item): array
     {
-        $item->loadMissing([
-            'dependencyLinks.blocker' => static fn (MorphTo $morphTo) => $morphTo->morphWith([
-                Task::class => ['project'],
-            ]),
-            'dependentLinks.dependent' => static fn (MorphTo $morphTo) => $morphTo->morphWith([
-                Task::class => ['project'],
-            ]),
-        ]);
-
         return [
             'reference' => $item->reference,
-            ...$item->relationshipReferences(),
-            'is_blocked' => $item->isBlocked(),
+            ...$item->relationshipPayload(),
         ];
     }
 }
