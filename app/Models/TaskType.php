@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\MatchesNameCaseInsensitively;
 use Database\Factories\TaskTypeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -36,6 +37,8 @@ class TaskType extends Model
     /** @use HasFactory<TaskTypeFactory> */
     use HasFactory;
 
+    use MatchesNameCaseInsensitively;
+
     /**
      * The default types seeded into every new project — a sensible starting set
      * users can rename, recolor or extend. Order here is the seeded position.
@@ -57,7 +60,7 @@ class TaskType extends Model
     {
         foreach (self::DEFAULTS as $position => $default) {
             $exists = $project->taskTypes()
-                ->whereRaw('lower(name) = ?', [mb_strtolower($default['name'])])
+                ->whereNameLower($default['name'])
                 ->exists();
 
             if (! $exists) {

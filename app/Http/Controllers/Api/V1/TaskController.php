@@ -347,7 +347,7 @@ class TaskController extends Controller
         }
 
         $type = $project->taskTypes()
-            ->whereRaw('lower(name) = ?', [mb_strtolower(trim($name))])
+            ->whereNameLower(trim($name))
             ->first();
 
         if ($type === null) {

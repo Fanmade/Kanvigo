@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\MatchesNameCaseInsensitively;
 use App\Support\IconCatalog;
 use Database\Factories\TagFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -29,6 +30,8 @@ class Tag extends Model
 {
     /** @use HasFactory<TagFactory> */
     use HasFactory;
+
+    use MatchesNameCaseInsensitively;
 
     /**
      * The default tag palette: Flux UI badge color names, fed straight into
@@ -118,7 +121,7 @@ class Tag extends Model
 
         $existing = self::query()
             ->where('project_id', $projectId)
-            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->whereNameLower($name)
             ->first();
 
         if ($existing !== null) {

@@ -164,7 +164,7 @@ class ProjectTaskTypes extends Component
 
         $collision = $project->taskTypes()
             ->when($this->editingTypeId !== null, fn ($query) => $query->whereKeyNot($this->editingTypeId))
-            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->whereNameLower($name)
             ->exists();
 
         if ($collision) {

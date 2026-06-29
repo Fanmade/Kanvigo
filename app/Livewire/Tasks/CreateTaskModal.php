@@ -379,7 +379,7 @@ class CreateTaskModal extends Component
 
         $existing = Tag::query()
             ->where('project_id', $this->projectId)
-            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->whereNameLower($name)
             ->first();
 
         if ($existing !== null) {

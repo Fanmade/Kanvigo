@@ -268,7 +268,7 @@ class ProjectTags extends Component
 
         $collision = $project->tags()
             ->whereKeyNot($tag->id)
-            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->whereNameLower($name)
             ->first();
 
         if ($collision !== null) {
@@ -300,7 +300,7 @@ class ProjectTags extends Component
     protected function createTag(Project $project, string $name, string $color): void
     {
         $exists = $project->tags()
-            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->whereNameLower($name)
             ->exists();
 
         if ($exists) {
