@@ -105,7 +105,7 @@ it('gets a task by reference', function () {
         ->assertOk()
         ->assertSee('First task')
         ->assertSee('ToDo')
-        ->assertSee($this->member->email);
+        ->assertSee($this->member->name);
 });
 
 it('errors getting a task the user cannot view', function () {

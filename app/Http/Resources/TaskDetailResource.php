@@ -32,7 +32,6 @@ class TaskDetailResource extends TaskResource
             'assignees' => $this->assignees->map(static fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
-                'email' => $user->email,
             ])->values()->all(),
             ...$this->relationshipReferences(),
             'children' => $this->children->map(static fn (Task $child): array => [

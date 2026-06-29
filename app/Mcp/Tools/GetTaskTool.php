@@ -69,7 +69,6 @@ class GetTaskTool extends Tool
             ...$this->dependencyPayload($task),
             'assignees' => $task->assignees->map(static fn (User $user): array => [
                 'name' => $user->name,
-                'email' => $user->email,
             ])->all(),
             'attachments' => $task->attachments->map(static fn (Attachment $attachment): array => [
                 'id' => $attachment->id,
@@ -127,7 +126,6 @@ class GetTaskTool extends Tool
             ...$this->dependencySchema($schema),
             'assignees' => $schema->array()->items($schema->object([
                 'name' => $schema->string()->description('The assignee name.')->required(),
-                'email' => $schema->string()->description('The assignee email address.')->required(),
             ]))->description('The users assigned to the task.')->required(),
             'attachments' => $schema->array()->items($schema->object([
                 'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),

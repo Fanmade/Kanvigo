@@ -39,9 +39,25 @@ it('returns full task detail on show', function () {
         ->assertJsonStructure(['data' => [
             'cancel_message',
             'progress' => ['done', 'total'],
-            'assignees' => [['id', 'name', 'email']],
+            'assignees' => [['id', 'name']],
             'blocked_by', 'blocks', 'children', 'attachments',
         ]]);
+});
+
+it('does not expose assignee email addresses in task detail', function () {
+    $task = Task::factory()->for($this->project)->create();
+    $assignee = User::factory()->create(['email' => 'dana@example.com']);
+    joinProject($this->project, $assignee);
+    $task->assignees()->attach($assignee);
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $assignee = $this->getJson("/api/v1/tasks/{$task->reference}")
+        ->assertOk()
+        ->json('data.assignees.0');
+
+    expect($assignee)->toHaveKeys(['id', 'name'])
+        ->and($assignee)->not->toHaveKey('email');
 });
 
 it('does not include detail fields in the task list', function () {

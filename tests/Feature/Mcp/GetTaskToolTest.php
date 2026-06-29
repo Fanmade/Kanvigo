@@ -85,6 +85,23 @@ it('reports a top-level task as having no parent or ancestors', function () {
         });
 });
 
+it('exposes assignee names but not their email addresses', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+
+    $assignee = User::factory()->create(['name' => 'Dana', 'email' => 'dana@example.com']);
+    $task->assignees()->attach($assignee);
+
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('assignees.0.name', 'Dana')
+                ->missing('assignees.0.email')
+                ->etc();
+        });
+});
+
 it('exposes the task comments oldest first, with author, timestamp and reply threading', function () {
     $user = User::factory()->create(['name' => 'Ada Lovelace']);
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
