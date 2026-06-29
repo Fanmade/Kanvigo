@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\RelationshipType;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -31,6 +33,23 @@ class Dependency extends Model
         return [
             'type' => RelationshipType::class,
         ];
+    }
+
+    /**
+     * Constrain to the link between two tasks, regardless of which is the blocker
+     * and which is the dependent (a relationship is stored once, in one direction).
+     *
+     * @param  Builder<Dependency>  $query
+     */
+    #[Scope]
+    protected function betweenTasks(Builder $query, Task $a, Task $b): void
+    {
+        $query->where(static fn (Builder $inner): Builder => $inner
+            ->where('dependent_type', $a->getMorphClass())->where('dependent_id', $a->getKey())
+            ->where('blocker_type', $b->getMorphClass())->where('blocker_id', $b->getKey()))
+            ->orWhere(static fn (Builder $inner): Builder => $inner
+                ->where('dependent_type', $b->getMorphClass())->where('dependent_id', $b->getKey())
+                ->where('blocker_type', $a->getMorphClass())->where('blocker_id', $a->getKey()));
     }
 
     /**

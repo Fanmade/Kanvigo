@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Dependency;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,27 +55,7 @@ class DependencyController extends Controller
     {
         [$item, $relatedTask] = $this->resolvePair($reference, $related);
 
-        $dependency = Dependency::query()
-            ->where(static fn (Builder $query): Builder => $query
-                ->where('dependent_type', $item->getMorphClass())->where('dependent_id', $item->getKey())
-                ->where('blocker_type', $relatedTask->getMorphClass())->where('blocker_id', $relatedTask->getKey()))
-            ->orWhere(static fn (Builder $query): Builder => $query
-                ->where('dependent_type', $relatedTask->getMorphClass())->where('dependent_id', $relatedTask->getKey())
-                ->where('blocker_type', $item->getMorphClass())->where('blocker_id', $item->getKey()))
-            ->first();
-
-        abort_if($dependency === null, 404);
-
-        // The relationship keyword from the item's perspective — it is the
-        // subject (outward) end when it is the blocker side of the link.
-        $itemIsBlocker = $dependency->blocker_type === $item->getMorphClass() && $dependency->blocker_id === $item->getKey();
-        $keyword = $dependency->type->keyword($itemIsBlocker);
-
-        $dependency->delete();
-
-        $item->unsetRelation('dependencyLinks');
-        $item->unsetRelation('dependentLinks');
-        $item->recordDependencyChange(false, $keyword, $relatedTask->reference);
+        abort_if($item->removeRelationshipWith($relatedTask) === null, 404);
 
         return response()->json(['data' => $this->payload($item)]);
     }

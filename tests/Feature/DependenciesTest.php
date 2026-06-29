@@ -18,6 +18,25 @@ function makeTask(Status $status = Status::Planned): Task
     return Task::factory()->for(Project::factory())->status($status)->create();
 }
 
+test('removeRelationshipWith removes the link from either side and reports the keyword', function () {
+    $a = makeTask();
+    $b = makeTask();
+    $a->addBlocker($b); // a is blocked_by b
+
+    // The relationship is found and removed whichever task initiates it, and the
+    // keyword is reported from that task's perspective.
+    expect($a->removeRelationshipWith($b))->toBe('blocked_by')
+        ->and(Dependency::count())->toBe(0);
+
+    $a->addBlocker($b);
+    expect($b->removeRelationshipWith($a))->toBe('blocks')
+        ->and(Dependency::count())->toBe(0);
+});
+
+test('removeRelationshipWith returns null when the two tasks are not linked', function () {
+    expect(makeTask()->removeRelationshipWith(makeTask()))->toBeNull();
+});
+
 test('a task lists its blockers and the tasks it blocks', function () {
     $task = makeTask();
     $blocker = makeTask();

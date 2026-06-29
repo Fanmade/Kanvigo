@@ -218,6 +218,35 @@ trait HasDependencies
     }
 
     /**
+     * Remove the relationship link of any type between this item and the given
+     * one, in whichever direction it is stored. Returns the keyword the link
+     * represented from this item's perspective (e.g. "blocks", "blocked_by"), or
+     * null when no link existed. Records the change and refreshes the link
+     * relations.
+     */
+    public function removeRelationshipWith(Task $related): ?string
+    {
+        $dependency = Dependency::query()->betweenTasks($this, $related)->first();
+
+        if ($dependency === null) {
+            return null;
+        }
+
+        // This item is the subject (outward) end when it is the blocker side.
+        $itemIsBlocker = $dependency->blocker_type === $this->getMorphClass()
+            && $dependency->blocker_id === $this->getKey();
+        $keyword = $dependency->type->keyword($itemIsBlocker);
+
+        $dependency->delete();
+
+        $this->unsetRelation('dependencyLinks');
+        $this->unsetRelation('dependentLinks');
+        $this->recordDependencyChange(false, $keyword, $related->reference);
+
+        return $keyword;
+    }
+
+    /**
      * Whether adding the given blocker would point an item at itself or close a
      * dependency cycle (the blocker already depends on this item).
      */

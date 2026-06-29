@@ -5,9 +5,7 @@ namespace App\Mcp\Tools;
 use App\Mcp\Concerns\ExposesDependencies;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Mcp\Concerns\ResolvesDependencyPair;
-use App\Models\Dependency;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -47,29 +45,9 @@ class RemoveDependencyTool extends Tool
 
         [$item, $related] = $resolution->pair();
 
-        $dependency = Dependency::query()
-            ->where(static fn (Builder $query): Builder => $query
-                ->where('dependent_type', $item->getMorphClass())->where('dependent_id', $item->getKey())
-                ->where('blocker_type', $related->getMorphClass())->where('blocker_id', $related->getKey()))
-            ->orWhere(static fn (Builder $query): Builder => $query
-                ->where('dependent_type', $related->getMorphClass())->where('dependent_id', $related->getKey())
-                ->where('blocker_type', $item->getMorphClass())->where('blocker_id', $item->getKey()))
-            ->first();
-
-        if ($dependency === null) {
+        if ($item->removeRelationshipWith($related) === null) {
             return Response::error('No dependency exists between "'.$item->reference.'" and "'.$related->reference.'".');
         }
-
-        // The relationship keyword from the item's perspective — it is the
-        // subject (outward) end when it is the blocker side of the link.
-        $itemIsBlocker = $dependency->blocker_type === $item->getMorphClass() && $dependency->blocker_id === $item->getKey();
-        $keyword = $dependency->type->keyword($itemIsBlocker);
-
-        $dependency->delete();
-
-        $item->unsetRelation('dependencyLinks');
-        $item->unsetRelation('dependentLinks');
-        $item->recordDependencyChange(false, $keyword, $related->reference);
 
         return Response::structured([
             'reference' => $item->reference,
