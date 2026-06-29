@@ -66,7 +66,8 @@ return [
         'signal', 'speaker-wave', 'truck', 'user-group', 'user-circle', 'view-columns',
         'x-mark', 'arrows-up-down', 'hand-raised', 'home', 'envelope-open', 'envelope',
         'at-symbol', 'phone', 'building-office', 'building-library', 'viewfinder-circle',
-        'ticket', 'sun',
+        'ticket', 'sun', 'identification', 'hand-thumb-up', 'globe-alt', 'face-smile',
+        'eye-slash', 'eye',
     ],
 
 ];
