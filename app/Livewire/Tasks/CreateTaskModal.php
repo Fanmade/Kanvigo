@@ -12,12 +12,11 @@ use App\Models\Tag;
 use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
+use App\Queries\TagSuggestions;
 use Flux\Flux;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
@@ -297,31 +296,12 @@ class CreateTaskModal extends Component
             return new BaseCollection;
         }
 
-        $applied = array_map(mb_strtolower(...), $this->tagNames);
-
-        return Tag::query()
-            ->where('tags.project_id', $this->projectId)
-            ->select('tags.id', 'tags.name', 'tags.color')
-            ->selectSub(
-                DB::table('taggables')
-                    ->selectRaw('count(*)')
-                    ->whereColumn('taggables.tag_id', 'tags.id'),
-                'usage_count'
-            )
-            ->where(static function (Builder $tags) use ($query): void {
-                // Match the tag's own name or any of its synonyms, so typing
-                // "eval" still surfaces the "Research" tag (synonym "Evaluation").
-                $tags->whereLike('tags.name', '%'.$query.'%')
-                    ->orWhereHas('synonyms', static fn (Builder $synonyms) => $synonyms->whereLike('name', '%'.$query.'%'));
-            })
-            ->orderByDesc('usage_count')
-            ->orderBy('tags.name')
-            ->limit(12)
-            ->get()
-            ->reject(static fn (Tag $tag): bool => in_array(mb_strtolower($tag->name), $applied, true))
-            ->take(8)
-            ->map(static fn (Tag $tag): array => ['name' => $tag->name, 'color' => $tag->color])
-            ->values();
+        return app(TagSuggestions::class)->handle(
+            projectId: $this->projectId,
+            search: $query,
+            excludeNames: array_map(mb_strtolower(...), $this->tagNames),
+            take: 8,
+        );
     }
 
     /**

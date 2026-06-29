@@ -4,10 +4,10 @@ namespace App\Concerns;
 
 use App\Models\Tag;
 use App\Models\Task;
+use App\Queries\TagSuggestions;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 
@@ -71,26 +71,10 @@ trait ManagesTags
     #[Computed]
     public function tagSuggestions(): BaseCollection
     {
-        $appliedIds = $this->appliedTags()->pluck('id')->all();
-
-        return Tag::query()
-            ->where('tags.project_id', $this->taggable()->project_id)
-            ->select('tags.id', 'tags.name', 'tags.color')
-            ->selectSub(
-                DB::table('taggables')
-                    ->selectRaw('count(*)')
-                    ->whereColumn('taggables.tag_id', 'tags.id'),
-                'usage_count'
-            )
-            ->when($appliedIds !== [], static fn ($query) => $query->whereNotIn('tags.id', $appliedIds))
-            ->orderByDesc('usage_count')
-            ->orderBy('tags.name')
-            ->limit(12)
-            ->get()
-            ->map(static fn (Tag $tag): array => [
-                'name' => $tag->name,
-                'color' => $tag->color,
-            ]);
+        return app(TagSuggestions::class)->handle(
+            projectId: $this->taggable()->project_id,
+            excludeIds: $this->appliedTags()->pluck('id')->all(),
+        );
     }
 
     /**
