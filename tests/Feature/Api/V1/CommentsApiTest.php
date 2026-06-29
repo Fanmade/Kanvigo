@@ -71,3 +71,14 @@ it('404s commenting on a task the user cannot access', function () {
     $this->postJson("/api/v1/tasks/{$task->reference}/comments", ['body' => 'Hi'])
         ->assertNotFound();
 });
+
+it('403s commenting for a viewer who can see the task but lacks create-comment', function () {
+    $viewer = User::factory()->create();
+    joinProject($this->project, $viewer, 'viewer');
+    $task = Task::factory()->for($this->project)->create();
+    Sanctum::actingAs($viewer, ['read', 'write']);
+
+    // The viewer can see the task, so a denied create is a 403, not a 404.
+    $this->postJson("/api/v1/tasks/{$task->reference}/comments", ['body' => 'Nope'])
+        ->assertForbidden();
+});

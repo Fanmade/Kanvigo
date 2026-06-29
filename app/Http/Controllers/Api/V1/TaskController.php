@@ -82,7 +82,8 @@ class TaskController extends Controller
     {
         $project = ReferenceResolver::project($short_name);
 
-        abort_if($project === null || Auth::user()->cannot('create-task', $project), 404);
+        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
+        abort_if(Auth::user()->cannot('create-task', $project), 403);
 
         // A task may only be created in a working status — "Canceled" is a
         // terminal state reached through the cancel flow (which records a reason

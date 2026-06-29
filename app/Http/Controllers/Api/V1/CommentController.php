@@ -47,7 +47,8 @@ class CommentController extends Controller
     {
         $project = ReferenceResolver::project($short_name);
 
-        abort_if($project === null || Auth::user()->cannot('create-comment', $project), 404);
+        abort_if($project === null || Auth::user()->cannot('view', $project), 404);
+        abort_if(Auth::user()->cannot('create-comment', $project), 403);
 
         return $this->addComment($request, $project);
     }
@@ -59,7 +60,8 @@ class CommentController extends Controller
     {
         $task = ReferenceResolver::task($reference);
 
-        abort_if($task === null || Auth::user()->cannot('create-comment', $task->project), 404);
+        abort_if($task === null || Auth::user()->cannot('view', $task), 404);
+        abort_if(Auth::user()->cannot('create-comment', $task->project), 403);
 
         return $this->addComment($request, $task);
     }

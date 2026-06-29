@@ -117,7 +117,7 @@ class NoteController extends Controller
 
         $project = ReferenceResolver::project($validated['project']);
 
-        if ($project === null || Auth::user()->cannot('update', $project)) {
+        if ($project === null || Auth::user()->cannot('create-task', $project)) {
             throw ValidationException::withMessages(['project' => __('The selected project is not valid.')]);
         }
 
@@ -126,7 +126,7 @@ class NoteController extends Controller
         if (isset($validated['parent'])) {
             $parent = ReferenceResolver::task($validated['parent']);
 
-            if ($parent === null || $parent->project_id !== $project->id || Auth::user()->cannot('update', $parent)) {
+            if ($parent === null || $parent->project_id !== $project->id || Auth::user()->cannot('view', $parent)) {
                 throw ValidationException::withMessages(['parent' => __('The selected parent task is not valid.')]);
             }
         }

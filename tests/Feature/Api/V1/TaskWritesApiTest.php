@@ -67,6 +67,18 @@ it('404s when creating a task in a project the user cannot access', function () 
         ->assertNotFound();
 });
 
+it('403s for a viewer who can see the project but lacks create-task', function () {
+    $viewer = User::factory()->create();
+    joinProject($this->project, $viewer, 'viewer');
+    Sanctum::actingAs($viewer, ['read', 'write']);
+
+    // Existence isn't hidden (the viewer can see the project), so it's a 403, not 404.
+    $this->postJson('/api/v1/projects/ABC/tasks', ['title' => 'Nope'])
+        ->assertForbidden();
+
+    expect($this->project->tasks()->count())->toBe(0);
+});
+
 it('rejects creating a task already in the Canceled status', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
 

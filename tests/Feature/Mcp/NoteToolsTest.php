@@ -173,3 +173,15 @@ it('errors converting another user\'s note', function () {
 
     KanvigoServer::tool(ConvertNoteTool::class, ['id' => $note->id, 'reference' => 'ABC'])->assertHasErrors();
 });
+
+it('errors converting a note into a project where the user lacks create-task', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    joinProject($project, $user, 'viewer'); // can view, but a read-only role can't create tasks
+    $note = Note::factory()->for($user)->create();
+
+    KanvigoServer::tool(ConvertNoteTool::class, ['id' => $note->id, 'reference' => 'ABC'])->assertHasErrors();
+
+    expect($project->tasks()->count())->toBe(0);
+});
