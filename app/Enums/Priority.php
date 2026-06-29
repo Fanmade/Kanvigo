@@ -2,8 +2,12 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasCaseNames;
+
 enum Priority: int
 {
+    use HasCaseNames;
+
     case Lowest = 1;
     case Low = 2;
     case Medium = 3;
@@ -69,29 +73,5 @@ enum Priority: int
     public static function descending(): array
     {
         return [self::Highest, self::High, self::Medium, self::Low, self::Lowest];
-    }
-
-    /**
-     * The case names, e.g. for API/MCP input validation and schemas.
-     *
-     * @return array<int, string>
-     */
-    public static function names(): array
-    {
-        return array_map(static fn (self $priority): string => $priority->name, self::cases());
-    }
-
-    /**
-     * Resolve a priority from its case name (e.g. "High"), or null if unknown.
-     */
-    public static function fromName(string $name): ?self
-    {
-        foreach (self::cases() as $case) {
-            if ($case->name === $name) {
-                return $case;
-            }
-        }
-
-        return null;
     }
 }

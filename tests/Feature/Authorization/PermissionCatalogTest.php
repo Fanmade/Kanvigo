@@ -9,6 +9,14 @@ it('has a label for every catalog permission', function () {
     }
 });
 
+it('keeps the flat CATALOG in sync with the grouped GROUPS', function () {
+    // CATALOG is the flattened GROUPS, hand-maintained because a PHP const cannot
+    // call array_merge(); this guards the two from drifting apart.
+    $flattened = array_merge(...array_values(ProjectRoleProvisioner::GROUPS));
+
+    expect(ProjectRoleProvisioner::CATALOG)->toBe($flattened);
+});
+
 it('has a German translation for every permission label', function () {
     $german = json_decode(file_get_contents(lang_path('de.json')), true, flags: JSON_THROW_ON_ERROR);
 
