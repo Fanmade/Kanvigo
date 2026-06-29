@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Projects;
 
+use App\Actions\AddProjectMember;
+use App\Actions\RemoveProjectMember;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\HasLiveUpdates;
@@ -573,8 +575,7 @@ class ProjectShow extends Component
             return;
         }
 
-        $project->members()->attach($userId);
-        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail($userId), 'member');
+        app(AddProjectMember::class)->handle($project, User::findOrFail($userId));
 
         $this->memberQuery = '';
         unset($this->members, $this->addableUsers);
@@ -595,8 +596,7 @@ class ProjectShow extends Component
             return;
         }
 
-        $project->members()->detach($userId);
-        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail($userId), null);
+        app(RemoveProjectMember::class)->handle($project, User::findOrFail($userId));
 
         unset($this->members, $this->addableUsers);
 

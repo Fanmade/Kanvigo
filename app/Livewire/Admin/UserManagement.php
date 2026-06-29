@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin;
 
+use App\Actions\AddProjectMember;
+use App\Actions\RemoveProjectMember;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\Permission;
 use App\Mail\InvitationMail;
@@ -332,8 +334,7 @@ class UserManagement extends Component
             return;
         }
 
-        $project->members()->attach($user->id);
-        app(ProjectRoleProvisioner::class)->syncMember($project, $user, 'member');
+        app(AddProjectMember::class)->handle($project, $user);
 
         unset($this->managedUser, $this->managedUserRoles, $this->users);
 
@@ -414,8 +415,7 @@ class UserManagement extends Component
             return;
         }
 
-        $project->members()->detach($user->id);
-        app(ProjectRoleProvisioner::class)->syncMember($project, $user, null);
+        app(RemoveProjectMember::class)->handle($project, $user);
 
         unset($this->managedUser, $this->managedUserRoles, $this->users);
 
