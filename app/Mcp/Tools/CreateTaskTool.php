@@ -6,6 +6,7 @@ use App\Actions\CreateTask;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Concerns\NormalizesPlainText;
+use App\Mcp\Concerns\PresentsTasks;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Mcp\Concerns\ResolvesTaskCreationReferences;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -22,6 +23,7 @@ use Laravel\Mcp\Server\Tool;
 class CreateTaskTool extends Tool
 {
     use NormalizesPlainText;
+    use PresentsTasks;
     use RequiresWriteAccess;
     use ResolvesTaskCreationReferences;
 
@@ -91,14 +93,8 @@ class CreateTaskTool extends Tool
         }
 
         return Response::structured([
-            'reference' => $task->reference,
+            ...$this->taskWritePayload($task),
             'parent' => $parent?->reference,
-            'title' => $task->title,
-            'description' => $task->description,
-            'priority' => $task->priority->name,
-            'due_date' => $task->due_date?->format('Y-m-d'),
-            'status' => $task->status->value,
-            'tags' => $task->tags()->pluck('name')->all(),
         ]);
     }
 
@@ -149,14 +145,8 @@ class CreateTaskTool extends Tool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'reference' => $schema->string()->description('The created task reference, e.g. "PROJ-42".')->required(),
+            ...$this->taskWriteSchema($schema),
             'parent' => $schema->string()->description('The parent task reference when the task was nested, otherwise null.'),
-            'title' => $schema->string()->description('The created task title.')->required(),
-            'description' => $schema->string()->description('The task description as HTML; may be null.'),
-            'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
-            'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
-            'status' => $schema->string()->description('The task status.')->required(),
-            'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
         ];
     }
 }

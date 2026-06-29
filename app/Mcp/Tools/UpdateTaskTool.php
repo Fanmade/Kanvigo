@@ -8,6 +8,7 @@ use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Concerns\NormalizesPlainText;
+use App\Mcp\Concerns\PresentsTasks;
 use App\Mcp\Concerns\RecordsTagChanges;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
@@ -24,6 +25,7 @@ use Laravel\Mcp\Server\Tool;
 class UpdateTaskTool extends Tool
 {
     use NormalizesPlainText;
+    use PresentsTasks;
     use RecordsTagChanges;
     use RequiresWriteAccess;
 
@@ -136,15 +138,9 @@ class UpdateTaskTool extends Tool
         $task->refresh();
 
         return Response::structured([
-            'reference' => $task->reference,
-            'title' => $task->title,
-            'description' => $task->description,
-            'priority' => $task->priority->name,
-            'due_date' => $task->due_date?->format('Y-m-d'),
-            'status' => $task->status->value,
+            ...$this->taskWritePayload($task),
             'cancel_reason' => $task->cancel_reason?->name,
             'cancel_message' => $task->cancel_message,
-            'tags' => $task->tags()->pluck('name')->all(),
         ]);
     }
 
@@ -201,15 +197,9 @@ class UpdateTaskTool extends Tool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
-            'title' => $schema->string()->description('The updated task title.')->required(),
-            'description' => $schema->string()->description('The updated task description as HTML; may be null.'),
-            'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
-            'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
-            'status' => $schema->string()->description('The task status.')->required(),
+            ...$this->taskWriteSchema($schema),
             'cancel_reason' => $schema->string()->description('The cancellation reason (WontFix, Duplicate or Deprecated) when the task is canceled; null otherwise.'),
             'cancel_message' => $schema->string()->description('The optional note left when the task was canceled; null otherwise.'),
-            'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
         ];
     }
 }
