@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -56,6 +57,38 @@ it('reports the highest-ranked role as the single role name', function () {
 
     expect($project->roleNameFor($user))->toBe('admin')
         ->and($project->roleNamesFor($user))->toBe(['admin', 'member', 'viewer']);
+});
+
+it('reads role names from an eager-loaded relation without querying', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMember($user, ['admin'])->create();
+
+    // Load the user the way the member panel does — with the scoped roles eager-loaded.
+    $loaded = $project->members()
+        ->with(['roles' => static fn ($query) => $query
+            ->where('scope_type', $project->getMorphClass())
+            ->where('scope_id', $project->getKey())])
+        ->whereKey($user->id)
+        ->firstOrFail();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $names = $project->roleNamesFor($loaded);
+    $owner = $project->isOwner($loaded);
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    // Both reads come from the loaded relation — no extra queries.
+    expect($queries)->toBe(0)
+        ->and($names)->toBe(['admin'])
+        ->and($owner)->toBeFalse();
+});
+
+it('falls back to a query when the roles relation is not loaded', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMember($user, ['admin'])->create();
+
+    expect($project->roleNamesFor(User::findOrFail($user->id)))->toBe(['admin']);
 });
 
 it('enforces the one-owner-per-project rule', function () {

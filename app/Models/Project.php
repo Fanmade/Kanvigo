@@ -194,9 +194,19 @@ class Project extends Model implements Mentionable, Subscribable
      */
     public function roleNamesFor(User $user): array
     {
-        $names = $user->roles()
-            ->where('scope_type', $this->getMorphClass())
-            ->where('scope_id', $this->getKey())
+        // Reuse an already eager-loaded `roles` relation (the member panel loads
+        // it in bulk) instead of issuing a fresh query per call; only fall back
+        // to a scoped query when the relation isn't loaded.
+        $roles = $user->relationLoaded('roles')
+            ? $user->roles
+                ->where('scope_type', $this->getMorphClass())
+                ->where('scope_id', $this->getKey())
+            : $user->roles()
+                ->where('scope_type', $this->getMorphClass())
+                ->where('scope_id', $this->getKey())
+                ->get();
+
+        $names = $roles
             ->pluck('name')
             ->map(static fn (mixed $name): string => (string) $name)
             ->sortBy(static fn (string $name): string => sprintf('%d-%s', self::ROLE_RANK[$name] ?? 9, $name))
