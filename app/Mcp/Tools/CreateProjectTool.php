@@ -10,7 +10,6 @@ use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -43,11 +42,7 @@ class CreateProjectTool extends Tool
 
         $validated = Validator::validate($data, [
             'title' => ['required', 'string', 'max:255'],
-            'short_name' => [
-                'required', 'string', 'min:2', 'max:4', 'alpha', 'uppercase',
-                Rule::notIn(['WWW', 'API', 'APP', 'FTP']),
-                'unique:projects,short_name',
-            ],
+            'short_name' => Project::shortNameRules(),
             'description' => ['nullable', 'string'],
         ], [
             'title.required' => 'You must provide a project title.',

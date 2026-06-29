@@ -11,7 +11,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
@@ -40,11 +39,7 @@ class ProjectController extends Controller
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'short_name' => [
-                'required', 'string', 'min:2', 'max:4', 'alpha', 'uppercase',
-                Rule::notIn(['WWW', 'API', 'APP', 'FTP']),
-                'unique:projects,short_name',
-            ],
+            'short_name' => Project::shortNameRules(),
             'description' => ['nullable', 'string'],
         ]);
 
@@ -93,11 +88,7 @@ class ProjectController extends Controller
 
         $validated = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'short_name' => [
-                'sometimes', 'required', 'string', 'min:2', 'max:4', 'alpha', 'uppercase',
-                Rule::notIn(['WWW', 'API', 'APP', 'FTP']),
-                Rule::unique('projects', 'short_name')->ignore($project->id),
-            ],
+            'short_name' => ['sometimes', ...Project::shortNameRules($project->id)],
             'description' => ['nullable', 'string'],
         ]);
 

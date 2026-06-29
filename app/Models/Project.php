@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 /**
  * @property int $id
@@ -41,6 +42,32 @@ class Project extends Model implements Mentionable, Subscribable
      * @var array<string, int>
      */
     private const array ROLE_RANK = ['owner' => 0, 'admin' => 1, 'member' => 2, 'viewer' => 3];
+
+    /**
+     * Short names reserved for routing/subdomains, never assignable to a project.
+     *
+     * @var list<string>
+     */
+    public const array RESERVED_SHORT_NAMES = ['WWW', 'API', 'APP', 'FTP'];
+
+    /**
+     * Validation rules for a project short_name (2-4 uppercase letters, not a
+     * reserved name, unique). Pass the id of the project being edited to exempt
+     * it from the uniqueness check. Callers normalize the input to uppercase
+     * first and may prepend `sometimes` for partial updates.
+     *
+     * @return list<mixed>
+     */
+    public static function shortNameRules(?int $ignoreId = null): array
+    {
+        return [
+            'required', 'string', 'min:2', 'max:4', 'alpha', 'uppercase',
+            Rule::notIn(self::RESERVED_SHORT_NAMES),
+            $ignoreId === null
+                ? Rule::unique('projects', 'short_name')
+                : Rule::unique('projects', 'short_name')->ignore($ignoreId),
+        ];
+    }
 
     public function inlineAttachmentOwner(): Project|Task
     {

@@ -7,7 +7,6 @@ use App\Models\Project;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -63,11 +62,7 @@ class ProjectList extends Component
 
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
-            'short_name' => [
-                'required', 'string', 'min:2', 'max:4', 'alpha', 'uppercase',
-                Rule::notIn(['WWW', 'API', 'APP', 'FTP']),
-                'unique:projects,short_name',
-            ],
+            'short_name' => Project::shortNameRules(),
             'description' => ['nullable', 'string'],
         ]);
 

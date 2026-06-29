@@ -398,11 +398,7 @@ class ProjectShow extends Component
 
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
-            'short_name' => [
-                'required', 'string', 'min:2', 'max:4', 'alpha', 'uppercase',
-                Rule::notIn(['WWW', 'API', 'APP', 'FTP']),
-                Rule::unique('projects', 'short_name')->ignore($project->id),
-            ],
+            'short_name' => Project::shortNameRules($project->id),
             'description' => ['nullable', 'string'],
             'autoArchiveDays' => ['nullable', 'integer', 'min:0', 'max:3650'],
         ]);
