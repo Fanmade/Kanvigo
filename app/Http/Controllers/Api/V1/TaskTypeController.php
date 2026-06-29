@@ -19,6 +19,8 @@ class TaskTypeController extends Controller
 
         abort_if($project === null || Auth::user()->cannot('view', $project), 404);
 
+        // Returned in full (not paginated): a project's task-type set is bounded
+        // by configuration, and consumers want the whole set to populate pickers.
         return TaskTypeResource::collection($project->taskTypes()->get());
     }
 }

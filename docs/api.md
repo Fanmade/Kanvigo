@@ -65,9 +65,9 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `PATCH`  | `/notes/{id}`                                         | write   | Update your own note. |
 | `DELETE` | `/notes/{id}`                                         | write   | Delete your own note. |
 | `POST`   | `/notes/{id}/convert`                                 | write   | Convert a note into a task (`project`, optional `parent`). |
-| `GET`    | `/projects/{short_name}/attachments`                  | read    | A project's file attachments. |
+| `GET`    | `/projects/{short_name}/attachments`                  | read    | A project's file attachments (paginated). |
 | `POST`   | `/projects/{short_name}/attachments`                  | write   | Upload a file to a project (`file`). |
-| `GET`    | `/tasks/{reference}/attachments`                      | read    | A task's file attachments. |
+| `GET`    | `/tasks/{reference}/attachments`                      | read    | A task's file attachments (paginated). |
 | `POST`   | `/tasks/{reference}/attachments`                      | write   | Upload a file to a task (`file`). |
 | `GET`    | `/attachments/{id}`                                   | read    | Download an attachment's file. |
 | `DELETE` | `/attachments/{id}`                                   | write   | Delete an attachment. |

@@ -19,6 +19,8 @@ class TagController extends Controller
 
         abort_if($project === null || Auth::user()->cannot('view', $project), 404);
 
+        // Returned in full (not paginated): a project's tag catalog is bounded by
+        // configuration, and consumers want the whole set to populate pickers.
         return TagResource::collection(
             $project->tags()->withCount('tasks')->orderBy('name')->get(),
         );

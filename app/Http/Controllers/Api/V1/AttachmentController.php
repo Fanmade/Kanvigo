@@ -102,12 +102,14 @@ class AttachmentController extends Controller
     }
 
     /**
-     * The downloadable (non-inline) attachments of a commentable.
+     * The downloadable (non-inline) attachments of a commentable, paginated —
+     * attachments grow unbounded per project/task, so the listing is capped like
+     * the other collection endpoints (tasks, notes, comments).
      */
     protected function list(Project|Task $attachable): AnonymousResourceCollection
     {
         return AttachmentResource::collection(
-            $attachable->attachments()->where('is_inline', false)->latest()->get(),
+            $attachable->attachments()->where('is_inline', false)->latest()->paginate(),
         );
     }
 

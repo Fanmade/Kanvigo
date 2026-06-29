@@ -33,6 +33,20 @@ it('lists a task downloadable attachments, excluding inline', function () {
         ->assertJsonStructure(['data' => [['id', 'name', 'mime_type', 'size', 'is_inline', 'download_url']]]);
 });
 
+it('paginates the attachment listing so a large set is bounded', function () {
+    Attachment::factory()->for($this->task, 'attachable')->count(20)->create();
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $response = $this->getJson("/api/v1/tasks/{$this->task->reference}/attachments")
+        ->assertOk()
+        ->assertJsonStructure(['data', 'links', 'meta' => ['current_page', 'last_page', 'per_page', 'total']]);
+
+    // The full set is reported in meta, but a single page is capped well below it.
+    expect($response->json('meta.total'))->toBe(20)
+        ->and(count($response->json('data')))->toBeLessThan(20);
+});
+
 it('uploads a file to a task with a write token', function () {
     Storage::fake(config('attachments.disk'));
     Sanctum::actingAs($this->user, ['read', 'write']);
