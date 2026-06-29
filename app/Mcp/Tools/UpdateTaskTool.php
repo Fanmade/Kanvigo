@@ -9,7 +9,6 @@ use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\PresentsTasks;
-use App\Mcp\Concerns\RecordsTagChanges;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -26,7 +25,6 @@ class UpdateTaskTool extends Tool
 {
     use NormalizesPlainText;
     use PresentsTasks;
-    use RecordsTagChanges;
     use RequiresWriteAccess;
 
     /**
@@ -132,7 +130,7 @@ class UpdateTaskTool extends Tool
         }
 
         if ($tagsProvided) {
-            $this->recordTagSync($task, $task->syncTags($validated['tags'] ?? []));
+            $task->recordTagSync($task->syncTags($validated['tags'] ?? []));
         }
 
         $task->refresh();

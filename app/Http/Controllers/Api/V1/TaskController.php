@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
 use App\Actions\CreateTask;
-use App\Concerns\HasTags;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -14,7 +13,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\TaskDetailResource;
 use App\Http\Resources\TaskResource;
 use App\Models\Project;
-use App\Models\Tag;
 use App\Models\Task;
 use App\Models\TaskType;
 use App\Support\ReferenceResolver;
@@ -202,7 +200,7 @@ class TaskController extends Controller
         }
 
         if ($request->has('tags')) {
-            $this->logTagChanges($task, $task->syncTags($validated['tags'] ?? []));
+            $task->recordTagSync($task->syncTags($validated['tags'] ?? []));
         }
 
         $task->refresh()->loadMissing(self::RESOURCE_RELATIONS);
@@ -325,26 +323,5 @@ class TaskController extends Controller
         }
 
         return $type;
-    }
-
-    /**
-     * Record a tags_changed activity from a {@see HasTags::syncTags()}
-     * diff, resolving attached/detached ids to names so the trail reads naturally.
-     *
-     * @param  array{attached: array<int, mixed>, detached: array<int, mixed>, updated: array<int, mixed>}  $changes
-     */
-    private function logTagChanges(Task $task, array $changes): void
-    {
-        $names = Tag::query()
-            ->whereIn('id', array_merge($changes['attached'], $changes['detached']))
-            ->pluck('name', 'id');
-
-        $resolve = static fn (array $ids): array => collect($ids)
-            ->map(static fn ($id): ?string => $names[(int) $id] ?? null)
-            ->filter()
-            ->values()
-            ->all();
-
-        $task->recordTagChange($resolve($changes['attached']), $resolve($changes['detached']));
     }
 }
