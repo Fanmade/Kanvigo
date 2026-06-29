@@ -67,6 +67,17 @@ it('404s when creating a task in a project the user cannot access', function () 
         ->assertNotFound();
 });
 
+it('rejects creating a task already in the Canceled status', function () {
+    Sanctum::actingAs($this->user, ['read', 'write']);
+
+    $this->postJson('/api/v1/projects/ABC/tasks', [
+        'title' => 'Born canceled',
+        'status' => 'Canceled',
+    ])->assertJsonValidationErrors('status');
+
+    expect($this->project->tasks()->count())->toBe(0);
+});
+
 it('updates a task and routes status through the cascade action', function () {
     $task = Task::factory()->for($this->project)->status(Status::ToDo)->create();
     Sanctum::actingAs($this->user, ['read', 'write']);

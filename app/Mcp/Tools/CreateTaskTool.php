@@ -11,7 +11,6 @@ use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
 use InvalidArgumentException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -34,7 +33,11 @@ class CreateTaskTool extends Tool
             return $denied;
         }
 
-        $statuses = implode('", "', array_map(static fn (Status $status): string => $status->value, Status::cases()));
+        // A task may only be created in a working status — "Canceled" is a
+        // terminal state reached through the cancel flow (which records a reason
+        // and cascades to subtasks), never set directly on creation.
+        $workingStatuses = array_map(static fn (Status $status): string => $status->value, Status::columns());
+        $statuses = implode('", "', $workingStatuses);
 
         $validated = $request->validate([
             'reference' => ['required', 'string'],
@@ -43,7 +46,7 @@ class CreateTaskTool extends Tool
             'description' => ['nullable', 'string'],
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
-            'status' => ['nullable', new Enum(Status::class)],
+            'status' => ['nullable', Rule::in($workingStatuses)],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
         ], [
@@ -136,8 +139,8 @@ class CreateTaskTool extends Tool
                 ->description('Optional due date in "YYYY-MM-DD" format.'),
 
             'status' => $schema->string()
-                ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
-                ->description('Optional initial status. Defaults to "Planned".'),
+                ->enum(array_map(static fn (Status $status): string => $status->value, Status::columns()))
+                ->description('Optional initial status, one of the working statuses (Planned, ToDo, In progress, Done). Defaults to "Planned". A task cannot be created already canceled — cancel it afterwards.'),
 
             'tags' => $schema->array()
                 ->items($schema->string())

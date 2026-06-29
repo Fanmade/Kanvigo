@@ -84,11 +84,16 @@ class TaskController extends Controller
 
         abort_if($project === null || Auth::user()->cannot('create-task', $project), 404);
 
+        // A task may only be created in a working status — "Canceled" is a
+        // terminal state reached through the cancel flow (which records a reason
+        // and cascades to subtasks), never set directly on creation.
+        $workingStatuses = array_map(static fn (Status $status): string => $status->value, Status::columns());
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'priority' => ['nullable', Rule::in(Priority::names())],
-            'status' => ['nullable', new Enum(Status::class)],
+            'status' => ['nullable', Rule::in($workingStatuses)],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'parent' => ['nullable', 'string'],
             'type' => ['nullable', 'string'],

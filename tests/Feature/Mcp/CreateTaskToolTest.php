@@ -95,6 +95,20 @@ it('defaults a new task to Planned status', function () {
     assertDatabaseHas('tasks', ['project_id' => $project->id, 'status' => Status::Planned->value]);
 });
 
+it('rejects creating a task already in the Canceled status', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+
+    KanvigoServer::tool(CreateTaskTool::class, [
+        'reference' => $project->short_name,
+        'title' => 'Born canceled',
+        'status' => Status::Canceled->value,
+    ])->assertHasErrors();
+
+    assertDatabaseMissing('tasks', ['title' => 'Born canceled']);
+});
+
 it('creates a task with an explicit priority', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
