@@ -55,8 +55,8 @@ return [
         'tag', 'sparkles', 'bug-ant', 'wrench-screwdriver', 'wrench', 'bolt',
         'beaker', 'book-open', 'shield-check', 'rocket-launch', 'paint-brush',
         'cog-6-tooth', 'flag', 'star', 'exclamation-triangle',
-        'arrows-right-left', 'arrow-path-rounded-square', 'cube-transparent',
-        'magnifying-glass', 'light-bulb', 'circle-stack',
+        'arrows-right-left', 'arrow-path-rounded-square', 'cube', 'cube-transparent',
+        'magnifying-glass', 'light-bulb', 'circle-stack', 'cpu-chip',
         'chat-bubble-left-right', 'server-stack', 'fire', 'link', 'document-text',
         'arrow-trending-up', 'bell', 'command-line', 'credit-card', 'computer-desktop',
         'device-phone-mobile', 'device-tablet', 'finger-print', 'information-circle',
@@ -67,7 +67,7 @@ return [
         'x-mark', 'arrows-up-down', 'hand-raised', 'home', 'envelope-open', 'envelope',
         'at-symbol', 'phone', 'building-office', 'building-library', 'viewfinder-circle',
         'ticket', 'sun', 'identification', 'hand-thumb-up', 'globe-alt', 'face-smile',
-        'eye-slash', 'eye',
+        'eye-slash', 'eye', 'cursor-arrow-rays', 'cursor-arrow-ripple',
     ],
 
 ];
