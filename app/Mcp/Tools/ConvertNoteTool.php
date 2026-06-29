@@ -6,8 +6,8 @@ use App\Actions\ConvertNote;
 use App\Actions\CreateTask;
 use App\Mcp\Concerns\PresentsNotes;
 use App\Mcp\Concerns\RequiresWriteAccess;
+use App\Mcp\Concerns\ResolvesTaskCreationReferences;
 use App\Models\Note;
-use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use InvalidArgumentException;
@@ -22,6 +22,7 @@ class ConvertNoteTool extends Tool
 {
     use PresentsNotes;
     use RequiresWriteAccess;
+    use ResolvesTaskCreationReferences;
 
     public function handle(Request $request): Response|ResponseFactory
     {
@@ -45,24 +46,16 @@ class ConvertNoteTool extends Tool
             return Response::error('No note with id '.$validated['id'].' exists, or you do not own it.');
         }
 
-        $project = ReferenceResolver::project($validated['reference']);
+        $project = $this->resolveTaskProject($request, $validated['reference']);
 
-        if ($project === null || ! $user->can('create-task', $project)) {
-            return Response::error('No project with short_name "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ".');
+        if ($project instanceof Response) {
+            return $project;
         }
 
-        $parent = null;
+        $parent = $this->resolveParentTask($request, $validated['parent'] ?? null, $project);
 
-        if (isset($validated['parent'])) {
-            $parent = ReferenceResolver::task($validated['parent']);
-
-            if ($parent === null || ! $user->can('view', $parent)) {
-                return Response::error('No task with reference "'.$validated['parent'].'" exists, or you do not have access to it. References look like "PROJ-42".');
-            }
-
-            if ($parent->project_id !== $project->id) {
-                return Response::error('The parent task "'.$validated['parent'].'" is not in project "'.$project->short_name.'".');
-            }
+        if ($parent instanceof Response) {
+            return $parent;
         }
 
         try {
