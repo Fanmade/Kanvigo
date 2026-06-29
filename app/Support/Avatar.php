@@ -2,8 +2,6 @@
 
 namespace App\Support;
 
-use GdImage;
-
 class Avatar
 {
     /**
@@ -39,7 +37,7 @@ class Avatar
             return null;
         }
 
-        $source = self::applyExifOrientation($source, $contents, $info[2]);
+        $source = ImageProcessing::applyExifOrientation($source, $contents, $info[2]);
         $width = imagesx($source);
         $height = imagesy($source);
 
@@ -58,34 +56,5 @@ class Avatar
         $data = (string) ob_get_clean();
 
         return $data === '' ? null : $data;
-    }
-
-    /**
-     * Rotate JPEGs according to their EXIF orientation so portrait photos taken
-     * on phones are not cropped sideways.
-     */
-    private static function applyExifOrientation(GdImage $image, string $contents, int $type): GdImage
-    {
-        if ($type !== IMAGETYPE_JPEG || ! function_exists('exif_read_data')) {
-            return $image;
-        }
-
-        $exif = @exif_read_data('data://image/jpeg;base64,'.base64_encode($contents));
-        $orientation = is_array($exif) ? ($exif['Orientation'] ?? null) : null;
-
-        $rotation = match ($orientation) {
-            3 => 180,
-            6 => -90,
-            8 => 90,
-            default => 0,
-        };
-
-        if ($rotation === 0) {
-            return $image;
-        }
-
-        $rotated = imagerotate($image, $rotation, 0);
-
-        return $rotated === false ? $image : $rotated;
     }
 }
