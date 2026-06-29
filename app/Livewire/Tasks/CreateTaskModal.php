@@ -32,6 +32,9 @@ use Livewire\Component;
  * dispatching the `open-create-task` event with optional project/parent context.
  * Creation funnels through the shared {@see CreateTask} action; on success it
  * dispatches `task-created` so the originating page can refresh.
+ *
+ * @property-read Collection<int, Project> $projects
+ * @property-read BaseCollection<int, array{name: string, color: string}> $tagSuggestions
  */
 class CreateTaskModal extends Component
 {
@@ -156,8 +159,8 @@ class CreateTaskModal extends Component
 
         // With a single available project there is nothing to choose, so preselect
         // it (the dropdown is hidden in that case).
-        if ($projectId === null && $this->projects()->count() === 1) {
-            $projectId = $this->projects()->first()?->id;
+        if ($projectId === null && $this->projects->count() === 1) {
+            $projectId = $this->projects->first()?->id;
         }
 
         if ($parentId === null && $projectId === $this->contextProjectId) {
@@ -338,7 +341,7 @@ class CreateTaskModal extends Component
             return false;
         }
 
-        return ! $this->tagSuggestions()->contains(static fn (array $tag): bool => mb_strtolower($tag['name']) === $query);
+        return ! $this->tagSuggestions->contains(static fn (array $tag): bool => mb_strtolower($tag['name']) === $query);
     }
 
     /**
@@ -347,7 +350,7 @@ class CreateTaskModal extends Component
      */
     public function addSuggestedTag(int $index): void
     {
-        $suggestion = $this->tagSuggestions()->get($index);
+        $suggestion = $this->tagSuggestions->get($index);
 
         if ($suggestion !== null) {
             $this->stageTag($suggestion['name'], $suggestion['color']);
@@ -476,7 +479,7 @@ class CreateTaskModal extends Component
             'assigneeIds.*' => ['integer'],
         ]);
 
-        $project = $this->projects()->firstWhere('id', $validated['projectId']);
+        $project = $this->projects->firstWhere('id', $validated['projectId']);
 
         abort_if($project === null, 404);
 
@@ -686,7 +689,7 @@ class CreateTaskModal extends Component
             return [null, null];
         }
 
-        $project = $this->projects()->firstWhere('short_name', $shortName);
+        $project = $this->projects->firstWhere('short_name', $shortName);
 
         if ($project === null) {
             return [null, null];
@@ -738,7 +741,7 @@ class CreateTaskModal extends Component
             return null;
         }
 
-        return $this->projects()->firstWhere('id', $this->projectId);
+        return $this->projects->firstWhere('id', $this->projectId);
     }
 
     /**

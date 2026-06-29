@@ -26,6 +26,8 @@ use Livewire\Component;
  * chosen parent and bounded by that parent's permissions; only roles strictly
  * below the manager (custom, non-base) may be deleted. Restricted to holders of
  * the project `manage-roles` permission.
+ *
+ * @property-read Project $project
  */
 class ProjectRoles extends Component
 {
@@ -75,7 +77,7 @@ class ProjectRoles extends Component
     #[Computed]
     public function roles(): EloquentCollection
     {
-        return Auth::user()->visibleRoles($this->project())
+        return Auth::user()->visibleRoles($this->project)
             ->sortBy(fn (Role $role): string => sprintf('%d-%s', $this->isProtected($role) ? 0 : 1, $role->name))
             ->values();
     }
@@ -270,7 +272,7 @@ class ProjectRoles extends Component
      */
     public function selectRolePermissions(int $roleId, PermissionResolver $resolver): void
     {
-        $this->authorize('manage-roles', $this->project());
+        $this->authorize('manage-roles', $this->project);
 
         $role = $this->roles()->firstWhere('id', $roleId);
         $parent = $this->parentRole();
@@ -299,7 +301,7 @@ class ProjectRoles extends Component
     #[Computed]
     public function deletableRoleIds(): Collection
     {
-        $heldIds = Auth::user()->rolesIn($this->project())->pluck('id');
+        $heldIds = Auth::user()->rolesIn($this->project)->pluck('id');
 
         return $this->roles()
             ->reject(fn (Role $role): bool => $this->isProtected($role) || $heldIds->contains($role->id))
@@ -321,7 +323,7 @@ class ProjectRoles extends Component
 
     public function createRole(RoleManager $roles): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manage-roles', $project);
 
         $validated = $this->validate([
@@ -373,7 +375,7 @@ class ProjectRoles extends Component
      */
     public function startEdit(int $roleId): void
     {
-        $this->authorize('manage-roles', $this->project());
+        $this->authorize('manage-roles', $this->project);
 
         if (! $this->editableRoleIds()->contains($roleId)) {
             return;
@@ -405,7 +407,7 @@ class ProjectRoles extends Component
      */
     public function saveRole(PermissionResolver $resolver): void
     {
-        $this->authorize('manage-roles', $this->project());
+        $this->authorize('manage-roles', $this->project);
 
         $roleId = $this->editingRoleId;
 
@@ -448,7 +450,7 @@ class ProjectRoles extends Component
 
     public function deleteRole(RoleManager $roles, int $roleId): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manage-roles', $project);
 
         // Only roles strictly below the manager, and never a seeded base role.

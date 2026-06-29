@@ -15,6 +15,9 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+/**
+ * @property-read Collection<int, Task> $tasks
+ */
 #[Title('Board')]
 class Board extends Component
 {
@@ -74,7 +77,7 @@ class Board extends Component
     #[Computed]
     public function columns(): array
     {
-        $tasks = $this->tasks();
+        $tasks = $this->tasks;
 
         if (! $this->showArchived) {
             $tasks = $tasks->reject(static fn (Task $task): bool => $task->isArchived())->values();
@@ -95,7 +98,7 @@ class Board extends Component
 
         return BoardCache::remember(
             'board:user:'.Auth::id().':blocked:'.BoardCache::versionFor($projectIds),
-            fn (): array => BlockedTasks::ids($this->tasks()->pluck('id')->all()),
+            fn (): array => BlockedTasks::ids($this->tasks->pluck('id')->all()),
         );
     }
 

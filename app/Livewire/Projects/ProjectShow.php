@@ -25,6 +25,11 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * @property-read Project $project
+ * @property-read EloquentCollection<int, Task> $rootTasks
+ * @property-read Collection<int, Role> $assignableRoles
+ */
 class ProjectShow extends Component
 {
     use HandlesAttachments;
@@ -107,7 +112,7 @@ class ProjectShow extends Component
     {
         $this->shortName = $short_name;
 
-        $this->authorize('view', $this->project());
+        $this->authorize('view', $this->project);
 
         $this->tasksCollapsed = (bool) auth()->user()?->preference(self::TASKS_COLLAPSED_PREFERENCE_KEY, true);
     }
@@ -148,7 +153,7 @@ class ProjectShow extends Component
     #[Computed]
     public function rootTasks(): EloquentCollection
     {
-        $project = $this->project();
+        $project = $this->project;
 
         return BoardCache::remember(
             "project:overview:{$project->id}:roots:v".BoardCache::version($project->id),
@@ -160,7 +165,7 @@ class ProjectShow extends Component
 
     protected function attachable(): Project|Task
     {
-        return $this->project();
+        return $this->project;
     }
 
     /**
@@ -180,7 +185,7 @@ class ProjectShow extends Component
     #[Computed]
     public function mentionablesUrl(): string
     {
-        return route('project.mentionables', $this->project());
+        return route('project.mentionables', $this->project);
     }
 
     /**
@@ -193,7 +198,7 @@ class ProjectShow extends Component
     public function openTasks(): Collection
     {
         return $this->filterTasks(
-            $this->rootTasks()
+            $this->rootTasks
                 ->reject(static fn (Task $task): bool => $task->isArchived())
                 ->reject(static fn (Task $task): bool => $task->status->isTerminal())
         );
@@ -209,7 +214,7 @@ class ProjectShow extends Component
     public function completedTasks(): Collection
     {
         return $this->filterTasks(
-            $this->rootTasks()
+            $this->rootTasks
                 ->reject(static fn (Task $task): bool => $task->isArchived())
                 ->filter(static fn (Task $task): bool => $task->status->isTerminal())
         );
@@ -225,7 +230,7 @@ class ProjectShow extends Component
     public function archivedTasks(): Collection
     {
         return $this->filterTasks(
-            $this->rootTasks()
+            $this->rootTasks
                 ->filter(static fn (Task $task): bool => $task->isArchived())
         );
     }
@@ -305,7 +310,7 @@ class ProjectShow extends Component
     #[Computed]
     public function hasArchivedRootTasks(): bool
     {
-        return $this->rootTasks()->contains(static fn (Task $task): bool => $task->isArchived());
+        return $this->rootTasks->contains(static fn (Task $task): bool => $task->isArchived());
     }
 
     /**
@@ -316,7 +321,7 @@ class ProjectShow extends Component
     #[Computed]
     public function projectTags(): EloquentCollection
     {
-        return $this->project()->tags()->orderBy('name')->get();
+        return $this->project->tags()->orderBy('name')->get();
     }
 
     /**
@@ -328,7 +333,7 @@ class ProjectShow extends Component
     #[Computed]
     public function publicNotes(): EloquentCollection
     {
-        return $this->project()->notes()
+        return $this->project->notes()
             ->where('is_public', true)
             ->with('user')
             ->latest('updated_at')
@@ -345,7 +350,7 @@ class ProjectShow extends Component
      */
     public function archiveTask(int $taskId): void
     {
-        $task = $this->project()->rootTasks()->whereKey($taskId)->firstOrFail();
+        $task = $this->project->rootTasks()->whereKey($taskId)->firstOrFail();
 
         $this->authorize('archive', $task);
 
@@ -361,7 +366,7 @@ class ProjectShow extends Component
      */
     public function unarchiveTask(int $taskId): void
     {
-        $task = $this->project()->rootTasks()->whereKey($taskId)->firstOrFail();
+        $task = $this->project->rootTasks()->whereKey($taskId)->firstOrFail();
 
         $this->authorize('archive', $task);
 
@@ -374,18 +379,18 @@ class ProjectShow extends Component
 
     public function edit(): void
     {
-        $this->authorize('manageSettings', $this->project());
+        $this->authorize('manageSettings', $this->project);
 
-        $this->title = $this->project()->title;
-        $this->short_name = $this->project()->short_name;
-        $this->description = (string) $this->project()->description;
-        $this->autoArchiveDays = $this->project()->auto_archive_days;
+        $this->title = $this->project->title;
+        $this->short_name = $this->project->short_name;
+        $this->description = (string) $this->project->description;
+        $this->autoArchiveDays = $this->project->auto_archive_days;
         $this->editing = true;
     }
 
     public function save(): void
     {
-        $project = $this->project();
+        $project = $this->project;
 
         $this->authorize('manageSettings', $project);
 
@@ -432,7 +437,7 @@ class ProjectShow extends Component
     #[Computed]
     public function members(): EloquentCollection
     {
-        $project = $this->project();
+        $project = $this->project;
 
         return $project->members()
             ->with(['roles' => static fn ($query) => $query
@@ -453,7 +458,7 @@ class ProjectShow extends Component
     #[Computed]
     public function assignableRoles(): Collection
     {
-        return Auth::user()->visibleRoles($this->project())
+        return Auth::user()->visibleRoles($this->project)
             ->reject(static fn (Role $role): bool => $role->name === 'owner')
             ->sortBy(static fn (Role $role): string => sprintf(
                 '%d-%s',
@@ -478,7 +483,7 @@ class ProjectShow extends Component
      */
     public function addMemberRole(int $userId, string $role): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manageMembers', $project);
 
         if ($userId === auth()->id()) {
@@ -487,7 +492,7 @@ class ProjectShow extends Component
 
         $validated = validator(
             ['role' => $role],
-            ['role' => ['required', Rule::in($this->assignableRoles()->pluck('name')->all())]],
+            ['role' => ['required', Rule::in($this->assignableRoles->pluck('name')->all())]],
         )->validate();
 
         $member = User::find($userId);
@@ -515,7 +520,7 @@ class ProjectShow extends Component
      */
     public function removeMemberRole(int $userId, string $role): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manageMembers', $project);
 
         if ($userId === auth()->id() || $role === 'owner') {
@@ -551,7 +556,7 @@ class ProjectShow extends Component
         }
 
         return User::query()
-            ->whereNotIn('id', $this->project()->members()->pluck('users.id'))
+            ->whereNotIn('id', $this->project->members()->pluck('users.id'))
             ->where(static fn ($builder) => $builder
                 ->whereLike('name', '%'.$query.'%')
                 ->orWhereLike('email', '%'.$query.'%'))
@@ -565,7 +570,7 @@ class ProjectShow extends Component
      */
     public function addMember(int $userId): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manageMembers', $project);
 
         if (! User::whereKey($userId)->exists() || $project->members()->whereKey($userId)->exists()) {
@@ -587,7 +592,7 @@ class ProjectShow extends Component
      */
     public function removeMember(int $userId): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manageMembers', $project);
 
         if ($userId === auth()->id() || ! $project->members()->whereKey($userId)->exists()) {

@@ -17,6 +17,10 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * @property-read Project $project
+ * @property-read Collection<int, Task> $tasks
+ */
 class ProjectBoard extends Component
 {
     use BuildsKanbanColumns;
@@ -45,7 +49,7 @@ class ProjectBoard extends Component
     {
         $this->shortName = $short_name;
 
-        $this->authorize('view', $this->project());
+        $this->authorize('view', $this->project);
     }
 
     #[Computed]
@@ -78,7 +82,7 @@ class ProjectBoard extends Component
     #[Computed]
     public function taskTypes(): Collection
     {
-        return $this->project()->taskTypes()->get();
+        return $this->project->taskTypes()->get();
     }
 
     /**
@@ -89,7 +93,7 @@ class ProjectBoard extends Component
     #[Computed]
     public function tasks(): Collection
     {
-        $project = $this->project();
+        $project = $this->project;
 
         return BoardCache::remember(
             "board:proj:{$project->id}:tasks:v".BoardCache::version($project->id),
@@ -107,7 +111,7 @@ class ProjectBoard extends Component
     #[Computed]
     public function columns(): array
     {
-        $tasks = $this->tasks();
+        $tasks = $this->tasks;
 
         if (! $this->showArchived) {
             $tasks = $tasks->reject(static fn (Task $task): bool => $task->isArchived());
@@ -132,11 +136,11 @@ class ProjectBoard extends Component
     #[Computed]
     public function blockedTaskIds(): array
     {
-        $project = $this->project();
+        $project = $this->project;
 
         return BoardCache::remember(
             "board:proj:{$project->id}:blocked:v".BoardCache::version($project->id),
-            fn (): array => BlockedTasks::ids($this->tasks()->pluck('id')->all()),
+            fn (): array => BlockedTasks::ids($this->tasks->pluck('id')->all()),
         );
     }
 
@@ -204,7 +208,7 @@ class ProjectBoard extends Component
     {
         $task = Task::findOrFail($taskId);
 
-        abort_unless($task->project_id === $this->project()->id, 404);
+        abort_unless($task->project_id === $this->project->id, 404);
 
         return $task;
     }

@@ -19,6 +19,10 @@ use Livewire\Component;
  * to any member holding `manage-tags`; deletion and merging are restricted to
  * `manage-settings` (admin/owner) since they destroy tags. Every change is
  * recorded in the project activity log by the Tag model itself.
+ *
+ * @property-read Project $project
+ * @property-read Collection<int, Tag> $selectedTags
+ * @property-read list<string> $palette
  */
 class ProjectTags extends Component
 {
@@ -78,7 +82,7 @@ class ProjectTags extends Component
     {
         $this->shortName = $short_name;
 
-        $this->authorize('manage-tags', $this->project());
+        $this->authorize('manage-tags', $this->project);
     }
 
     #[Computed]
@@ -100,7 +104,7 @@ class ProjectTags extends Component
     #[Computed]
     public function tags(): Collection
     {
-        return $this->project()->tags()
+        return $this->project->tags()
             ->withCount('tasks')
             ->orderBy('name')
             ->get();
@@ -120,7 +124,7 @@ class ProjectTags extends Component
             return new Collection;
         }
 
-        return $this->project()->tags()
+        return $this->project->tags()
             ->withCount('tasks')
             ->whereKey($this->selected)
             ->orderByDesc('tasks_count')
@@ -156,7 +160,7 @@ class ProjectTags extends Component
      */
     public function startCreate(): void
     {
-        $this->authorize('manage-tags', $this->project());
+        $this->authorize('manage-tags', $this->project);
 
         $this->editingTagId = null;
         $this->editName = '';
@@ -173,9 +177,9 @@ class ProjectTags extends Component
      */
     public function startEdit(int $tagId): void
     {
-        $this->authorize('manage-tags', $this->project());
+        $this->authorize('manage-tags', $this->project);
 
-        $tag = $this->project()->tags()->whereKey($tagId)->firstOrFail();
+        $tag = $this->project->tags()->whereKey($tagId)->firstOrFail();
 
         $this->editingTagId = $tag->id;
         $this->editName = $tag->name;
@@ -243,12 +247,12 @@ class ProjectTags extends Component
      */
     public function saveEdit(): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manage-tags', $project);
 
         $validated = $this->validate([
             'editName' => ['required', 'string', 'max:255'],
-            'editColor' => ['required', 'string', 'in:'.implode(',', $this->palette())],
+            'editColor' => ['required', 'string', 'in:'.implode(',', $this->palette)],
             'editIcon' => ['nullable', 'string', 'in:'.implode(',', IconCatalog::available())],
         ]);
 
@@ -322,7 +326,7 @@ class ProjectTags extends Component
      */
     public function deleteTag(int $tagId): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manageSettings', $project);
 
         $tag = $project->tags()->whereKey($tagId)->firstOrFail();
@@ -339,9 +343,9 @@ class ProjectTags extends Component
      */
     public function startMerge(): void
     {
-        $this->authorize('manageSettings', $this->project());
+        $this->authorize('manageSettings', $this->project);
 
-        $selected = $this->selectedTags();
+        $selected = $this->selectedTags;
 
         if ($selected->count() < 2) {
             return;
@@ -360,10 +364,10 @@ class ProjectTags extends Component
      */
     public function mergeTags(): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manageSettings', $project);
 
-        $selected = $this->selectedTags();
+        $selected = $this->selectedTags;
         $target = $selected->firstWhere('id', $this->mergeTargetId);
 
         if ($target === null || $selected->count() < 2) {

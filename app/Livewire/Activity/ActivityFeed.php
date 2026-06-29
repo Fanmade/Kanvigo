@@ -19,6 +19,10 @@ use Livewire\Component;
  * its activities once it scrolls into view (Livewire's lazy loading uses an
  * intersection observer). It also stays collapsed by default, so even once
  * loaded the full activity list is fetched only when the user expands it.
+ *
+ * @property-read Project|Task $subject
+ * @property-read Collection<int, Activity> $activities
+ * @property-read int $activityCount
  */
 class ActivityFeed extends Component
 {
@@ -54,7 +58,7 @@ class ActivityFeed extends Component
 
         $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, true);
 
-        if ($focus !== null && $this->subject()->activities()->where('sequence', $focus)->exists()) {
+        if ($focus !== null && $this->subject->activities()->where('sequence', $focus)->exists()) {
             $this->focusOnSequence($focus);
         }
     }
@@ -70,7 +74,7 @@ class ActivityFeed extends Component
     {
         $this->focusSequence = $sequence;
         $this->collapsed = false;
-        $this->visible = max($this->visible, $this->activityCount());
+        $this->visible = max($this->visible, $this->activityCount);
 
         unset($this->activities, $this->descriptions, $this->hasMoreActivities);
     }
@@ -134,7 +138,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function subjectReference(): ?string
     {
-        $subject = $this->subject();
+        $subject = $this->subject;
 
         return $subject instanceof Task ? $subject->reference : null;
     }
@@ -148,7 +152,7 @@ class ActivityFeed extends Component
      */
     protected function activityLogSubject(): Project|Task
     {
-        $subject = $this->subject();
+        $subject = $this->subject;
 
         $this->authorize('view-activity-log', $subject instanceof Task ? $subject->project : $subject);
 
@@ -181,7 +185,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function hasMoreActivities(): bool
     {
-        return $this->activityCount() > $this->visible;
+        return $this->activityCount > $this->visible;
     }
 
     /**
@@ -202,7 +206,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function descriptions(): array
     {
-        return $this->activities()
+        return $this->activities
             ->mapWithKeys(static fn (Activity $activity): array => [$activity->id => ActivityDescriber::describe($activity)])
             ->all();
     }

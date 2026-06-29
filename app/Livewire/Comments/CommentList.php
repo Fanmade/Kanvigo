@@ -16,6 +16,12 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * @property-read Project|Task $commentable
+ * @property-read Project $project
+ * @property-read int $commentCount
+ * @property-read Collection<int, Activity> $referencedActivityEntries
+ */
 class CommentList extends Component
 {
     use HandlesAttachments;
@@ -91,7 +97,7 @@ class CommentList extends Component
      */
     protected function attachable(): Project|Task
     {
-        return $this->commentable();
+        return $this->commentable;
     }
 
     /**
@@ -101,7 +107,7 @@ class CommentList extends Component
     #[Computed]
     public function mentionablesUrl(): string
     {
-        return route('project.mentionables', $this->project());
+        return route('project.mentionables', $this->project);
     }
 
     /**
@@ -112,7 +118,7 @@ class CommentList extends Component
     #[Computed]
     public function project(): Project
     {
-        $commentable = $this->commentable();
+        $commentable = $this->commentable;
 
         return $commentable instanceof Task ? $commentable->project : $commentable;
     }
@@ -125,7 +131,7 @@ class CommentList extends Component
     #[Computed]
     public function comments(): Collection
     {
-        $comments = $this->commentable()->comments()
+        $comments = $this->commentable->comments()
             ->whereNull('parent_id')
             ->with([
                 'user',
@@ -156,7 +162,7 @@ class CommentList extends Component
     #[Computed]
     public function commentCount(): int
     {
-        return $this->commentable()->comments()->whereNull('parent_id')->count();
+        return $this->commentable->comments()->whereNull('parent_id')->count();
     }
 
     /**
@@ -165,7 +171,7 @@ class CommentList extends Component
     #[Computed]
     public function hasMoreComments(): bool
     {
-        return $this->commentCount() > $this->visible;
+        return $this->commentCount > $this->visible;
     }
 
     /**
@@ -264,7 +270,7 @@ class CommentList extends Component
      */
     protected function attachReferencedActivities(Comment $comment): void
     {
-        $ids = $this->referencedActivityEntries()->modelKeys();
+        $ids = $this->referencedActivityEntries->modelKeys();
 
         if ($ids !== []) {
             $comment->activities()->attach($ids);
@@ -286,7 +292,7 @@ class CommentList extends Component
 
     public function startEdit(int $commentId): void
     {
-        $comment = $this->commentable()->comments()->findOrFail($commentId);
+        $comment = $this->commentable->comments()->findOrFail($commentId);
         $this->authorize('update', $comment);
 
         $this->reset('replyingTo', 'replyBody', 'confirmingDelete', 'deleteReason');
@@ -302,7 +308,7 @@ class CommentList extends Component
 
     public function updateComment(): void
     {
-        $comment = $this->commentable()->comments()->findOrFail($this->editingId);
+        $comment = $this->commentable->comments()->findOrFail($this->editingId);
         $this->authorize('update', $comment);
 
         $validated = $this->validate([
@@ -317,7 +323,7 @@ class CommentList extends Component
 
     public function confirmDelete(int $commentId): void
     {
-        $comment = $this->commentable()->comments()->findOrFail($commentId);
+        $comment = $this->commentable->comments()->findOrFail($commentId);
         $this->authorize('delete', $comment);
 
         $this->reset('replyingTo', 'replyBody', 'editingId', 'editBody');
@@ -332,7 +338,7 @@ class CommentList extends Component
 
     public function deleteComment(): void
     {
-        $comment = $this->commentable()->comments()->findOrFail($this->confirmingDelete);
+        $comment = $this->commentable->comments()->findOrFail($this->confirmingDelete);
         $this->authorize('delete', $comment);
 
         $reason = trim($this->deleteReason) ?: null;
@@ -350,7 +356,7 @@ class CommentList extends Component
 
         // Record the removal in the audit trail (with the reason, if given), the
         // same way posting a comment logs a 'commented' entry.
-        $this->commentable()->recordActivity('comment_deleted', null, null, $reason);
+        $this->commentable->recordActivity('comment_deleted', null, null, $reason);
 
         $this->reset('confirmingDelete', 'deleteReason');
         unset($this->comments, $this->commentCount, $this->hasMoreComments);
@@ -362,7 +368,7 @@ class CommentList extends Component
             'replyBody' => ['required', 'string', 'max:5000'],
         ]);
 
-        $parent = $this->commentable()->comments()->findOrFail($this->replyingTo);
+        $parent = $this->commentable->comments()->findOrFail($this->replyingTo);
 
         // Keep threads one level deep: a reply to a reply attaches to the root.
         $this->storeComment($validated['replyBody'], $parent->parent_id ?? $parent->id);
@@ -375,7 +381,7 @@ class CommentList extends Component
      */
     protected function storeComment(string $body, ?int $parentId = null): Comment
     {
-        $commentable = $this->commentable();
+        $commentable = $this->commentable;
         $project = $commentable instanceof Task ? $commentable->project : $commentable;
 
         $this->authorize('create-comment', $project);

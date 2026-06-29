@@ -20,6 +20,9 @@ use Livewire\Component;
  * catalog is a settings-level action, so the whole screen is gated on
  * `manage-settings` (admins and the owner). Deleting a type leaves its tasks
  * untyped (the `task_type_id` foreign key is null-on-delete).
+ *
+ * @property-read Project $project
+ * @property-read list<string> $palette
  */
 class ProjectTaskTypes extends Component
 {
@@ -50,7 +53,7 @@ class ProjectTaskTypes extends Component
     {
         $this->shortName = $short_name;
 
-        $this->authorize('manageSettings', $this->project());
+        $this->authorize('manageSettings', $this->project);
     }
 
     #[Computed]
@@ -72,7 +75,7 @@ class ProjectTaskTypes extends Component
     #[Computed]
     public function taskTypes(): Collection
     {
-        return $this->project()->taskTypes()
+        return $this->project->taskTypes()
             ->withCount('tasks')
             ->get();
     }
@@ -104,7 +107,7 @@ class ProjectTaskTypes extends Component
      */
     public function startCreate(): void
     {
-        $this->authorize('manageSettings', $this->project());
+        $this->authorize('manageSettings', $this->project);
 
         $this->editingTypeId = null;
         $this->editName = '';
@@ -120,9 +123,9 @@ class ProjectTaskTypes extends Component
      */
     public function startEdit(int $typeId): void
     {
-        $this->authorize('manageSettings', $this->project());
+        $this->authorize('manageSettings', $this->project);
 
-        $type = $this->project()->taskTypes()->whereKey($typeId)->firstOrFail();
+        $type = $this->project->taskTypes()->whereKey($typeId)->firstOrFail();
 
         $this->editingTypeId = $type->id;
         $this->editName = $type->name;
@@ -147,12 +150,12 @@ class ProjectTaskTypes extends Component
      */
     public function save(): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manageSettings', $project);
 
         $validated = $this->validate([
             'editName' => ['required', 'string', 'max:255'],
-            'editColor' => ['required', 'string', 'in:'.implode(',', $this->palette())],
+            'editColor' => ['required', 'string', 'in:'.implode(',', $this->palette)],
             'editIcon' => ['nullable', 'string', 'in:'.implode(',', IconCatalog::available())],
             'editBranchPrefix' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9\/-]*$/'],
         ]);
@@ -201,7 +204,7 @@ class ProjectTaskTypes extends Component
      */
     public function deleteType(int $typeId): void
     {
-        $project = $this->project();
+        $project = $this->project;
         $this->authorize('manageSettings', $project);
 
         $project->taskTypes()->whereKey($typeId)->firstOrFail()->delete();
@@ -235,9 +238,9 @@ class ProjectTaskTypes extends Component
      */
     protected function swapWithNeighbour(int $typeId, int $offset): void
     {
-        $this->authorize('manageSettings', $this->project());
+        $this->authorize('manageSettings', $this->project);
 
-        $types = $this->project()->taskTypes()->get()->values();
+        $types = $this->project->taskTypes()->get()->values();
         $index = $types->search(static fn (TaskType $type): bool => $type->id === $typeId);
 
         if ($index === false) {

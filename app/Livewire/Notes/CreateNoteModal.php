@@ -21,6 +21,8 @@ use Livewire\Component;
  * dispatching {@see open()}'s `open-create-note` event (optionally with a note
  * id to edit). Mirrors {@see CreateTaskModal}; the body uses
  * the shared rich-text editor with inline-image support via HandlesAttachments.
+ *
+ * @property-read Collection<int, Project> $projects
  */
 class CreateNoteModal extends Component
 {
@@ -167,7 +169,7 @@ class CreateNoteModal extends Component
             return null;
         }
 
-        $project = $this->projects()->firstWhere('id', $projectId);
+        $project = $this->projects->firstWhere('id', $projectId);
 
         if ($project === null) {
             $this->addError('projectId', __('The selected project is not valid.'));

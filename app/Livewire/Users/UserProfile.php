@@ -23,6 +23,8 @@ use Livewire\Component;
  * themselves, members who share a project, and access-all-projects holders may
  * open it. Built to grow (an "about" text, statistics, contact options) without
  * widening who can see it.
+ *
+ * @property-read EloquentCollection<int, Activity> $activities
  */
 #[Title('Profile')]
 class UserProfile extends Component
@@ -95,7 +97,7 @@ class UserProfile extends Component
     #[Computed]
     public function descriptions(): array
     {
-        return $this->activities()
+        return $this->activities
             ->mapWithKeys(static fn (Activity $activity): array => [$activity->id => ActivityDescriber::describe($activity)])
             ->all();
     }
