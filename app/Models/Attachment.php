@@ -72,11 +72,7 @@ class Attachment extends Model
      */
     public function ownerProject(): ?Project
     {
-        return match (true) {
-            $this->attachable instanceof Project => $this->attachable,
-            $this->attachable instanceof Task => $this->attachable->project,
-            default => null,
-        };
+        return Project::ownerOf($this->attachable);
     }
 
     /**

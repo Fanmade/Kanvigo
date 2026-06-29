@@ -213,6 +213,20 @@ class Project extends Model implements Mentionable, Subscribable
     }
 
     /**
+     * The project that owns the given item — the project itself, or the project a
+     * task belongs to. Null for anything else (or null input). Used to resolve the
+     * owning project of a comment's commentable or an attachment's attachable.
+     */
+    public static function ownerOf(?Model $model): ?Project
+    {
+        return match (true) {
+            $model instanceof Project => $model,
+            $model instanceof Task => $model->project,
+            default => null,
+        };
+    }
+
+    /**
      * The names of every delegated-permissions role the given user holds on this
      * project (a user may hold several — e.g. Designer + Reviewer). Empty when
      * they hold none. Ordered highest-first by {@see self::ROLE_RANK}.

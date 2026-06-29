@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Attachment;
 use App\Models\Project;
-use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,7 +23,7 @@ class AttachmentPolicy
      */
     public function create(User $user, Model $attachable): bool
     {
-        $project = $this->projectFor($attachable);
+        $project = Project::ownerOf($attachable);
 
         return $project !== null
             ? $user->hasScopedPermission('manage-attachments', $project)
@@ -42,17 +41,5 @@ class AttachmentPolicy
         return $project !== null
             ? $user->hasScopedPermission('delete-attachment', $project)
             : $user->can('update', $attachment->attachable);
-    }
-
-    /**
-     * The project an attachable belongs to, or null for a projectless note.
-     */
-    private function projectFor(Model $attachable): ?Project
-    {
-        return match (true) {
-            $attachable instanceof Project => $attachable,
-            $attachable instanceof Task => $attachable->project,
-            default => null,
-        };
     }
 }

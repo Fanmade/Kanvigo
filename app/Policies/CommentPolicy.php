@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Comment;
 use App\Models\Project;
-use App\Models\Task;
 use App\Models\User;
 
 class CommentPolicy
@@ -41,22 +40,8 @@ class CommentPolicy
             return true;
         }
 
-        $project = $this->projectFor($comment);
+        $project = Project::ownerOf($comment->commentable);
 
         return $project !== null && $user->hasScopedPermission('moderate-comments', $project);
-    }
-
-    /**
-     * The project a comment ultimately belongs to (via its task or project).
-     */
-    private function projectFor(Comment $comment): ?Project
-    {
-        $commentable = $comment->commentable;
-
-        return match (true) {
-            $commentable instanceof Project => $commentable,
-            $commentable instanceof Task => $commentable->project,
-            default => null,
-        };
     }
 }
