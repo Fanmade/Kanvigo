@@ -4,6 +4,7 @@
 @plugin '@tailwindcss/typography';
 
 @source '../views';
+@source '../../app/Models/Tag.php'; /* tag dot bg-/text- color classes (see Tag::dotBackgroundClass) */
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
 @source '../../vendor/livewire/flux/stubs/**/*.blade.php';

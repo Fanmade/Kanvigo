@@ -108,6 +108,65 @@ class Tag extends Model
     }
 
     /**
+     * The full Tailwind background class for a palette color (the tag dot). The
+     * class literals are written out — rather than an interpolated
+     * `bg-{$color}-500` — so Tailwind's JIT keeps them; this file is registered
+     * as a Tailwind `@source` for that reason. Unknown colors (incl. the neutral
+     * default) fall back to a muted dot.
+     */
+    public static function dotBackgroundClass(string $color): string
+    {
+        return match ($color) {
+            'red' => 'bg-red-500',
+            'orange' => 'bg-orange-500',
+            'amber' => 'bg-amber-500',
+            'yellow' => 'bg-yellow-500',
+            'lime' => 'bg-lime-500',
+            'green' => 'bg-green-500',
+            'emerald' => 'bg-emerald-500',
+            'teal' => 'bg-teal-500',
+            'cyan' => 'bg-cyan-500',
+            'sky' => 'bg-sky-500',
+            'blue' => 'bg-blue-500',
+            'indigo' => 'bg-indigo-500',
+            'violet' => 'bg-violet-500',
+            'purple' => 'bg-purple-500',
+            'fuchsia' => 'bg-fuchsia-500',
+            'pink' => 'bg-pink-500',
+            'rose' => 'bg-rose-500',
+            default => 'bg-zinc-400',
+        };
+    }
+
+    /**
+     * The full Tailwind text/foreground class for a palette color (the tag icon).
+     * See {@see dotBackgroundClass()} for why the literals are spelled out.
+     */
+    public static function dotForegroundClass(string $color): string
+    {
+        return match ($color) {
+            'red' => 'text-red-500',
+            'orange' => 'text-orange-500',
+            'amber' => 'text-amber-500',
+            'yellow' => 'text-yellow-500',
+            'lime' => 'text-lime-500',
+            'green' => 'text-green-500',
+            'emerald' => 'text-emerald-500',
+            'teal' => 'text-teal-500',
+            'cyan' => 'text-cyan-500',
+            'sky' => 'text-sky-500',
+            'blue' => 'text-blue-500',
+            'indigo' => 'text-indigo-500',
+            'violet' => 'text-violet-500',
+            'purple' => 'text-purple-500',
+            'fuchsia' => 'text-fuchsia-500',
+            'pink' => 'text-pink-500',
+            'rose' => 'text-rose-500',
+            default => 'text-zinc-400',
+        };
+    }
+
+    /**
      * The single, shared way to resolve a tag within a project. Lookup is
      * case-insensitive — "Bug" and "bug" resolve to the same tag — and the
      * first casing created wins; a brand-new tag keeps the casing it was typed
