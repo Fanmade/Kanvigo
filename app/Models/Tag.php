@@ -21,7 +21,9 @@ use Illuminate\Support\Collection;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['project_id', 'name', 'color', 'icon'])]
+// project_id is set by the owning project relationship / findOrCreateForProject,
+// not from user input, so it stays out of the mass-assignable allow-list.
+#[Fillable(['name', 'color', 'icon'])]
 class Tag extends Model
 {
     /** @use HasFactory<TagFactory> */
@@ -82,7 +84,8 @@ class Tag extends Model
             return $existing;
         }
 
-        $tag = new self(['project_id' => $projectId, 'name' => $name]);
+        $tag = new self(['name' => $name]);
+        $tag->project_id = $projectId;
 
         if ($color !== null) {
             $tag->color = $color;

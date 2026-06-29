@@ -212,7 +212,7 @@ it('stages and creates a new tag with the chosen icon', function () {
 });
 
 it('stages an existing tag directly on enter, skipping the color picker', function () {
-    Tag::firstOrCreate(['project_id' => $this->project->id, 'name' => 'backend'], ['color' => 'sky']);
+    $this->project->tags()->firstOrCreate(['name' => 'backend'], ['color' => 'sky']);
 
     Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)
@@ -237,7 +237,7 @@ it('does not stage the same tag twice', function () {
 });
 
 it('suggests an existing tag matching the query', function () {
-    Tag::firstOrCreate(['project_id' => $this->project->id, 'name' => 'backend']);
+    $this->project->tags()->firstOrCreate(['name' => 'backend']);
 
     $suggestions = Livewire::actingAs($this->member)
         ->test(CreateTaskModal::class)

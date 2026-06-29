@@ -18,6 +18,13 @@ it('backs each permission with its gate name and exposes a label', function () {
     }
 });
 
+it('does not mass-assign user_id on a permission grant', function () {
+    $grant = new UserPermission(['user_id' => 999, 'permission' => Permission::ManageUsers]);
+
+    expect($grant->user_id)->toBeNull()
+        ->and($grant->permission)->toBe(Permission::ManageUsers);
+});
+
 it('denies a permission the user has not been granted', function () {
     $user = User::factory()->create();
 

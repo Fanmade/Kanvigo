@@ -15,7 +15,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['user_id', 'permission'])]
+// user_id is the owning relationship's key, set when a grant is created through
+// $user->permissions() — never mass-assigned, so it stays out of the allow-list.
+#[Fillable(['permission'])]
 class UserPermission extends Model
 {
     /**

@@ -129,6 +129,13 @@ it('keeps an explicitly provided color instead of auto-assigning', function () {
     expect($tag->fresh()->color)->toBe('teal');
 });
 
+it('does not mass-assign project_id', function () {
+    $tag = new Tag(['project_id' => 999, 'name' => 'guarded']);
+
+    expect($tag->project_id)->toBeNull()
+        ->and($tag->name)->toBe('guarded');
+});
+
 it('renders a tag as a badge with a dot in its color', function () {
     $tag = Tag::factory()->color('sky')->create(['name' => 'frontend']);
 
