@@ -8,7 +8,6 @@ use App\Models\Project;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -16,6 +15,9 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+/**
+ * @property-read Collection<int, Project> $inviterProjects
+ */
 #[Title('Invite a user')]
 class InviteUser extends Component
 {
@@ -26,23 +28,32 @@ class InviteUser extends Component
 
     public function mount(): void
     {
-        Gate::authorize('invite-users');
+        $this->authorize('invite-users');
     }
 
     /**
-     * The projects the inviter may grant access to (their own).
+     * The projects the inviter may grant access to: those where they hold the
+     * project-scoped `invite-members` permission. Holding the account-level
+     * `invite-users` grant alone is not enough to invite someone into a project
+     * the inviter only has read/contributor access to.
      *
      * @return Collection<int, Project>
      */
     #[Computed]
     public function inviterProjects(): Collection
     {
-        return Auth::user()->projects()->orderBy('title')->get();
+        $user = Auth::user();
+
+        return $user->projects()
+            ->orderBy('title')
+            ->get()
+            ->filter(static fn (Project $project): bool => $user->hasScopedPermission('invite-members', $project))
+            ->values();
     }
 
     public function sendInvitation(): void
     {
-        Gate::authorize('invite-users');
+        $this->authorize('invite-users');
 
         $validated = $this->validate([
             'email' => ['required', 'email', Rule::unique('users', 'email')],
@@ -50,8 +61,9 @@ class InviteUser extends Component
             'projectIds.*' => ['integer'],
         ]);
 
-        // Only grant projects the inviter actually has access to.
-        $allowed = Auth::user()->projects()->pluck('projects.id');
+        // Only grant projects the inviter may invite members into (scoped
+        // invite-members), not merely every project they belong to.
+        $allowed = $this->inviterProjects->pluck('id');
         $grant = collect($this->projectIds)
             ->map(static fn ($id) => (int) $id)
             ->intersect($allowed)

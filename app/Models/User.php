@@ -122,6 +122,8 @@ class User extends Authenticatable implements PasskeyUser
     /**
      * Deactivate the account, preventing the user from signing in while keeping
      * their data and assignments intact. The change is reversible via reactivate().
+     * Existing personal access tokens are revoked, so REST/MCP access stops at
+     * once; the user must be issued new tokens after a reactivation.
      */
     public function deactivate(): void
     {
@@ -130,6 +132,7 @@ class User extends Authenticatable implements PasskeyUser
         }
 
         $this->forceFill(['deactivated_at' => now()])->save();
+        $this->tokens()->delete();
     }
 
     /**

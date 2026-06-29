@@ -21,6 +21,12 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureUserIsActive::class,
         ]);
 
+        // Token-authenticated surfaces must also reject deactivated accounts —
+        // a personal access token keeps working after the web session is killed.
+        $middleware->api(append: [
+            EnsureUserIsActive::class,
+        ]);
+
         $middleware->alias([
             'token.write' => EnsureTokenCanWrite::class,
         ]);

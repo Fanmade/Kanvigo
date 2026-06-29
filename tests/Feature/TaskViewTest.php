@@ -87,6 +87,28 @@ it('keeps a single assignment when assign-to-me is clicked twice', function () {
     expect($this->task->fresh()->assignees)->toHaveCount(1);
 });
 
+it('refuses to assign a user who is not a project member', function () {
+    $outsider = User::factory()->create();
+
+    ($this->mountTask)()
+        ->set('assigneeIds', [$outsider->id])
+        ->assertSet('assigneeIds', []);
+
+    expect($this->task->fresh()->assignees)->toHaveCount(0)
+        ->and($this->task->isSubscribedBy($outsider))->toBeFalse();
+});
+
+it('clamps a tampered assignee list to project members only', function () {
+    $outsider = User::factory()->create();
+
+    ($this->mountTask)()
+        ->set('assigneeIds', [$this->member->id, $outsider->id])
+        ->assertSet('assigneeIds', [$this->member->id]);
+
+    expect($this->task->fresh()->assignees->pluck('id')->all())->toBe([$this->member->id])
+        ->and($this->task->isSubscribedBy($outsider))->toBeFalse();
+});
+
 it('enters edit mode populating the form, then saves and exits', function () {
     $this->task->update(['title' => 'Old title']);
 

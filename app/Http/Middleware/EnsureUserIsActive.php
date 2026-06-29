@@ -10,14 +10,20 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureUserIsActive
 {
     /**
-     * Sign out any authenticated user whose account has been deactivated, so a
+     * Block any authenticated user whose account has been deactivated, so a
      * deactivation takes effect immediately regardless of how they signed in.
+     * Token-authenticated API/MCP requests get a 403 (rendered as JSON); web
+     * sessions are signed out and redirected to login.
      */
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
         if ($user !== null && $user->isDeactivated()) {
+            if ($request->is('api/*', 'mcp')) {
+                abort(403, __('Your account has been deactivated.'));
+            }
+
             Auth::guard('web')->logout();
 
             $request->session()->invalidate();

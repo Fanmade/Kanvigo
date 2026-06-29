@@ -4,6 +4,7 @@ use App\Livewire\Admin\UserManagement;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
 
 use function Pest\Laravel\actingAs;
@@ -51,6 +52,24 @@ it('blocks a deactivated user from accessing the application', function () {
         ->assertRedirect(route('login'));
 
     expect(auth()->check())->toBeFalse();
+});
+
+it('blocks a deactivated user from the REST API even with a token', function () {
+    $member = User::factory()->deactivated()->create();
+    Sanctum::actingAs($member, ['read']);
+
+    $this->getJson('/api/v1/user')->assertForbidden();
+});
+
+it('revokes personal access tokens when an account is deactivated', function () {
+    $member = User::factory()->create();
+    $member->createToken('cli', ['read', 'write']);
+
+    expect($member->tokens()->count())->toBe(1);
+
+    $member->deactivate();
+
+    expect($member->tokens()->count())->toBe(0);
 });
 
 it('removes a user by soft-deleting and detaching their assignments', function () {

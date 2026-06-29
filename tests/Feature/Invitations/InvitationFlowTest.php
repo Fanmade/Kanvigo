@@ -25,7 +25,7 @@ it('lets an authorised inviter send an invitation and mails a signed link', func
 
     $inviter = User::factory()->canInviteUsers()->create();
     $project = Project::factory()->create();
-    joinProject($project, $inviter);
+    joinProject($project, $inviter, 'owner');
 
     Livewire::actingAs($inviter)
         ->test(InviteUser::class)
@@ -39,6 +39,46 @@ it('lets an authorised inviter send an invitation and mails a signed link', func
         ->and($invitation->project_ids)->toBe([$project->id]);
 
     Mail::assertSent(InvitationMail::class);
+});
+
+it('cannot grant projects where the inviter lacks the invite-members permission', function () {
+    Mail::fake();
+
+    // Holds the account-level invite-users grant, but is only a member (not an
+    // owner) of the project, so lacks the scoped invite-members permission.
+    $inviter = User::factory()->canInviteUsers()->create();
+    $project = Project::factory()->create();
+    joinProject($project, $inviter, 'member');
+
+    Livewire::actingAs($inviter)
+        ->test(InviteUser::class)
+        ->assertDontSee($project->title)
+        ->set('email', 'new@example.com')
+        ->set('projectIds', [$project->id])
+        ->call('sendInvitation');
+
+    expect(Invitation::first()->project_ids)->toBe([]);
+});
+
+it('only offers and grants projects where the inviter may invite members', function () {
+    Mail::fake();
+
+    $inviter = User::factory()->canInviteUsers()->create();
+    $owned = Project::factory()->create();
+    $memberOnly = Project::factory()->create();
+    joinProject($owned, $inviter, 'owner');
+    joinProject($memberOnly, $inviter, 'member');
+
+    $component = Livewire::actingAs($inviter)->test(InviteUser::class);
+
+    expect($component->instance()->inviterProjects->pluck('id')->all())->toBe([$owned->id]);
+
+    $component
+        ->set('email', 'new@example.com')
+        ->set('projectIds', [$owned->id, $memberOnly->id])
+        ->call('sendInvitation');
+
+    expect(Invitation::first()->project_ids)->toBe([$owned->id]);
 });
 
 it('cannot grant access to projects the inviter does not belong to', function () {

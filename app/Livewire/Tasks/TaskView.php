@@ -573,6 +573,12 @@ class TaskView extends Component
         $task = $this->task;
         $this->authorize('update', $task);
 
+        // Only project members may be assigned: clamp the user-writable array to
+        // the project's members so a tampered assigneeIds can't attach (and
+        // auto-subscribe) arbitrary users. Mirrors CreateTaskModal::applyAssignees().
+        $memberIds = $task->project->members()->pluck('users.id')->all();
+        $this->assigneeIds = array_values(array_intersect($this->assigneeIds, $memberIds));
+
         $changes = $task->assignees()->sync($this->assigneeIds);
 
         // Assigning a user automatically subscribes them to updates.
