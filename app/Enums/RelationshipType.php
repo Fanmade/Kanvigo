@@ -3,6 +3,7 @@
 namespace App\Enums;
 
 use App\Models\Dependency;
+use InvalidArgumentException;
 
 /**
  * The kind of relationship a {@see Dependency} row records between
@@ -120,6 +121,18 @@ enum RelationshipType: string
             'caused_by' => [self::Causes, false],
             default => null,
         };
+    }
+
+    /**
+     * Resolve a keyword already known to be valid (e.g., validated against
+     * {@see self::keywords()}), throwing if it is not.
+     *
+     * @return array{0: self, 1: bool}
+     */
+    public static function requireKeyword(string $keyword): array
+    {
+        return self::fromKeyword($keyword)
+            ?? throw new InvalidArgumentException("Unknown relationship keyword [{$keyword}].");
     }
 
     /**

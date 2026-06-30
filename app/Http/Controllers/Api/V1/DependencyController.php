@@ -33,7 +33,7 @@ class DependencyController extends Controller
 
         [$item, $related] = $this->resolvePair($reference, $validated['related']);
 
-        [$type, $asSubject] = RelationshipType::fromKeyword($validated['direction']);
+        [$type, $asSubject] = RelationshipType::requireKeyword($validated['direction']);
 
         try {
             $item->addRelationship($related, $type, $asSubject);

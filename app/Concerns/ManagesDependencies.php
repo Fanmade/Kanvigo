@@ -192,7 +192,7 @@ trait ManagesDependencies
             return;
         }
 
-        [$type, $asSubject] = RelationshipType::fromKeyword($this->dependencyDirection);
+        [$type, $asSubject] = RelationshipType::requireKeyword($this->dependencyDirection);
 
         try {
             $item->addRelationship($related, $type, $asSubject);

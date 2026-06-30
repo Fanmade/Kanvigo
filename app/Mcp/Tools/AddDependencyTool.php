@@ -50,7 +50,7 @@ class AddDependencyTool extends Tool
 
         [$item, $related] = $resolution->pair();
 
-        [$type, $asSubject] = RelationshipType::fromKeyword($validated['direction']);
+        [$type, $asSubject] = RelationshipType::requireKeyword($validated['direction']);
 
         try {
             $item->addRelationship($related, $type, $asSubject);
