@@ -46,7 +46,10 @@ it('creates a new tag with a chosen color through the modal', function () {
         ->assertValue('@new-tag-name', 'Design')
         ->click('@tag-color-violet')
         ->click('@create-tag')
-        ->waitForText('Design')
+        // Wait for the modal to close, which only happens after createTag has
+        // saved and attached the tag server-side — unlike the visible name text,
+        // which the modal's live Preview badge already shows before submitting.
+        ->assertMissing('@new-tag-name')
         ->assertNoJavascriptErrors();
 
     $tag = Tag::where('name', 'Design')->sole();
