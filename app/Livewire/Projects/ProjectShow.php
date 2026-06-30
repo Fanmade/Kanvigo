@@ -476,14 +476,33 @@ class ProjectShow extends Component
     }
 
     /**
-     * Whether the viewer can edit the project — gates the description editor,
-     * the attachment dropzone and the task-creation control. Read in place of
-     * re-running the `update` policy check at each of those sites.
+     * Whether the viewer may create tasks in this project — gates the "New task"
+     * control. A read-only viewer (view-project only) does not qualify.
      */
     #[Computed]
-    public function canUpdate(): bool
+    public function canCreateTask(): bool
     {
-        return Auth::user()?->can('update', $this->project) ?? false;
+        return Auth::user()?->can('create-task', $this->project) ?? false;
+    }
+
+    /**
+     * Whether the viewer may add attachments to the project — gates the
+     * description dropzone, mirroring the manage-attachments server-side check.
+     */
+    #[Computed]
+    public function canManageAttachments(): bool
+    {
+        return Auth::user()?->can('manage-attachments', $this->project) ?? false;
+    }
+
+    /**
+     * Whether the viewer may archive tasks — gates the archive affordances on the
+     * task rows.
+     */
+    #[Computed]
+    public function canArchiveTask(): bool
+    {
+        return Auth::user()?->can('archive-task', $this->project) ?? false;
     }
 
     /**

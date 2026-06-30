@@ -17,7 +17,7 @@ it('resolves ProjectPolicy through package roles without a legacy pivot row', fu
     expect($project->members()->whereKey($admin->id)->exists())->toBeFalse();
 
     expect($admin->can('view', $project))->toBeTrue()
-        ->and($admin->can('update', $project))->toBeTrue()
+        ->and($admin->can('create-task', $project))->toBeTrue()
         ->and($admin->can('manageSettings', $project))->toBeTrue()
         ->and($admin->can('delete', $project))->toBeTrue()
         ->and($admin->can('manageMembers', $project))->toBeFalse();

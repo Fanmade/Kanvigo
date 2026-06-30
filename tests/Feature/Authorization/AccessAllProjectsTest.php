@@ -30,7 +30,7 @@ it('grants visibility only — never the right to contribute or administer', fun
     $user->syncPermissions([Permission::AccessAllProjects]);
 
     expect($user->can('view', $project))->toBeTrue()
-        ->and($user->can('update', $project))->toBeFalse()
+        ->and($user->can('create-task', $project))->toBeFalse()
         ->and($user->can('manageSettings', $project))->toBeFalse()
         ->and($user->can('delete', $project))->toBeFalse();
 });

@@ -37,6 +37,26 @@ it('shows the description and open root tasks', function () {
         ->assertSee('Open task');
 });
 
+it('hides the contribute affordances from a read-only viewer but shows them to a contributor', function () {
+    $viewer = User::factory()->create();
+    $member = User::factory()->create();
+    $project = Project::factory()->withMember($viewer, 'viewer')->withMember($member)->create();
+
+    $viewerView = Livewire::actingAs($viewer)
+        ->test(ProjectShow::class, ['short_name' => $project->short_name])
+        ->assertOk()
+        ->assertDontSeeHtml('data-test="new-task"');
+
+    // The viewer holds view-project only, so every contribute gate is closed.
+    expect($viewerView->instance()->canCreateTask())->toBeFalse()
+        ->and($viewerView->instance()->canManageAttachments())->toBeFalse()
+        ->and($viewerView->instance()->canArchiveTask())->toBeFalse();
+
+    Livewire::actingAs($member)
+        ->test(ProjectShow::class, ['short_name' => $project->short_name])
+        ->assertSeeHtml('data-test="new-task"');
+});
+
 it('separates open root tasks from completed ones', function () {
     $completed = Task::factory()->for($this->project)->status(Status::Done)->create();
     $open = Task::factory()->for($this->project)->status(Status::ToDo)->create();

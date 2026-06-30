@@ -72,7 +72,7 @@
             </div>
         </form>
     @else
-        <x-attachments.dropzone :enabled="$this->canUpdate">
+        <x-attachments.dropzone :enabled="$this->canManageAttachments">
             <flux:card>
                 @if ($this->project->description)
                     <x-expandable-description :content="$this->project->description" :short-name="$this->project->short_name"/>
@@ -103,7 +103,7 @@
                             data-test="open-task-count">{{ $this->openTasks->count() }}</flux:badge>
             </button>
 
-            @if ($this->canUpdate)
+            @if ($this->canCreateTask)
                 <flux:button size="sm" icon="plus"
                              wire:click="$dispatch('open-create-task', { projectId: {{ $this->project->id }} })"
                              data-test="new-task">{{ __('New task') }}</flux:button>
@@ -188,7 +188,7 @@
                 <div class="flex flex-col gap-3">
                     @forelse ($this->openTasks as $task)
                         <x-root-task-card :task="$task" :short-name="$this->project->short_name"
-                                          :can-archive="$this->canUpdate" :show-archived="$showArchived"/>
+                                          :can-archive="$this->canArchiveTask" :show-archived="$showArchived"/>
                     @empty
                         <flux:card>
                             <flux:text
@@ -205,7 +205,7 @@
 
                         @foreach ($this->completedTasks as $task)
                             <x-root-task-card :task="$task" :short-name="$this->project->short_name"
-                                              :can-archive="$this->canUpdate" :show-archived="$showArchived"/>
+                                              :can-archive="$this->canArchiveTask" :show-archived="$showArchived"/>
                         @endforeach
                     </div>
                 @endif
@@ -218,7 +218,7 @@
 
                         @foreach ($this->archivedTasks as $task)
                             <x-root-task-card :task="$task" :short-name="$this->project->short_name"
-                                              :can-archive="$this->canUpdate" :show-archived="$showArchived"/>
+                                              :can-archive="$this->canArchiveTask" :show-archived="$showArchived"/>
                         @endforeach
                     </div>
                 @endif

@@ -45,16 +45,6 @@ class ProjectPolicy
     }
 
     /**
-     * Determine whether the user can contribute to the project — creating and
-     * working on its tasks, attachments and the like. Any member may —
-     * contributing requires a scoped role, not mere cross-project visibility.
-     */
-    public function update(User $user, Project $project): bool
-    {
-        return $user->hasScopedPermission('view-project', $project);
-    }
-
-    /**
      * Determine whether the user can edit the project's own settings — its
      * title, short name and description. Restricted to admins and the owner.
      */
