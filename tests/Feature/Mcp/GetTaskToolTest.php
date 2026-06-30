@@ -107,8 +107,9 @@ it('exposes assignee names but not their email addresses', function () {
 
     KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
-        ->assertStructuredContent(function ($json) {
-            $json->where('assignees.0.name', 'Dana')
+        ->assertStructuredContent(function ($json) use ($assignee) {
+            $json->where('assignees.0.id', $assignee->public_id)
+                ->where('assignees.0.name', 'Dana')
                 ->missing('assignees.0.email')
                 ->etc();
         });

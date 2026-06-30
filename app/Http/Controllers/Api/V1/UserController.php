@@ -4,15 +4,36 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use App\Models\User;
+use App\Policies\UserPolicy;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
     /**
-     * The user the access token belongs to.
+     * The user the access token belongs to. The caller always sees their own
+     * contact details.
      */
-    public function __invoke(Request $request): UserResource
+    public function current(Request $request): UserResource
     {
         return new UserResource($request->user());
+    }
+
+    /**
+     * Fetch a single user by their public id. Resolving the user requires sharing
+     * the collaboration boundary ({@see UserPolicy::view()}) — a
+     * stranger 404s rather than being disclosed — and the email field is gated
+     * further by {@see UserPolicy::viewContactInfo()}.
+     */
+    public function show(Request $request, User $user): UserResource
+    {
+        $viewer = $request->user();
+
+        // Resolvable by anyone within the collaboration boundary, plus user
+        // administrators (who see every account); the email field is gated again
+        // inside the resource. A stranger 404s rather than being disclosed.
+        abort_if($viewer->cannot('view', $user) && $viewer->cannot('viewContactInfo', $user), 404);
+
+        return new UserResource($user);
     }
 }

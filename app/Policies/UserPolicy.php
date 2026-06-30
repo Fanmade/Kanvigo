@@ -36,6 +36,19 @@ class UserPolicy
     }
 
     /**
+     * Determine whether the viewer may see another account's contact details
+     * (email and other PII) exposed by the dedicated user-info endpoints. Stricter
+     * than {@see view()}: a cross-project access-all grant lets a viewer resolve a
+     * user's name but not their email — that stays within the actual collaboration
+     * boundary (a shared project), plus user administrators.
+     */
+    public function viewContactInfo(User $user, User $target): bool
+    {
+        return $user->hasPermission(Permission::ManageUsers)
+            || $user->sharesProjectWith($target);
+    }
+
+    /**
      * Determine whether the user can fetch another account's avatar image. Same
      * boundary as viewing a profile, plus user administrators — who legitimately
      * see every account's avatar in the management panel even without a shared

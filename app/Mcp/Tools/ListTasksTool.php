@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Enums\Status;
+use App\Mcp\Concerns\PagesResults;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -19,6 +20,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class ListTasksTool extends Tool
 {
+    use PagesResults;
+
     /**
      * Handle the tool request.
      */
@@ -30,6 +33,7 @@ class ListTasksTool extends Tool
             'reference' => ['required', 'string'],
             'parent' => ['nullable', 'string'],
             'status' => ['nullable', new Enum(Status::class)],
+            ...$this->pagingRules(),
         ], [
             'reference.required' => 'You must provide the project short_name (e.g. "PROJ").',
             'status' => 'The status filter must be one of "'.$statuses.'".',
@@ -51,26 +55,32 @@ class ListTasksTool extends Tool
             }
         }
 
-        $project->loadMissing([
-            'tasks.tags',
-            'tasks.project',
-            'tasks.taskType',
-            // Eager-load each task's blockers so isBlocked() stays N+1-free.
-            'tasks.dependencyLinks.blocker',
-        ]);
+        $offset = $this->decodePageCursor($validated['cursor'] ?? null);
 
+        if ($offset === null) {
+            return Response::error('The "cursor" is not a valid pagination cursor. Use the page.next_cursor from a previous response.');
+        }
+
+        $limit = $validated['limit'] ?? null;
         $shortName = $project->short_name;
-        $numbersById = $project->tasks->pluck('task_number', 'id');
 
-        $tasks = $project->tasks
-            ->when(
-                $parent !== null,
-                static fn ($tasks) => $tasks->where('parent_id', $parent->id)
-            )
-            ->when(
-                isset($validated['status']),
-                static fn ($tasks) => $tasks->where('status', Status::from($validated['status']))
-            )
+        // Resolve every task's number once (two integer columns) so a paged task's
+        // parent reference is correct even when the parent falls outside the page.
+        $numbersById = $project->tasks()->pluck('task_number', 'id');
+
+        // Fetch one extra row beyond the limit so the slice can tell whether more
+        // remain. With no limit the whole set is returned (the uncapped default).
+        $fetched = $project->tasks()
+            ->with(['tags', 'project', 'taskType', 'dependencyLinks.blocker'])
+            ->when($parent !== null, static fn ($builder) => $builder->where('parent_id', $parent->id))
+            ->when(isset($validated['status']), static fn ($builder) => $builder->where('status', Status::from($validated['status'])))
+            ->orderBy('task_number')
+            ->when($limit !== null, static fn ($builder) => $builder->offset($offset)->limit($limit + 1))
+            ->get();
+
+        [$rows, $hasMore] = $this->sliceFetchedPage($fetched, $limit);
+
+        $tasks = $rows
             ->map(static fn (Task $task): array => [
                 'reference' => $task->reference,
                 'parent' => $task->parent_id !== null && $numbersById->has($task->parent_id)
@@ -89,6 +99,7 @@ class ListTasksTool extends Tool
 
         return Response::structured([
             'tasks' => $tasks->all(),
+            'page' => $this->pageMeta($offset, $limit, $tasks->count(), $hasMore),
         ]);
     }
 
@@ -110,6 +121,8 @@ class ListTasksTool extends Tool
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
                 ->description('Optional status filter. One of the task statuses.'),
+
+            ...$this->pagingSchema($schema, 'tasks'),
         ];
     }
 
@@ -133,6 +146,7 @@ class ListTasksTool extends Tool
                 'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
                 'is_blocked' => $schema->boolean()->description('Whether the task has a blocker that is not yet complete. Use the get-task tool for the specific blocking/blocked references.')->required(),
             ]))->description('The tasks in the project.')->required(),
+            'page' => $this->pageSchema($schema),
         ];
     }
 }

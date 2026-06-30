@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\RequiresWriteAccess;
+use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
@@ -31,6 +32,7 @@ class AddCommentTool extends Tool
         $validated = $request->validate([
             'reference' => ['required', 'string'],
             'body' => ['required', 'string', 'max:5000'],
+            'reply_to' => ['nullable', 'integer'],
         ], [
             'reference.required' => 'You must provide the reference of the project ("PROJ") or task ("PROJ-42") to comment on.',
             'body.required' => 'You must provide the comment body.',
@@ -44,9 +46,24 @@ class AddCommentTool extends Tool
             return Response::error('No project or task with reference "'.$validated['reference'].'" exists, or you do not have access to it.');
         }
 
+        $parentId = null;
+
+        if (! empty($validated['reply_to'])) {
+            $parent = $commentable->comments()->whereKey($validated['reply_to'])->first();
+
+            if ($parent === null) {
+                return Response::error('No comment with id '.$validated['reply_to'].' exists on "'.$validated['reference'].'" to reply to.');
+            }
+
+            // Keep threads one level deep: a reply to a reply attaches to the root.
+            $parentId = $parent->parent_id ?? $parent->id;
+        }
+
+        /** @var Comment $comment */
         $comment = $commentable->comments()->create([
             'user_id' => $request->user()->getAuthIdentifier(),
             'body' => $validated['body'],
+            'parent_id' => $parentId,
         ]);
 
         $commentable->recordActivity('commented');
@@ -54,6 +71,7 @@ class AddCommentTool extends Tool
         return Response::structured([
             'id' => $comment->id,
             'on' => $commentable instanceof Project ? $commentable->short_name : $commentable->reference,
+            'parent_id' => $comment->parent_id,
             'body' => $comment->body,
         ]);
     }
@@ -73,6 +91,9 @@ class AddCommentTool extends Tool
             'body' => $schema->string()
                 ->description('The comment body, as HTML (sanitized to a small allow-list; unsupported tags are dropped).')
                 ->required(),
+
+            'reply_to' => $schema->integer()
+                ->description('Optional id of the comment to reply to (from the comments array on get-task/get-project). Threads stay one level deep: replying to a reply attaches to the root comment instead.'),
         ];
     }
 
@@ -86,6 +107,7 @@ class AddCommentTool extends Tool
         return [
             'id' => $schema->integer()->description('The created comment id.')->required(),
             'on' => $schema->string()->description('The reference of the item the comment was added to.')->required(),
+            'parent_id' => $schema->integer()->description('The id of the comment this one replies to, or null for a top-level comment.'),
             'body' => $schema->string()->description('The comment body as HTML.')->required(),
         ];
     }

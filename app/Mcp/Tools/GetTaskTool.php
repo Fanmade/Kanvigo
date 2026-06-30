@@ -69,6 +69,7 @@ class GetTaskTool extends Tool
             'progress' => ['done' => $progress->done, 'total' => $progress->total],
             ...$this->dependencyPayload($task),
             'assignees' => $task->assignees->map(static fn (User $user): array => [
+                'id' => $user->public_id,
                 'name' => $user->name,
             ])->all(),
             'attachments' => $task->attachments->map(static fn (Attachment $attachment): array => [
@@ -127,6 +128,7 @@ class GetTaskTool extends Tool
             ])->description('Completion rolled up from this task\'s subtree.')->required(),
             ...$this->dependencySchema($schema),
             'assignees' => $schema->array()->items($schema->object([
+                'id' => $schema->string()->description('The assignee\'s stable user id; pass it to the get-user tool or the set-assignees tool.')->required(),
                 'name' => $schema->string()->description('The assignee name.')->required(),
             ]))->description('The users assigned to the task.')->required(),
             'attachments' => $schema->array()->items($schema->object([

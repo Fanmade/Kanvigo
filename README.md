@@ -204,20 +204,27 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   token, that lets AI agents work with the projects and tasks the token's owner can
   access. Read tools (list/inspect) work with any token and surface each item's
   dependencies (what blocks it, what it blocks, and whether it is currently
-  blocked); write tools (create/update tasks, cancel or reopen tasks, create
-  projects, add comments, link/unlink dependencies) require a token with write
-  access. Descriptions and comment bodies are exchanged as HTML (sanitized to an
-  allow-list on write). Inspecting a project or task also returns its comment thread
-  and any cancellation reason, and agents can read attachments by their id —
-  inline description images, audio, and text-based files (logs, JSON, XML, CSV, …)
-  returned inline as text, with a byte offset to page through large files. Personal notes have their own tools (create,
+  blocked); write tools (create/update tasks, cancel or reopen tasks, set a task's
+  assignees, create projects, add comments and threaded replies, link/unlink
+  dependencies) require a token with write access. Descriptions and comment bodies
+  are exchanged as HTML (sanitized to an allow-list on write). Inspecting a project
+  or task also returns its comment thread and any cancellation reason, and agents
+  can read attachments by their id — inline description images, audio, and
+  text-based files (logs, JSON, XML, CSV, …) returned inline as text, with a byte
+  offset to page through large files. Users appear by a stable id that a get-user
+  tool resolves to a name (and, for shared-project members or admins, an email).
+  Project reads (list-tasks, get-project, list-notes) return the full set by default
+  but accept an optional limit with an explicit cursor to page very large projects
+  without ever truncating silently. Personal notes have their own tools (create,
   list, get, update and convert-to-task), referenced by a numeric note id.
 - **REST API** — a versioned, documented HTTP API under `/api/v1` for projects,
-  tasks and comments, authenticated with the same personal access tokens (Bearer;
-  read tokens for the GET endpoints, write tokens to create and update). Responses
-  are consistent JSON resources, lists are paginated, and access is scoped to the
-  caller's projects exactly like the rest of the app. Interactive OpenAPI docs live
-  at `/docs/api` (local only). See [docs/api.md](docs/api.md).
+  tasks, comments, assignees and dependencies, authenticated with the same personal
+  access tokens (Bearer; read tokens for the GET endpoints, write tokens to create
+  and update). A dedicated user endpoint resolves the stable user id carried by
+  assignees and comment authors to a name, with the email shown only to those
+  entitled. Responses are consistent JSON resources, lists are paginated, and access
+  is scoped to the caller's projects exactly like the rest of the app. Interactive
+  OpenAPI docs live at `/docs/api` (local only). See [docs/api.md](docs/api.md).
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 - **Full-width layout** — an Appearance setting to let page content span the whole

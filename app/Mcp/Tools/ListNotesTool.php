@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\PagesResults;
 use App\Mcp\Concerns\PresentsNotes;
 use App\Models\Note;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -18,14 +19,25 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class ListNotesTool extends Tool
 {
+    use PagesResults;
     use PresentsNotes;
 
     public function handle(Request $request): Response|ResponseFactory
     {
+        $validated = $request->validate($this->pagingRules());
+
+        $offset = $this->decodePageCursor($validated['cursor'] ?? null);
+
+        if ($offset === null) {
+            return Response::error('The "cursor" is not a valid pagination cursor. Use the page.next_cursor from a previous response.');
+        }
+
+        $limit = $validated['limit'] ?? null;
+
         $user = $this->authenticatedUser($request);
         $projectIds = $user->projects()->pluck('projects.id');
 
-        $notes = Note::query()
+        $fetched = Note::query()
             ->where('title', '!=', '')
             ->where(static function (Builder $query) use ($user, $projectIds): void {
                 $query->where('user_id', $user->id)
@@ -35,12 +47,18 @@ class ListNotesTool extends Tool
             })
             ->with(['project', 'convertedTask.project'])
             ->latest('updated_at')
-            ->get()
+            ->when($limit !== null, static fn (Builder $query): Builder => $query->offset($offset)->limit($limit + 1))
+            ->get();
+
+        [$rows, $hasMore] = $this->sliceFetchedPage($fetched, $limit);
+
+        $notes = $rows
             ->map(fn (Note $note): array => $this->notePayload($note, $user, withBody: false))
-            ->all();
+            ->values();
 
         return Response::structured([
-            'notes' => $notes,
+            'notes' => $notes->all(),
+            'page' => $this->pageMeta($offset, $limit, $notes->count(), $hasMore),
         ]);
     }
 
@@ -49,7 +67,7 @@ class ListNotesTool extends Tool
      */
     public function schema(JsonSchema $schema): array
     {
-        return [];
+        return $this->pagingSchema($schema, 'notes');
     }
 
     /**
@@ -68,6 +86,7 @@ class ListNotesTool extends Tool
                     'converted_task' => $schema->string()->description('The task reference this note was converted into, or null.'),
                 ])
             )->description('The accessible notes, newest first.')->required(),
+            'page' => $this->pageSchema($schema),
         ];
     }
 }

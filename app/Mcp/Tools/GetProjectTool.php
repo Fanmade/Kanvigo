@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\ExposesComments;
+use App\Mcp\Concerns\PagesResults;
 use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
@@ -20,6 +21,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 class GetProjectTool extends Tool
 {
     use ExposesComments;
+    use PagesResults;
 
     /**
      * Handle the tool request.
@@ -28,6 +30,7 @@ class GetProjectTool extends Tool
     {
         $validated = $request->validate([
             'short_name' => ['required', 'string'],
+            ...$this->pagingRules(),
         ], [
             'short_name.required' => 'You must provide the project short_name (e.g. "PROJ").',
         ]);
@@ -36,22 +39,41 @@ class GetProjectTool extends Tool
 
         $project = Project::query()
             ->where('short_name', $validated['short_name'])
-            ->with(['rootTasks.project', 'attachments', 'comments.user'])
+            ->with(['attachments', 'comments.user'])
             ->first();
 
         if ($project === null || ! $user->can('view', $project)) {
             return Response::error('No project named "'.$validated['short_name'].'" exists, or you do not have access to it.');
         }
 
+        $offset = $this->decodePageCursor($validated['cursor'] ?? null);
+
+        if ($offset === null) {
+            return Response::error('The "cursor" is not a valid pagination cursor. Use the page.next_cursor from a previous response.');
+        }
+
+        $limit = $validated['limit'] ?? null;
+
+        $fetched = $project->rootTasks()
+            ->with('project')
+            ->orderBy('task_number')
+            ->when($limit !== null, static fn ($builder) => $builder->offset($offset)->limit($limit + 1))
+            ->get();
+
+        [$rows, $hasMore] = $this->sliceFetchedPage($fetched, $limit);
+
+        $tasks = $rows->map(static fn (Task $task): array => [
+            'reference' => $task->reference,
+            'title' => $task->title,
+            'status' => $task->status->value,
+        ])->values();
+
         return Response::structured([
             'short_name' => $project->short_name,
             'title' => $project->title,
             'description' => $project->description,
-            'tasks' => $project->rootTasks->map(static fn (Task $task): array => [
-                'reference' => $task->reference,
-                'title' => $task->title,
-                'status' => $task->status->value,
-            ])->all(),
+            'tasks' => $tasks->all(),
+            'tasks_page' => $this->pageMeta($offset, $limit, $tasks->count(), $hasMore),
             'attachments' => $project->attachments->map(static fn (Attachment $attachment): array => [
                 'id' => $attachment->id,
                 'name' => $attachment->name,
@@ -73,6 +95,8 @@ class GetProjectTool extends Tool
             'short_name' => $schema->string()
                 ->description('The project short_name, 2-4 uppercase letters (e.g. "PROJ").')
                 ->required(),
+
+            ...$this->pagingSchema($schema, 'top-level tasks'),
         ];
     }
 
@@ -92,6 +116,7 @@ class GetProjectTool extends Tool
                 'title' => $schema->string()->description('The task title.')->required(),
                 'status' => $schema->string()->description('The task status.')->required(),
             ]))->description('The top-level tasks in the project.')->required(),
+            'tasks_page' => $this->pageSchema($schema),
             'attachments' => $schema->array()->items($schema->object([
                 'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),
                 'name' => $schema->string()->description('The attachment file name.')->required(),

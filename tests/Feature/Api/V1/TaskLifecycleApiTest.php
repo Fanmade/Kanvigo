@@ -77,10 +77,11 @@ it('sets a task assignees to project members', function () {
     Sanctum::actingAs($this->user, ['read', 'write']);
 
     $this->putJson("/api/v1/tasks/{$task->reference}/assignees", [
-        'assignee_ids' => [$member->id, $outsider->id],
+        'assignee_ids' => [$member->public_id, $outsider->public_id],
     ])
         ->assertOk()
         ->assertJsonPath('data.assignees.0.name', 'Dana')
+        ->assertJsonPath('data.assignees.0.id', $member->public_id) // the handle round-trips
         ->assertJsonCount(1, 'data.assignees'); // the non-member is ignored
 
     expect($task->fresh()->assignees()->pluck('users.id')->all())->toBe([$member->id]);

@@ -18,8 +18,9 @@ it('returns the current token user', function () {
 
     $this->getJson('/api/v1/user')
         ->assertOk()
-        ->assertJsonPath('data.id', $user->id)
-        ->assertJsonPath('data.name', 'Dana');
+        ->assertJsonPath('data.id', $user->public_id)
+        ->assertJsonPath('data.name', 'Dana')
+        ->assertJsonPath('data.email', $user->email);
 });
 
 it('lists only the projects the user is a member of', function () {

@@ -29,7 +29,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])
     ->prefix('v1')
     ->name('api.v1.')
     ->group(static function (): void {
-        Route::get('user', UserController::class)->name('user');
+        Route::get('user', [UserController::class, 'current'])->name('user');
+        Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
 
         Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
         Route::get('projects/{short_name}', [ProjectController::class, 'show'])->name('projects.show');

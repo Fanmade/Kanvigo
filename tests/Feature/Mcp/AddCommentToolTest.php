@@ -50,6 +50,56 @@ it('adds a comment to a project', function () {
     ]);
 });
 
+it('posts a reply carrying the parent comment id', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+    $parent = $task->comments()->create(['user_id' => $user->id, 'body' => 'Top level']);
+
+    KanvigoServer::tool(AddCommentTool::class, [
+        'reference' => $task->reference,
+        'body' => 'A reply',
+        'reply_to' => $parent->id,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('parent_id', $parent->id)->etc());
+
+    assertDatabaseHas('comments', ['body' => 'A reply', 'parent_id' => $parent->id]);
+});
+
+it('flattens a reply to a reply onto the root comment', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+    $root = $task->comments()->create(['user_id' => $user->id, 'body' => 'Root']);
+    $reply = $task->comments()->create(['user_id' => $user->id, 'body' => 'Reply', 'parent_id' => $root->id]);
+
+    KanvigoServer::tool(AddCommentTool::class, [
+        'reference' => $task->reference,
+        'body' => 'Reply to the reply',
+        'reply_to' => $reply->id,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('parent_id', $root->id)->etc());
+});
+
+it('errors replying to a comment that is not on the target item', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+    $other = Task::factory()->for($project)->create();
+    $foreign = $other->comments()->create(['user_id' => $user->id, 'body' => 'Elsewhere']);
+
+    KanvigoServer::tool(AddCommentTool::class, [
+        'reference' => $task->reference,
+        'body' => 'Misdirected reply',
+        'reply_to' => $foreign->id,
+    ])->assertHasErrors();
+});
+
 it('denies commenting on an item the user cannot access', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);

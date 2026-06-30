@@ -177,6 +177,23 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * Determine whether this user shares at least one project with another user.
+     * Used to govern who may see a user's contact details: project collaborators
+     * already see each other's names on tasks and comments, so exposing their
+     * email to one another is reasonable, while strangers are kept apart.
+     */
+    public function sharesProjectWith(User $other): bool
+    {
+        if ($this->id === $other->id) {
+            return true;
+        }
+
+        return $this->projects()
+            ->whereIn('projects.id', $other->projects()->select('projects.id'))
+            ->exists();
+    }
+
+    /**
      * The permissions granted to this user.
      *
      * @return HasMany<UserPermission, $this>

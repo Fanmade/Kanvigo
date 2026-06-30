@@ -262,9 +262,10 @@ class TaskController extends Controller
     }
 
     /**
-     * Replace a task's assignees with the given project members. Mirrors the web/
-     * MCP behaviour: assigning a user auto-subscribes them, and the change is
-     * logged. Ids that are not project members are ignored.
+     * Replace a task's assignees with the given project members, referenced by
+     * their stable public id (the "id" the task resource reports per assignee).
+     * Mirrors the web/MCP behaviour: assigning a user auto-subscribes them, and the
+     * change is logged. Ids that are not project members are ignored.
      */
     public function setAssignees(Request $request, string $reference): TaskDetailResource
     {
@@ -272,11 +273,13 @@ class TaskController extends Controller
 
         $validated = $request->validate([
             'assignee_ids' => ['present', 'array'],
-            'assignee_ids.*' => ['integer'],
+            'assignee_ids.*' => ['string'],
         ]);
 
-        $memberIds = $task->project->members()->pluck('users.id')->all();
-        $assigneeIds = array_values(array_intersect($validated['assignee_ids'], $memberIds));
+        $assigneeIds = $task->project->members()
+            ->whereIn('users.public_id', $validated['assignee_ids'])
+            ->pluck('users.id')
+            ->all();
 
         $changes = $task->assignees()->sync($assigneeIds);
 

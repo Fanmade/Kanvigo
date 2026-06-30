@@ -30,7 +30,7 @@ class TaskDetailResource extends TaskResource
             'cancel_message' => $this->cancel_message,
             'progress' => ['done' => $progress->done, 'total' => $progress->total],
             'assignees' => $this->assignees->map(static fn (User $user): array => [
-                'id' => $user->id,
+                'id' => $user->public_id,
                 'name' => $user->name,
             ])->values()->all(),
             ...$this->relationshipReferences(),

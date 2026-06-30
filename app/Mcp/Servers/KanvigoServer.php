@@ -12,10 +12,12 @@ use App\Mcp\Tools\GetAttachmentTool;
 use App\Mcp\Tools\GetNoteTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetTaskTool;
+use App\Mcp\Tools\GetUserTool;
 use App\Mcp\Tools\ListNotesTool;
 use App\Mcp\Tools\ListProjectsTool;
 use App\Mcp\Tools\ListTasksTool;
 use App\Mcp\Tools\RemoveDependencyTool;
+use App\Mcp\Tools\SetAssigneesTool;
 use App\Mcp\Tools\UpdateNoteTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use Laravel\Mcp\Server;
@@ -83,6 +85,21 @@ use Laravel\Mcp\Server\Tool;
     project you choose, keeping the note and linking it to the task it produced; the note then
     reports that task under "converted_task".
 
+    Users are referenced by a stable "id" wherever they appear (task assignees, comment authors).
+    Pass that id to the get-user tool to resolve the person's name and — when you share a project
+    with them or hold user-administration access — their email. You can only resolve users you share
+    a project with. Use set-assignees to set a task's assignees by those ids (an absolute set — pass
+    every id that should be assigned, or an empty list to clear); only project members can be assigned.
+
+    The add-comment tool can post a reply by passing "reply_to" with the id of the comment to answer;
+    replies stay one level deep, so replying to a reply attaches to the root comment.
+
+    By default list-tasks, get-project and list-notes return every item, so you get the full project
+    context in one call. For very large projects you can page instead: pass a "limit" to cap how many
+    tasks (or notes) come back; the response then carries a "page" object (for get-project, "tasks_page")
+    with "has_more" and a "next_cursor" you pass back as "cursor" to fetch the next page. Without a limit
+    "has_more" is always false — nothing is ever truncated silently.
+
     Read tools (list/get) are available to any token. Write tools (create/update/comment, link or
     unlink dependencies, and the note create/update/convert tools) require a token with write
     access and return an error for read-only tokens. Creating a project also requires the
@@ -100,11 +117,13 @@ class KanvigoServer extends Server
         GetProjectTool::class,
         ListTasksTool::class,
         GetTaskTool::class,
+        GetUserTool::class,
         GetAttachmentTool::class,
         CreateProjectTool::class,
         CreateTaskTool::class,
         UpdateTaskTool::class,
         AddCommentTool::class,
+        SetAssigneesTool::class,
         AddDependencyTool::class,
         RemoveDependencyTool::class,
         ListNotesTool::class,

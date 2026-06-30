@@ -38,6 +38,7 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | Method   | Path                                                  | Ability | Description |
 | -------- | ----------------------------------------------------- | ------- | ----------- |
 | `GET`    | `/user`                                               | read    | The authenticated token's user. |
+| `GET`    | `/users/{id}`                                          | read    | A single user by their stable id. Name always; email only to shared-project members or admins. |
 | `GET`    | `/projects`                                           | read    | Projects you belong to (paginated). |
 | `POST`   | `/projects`                                           | write   | Create a project (you become its owner). |
 | `GET`    | `/projects/{short_name}`                              | read    | A single project. |
@@ -50,7 +51,7 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `PATCH`  | `/tasks/{reference}`                                  | write   | Update a task's fields, status, type or tags. |
 | `POST`   | `/tasks/{reference}/cancel`                           | write   | Cancel a task (`cancel_reason` + optional `cancel_message`). |
 | `POST`   | `/tasks/{reference}/reopen`                           | write   | Reopen a canceled task. |
-| `PUT`    | `/tasks/{reference}/assignees`                        | write   | Replace a task's assignees (`assignee_ids`). |
+| `PUT`    | `/tasks/{reference}/assignees`                        | write   | Replace a task's assignees (`assignee_ids`: the stable user ids from the task's `assignees`). |
 | `POST`   | `/tasks/{reference}/dependencies`                     | write   | Link a dependency (`direction`: `blocked_by` / `blocks`). |
 | `DELETE` | `/tasks/{reference}/dependencies/{related}`           | write   | Unlink a dependency. |
 | `GET`    | `/projects/{short_name}/comments`                     | read    | A project's comments (paginated, threaded). |
@@ -74,8 +75,10 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 
 Enum-valued fields follow the MCP conventions: `priority` and `cancel_reason` are
 sent and returned **by name** (`High`, `WontFix`), `status` by its value
-(`In progress`). Task `type` is set by its name. Paginated responses wrap the
-records in `data` alongside `links` and `meta`.
+(`In progress`). Task `type` is set by its name. Users are referenced by a stable
+`id` (the value carried on assignees and comment authors); resolve it through
+`GET /users/{id}`. Paginated responses wrap the records in `data` alongside `links`
+and `meta`.
 
 ## Example
 

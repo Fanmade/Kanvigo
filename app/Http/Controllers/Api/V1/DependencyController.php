@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\RelationshipType;
 use App\Http\Controllers\Api\V1\Concerns\ResolvesApiReferences;
 use App\Http\Controllers\Controller;
-use App\Models\Dependency;
+use App\Http\Resources\TaskDependencyResource;
 use App\Models\Task;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,19 +45,19 @@ class DependencyController extends Controller
 
         $item->recordDependencyChange(true, $validated['direction'], $related->reference);
 
-        return response()->json(['data' => $this->payload($item)], 201);
+        return TaskDependencyResource::make($item)->response()->setStatusCode(201);
     }
 
     /**
      * Remove the dependency between two tasks, in whichever direction it exists.
      */
-    public function destroy(string $reference, string $related): JsonResponse
+    public function destroy(string $reference, string $related): TaskDependencyResource
     {
         [$item, $relatedTask] = $this->resolvePair($reference, $related);
 
         abort_if($item->removeRelationshipWith($relatedTask) === null, 404);
 
-        return response()->json(['data' => $this->payload($item)]);
+        return new TaskDependencyResource($item);
     }
 
     /**
@@ -72,21 +72,6 @@ class DependencyController extends Controller
         return [
             $this->resolveTaskOr404($reference, 'update'),
             $this->resolveTaskOr404($relatedReference),
-        ];
-    }
-
-    /**
-     * Build the dependency payload for a task — the references of what blocks it,
-     * what it blocks, and whether it is currently blocked — eager-loading the
-     * linked items in one pass to keep reference resolution N+1-free.
-     *
-     * @return array<string, string|array<int, string>|bool>
-     */
-    private function payload(Task $item): array
-    {
-        return [
-            'reference' => $item->reference,
-            ...$item->relationshipPayload(),
         ];
     }
 }
