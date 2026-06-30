@@ -10,6 +10,10 @@ use App\Models\User;
  * permission (KAN-310). The package's Gate::before grants catalog permissions
  * directly when the scope is the project; these methods bridge a task subject to
  * its project for the abilities whose names differ from the catalog permission.
+ *
+ * Ability names must stay distinct from the catalog permission names: a collision
+ * would let Gate::before auto-grant the ability and bypass the method. See the
+ * naming contract on {@see ProjectPolicy}; AuthorizationContractTest enforces it.
  */
 class TaskPolicy
 {

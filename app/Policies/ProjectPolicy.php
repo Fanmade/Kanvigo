@@ -6,6 +6,20 @@ use App\Enums\Permission;
 use App\Models\Project;
 use App\Models\User;
 
+/**
+ * Project authorization. Each ability resolves to a project-scoped permission via
+ * {@see User::hasScopedPermission()}.
+ *
+ * Naming contract: the delegated-permissions package registers a Gate::before that
+ * grants any ability whose name *equals* a permission the user holds in the scope
+ * (and never denies). So an ability method here must never be named after a catalog
+ * permission (e.g. `manage-members`) — it would be auto-granted and this method,
+ * with any added restriction, skipped. Abilities use a distinct verb/camelCase name
+ * and map to the kebab permission inside the method. A pass-through check that needs
+ * no extra logic skips the policy and authorizes the kebab permission directly (e.g.
+ * `authorize('manage-roles', $project)`, enforced by Gate::before alone).
+ * AuthorizationContractTest guards the no-collision rule.
+ */
 class ProjectPolicy
 {
     /**
