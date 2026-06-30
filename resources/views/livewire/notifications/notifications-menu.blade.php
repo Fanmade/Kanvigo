@@ -18,7 +18,7 @@
             <div class="flex items-center justify-between gap-2 px-2 py-1.5">
                 <flux:heading size="sm">{{ __('Notifications') }}</flux:heading>
                 @if ($count > 0)
-                    <flux:button size="xs" variant="ghost" wire:click="markAllRead">{{ __('Mark all read') }}</flux:button>
+                    <flux:button size="xs" variant="ghost" wire:click="markAllRead" data-test="mark-all-read">{{ __('Mark all read') }}</flux:button>
                 @endif
             </div>
 
@@ -27,7 +27,7 @@
             @forelse ($this->notifications as $notification)
                 @php($data = $notification->data)
                 @php($label = $this->actionLabel($data['action'] ?? ''))
-                <flux:menu.item wire:click="open('{{ $notification->id }}')" class="!h-auto">
+                <flux:menu.item wire:click="open('{{ $notification->id }}')" class="!h-auto" data-test="notification-{{ $notification->id }}">
                     <div class="flex items-start gap-2 py-0.5 {{ $notification->read_at ? 'opacity-60' : '' }}">
                         <span class="mt-1.5 size-2 shrink-0 rounded-full {{ $notification->read_at ? 'bg-transparent' : 'bg-red-500' }}"></span>
                         <div class="min-w-0">

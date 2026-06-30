@@ -1,4 +1,4 @@
-@props(['property' => 'newFiles'])
+@props(['property' => 'newFiles', 'test' => 'attach-files'])
 
 <div x-data class="flex items-center gap-3">
     <input
@@ -9,7 +9,7 @@
         class="hidden"
     />
 
-    <flux:button size="xs" variant="ghost" icon="paper-clip" x-on:click="$refs.fileInput.click()">
+    <flux:button size="xs" variant="ghost" icon="paper-clip" x-on:click="$refs.fileInput.click()" :data-test="$test">
         {{ __('Attach files') }}
     </flux:button>
 

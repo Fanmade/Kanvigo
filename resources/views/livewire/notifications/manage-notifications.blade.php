@@ -1,4 +1,4 @@
-<div class="app-content mx-auto flex w-full max-w-3xl flex-col gap-6">
+<div class="app-content mx-auto flex w-full max-w-3xl flex-col gap-6" data-test="manage-notifications">
     <div>
         <flux:heading size="xl">{{ __('Notifications') }}</flux:heading>
         <flux:subheading>{{ __('Everything you are subscribed to. Disable any to stop receiving updates.') }}</flux:subheading>
@@ -11,7 +11,7 @@
             <flux:heading size="lg">{{ $group }}</flux:heading>
 
             @foreach ($items as $row)
-                <flux:card class="flex items-center justify-between gap-3" wire:key="sub-{{ $row['type'] }}-{{ $row['id'] }}">
+                <flux:card class="flex items-center justify-between gap-3" wire:key="sub-{{ $row['type'] }}-{{ $row['id'] }}" data-test="subscription-{{ $row['type'] }}-{{ $row['id'] }}">
                     <a href="{{ $row['url'] }}" wire:navigate class="min-w-0 truncate text-sm font-medium hover:underline">
                         {{ $row['label'] }}
                     </a>
@@ -30,6 +30,7 @@
                             variant="ghost"
                             icon="bell-slash"
                             wire:click="unsubscribe('{{ $row['type'] }}', {{ $row['id'] }})"
+                            data-test="unsubscribe-{{ $row['type'] }}-{{ $row['id'] }}"
                         >
                             {{ __('Disable') }}
                         </flux:button>

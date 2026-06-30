@@ -23,7 +23,7 @@
         </flux:select>
     </div>
 
-    <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700" data-test="notes-list">
+    <x-list-card data-test="notes-list">
         @forelse ($this->notes as $note)
             <x-note-row :note="$note" :reorderable="! $this->isFiltering" wire:key="note-{{ $note->id }}" />
         @empty
@@ -33,5 +33,5 @@
                 <flux:text size="sm" class="px-4 py-10 text-center text-zinc-400" data-test="notes-empty">{{ __('No notes yet. Capture an idea to get started.') }}</flux:text>
             @endif
         @endforelse
-    </flux:card>
+    </x-list-card>
 </div>

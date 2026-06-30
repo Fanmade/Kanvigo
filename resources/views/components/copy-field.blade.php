@@ -21,9 +21,9 @@
         }
     }"
 >
-    <div class="flex items-stretch w-full border rounded-xl dark:border-stone-700">
+    <div class="flex items-stretch w-full border rounded-xl dark:border-zinc-700">
         @empty($value)
-            <div class="flex items-center justify-center w-full p-3 bg-stone-100 dark:bg-stone-700">
+            <div class="flex items-center justify-center w-full p-3 bg-zinc-100 dark:bg-zinc-700">
                 <flux:icon.loading variant="mini" />
             </div>
         @else
@@ -32,7 +32,7 @@
                 readonly
                 value="{{ $value }}"
                 @class([
-                    'w-full p-3 bg-transparent outline-none text-stone-900 dark:text-stone-100',
+                    'w-full p-3 bg-transparent outline-none text-zinc-900 dark:text-zinc-100',
                     'font-mono text-sm' => $mono,
                 ])
             />
@@ -40,7 +40,8 @@
             <button
                 type="button"
                 @click="copy()"
-                class="px-3 transition-colors border-l cursor-pointer border-stone-200 dark:border-stone-600"
+                aria-label="{{ __('Copy to clipboard') }}"
+                class="px-3 transition-colors border-l cursor-pointer border-zinc-200 dark:border-zinc-600"
             >
                 <flux:icon.document-duplicate x-show="!copied" variant="outline" />
                 <flux:icon.check x-show="copied" variant="solid" class="text-green-500" />

@@ -56,7 +56,7 @@
                         </div>
                     @endif
 
-                    <x-attachments.rich-editor property="body" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a comment…')" :mentionables-url="$this->mentionablesUrl" />
+                    <x-attachments.rich-editor property="body" preset="compact" :placeholder="__('Write a comment…')" :mentionables-url="$this->mentionablesUrl" />
                     <div class="flex justify-end gap-2">
                         <flux:button type="button" size="sm" variant="ghost" x-on:click="expanded = false">
                             {{ __('Cancel') }}
@@ -82,7 +82,7 @@
 
                         @if ($threadIds->contains($replyingTo))
                             <form wire:submit="addReply" class="ms-6 flex flex-col gap-2">
-                                <x-attachments.rich-editor property="replyBody" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a reply…')" :mentionables-url="$this->mentionablesUrl" />
+                                <x-attachments.rich-editor property="replyBody" preset="compact" :placeholder="__('Write a reply…')" :mentionables-url="$this->mentionablesUrl" />
                                 <div class="flex justify-end gap-2">
                                     <flux:button type="button" size="sm" variant="ghost" wire:click="cancelReply">{{ __('Cancel') }}</flux:button>
                                     <flux:button type="submit" size="sm" variant="primary">{{ __('Reply') }}</flux:button>

@@ -43,7 +43,7 @@
                 />
             </div>
 
-            <form method="POST" action="{{ route('two-factor.login.store') }}">
+            <form method="POST" action="{{ route('two-factor.login.store') }}" data-test="two-factor-challenge-form">
                 @csrf
 
                 <div class="space-y-5 text-center">
@@ -69,6 +69,7 @@
                                 x-bind:required="showRecoveryInput"
                                 autocomplete="one-time-code"
                                 x-model="recovery_code"
+                                data-test="recovery-code-input"
                             />
                         </div>
 
@@ -83,6 +84,7 @@
                         variant="primary"
                         type="submit"
                         class="w-full"
+                        data-test="two-factor-submit"
                     >
                         {{ __('Continue') }}
                     </flux:button>
@@ -91,8 +93,8 @@
                 <div class="mt-5 space-x-0.5 text-sm leading-5 text-center">
                     <span class="opacity-50">{{ __('or you can') }}</span>
                     <div class="inline font-medium underline cursor-pointer opacity-80">
-                        <span x-show="!showRecoveryInput" @click="toggleInput()">{{ __('login using a recovery code') }}</span>
-                        <span x-show="showRecoveryInput" @click="toggleInput()">{{ __('login using an authentication code') }}</span>
+                        <span x-show="!showRecoveryInput" @click="toggleInput()" data-test="use-recovery-code">{{ __('login using a recovery code') }}</span>
+                        <span x-show="showRecoveryInput" @click="toggleInput()" data-test="use-auth-code">{{ __('login using an authentication code') }}</span>
                     </div>
                 </div>
             </form>

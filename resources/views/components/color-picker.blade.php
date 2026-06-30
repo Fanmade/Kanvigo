@@ -11,7 +11,7 @@
     - test:     the data-test prefix; the row is "{test}-color-picker" and each
                 swatch "{test}-color-{color}".
 --}}
-<div class="flex flex-wrap gap-2" data-test="{{ $test }}-color-picker">
+<div class="flex flex-wrap gap-2" role="group" aria-label="{{ __('Color') }}" data-test="{{ $test }}-color-picker">
     @foreach ($palette as $paletteColor)
         <button
             type="button"
@@ -22,6 +22,7 @@
                 'ring-transparent' => $selected !== $paletteColor,
             ])
             aria-label="{{ $paletteColor }}"
+            aria-pressed="{{ $selected === $paletteColor ? 'true' : 'false' }}"
             data-test="{{ $test }}-color-{{ $paletteColor }}"
         >
             <x-tag-dot :color="$paletteColor" class="size-5" />

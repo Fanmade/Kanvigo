@@ -26,7 +26,7 @@
         <div class="lg:col-span-1">
             <flux:heading size="lg" class="mb-2">{{ __('My tasks') }}</flux:heading>
 
-            <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
+            <x-list-card>
                 @forelse ($this->activeTasks as $task)
                     <a
                         href="{{ route('task.show', ['short_name' => $task->project->short_name, 'task_number' => $task->task_number]) }}"
@@ -47,7 +47,7 @@
                         {{ __('Nothing in progress or to do. Enjoy the calm!') }}
                     </flux:text>
                 @endforelse
-            </flux:card>
+            </x-list-card>
         </div>
 
         {{-- Completion chart for the last two weeks --}}
@@ -81,12 +81,12 @@
             <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-note')" data-test="dashboard-new-note">{{ __('New note') }}</flux:button>
         </div>
 
-        <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
+        <x-list-card>
             @forelse ($this->notes as $note)
                 <x-note-row :note="$note" wire:key="note-{{ $note->id }}" />
             @empty
                 <flux:text size="sm" class="px-4 py-6 text-center text-zinc-400">{{ __('No notes yet. Capture an idea to get started.') }}</flux:text>
             @endforelse
-        </flux:card>
+        </x-list-card>
     </div>
 </div>

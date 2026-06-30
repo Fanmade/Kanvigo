@@ -10,7 +10,7 @@
             <x-attachments.rich-editor
                 property="body"
                 :label="__('Note')"
-                toolbar="bold italic strike | bullet ordered | link"
+                preset="compact"
                 :placeholder="__('Write your note…')"
             />
 

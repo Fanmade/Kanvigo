@@ -144,13 +144,13 @@
                             </div>
                         </div>
 
-                        <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
+                        <x-list-card>
                             @forelse ($this->task->children as $child)
                                 <x-subtask-row :task="$child" :short-name="$shortName" test="subtask" />
                             @empty
                                 <flux:text size="sm" class="px-4 py-3 text-zinc-400">{{ __('No subtasks yet.') }}</flux:text>
                             @endforelse
-                        </flux:card>
+                        </x-list-card>
                     </div>
                 @endif
 
