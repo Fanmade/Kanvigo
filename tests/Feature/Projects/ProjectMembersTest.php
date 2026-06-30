@@ -56,6 +56,30 @@ it('lets the owner add a second role to a member and remove it again', function 
     expect($project->roleNamesFor($member))->toBe(['member']);
 });
 
+it('removes the membership when a member loses their last role, keeping pivot and roles in sync', function () {
+    [$owner, $member, $project] = ownerMemberProject();
+
+    expect($project->members()->whereKey($member->id)->exists())->toBeTrue();
+
+    showAs($owner, $project)->call('removeMemberRole', $member->id, 'member');
+
+    // The final role is gone and the pivot row went with it: no "ghost" member
+    // that members() still lists but ProjectPolicy::view denies.
+    expect($project->roleNamesFor($member))->toBe([])
+        ->and($project->members()->whereKey($member->id)->exists())->toBeFalse()
+        ->and($member->fresh()->can('view', $project))->toBeFalse();
+});
+
+it('keeps the membership when a member still holds another role', function () {
+    [$owner, $member, $project] = ownerMemberProject();
+
+    showAs($owner, $project)->call('addMemberRole', $member->id, 'admin');
+    showAs($owner, $project)->call('removeMemberRole', $member->id, 'member');
+
+    expect($project->roleNamesFor($member))->toBe(['admin'])
+        ->and($project->members()->whereKey($member->id)->exists())->toBeTrue();
+});
+
 it('forbids an admin or member from changing roles', function () {
     [$owner, $member, $project] = ownerMemberProject();
     $admin = memberWithRole($project, 'admin');

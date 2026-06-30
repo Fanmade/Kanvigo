@@ -20,6 +20,7 @@ use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -546,6 +547,11 @@ class ProjectShow extends Component
     /**
      * Remove a single role from a member, leaving their other roles intact.
      * Requires manage-members; the owner role and the acting user are untouched.
+     *
+     * Removing a member's last role would otherwise leave a "ghost" pivot row
+     * that the role-based policies no longer back (still listed in members() but
+     * denied by ProjectPolicy::view). To keep the pivot and role assignments in
+     * agreement, dropping the final role removes the membership outright.
      */
     public function removeMemberRole(int $userId, string $role): void
     {
@@ -562,11 +568,24 @@ class ProjectShow extends Component
             return;
         }
 
-        app(ProjectRoleProvisioner::class)->removeRole($project, $member, $role);
+        $removedMember = DB::transaction(function () use ($project, $member, $role): bool {
+            app(ProjectRoleProvisioner::class)->removeRole($project, $member, $role);
 
-        unset($this->members);
+            if ($project->roleNamesFor($member) !== []) {
+                return false;
+            }
 
-        Flux::toast(variant: 'success', text: __('Member role removed.'));
+            $project->members()->detach($member->getKey());
+
+            return true;
+        });
+
+        unset($this->members, $this->addableUsers);
+
+        Flux::toast(
+            variant: 'success',
+            text: $removedMember ? __('Member removed.') : __('Member role removed.'),
+        );
     }
 
     /**
