@@ -93,28 +93,32 @@ it('shows a nested task as a breadcrumb from its root ancestor down to itself', 
 });
 
 it('eager-loads breadcrumb ancestors instead of one recursive query per nested card', function () {
-    $chains = 6;
+    // Number of queries to render the board for $chains independent three-level
+    // chains (root -> child -> grandchild), i.e. 2 * $chains nested cards.
+    $queriesForChains = function (int $chains): int {
+        $project = Project::factory()->create();
+        joinProject($project, $this->member);
+        foreach (range(1, $chains) as $ignored) {
+            $root = Task::factory()->for($project)->create();
+            $child = Task::factory()->for($project)->childOf($root)->create();
+            Task::factory()->for($project)->childOf($child)->create();
+        }
 
-    // Independent three-level chains: root -> child -> grandchild.
-    foreach (range(1, $chains) as $ignored) {
-        $root = Task::factory()->for($this->project)->create();
-        $child = Task::factory()->for($this->project)->childOf($root)->create();
-        Task::factory()->for($this->project)->childOf($child)->create();
-    }
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        Livewire::actingAs($this->member)
+            ->test(ProjectBoard::class, ['short_name' => $project->short_name])
+            ->html();
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
 
-    DB::enableQueryLog();
-    Livewire::actingAs($this->member)
-        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->html();
-    $recursive = collect(DB::getQueryLog())
-        ->filter(static fn (array $entry): bool => str_contains(strtolower((string) $entry['query']), 'recursive'))
-        ->count();
-    DB::disableQueryLog();
+        return $count;
+    };
 
-    // There are 2 * $chains nested (non-root) cards; a per-card lazy ancestor
-    // lookup would issue at least that many recursive queries. Eager loading
-    // keeps it to a handful of batched queries.
-    expect($recursive)->toBeLessThan(2 * $chains);
+    // A per-card lazy ancestor lookup would add a recursive query per nested card,
+    // so more chains would render in more queries. Eager loading batches the
+    // ancestors, so adding chains must not add queries (no per-card N+1).
+    expect($queriesForChains(6))->toBeLessThanOrEqual($queriesForChains(2));
 });
 
 it('ignores an invalid status', function () {

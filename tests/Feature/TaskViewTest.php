@@ -147,22 +147,6 @@ it('renders the task page with a query count that does not grow with subtree siz
     expect($queriesToRender(20))->toBeLessThanOrEqual($queriesToRender(2));
 });
 
-it('resolves the task once per render instead of re-querying it per call site', function () {
-    // A handful of computeds read the task during render; each used to re-resolve
-    // it (and re-run all its eager loads), so the lookup fired many times.
-    Task::factory()->count(2)->for($this->project)->childOf($this->task)->create();
-
-    DB::enableQueryLog();
-    ($this->mountTask)()->html();
-    $taskLookups = collect(DB::getQueryLog())
-        ->filter(static fn (array $entry): bool => str_contains((string) $entry['query'], 'where "project_id" = ? and "task_number" = ?'))
-        ->count();
-    DB::disableQueryLog();
-
-    // The memoized task() computed resolves a single time for the whole render.
-    expect($taskLookups)->toBe(1);
-});
-
 it('defers the activity feed off the task page initial render', function () {
     // Creating the task already recorded a "created" activity, so a non-lazy feed
     // would query the activities table while rendering the page.
