@@ -14,7 +14,7 @@ it('renames and recolors a tag through the management page', function () {
 
     $page = visit("/{$project->short_name}/tags");
 
-    $page->assertSee('Bug')
+    $page->assertSeeIn("@tag-row-{$tag->id}", 'Bug')
         ->click("@edit-tag-{$tag->id}")
         ->waitForText('Edit tag')
         ->fill('@edit-tag-name', 'Defect')
@@ -23,7 +23,7 @@ it('renames and recolors a tag through the management page', function () {
         // The modal only closes once saveEdit() has persisted, so wait for it to
         // disappear — not for "Defect", which is already in the open editor.
         ->assertMissing('@edit-tag-name')
-        ->assertSee('Defect')
+        ->assertSeeIn("@tag-row-{$tag->id}", 'Defect')
         ->assertNoJavascriptErrors();
 
     expect($tag->fresh()->name)->toBe('Defect')

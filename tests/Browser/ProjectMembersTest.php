@@ -16,8 +16,8 @@ it('lets the owner add a role to a member through the management modal', functio
     $page = visit('/ABC');
     $page->click('@project-actions')
         ->click('@manage-members')
-        ->assertSee('Manage members')
-        ->assertSee('Casey Member')
+        ->assertVisible('@manage-members-heading')
+        ->assertSeeIn('@member-row-'.$member->id, 'Casey Member')
         ->select('@add-member-role-'.$member->id, 'admin')
         ->waitForText('Member role added.')
         ->assertVisible('@member-role-'.$member->id.'-admin')

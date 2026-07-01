@@ -20,12 +20,12 @@ it('renders public notes in the project Notes section', function () {
     $owner = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);
     joinProject($project, $owner);
-    Note::factory()->for($owner)->publicTo($project)->create(['title' => 'Shared on the project']);
+    $note = Note::factory()->for($owner)->publicTo($project)->create(['title' => 'Shared on the project']);
 
     $this->actingAs($owner);
 
     visit('/ABC')
         ->assertVisible('@project-notes')
-        ->assertSee('Shared on the project')
+        ->assertSeeIn('@public-note-'.$note->id, 'Shared on the project')
         ->assertNoJavascriptErrors();
 });

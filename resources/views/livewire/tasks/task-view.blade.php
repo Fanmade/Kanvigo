@@ -133,18 +133,18 @@
                      subtree. Hidden entirely when there is nothing to show and nothing can
                      be added (e.g. a task at the maximum nesting depth). --}}
                 @if ($this->task->children->isNotEmpty() || ($this->canUpdate && $this->canAddSubtask))
-                    <div>
+                    <div data-test="subtasks-section">
                         <div class="mb-2 flex items-center justify-between gap-2">
-                            <flux:heading size="sm">{{ __('Subtasks') }}</flux:heading>
+                            <flux:heading size="sm" data-test="subtasks-heading">{{ __('Subtasks') }}</flux:heading>
                             <div class="flex items-center gap-3">
-                                <x-task-progress :progress="$this->task->progress()" />
+                                <x-task-progress :progress="$this->task->progress()" data-test="subtask-progress" />
                                 @if ($this->canUpdate && $this->canAddSubtask)
                                     <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-task', { projectId: {{ $this->task->project_id }}, parentId: {{ $this->task->id }} })" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
                                 @endif
                             </div>
                         </div>
 
-                        <x-list-card>
+                        <x-list-card data-test="subtasks-list">
                             @forelse ($this->task->children as $child)
                                 <x-subtask-row :task="$child" :short-name="$shortName" test="subtask" />
                             @empty

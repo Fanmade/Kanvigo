@@ -19,7 +19,7 @@ it('opens from the header and finds a task by tag', function () {
 
     $page->click('@command-palette-trigger')
         ->fill('@command-palette-input', 'urgent')
-        ->assertSee('Deploy fix')
+        ->assertSeeIn('@palette-item-deploy-fix', 'Deploy fix')
         ->assertNoJavascriptErrors();
 });
 
@@ -30,8 +30,8 @@ it('jumps to a typed reference', function () {
 
     $page->click('@command-palette-trigger')
         ->fill('@command-palette-input', $this->task->reference)
-        ->assertSee('Deploy fix')
-        ->click('Deploy fix')
+        ->assertSeeIn('@palette-item-deploy-fix', 'Deploy fix')
+        ->click('@palette-item-deploy-fix')
         ->assertVisible('@task-actions')
         ->assertPathIs('/'.$this->task->reference)
         ->assertNoJavascriptErrors();

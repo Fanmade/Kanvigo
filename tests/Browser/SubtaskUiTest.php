@@ -19,11 +19,11 @@ it('creates a subtask from the task detail page and shows it in the list', funct
     $page = visit('/'.$parent->reference);
 
     $page->assertNoJavascriptErrors()
-        ->assertSee('Subtasks')
+        ->assertVisible('@subtasks-heading')
         ->click('@new-subtask')
         ->fill('@create-task-title', 'Build the thing')
         ->click('@create-task-submit')
-        ->assertSee('Build the thing')
+        ->assertSeeIn('@subtasks-list', 'Build the thing')
         ->assertNoJavascriptErrors();
 
     expect($parent->children()->count())->toBe(1)
@@ -45,7 +45,7 @@ it('assigns the creator from the create-task modal with one click', function () 
         ->click('@create-task-assign-to-me')
         ->assertMissing('@create-task-assign-to-me')
         ->click('@create-task-submit')
-        ->assertSee('Assigned subtask')
+        ->assertSeeIn('@subtasks-list', 'Assigned subtask')
         ->assertNoJavascriptErrors();
 
     $task = $project->tasks()->where('title', 'Assigned subtask')->first();
@@ -65,5 +65,5 @@ it('shows the subtree progress rollup on the detail page', function () {
 
     visit('/'.$parent->reference)
         ->assertNoJavascriptErrors()
-        ->assertSee('1 / 2');
+        ->assertSeeIn('@subtask-progress', '1 / 2');
 });

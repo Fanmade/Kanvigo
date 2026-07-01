@@ -15,7 +15,7 @@ it('changes a task status from the badge dropdown', function () {
 
     $page = visit("/{$project->short_name}-{$task->task_number}");
 
-    $page->assertSee('Planned')
+    $page->assertSeeIn('@status-control-current', 'Planned')
         ->click('@status-control')
         ->click('@status-option-Done')
         ->waitForText('Done')
@@ -73,7 +73,7 @@ it('keeps the blocked dependencies header within the sidebar in German', functio
     // English ones and used to overflow the fixed-width sidebar panel.
     $page = visit("/{$project->short_name}-{$task->task_number}")->withLocale('de-DE');
 
-    $page->assertSee('Beziehungen')
+    $page->assertSeeIn('@relationships-heading', 'Beziehungen')
         ->assertVisible('@blocked-badge')
         ->assertScript(
             "(() => { const el = document.querySelector('[data-test=dependencies]'); return el.scrollWidth <= el.clientWidth; })()",

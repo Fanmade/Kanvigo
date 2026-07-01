@@ -277,7 +277,7 @@
     @can('manageMembers', $this->project)
         <flux:modal wire:model="managingMembers" class="md:w-96" data-test="members-modal">
             <div class="flex flex-col gap-4">
-                <flux:heading size="lg">{{ __('Manage members') }}</flux:heading>
+                <flux:heading size="lg" data-test="manage-members-heading">{{ __('Manage members') }}</flux:heading>
 
                 {{-- Add an existing user to the project. --}}
                 <div class="flex flex-col gap-1">

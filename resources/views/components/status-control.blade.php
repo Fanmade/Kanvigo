@@ -18,6 +18,7 @@
                 :icon="$status->icon()"
                 icon:trailing="chevron-down"
                 class="cursor-pointer"
+                data-test="status-control-current"
             >
                 {{ $status->label() }}
             </flux:badge>
