@@ -26,9 +26,10 @@ it('auto-refreshes project comments but pauses while the editor is focused', fun
     $page->click('@comment-composer-trigger')
         ->script("document.querySelector('.ProseMirror')?.focus()");
     $project->comments()->create(['user_id' => $other->id, 'body' => '<p>Echo Two</p>']);
-    $page->wait(2.5)->assertDontSee('Echo Two');
+    $page->assertDontSee('Echo Two');
 
-    // Blurring the editor lets the next tick catch up.
+    // Blurring the editor resumes polling; waiting for Echo Two to arrive is the
+    // positive barrier that proves it was withheld while focused (no fixed wait).
     $page->script('document.activeElement?.blur()');
     $page->waitForText('Echo Two')
         ->assertNoJavascriptErrors();

@@ -25,12 +25,10 @@ it('expands the column search on click, focuses it, and filters the lane', funct
         ->assertMissing('@column-search-ToDo')
         // Clicking the icon reveals the input and focuses it (no second click).
         ->click('@column-search-toggle-ToDo')
-        ->wait(0.4)
         ->assertVisible('@column-search-ToDo')
         ->assertScript("document.activeElement?.closest('[data-test=\"column-search-ToDo\"]') !== null")
         // The revealed input still filters its lane.
         ->fill('@column-search-ToDo', 'no-such-task')
-        ->wait(0.6)
         ->assertDontSee('Task Alpha')
         ->assertNoJavascriptErrors();
 });

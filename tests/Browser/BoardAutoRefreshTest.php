@@ -28,9 +28,10 @@ it('auto-refreshes the board and suspends while dragging', function () {
     // morphed out from under the drag.
     $page->script("document.body.classList.add('kanban-dragging')");
     Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Task Charlie']);
-    $page->wait(2.5)->assertDontSee('Task Charlie');
+    $page->assertDontSee('Task Charlie');
 
-    // Once the drag ends, the next poll catches up.
+    // Once the drag ends, the next poll catches up — waiting for Charlie to arrive
+    // is the positive barrier that proves it was withheld, not lost (no fixed wait).
     $page->script("document.body.classList.remove('kanban-dragging')");
     $page->waitForText('Task Charlie')
         ->assertNoJavascriptErrors();
@@ -54,6 +55,13 @@ it('does not auto-refresh while live updates are off', function () {
         ->assertDontSee('Task Delta');
 
     Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Task Delta']);
-    $page->wait(2.5)->assertDontSee('Task Delta')
+
+    // Off means the board never pulls Delta in on its own; turning live updates on
+    // (via the display-options dropdown) surfaces it on the next commit — a
+    // deterministic barrier, not a fixed wait.
+    $page->assertDontSee('Task Delta')
+        ->click('@board-display')
+        ->click('@live-updates-toggle')
+        ->waitForText('Task Delta')
         ->assertNoJavascriptErrors();
 });

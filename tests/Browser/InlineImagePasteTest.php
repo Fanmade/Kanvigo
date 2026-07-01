@@ -24,7 +24,9 @@ it('extracts pasted images from clipboard items as well as files', function () {
     $page = visit("/ABC-{$task->task_number}");
     $page->click('@edit-task')
         ->assertSee('Description')
-        ->wait(1.5); // Let Livewire render the form and Alpine mount the editor.
+        // Wait until Livewire has rendered the form and Alpine has mounted the
+        // editor, exposing filesFrom() — the exact readiness the script needs.
+        ->assertScript("typeof window.Alpine?.\$data(document.querySelector('[x-data^=\"richEditor\"]'))?.filesFrom === 'function'");
 
     $result = $page->script(<<<'JS'
         (function () {

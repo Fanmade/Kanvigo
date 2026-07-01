@@ -17,9 +17,7 @@ it('focuses the tag search input when the picker opens', function () {
 
     $page = visit('/ABC/board');
     $page->click('@new-task')
-        ->wait(1)
         ->click('@create-task-add-tag')
-        ->wait(0.6)
         ->assertScript("document.activeElement?.getAttribute('data-test') === 'create-task-tag-input'")
         ->assertNoJavascriptErrors();
 });

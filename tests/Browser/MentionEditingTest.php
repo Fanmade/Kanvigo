@@ -20,7 +20,7 @@ it('keeps a mention linked when its trailing words are trimmed', function () {
 
     $page->assertSee('Mention task')
         ->click('@comment-composer-trigger')
-        ->wait(0.5)
+        ->assertScript("!! document.querySelector('[data-flux-editor]')?.__editor")
         ->script("document.querySelector('.ProseMirror')?.focus()");
 
     // Insert a full mention "@Benjamin Reuter" (mirrors picking a suggestion).
@@ -68,7 +68,7 @@ it('drops the mention cleanly when its leading @ is deleted', function () {
     $page = visit('/ABC-'.$this->task->task_number);
 
     $page->click('@comment-composer-trigger')
-        ->wait(0.5)
+        ->assertScript("!! document.querySelector('[data-flux-editor]')?.__editor")
         ->script("document.querySelector('.ProseMirror')?.focus()");
 
     $page->script(<<<JS
