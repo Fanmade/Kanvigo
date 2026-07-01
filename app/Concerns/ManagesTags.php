@@ -180,7 +180,7 @@ trait ManagesTags
 
         $this->refreshTags();
 
-        Flux::toast(variant: 'success', text: __('Tag created.'));
+        Flux::toast(text: __('Tag created.'), variant: 'success');
     }
 
     /**

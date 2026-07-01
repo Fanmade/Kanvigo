@@ -361,7 +361,7 @@ class ProjectShow extends Component
 
         unset($this->project, $this->rootTasks);
 
-        Flux::toast(variant: 'success', text: __('Task archived.'));
+        Flux::toast(text: __('Task archived.'), variant: 'success');
     }
 
     /**
@@ -377,7 +377,7 @@ class ProjectShow extends Component
 
         unset($this->project, $this->rootTasks);
 
-        Flux::toast(variant: 'success', text: __('Task restored.'));
+        Flux::toast(text: __('Task restored.'), variant: 'success');
     }
 
     public function edit(): void
@@ -418,7 +418,7 @@ class ProjectShow extends Component
         $this->editing = false;
         unset($this->project);
 
-        Flux::toast(variant: 'success', text: __('Project updated.'));
+        Flux::toast(text: __('Project updated.'), variant: 'success');
 
         // The short name is the route key, so move to the new URL when it changes.
         if ($shortNameChanged) {
@@ -553,14 +553,14 @@ class ProjectShow extends Component
         try {
             app(ProjectRoleProvisioner::class)->addRole($project, $member, $validated['role']);
         } catch (RoleLimitExceeded) {
-            Flux::toast(variant: 'warning', text: __('This member already holds the maximum number of roles.'));
+            Flux::toast(text: __('This member already holds the maximum number of roles.'), variant: 'warning');
 
             return;
         }
 
         unset($this->members);
 
-        Flux::toast(variant: 'success', text: __('Member role added.'));
+        Flux::toast(text: __('Member role added.'), variant: 'success');
     }
 
     /**
@@ -602,8 +602,8 @@ class ProjectShow extends Component
         unset($this->members, $this->addableUsers);
 
         Flux::toast(
-            variant: 'success',
             text: $removedMember ? __('Member removed.') : __('Member role removed.'),
+            variant: 'success',
         );
     }
 
@@ -649,7 +649,7 @@ class ProjectShow extends Component
         $this->memberQuery = '';
         unset($this->members, $this->addableUsers);
 
-        Flux::toast(variant: 'success', text: __('Member added.'));
+        Flux::toast(text: __('Member added.'), variant: 'success');
     }
 
     /**
@@ -669,7 +669,7 @@ class ProjectShow extends Component
 
         unset($this->members, $this->addableUsers);
 
-        Flux::toast(variant: 'success', text: __('Member removed.'));
+        Flux::toast(text: __('Member removed.'), variant: 'success');
     }
 
     /**

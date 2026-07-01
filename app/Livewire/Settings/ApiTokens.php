@@ -51,7 +51,7 @@ class ApiTokens extends Component
 
         unset($this->tokens);
 
-        Flux::toast(variant: 'success', text: __('API token created.'));
+        Flux::toast(text: __('API token created.'), variant: 'success');
     }
 
     /**
@@ -65,7 +65,7 @@ class ApiTokens extends Component
 
         unset($this->tokens);
 
-        Flux::toast(variant: 'success', text: __('API token revoked.'));
+        Flux::toast(text: __('API token revoked.'), variant: 'success');
     }
 
     /**

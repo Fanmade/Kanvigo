@@ -186,11 +186,11 @@ class ProjectTaskTypes extends Component
                 'position' => (int) $project->taskTypes()->max('position') + 1,
             ]);
 
-            Flux::toast(variant: 'success', text: __('Type created.'));
+            Flux::toast(text: __('Type created.'), variant: 'success');
         } else {
             $project->taskTypes()->whereKey($this->editingTypeId)->firstOrFail()->update($attributes);
 
-            Flux::toast(variant: 'success', text: __('Type updated.'));
+            Flux::toast(text: __('Type updated.'), variant: 'success');
         }
 
         $this->editing = false;
@@ -211,7 +211,7 @@ class ProjectTaskTypes extends Component
 
         unset($this->taskTypes);
 
-        Flux::toast(variant: 'success', text: __('Type deleted.'));
+        Flux::toast(text: __('Type deleted.'), variant: 'success');
     }
 
     /**

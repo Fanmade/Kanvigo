@@ -140,7 +140,7 @@ class CreateNoteModal extends Component
         $this->dispatch('note-saved');
         $this->close();
 
-        Flux::toast(variant: 'success', text: __('Note saved.'));
+        Flux::toast(text: __('Note saved.'), variant: 'success');
     }
 
     /**

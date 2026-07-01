@@ -276,14 +276,14 @@ class ProjectTags extends Component
             $collision->forceFill(['icon' => $this->editIcon])->save();
             $tag->mergeInto($collision);
 
-            Flux::toast(variant: 'success', text: __('Tags merged.'));
+            Flux::toast(text: __('Tags merged.'), variant: 'success');
         } else {
             $tag->rename($name);
             $tag->recolor($validated['editColor']);
             $tag->forceFill(['icon' => $this->editIcon])->save();
             $tag->syncSynonyms($this->editSynonyms);
 
-            Flux::toast(variant: 'success', text: __('Tag updated.'));
+            Flux::toast(text: __('Tag updated.'), variant: 'success');
         }
 
         $this->editing = false;
@@ -317,7 +317,7 @@ class ProjectTags extends Component
         $this->reset('editSynonyms', 'synonymQuery');
         unset($this->tags);
 
-        Flux::toast(variant: 'success', text: __('Tag created.'));
+        Flux::toast(text: __('Tag created.'), variant: 'success');
     }
 
     /**
@@ -334,7 +334,7 @@ class ProjectTags extends Component
 
         unset($this->tags);
 
-        Flux::toast(variant: 'success', text: __('Tag deleted.'));
+        Flux::toast(text: __('Tag deleted.'), variant: 'success');
     }
 
     /**
@@ -382,7 +382,7 @@ class ProjectTags extends Component
         $this->reset('selected', 'merging', 'mergeTargetId', 'mergeAsSynonyms');
         unset($this->tags, $this->selectedTags);
 
-        Flux::toast(variant: 'success', text: __('Tags merged.'));
+        Flux::toast(text: __('Tags merged.'), variant: 'success');
     }
 
     public function render(): View

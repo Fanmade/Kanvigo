@@ -84,6 +84,6 @@ class InviteUser extends Component
 
         $this->reset('email', 'projectIds');
 
-        Flux::toast(variant: 'success', text: __('Invitation sent.'));
+        Flux::toast(text: __('Invitation sent.'), variant: 'success');
     }
 }

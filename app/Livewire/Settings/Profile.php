@@ -59,7 +59,7 @@ class Profile extends Component
 
         $user->save();
 
-        Flux::toast(variant: 'success', text: __('Profile updated.'));
+        Flux::toast(text: __('Profile updated.'), variant: 'success');
     }
 
     /**
@@ -91,7 +91,7 @@ class Profile extends Component
 
         $this->reset('avatar');
 
-        Flux::toast(variant: 'success', text: __('Avatar updated.'));
+        Flux::toast(text: __('Avatar updated.'), variant: 'success');
     }
 
     /**
@@ -110,7 +110,7 @@ class Profile extends Component
 
         $this->reset('avatar');
 
-        Flux::toast(variant: 'success', text: __('Avatar removed.'));
+        Flux::toast(text: __('Avatar removed.'), variant: 'success');
     }
 
     /**

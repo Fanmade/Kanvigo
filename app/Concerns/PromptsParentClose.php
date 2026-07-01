@@ -87,7 +87,7 @@ trait PromptsParentClose
 
         $this->maybePromptParentClose($result, $status);
 
-        Flux::toast(variant: 'success', text: __('Parent task closed.'));
+        Flux::toast(text: __('Parent task closed.'), variant: 'success');
     }
 
     /**

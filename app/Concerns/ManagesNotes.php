@@ -28,7 +28,7 @@ trait ManagesNotes
 
         $this->forgetNotes();
 
-        Flux::toast(variant: 'success', text: __('Note deleted.'));
+        Flux::toast(text: __('Note deleted.'), variant: 'success');
     }
 
     /**
@@ -49,8 +49,8 @@ trait ManagesNotes
         $this->forgetNotes();
 
         Flux::toast(
-            variant: 'success',
             text: $note->is_public ? __('Note shared with the project.') : __('Note made private.'),
+            variant: 'success',
         );
     }
 

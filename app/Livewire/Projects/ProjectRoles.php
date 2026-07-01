@@ -366,7 +366,7 @@ class ProjectRoles extends Component
         $this->reset('name', 'permissionIds');
         $this->forgetRoleCaches();
 
-        Flux::toast(variant: 'success', text: __('Role created.'));
+        Flux::toast(text: __('Role created.'), variant: 'success');
     }
 
     /**
@@ -445,7 +445,7 @@ class ProjectRoles extends Component
         $this->cancelEdit();
         $this->forgetRoleCaches();
 
-        Flux::toast(variant: 'success', text: __('Role updated.'));
+        Flux::toast(text: __('Role updated.'), variant: 'success');
     }
 
     public function deleteRole(RoleManager $roles, int $roleId): void
@@ -468,7 +468,7 @@ class ProjectRoles extends Component
             $roles->deleteRole($role);
             $this->forgetRoleCaches();
 
-            Flux::toast(variant: 'success', text: __('Role deleted.'));
+            Flux::toast(text: __('Role deleted.'), variant: 'success');
         }
     }
 

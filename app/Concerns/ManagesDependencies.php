@@ -208,7 +208,7 @@ trait ManagesDependencies
         $this->reset('dependencyReference');
         unset($this->relationshipGroups, $this->isBlocked);
 
-        Flux::toast(variant: 'success', text: __('Dependency added.'));
+        Flux::toast(text: __('Dependency added.'), variant: 'success');
     }
 
     /**
@@ -241,6 +241,6 @@ trait ManagesDependencies
 
         unset($this->relationshipGroups, $this->isBlocked);
 
-        Flux::toast(variant: 'success', text: __('Dependency removed.'));
+        Flux::toast(text: __('Dependency removed.'), variant: 'success');
     }
 }

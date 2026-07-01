@@ -137,7 +137,7 @@ trait ManagesParent
         $this->reset('movingParent', 'newParentId');
         $this->forgetReparentable();
 
-        Flux::toast(variant: 'success', text: __('Task moved.'));
+        Flux::toast(text: __('Task moved.'), variant: 'success');
     }
 
     /**

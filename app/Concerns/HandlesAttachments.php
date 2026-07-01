@@ -97,8 +97,8 @@ trait HandlesAttachments
             $this->reset('inlineImage');
 
             Flux::toast(
-                variant: 'danger',
                 text: __('That image could not be added. Please use a JPG, PNG, GIF or WebP image.'),
+                variant: 'danger',
             );
 
             return null;
@@ -131,7 +131,7 @@ trait HandlesAttachments
 
         unset($this->attachments);
 
-        Flux::toast(variant: 'success', text: __('Attachment removed.'));
+        Flux::toast(text: __('Attachment removed.'), variant: 'success');
     }
 
     /**
