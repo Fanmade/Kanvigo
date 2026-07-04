@@ -23,7 +23,7 @@ function taskWithLongHistory(): array
     $task = Task::factory()->for($project)->create();
 
     foreach (range(1, ActivityFeed::PER_PAGE + 5) as $ignored) {
-        $task->recordActivity('status_changed');
+        seedActivity($task, 'status_changed');
     }
 
     return [$member, $task];

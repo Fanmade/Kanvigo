@@ -37,7 +37,7 @@ class CancelTask
             $cascaded = 0;
 
             foreach ($task->openDescendants() as $descendant) {
-                if ($descendant->cancel($reason) !== null) {
+                if ($descendant->cancel($reason)) {
                     $cascaded++;
                 }
             }

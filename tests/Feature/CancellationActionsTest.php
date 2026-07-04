@@ -20,8 +20,9 @@ beforeEach(function () {
 });
 
 it('cancels a task with a reason and message, recording a canceled activity', function () {
-    $activity = $this->task->cancel(CancelReason::Duplicate, '  Same as ABC-1  ');
+    $this->task->cancel(CancelReason::Duplicate, '  Same as ABC-1  ');
 
+    $activity = $this->task->activities()->where('action', 'canceled')->firstOrFail();
     $fresh = $this->task->fresh();
 
     expect($fresh->status)->toBe(Status::Canceled)
@@ -43,15 +44,16 @@ it('treats a blank cancel message as no message', function () {
 it('does not cancel an already-canceled task again', function () {
     $task = Task::factory()->for($this->project)->canceled(CancelReason::Deprecated)->create();
 
-    expect($task->cancel(CancelReason::WontFix))->toBeNull()
+    expect($task->cancel(CancelReason::WontFix))->toBeFalse()
         ->and($task->fresh()->cancel_reason)->toBe(CancelReason::Deprecated);
 });
 
 it('reopens a canceled task back to Planned, clearing the cancellation', function () {
     $task = Task::factory()->for($this->project)->canceled(CancelReason::Duplicate, 'note')->create();
 
-    $activity = $task->reopen();
+    $task->reopen();
 
+    $activity = $task->activities()->where('action', 'reopened')->firstOrFail();
     $fresh = $task->fresh();
 
     expect($fresh->status)->toBe(Status::Planned)
@@ -63,7 +65,7 @@ it('reopens a canceled task back to Planned, clearing the cancellation', functio
 });
 
 it('does not reopen a task that is not canceled', function () {
-    expect($this->task->reopen())->toBeNull();
+    expect($this->task->reopen())->toBeFalse();
 });
 
 it('notifies subscribers, but not the actor, when a task is canceled', function () {

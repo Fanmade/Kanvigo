@@ -18,6 +18,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
+use App\Support\Facades\Audit;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -546,7 +547,7 @@ class TaskView extends Component
         $old = $task->priority;
         $task->priority = $new;
         $task->save();
-        $task->recordActivity('priority_changed', 'priority', (string) $old->value, (string) $new->value);
+        Audit::record($task->contentAuditEvent('priority_changed', 'priority', (string) $old->value, (string) $new->value));
 
         unset($this->task);
         Flux::toast(text: __('Priority updated.'), variant: 'success');
@@ -590,7 +591,7 @@ class TaskView extends Component
 
         $task->task_type_id = $newType?->getKey();
         $task->save();
-        $task->recordActivity('type_changed', 'type', $oldName, $newType?->name);
+        Audit::record($task->contentAuditEvent('type_changed', 'type', $oldName, $newType?->name));
 
         unset($this->task);
         Flux::toast(text: __('Type updated.'), variant: 'success');

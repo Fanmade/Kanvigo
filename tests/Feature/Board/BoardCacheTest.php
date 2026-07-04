@@ -91,7 +91,7 @@ it('rebuilds the board after a task row change invalidates the cache', function 
 it('invalidates on a task pivot change recorded as activity', function () {
     $before = BoardCache::version($this->project->id);
 
-    $this->task->recordActivity('tags_changed', 'tags', null, '["urgent"]');
+    seedActivity($this->task, 'tags_changed', 'tags', null, '["urgent"]');
 
     expect(BoardCache::version($this->project->id))->toBeGreaterThan($before);
 });
@@ -99,7 +99,7 @@ it('invalidates on a task pivot change recorded as activity', function () {
 it('does not invalidate on a comment activity', function () {
     $before = BoardCache::version($this->project->id);
 
-    $this->task->recordActivity('commented');
+    seedActivity($this->task, 'commented');
 
     expect(BoardCache::version($this->project->id))->toBe($before);
 });

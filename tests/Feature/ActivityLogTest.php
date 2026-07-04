@@ -44,7 +44,7 @@ it('attributes a web-session action to no token', function () {
     $task = Task::factory()->for($project)->create();
 
     $this->actingAs($user);
-    $task->recordActivity('status_changed', 'status', 'todo', 'done');
+    seedActivity($task, 'status_changed', 'status', 'todo', 'done');
 
     expect($task->activities()->where('action', 'status_changed')->first()->token_name)->toBeNull();
 });
@@ -58,7 +58,7 @@ it('attributes a token-driven action to the token name', function () {
     $user->withAccessToken($user->createToken('Claude')->accessToken);
     $this->actingAs($user);
 
-    $task->recordActivity('status_changed', 'status', 'todo', 'done');
+    seedActivity($task, 'status_changed', 'status', 'todo', 'done');
 
     expect($task->activities()->where('action', 'status_changed')->first()->token_name)->toBe('Claude');
 });

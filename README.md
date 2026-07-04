@@ -160,6 +160,12 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   comment may reference several entries, even ones on other tasks), and the posted
   comment shows a card per reference linking back to the entry — opening the feed
   and scrolling to it, navigating across tasks where needed.
+- **Pluggable audit sinks** — every audited action is emitted once through a
+  transactional outbox and fanned out to configurable audit sinks; the activity
+  log above is the default sink and needs no configuration. Self-hosters can
+  register additional sinks (a compliance ledger, a SIEM/webhook transport)
+  against the stable `kanvigo/audit-contracts` package — see
+  [docs/audit.md](docs/audit.md).
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`

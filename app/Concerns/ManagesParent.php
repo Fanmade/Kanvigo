@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\Task;
+use App\Support\Facades\Audit;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
@@ -132,7 +133,7 @@ trait ManagesParent
         }
 
         $newReference = $newParentId !== null ? Task::find($newParentId)?->reference : null;
-        $task->recordActivity('parent_changed', 'parent', $oldReference, $newReference);
+        Audit::record($task->contentAuditEvent('parent_changed', 'parent', $oldReference, $newReference));
 
         $this->reset('movingParent', 'newParentId');
         $this->forgetReparentable();

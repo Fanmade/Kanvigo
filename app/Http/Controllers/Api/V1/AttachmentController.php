@@ -10,6 +10,7 @@ use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Facades\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -80,7 +81,7 @@ class AttachmentController extends Controller
         $model->delete();
 
         if ($attachable instanceof Project || $attachable instanceof Task) {
-            $attachable->recordActivity('attachment_removed', 'attachments', $name);
+            Audit::record($attachable->contentAuditEvent('attachment_removed', 'attachments', $name));
         }
 
         return response()->json(status: 204);
@@ -113,7 +114,7 @@ class AttachmentController extends Controller
 
         $attachment = app(StoreAttachment::class)->handle($request->file('file'), $attachable);
 
-        $attachable->recordActivity('attachment_added', 'attachments');
+        Audit::record($attachable->contentAuditEvent('attachment_added', 'attachments'));
 
         return AttachmentResource::make($attachment)->response()->setStatusCode(201);
     }

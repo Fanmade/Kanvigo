@@ -61,7 +61,7 @@ it('records no token name for an equivalent web-session action', function () {
 
     // A normal logged-in user (no personal access token) — the control case.
     $this->actingAs($user);
-    $task->recordActivity('status_changed', 'status', 'planned', 'done');
+    seedActivity($task, 'status_changed', 'status', 'planned', 'done');
 
     expect($task->activities()->where('action', 'status_changed')->first()->token_name)->toBeNull();
 });

@@ -7,6 +7,7 @@ use App\Models\Attachment;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Facades\Audit;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
@@ -59,7 +60,7 @@ trait HandlesAttachments
 
         // Notes don't keep an activity log; only Project/Task tile uploads do.
         if (! $attachable instanceof Note) {
-            $attachable->recordActivity('attachment_added', 'attachments');
+            Audit::record($attachable->contentAuditEvent('attachment_added', 'attachments'));
         }
 
         $this->reset('newFiles');
@@ -126,7 +127,7 @@ trait HandlesAttachments
         $attachment->delete();
 
         if (! $attachable instanceof Note) {
-            $attachable->recordActivity('attachment_removed', 'attachments', $attachment->name);
+            Audit::record($attachable->contentAuditEvent('attachment_removed', 'attachments', $attachment->name));
         }
 
         unset($this->attachments);

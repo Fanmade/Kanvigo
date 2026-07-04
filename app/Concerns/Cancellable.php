@@ -5,6 +5,7 @@ namespace App\Concerns;
 use App\Enums\CancelReason;
 use App\Enums\Status;
 use App\Models\Activity;
+use App\Support\Facades\Audit;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -14,7 +15,7 @@ use Illuminate\Support\Carbon;
  * the terminal {@see Status::Canceled} state while keeping it on the record
  * instead of deleting it. Reopening clears the cancellation and returns the task
  * to {@see Status::Planned}. Both record an audit entry — and so notify
- * subscribers — through {@see LogsActivity::recordActivity()}.
+ * subscribers — through {@see Audit::record()}.
  *
  * Requires {@see LogsActivity} on the model. Operates on the single task only;
  * any parent/child status cascade is handled separately by the status flow.
@@ -23,19 +24,17 @@ use Illuminate\Support\Carbon;
  * @property CancelReason|null $cancel_reason
  * @property string|null $cancel_message
  * @property Status $status
- *
- * @method Activity recordActivity(string $action, ?string $field = null, ?string $oldValue = null, ?string $newValue = null)
  */
 trait Cancellable
 {
     /**
      * Cancel the task with a reason and an optional message, recording the
-     * activity. No-op (returns null) if it is already canceled.
+     * activity. No-op (returns false) if it is already canceled.
      */
-    public function cancel(CancelReason $reason, ?string $message = null): ?Activity
+    public function cancel(CancelReason $reason, ?string $message = null): bool
     {
         if ($this->canceled_at !== null) {
-            return null;
+            return false;
         }
 
         $message = $message !== null && trim($message) !== '' ? trim($message) : null;
@@ -46,22 +45,24 @@ trait Cancellable
         $this->status = Status::Canceled;
         $this->save();
 
-        return $this->recordActivity(
+        Audit::record($this->contentAuditEvent(
             'canceled',
             'cancellation',
             null,
             Activity::encodeValue(['reason' => $reason->value, 'message' => $message]),
-        );
+        ));
+
+        return true;
     }
 
     /**
      * Reopen a canceled task: clear the cancellation and return it to Planned,
-     * recording the activity. No-op (returns null) if it is not canceled.
+     * recording the activity. No-op (returns false) if it is not canceled.
      */
-    public function reopen(): ?Activity
+    public function reopen(): bool
     {
         if ($this->canceled_at === null) {
-            return null;
+            return false;
         }
 
         $previousReason = $this->cancel_reason;
@@ -72,7 +73,9 @@ trait Cancellable
         $this->status = Status::Planned;
         $this->save();
 
-        return $this->recordActivity('reopened', 'cancellation', $previousReason?->value, null);
+        Audit::record($this->contentAuditEvent('reopened', 'cancellation', $previousReason?->value, null));
+
+        return true;
     }
 
     /**

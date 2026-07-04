@@ -15,8 +15,8 @@ it('numbers activities per subject starting at 1', function () {
     // The "created" entry is the first.
     expect($task->activities()->min('sequence'))->toBe(1);
 
-    $second = $task->recordActivity('status_changed');
-    $third = $task->recordActivity('priority_changed');
+    $second = seedActivity($task, 'status_changed');
+    $third = seedActivity($task, 'priority_changed');
 
     expect($second->sequence)->toBe(2)
         ->and($third->sequence)->toBe(3);
@@ -27,8 +27,8 @@ it('numbers each subject independently', function () {
     $taskA = Task::factory()->for($project)->create();
     $taskB = Task::factory()->for($project)->create();
 
-    $a = $taskA->recordActivity('status_changed');
-    $b = $taskB->recordActivity('status_changed');
+    $a = seedActivity($taskA, 'status_changed');
+    $b = seedActivity($taskB, 'status_changed');
 
     // Both subjects' own "created" entry is sequence 1, so the next is 2 on each.
     expect($a->sequence)->toBe(2)
@@ -39,7 +39,7 @@ it('formats a self-describing reference for task-subject activities', function (
     $project = Project::factory()->create(['short_name' => 'KAN']);
     $task = Task::factory()->for($project)->create();
 
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
 
     expect($entry->reference)->toBe("KAN-{$task->task_number}-log-{$entry->sequence}");
 });
@@ -55,7 +55,7 @@ it('returns no reference for non-task subjects', function () {
 it('resolves an activity-log reference back to its entry', function () {
     $project = Project::factory()->create(['short_name' => 'KAN']);
     $task = Task::factory()->for($project)->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
 
     $resolved = ReferenceResolver::activity($entry->reference);
 
@@ -66,7 +66,7 @@ it('resolves an activity-log reference back to its entry', function () {
 it('resolves case-insensitively and trims whitespace', function () {
     $project = Project::factory()->create(['short_name' => 'KAN']);
     $task = Task::factory()->for($project)->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
 
     $resolved = ReferenceResolver::activity("  kan-{$task->task_number}-LoG-{$entry->sequence}  ");
 
@@ -90,8 +90,8 @@ it('backfills existing rows by creation order within each subject', function () 
     $taskB = Task::factory()->for($project)->create();
 
     foreach (['status_changed', 'priority_changed'] as $action) {
-        $taskA->recordActivity($action);
-        $taskB->recordActivity($action);
+        seedActivity($taskA, $action);
+        seedActivity($taskB, $action);
     }
 
     $expected = Activity::query()->pluck('sequence', 'id');

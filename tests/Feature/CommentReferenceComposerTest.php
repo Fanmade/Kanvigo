@@ -21,7 +21,7 @@ function memberTaskAndEntry(): array
     $project = Project::factory()->create(['short_name' => 'KAN']);
     joinProject($project, $member);
     $task = Task::factory()->for($project)->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
 
     return [$member, $task, $entry->reference];
 }

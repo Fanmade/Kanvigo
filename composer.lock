@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f63ce7f755eca78dc6d1f9a11efc6a0e",
+    "content-hash": "d47285cab94fe7115f0ffcc424669afc",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1271,6 +1271,58 @@
                 }
             ],
             "time": "2026-06-23T13:02:23+00:00"
+        },
+        {
+            "name": "kanvigo/audit-contracts",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Fanmade/kanvigo-audit-contracts.git",
+                "reference": "01eea5b05ef34a1780aa2625950e28fa82fbf4a8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Fanmade/kanvigo-audit-contracts/zipball/01eea5b05ef34a1780aa2625950e28fa82fbf4a8",
+                "reference": "01eea5b05ef34a1780aa2625950e28fa82fbf4a8",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "pestphp/pest": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kanvigo\\Audit\\Contracts\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ben",
+                    "email": "dev@reuterben.de"
+                }
+            ],
+            "description": "Stable contracts for Kanvigo's pluggable audit layer: the immutable AuditEvent DTO and the AuditSink interface third-party sinks implement.",
+            "homepage": "https://github.com/Fanmade/audit-contracts",
+            "keywords": [
+                "Audit",
+                "audit-log",
+                "compliance",
+                "contracts",
+                "kanvigo"
+            ],
+            "support": {
+                "issues": "https://github.com/Fanmade/kanvigo-audit-contracts/issues",
+                "source": "https://github.com/Fanmade/kanvigo-audit-contracts/tree/v0.1.0"
+            },
+            "time": "2026-07-04T18:56:12+00:00"
         },
         {
             "name": "laravel/chisel",

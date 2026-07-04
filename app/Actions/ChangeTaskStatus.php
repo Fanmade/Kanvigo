@@ -6,6 +6,7 @@ use App\Enums\CascadePreference;
 use App\Enums\Status;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\Facades\Audit;
 use App\Support\StatusCascadeResult;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -147,7 +148,7 @@ class ChangeTaskStatus
         $task->status = $new;
         $task->save();
 
-        $task->recordActivity('status_changed', 'status', $old->value, $new->value);
+        Audit::record($task->contentAuditEvent('status_changed', 'status', $old->value, $new->value));
     }
 
     /**

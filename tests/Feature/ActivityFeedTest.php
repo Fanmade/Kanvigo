@@ -63,7 +63,7 @@ it('applies the collapsed preference across all subject types', function () {
 
 it('renders a priority change without crashing on its numeric values', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('priority_changed', 'priority', '2', '4');
+    seedActivity($this->task, 'priority_changed', 'priority', '2', '4');
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -73,7 +73,7 @@ it('renders a priority change without crashing on its numeric values', function 
 
 it('shows which assignees were added and removed', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('assignee_changed', 'assignees', json_encode(['Carol']), json_encode(['Alice', 'Bob']));
+    seedActivity($this->task, 'assignee_changed', 'assignees', json_encode(['Carol']), json_encode(['Alice', 'Bob']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -82,7 +82,7 @@ it('shows which assignees were added and removed', function () {
 
 it('shows only added assignees when none were removed', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('assignee_changed', 'assignees', null, json_encode(['Alice']));
+    seedActivity($this->task, 'assignee_changed', 'assignees', null, json_encode(['Alice']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -93,7 +93,7 @@ it('shows only added assignees when none were removed', function () {
 it('localizes the assignee change in German', function () {
     app()->setLocale('de');
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('assignee_changed', 'assignees', json_encode(['Carol']), json_encode(['Alice', 'Bob']));
+    seedActivity($this->task, 'assignee_changed', 'assignees', json_encode(['Carol']), json_encode(['Alice', 'Bob']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -102,7 +102,7 @@ it('localizes the assignee change in German', function () {
 
 it('falls back to a generic line for legacy assignee entries without detail', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('assignee_changed', 'assignees');
+    seedActivity($this->task, 'assignee_changed', 'assignees');
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -111,7 +111,7 @@ it('falls back to a generic line for legacy assignee entries without detail', fu
 
 it('shows which tags were added and removed', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('tags_changed', 'tags', json_encode(['stale']), json_encode(['urgent', 'bug']));
+    seedActivity($this->task, 'tags_changed', 'tags', json_encode(['stale']), json_encode(['urgent', 'bug']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -120,7 +120,7 @@ it('shows which tags were added and removed', function () {
 
 it('describes an added dependency with its direction and reference', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC-2']));
+    seedActivity($this->task, 'dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC-2']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -129,7 +129,7 @@ it('describes an added dependency with its direction and reference', function ()
 
 it('describes a removed dependency', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('dependency_changed', 'dependencies', json_encode(['direction' => 'blocks', 'reference' => 'ABC-3']), null);
+    seedActivity($this->task, 'dependency_changed', 'dependencies', json_encode(['direction' => 'blocks', 'reference' => 'ABC-3']), null);
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -139,7 +139,7 @@ it('describes a removed dependency', function () {
 it('localizes a dependency change in German', function () {
     app()->setLocale('de');
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC-2']));
+    seedActivity($this->task, 'dependency_changed', 'dependencies', null, json_encode(['direction' => 'blocked_by', 'reference' => 'ABC-2']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -148,8 +148,8 @@ it('localizes a dependency change in German', function () {
 
 it('falls back to generic lines for legacy tag and dependency entries', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('tags_changed', 'tags');
-    $this->task->recordActivity('dependency_changed', 'dependencies');
+    seedActivity($this->task, 'tags_changed', 'tags');
+    seedActivity($this->task, 'dependency_changed', 'dependencies');
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -159,7 +159,7 @@ it('falls back to generic lines for legacy tag and dependency entries', function
 
 it('describes a cancellation with its reason and message', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('canceled', 'cancellation', null, json_encode(['reason' => 'duplicate', 'message' => 'Same as ABC-1']));
+    seedActivity($this->task, 'canceled', 'cancellation', null, json_encode(['reason' => 'duplicate', 'message' => 'Same as ABC-1']));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -168,7 +168,7 @@ it('describes a cancellation with its reason and message', function () {
 
 it('describes a cancellation without a message', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('canceled', 'cancellation', null, json_encode(['reason' => 'wont_fix', 'message' => null]));
+    seedActivity($this->task, 'canceled', 'cancellation', null, json_encode(['reason' => 'wont_fix', 'message' => null]));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -178,7 +178,7 @@ it('describes a cancellation without a message', function () {
 
 it('describes reopening a task', function () {
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('reopened', 'cancellation', 'duplicate', null);
+    seedActivity($this->task, 'reopened', 'cancellation', 'duplicate', null);
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -188,7 +188,7 @@ it('describes reopening a task', function () {
 it('localizes a cancellation in German', function () {
     app()->setLocale('de');
     $this->member->setPreference('activities_collapsed', false);
-    $this->task->recordActivity('canceled', 'cancellation', null, json_encode(['reason' => 'deprecated', 'message' => null]));
+    seedActivity($this->task, 'canceled', 'cancellation', null, json_encode(['reason' => 'deprecated', 'message' => null]));
 
     Livewire::actingAs($this->member)
         ->test(ActivityFeed::class, ['subject' => $this->task])
@@ -230,7 +230,7 @@ it('forbids non-members from viewing the feed', function () {
 it('shows only the first page of activity and reveals older entries on demand', function () {
     // The task factory already logged one "created" activity; add a full page more.
     foreach (range(1, ActivityFeed::PER_PAGE) as $ignored) {
-        $this->task->recordActivity('commented');
+        seedActivity($this->task, 'commented');
     }
 
     $component = Livewire::actingAs($this->member)

@@ -1,8 +1,11 @@
 <?php
 
 use App\Authorization\ProjectRoleProvisioner;
+use App\Models\Activity;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
+use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -44,6 +47,18 @@ pest()->browser()->timeout(15_000);
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * Seed a feed activity for a task/project through the real audit pipeline
+ * (Audit::record() → ActivityLogSink) and return the Activity row it wrote —
+ * the seeding equivalent of the removed recordActivity() model helper.
+ */
+function seedActivity(Task|Project $subject, string $action, ?string $field = null, ?string $oldValue = null, ?string $newValue = null): Activity
+{
+    Audit::record($subject->contentAuditEvent($action, $field, $oldValue, $newValue));
+
+    return $subject->activities()->orderByDesc('id')->firstOrFail();
+}
 
 /**
  * Grant one or more users membership of a project with one or more package

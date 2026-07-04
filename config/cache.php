@@ -5,10 +5,15 @@ use App\Models\Tag;
 use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Str;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditContext;
+use Kanvigo\Audit\Contracts\AuditEvent;
+use Kanvigo\Audit\Contracts\AuditSource;
 
 return [
 
@@ -144,6 +149,11 @@ return [
     | BoardCacheSerializationTest round-trips the graph through the database
     | store and fails if a class is missing.
     |
+    | The audit-contracts AuditEvent DTO (and everything a stamped event
+    | carries) is allow-listed too: queued audit sinks serialize events, and
+    | the AuditEventSerializationTest round-trips one through the database
+    | store to keep this in sync.
+    |
     */
 
     'serializable_classes' => [
@@ -156,6 +166,12 @@ return [
         MorphPivot::class,
         Pivot::class,
         Staudenmeir\LaravelAdjacencyList\Eloquent\Collection::class,
+        AuditEvent::class,
+        AuditContext::class,
+        AuditCategory::class,
+        AuditSource::class,
+        CarbonImmutable::class,
+        DateTimeImmutable::class,
     ],
 
 ];

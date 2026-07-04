@@ -102,7 +102,7 @@ class Task extends Model implements Dependable, Mentionable, Subscribable
 
         // Any task row change (status, position, title, archived, create, …)
         // invalidates the cached boards showing its project. Pivot changes
-        // (tags/assignees/dependencies) bump via recordActivity() instead.
+        // (tags/assignees/dependencies) bump via the audit ActivityLogSink instead.
         static::saved(static fn (Task $task) => BoardCache::touch($task->project_id));
         static::deleted(static fn (Task $task) => BoardCache::touch($task->project_id));
     }

@@ -8,6 +8,7 @@ use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Facades\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -145,7 +146,7 @@ class CommentController extends Controller
             'parent_id' => $parentId,
         ]);
 
-        $commentable->recordActivity('commented');
+        Audit::record($commentable->contentAuditEvent('commented'));
 
         return new CommentResource($comment->load('user'));
     }

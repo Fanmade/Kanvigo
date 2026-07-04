@@ -2,7 +2,6 @@
 
 namespace App\Concerns;
 
-use App\Models\Activity;
 use App\Models\Tag;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
@@ -12,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  *
  * @property int $project_id
  *
- * @method Activity|null recordTagChange(array<int, string> $addedNames, array<int, string> $removedNames)
+ * @method void recordTagChange(array<int, string> $addedNames, array<int, string> $removedNames)
  */
 trait HasTags
 {

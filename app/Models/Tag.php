@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\MatchesNameCaseInsensitively;
+use App\Support\Facades\Audit;
 use App\Support\IconCatalog;
 use Database\Factories\TagFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -306,7 +307,7 @@ class Tag extends Model
 
         $oldName = $this->name;
         $this->update(['name' => $newName]);
-        $this->project->recordActivity('tag_renamed', 'tags', $oldName, $newName);
+        Audit::record($this->project->contentAuditEvent('tag_renamed', 'tags', $oldName, $newName));
 
         return true;
     }
@@ -323,12 +324,12 @@ class Tag extends Model
 
         $oldColor = $this->color;
         $this->update(['color' => $newColor]);
-        $this->project->recordActivity(
+        Audit::record($this->project->contentAuditEvent(
             'tag_recolored',
             'tags',
             Activity::encodeValue(['name' => $this->name, 'color' => $oldColor]),
             Activity::encodeValue(['name' => $this->name, 'color' => $newColor]),
-        );
+        ));
 
         return true;
     }
@@ -339,7 +340,7 @@ class Tag extends Model
      */
     public function deleteWithActivity(): void
     {
-        $this->project->recordActivity('tag_deleted', 'tags', $this->name, null);
+        Audit::record($this->project->contentAuditEvent('tag_deleted', 'tags', $this->name, null));
         $this->delete();
     }
 
@@ -363,7 +364,7 @@ class Tag extends Model
             $target->addSynonyms($this->synonyms->pluck('name')->push($this->name));
         }
 
-        $this->project->recordActivity('tag_merged', 'tags', $this->name, $target->name);
+        Audit::record($this->project->contentAuditEvent('tag_merged', 'tags', $this->name, $target->name));
         $this->delete();
     }
 }

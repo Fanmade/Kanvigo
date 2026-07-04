@@ -2,18 +2,24 @@
 
 namespace App\Concerns;
 
-use App\Contracts\Subscribable;
+use App\Audit\Sinks\ActivityLogSink;
 use App\Enums\RelationshipType;
 use App\Models\Activity;
-use App\Models\Task;
 use App\Models\User;
-use App\Notifications\ItemActivity;
-use App\Support\BoardCache;
+use App\Support\Facades\Audit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Facades\Auth;
-use Laravel\Sanctum\PersonalAccessToken;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 
+/**
+ * Marks a model as a subject of the product activity feed and provides the
+ * emit-side helpers. Events are emitted through the single Audit::record()
+ * point; the feed's persistence and side effects (Activity row, board-cache
+ * bust, subscriber notifications) live in
+ * {@see ActivityLogSink}, which accepts exactly the
+ * feed-worthy content events on models carrying this trait.
+ */
 trait LogsActivity
 {
     public static function bootLogsActivity(): void
@@ -21,7 +27,7 @@ trait LogsActivity
         static::created(
             static function (Model $model): void {
                 /** @var Model&self $model */
-                $model->recordActivity('created');
+                Audit::record($model->contentAuditEvent('created'));
             });
     }
 
@@ -36,58 +42,33 @@ trait LogsActivity
     }
 
     /**
-     * Record an audit-trail entry for this model.
+     * Build a feed-worthy content audit event for this model, ready to emit
+     * via Audit::record(). Field and old/new values travel in the event
+     * metadata under the conventional "field"/"old"/"new" keys.
      */
-    public function recordActivity(string $action, ?string $field = null, ?string $oldValue = null, ?string $newValue = null): Activity
+    public function contentAuditEvent(string $action, ?string $field = null, ?string $oldValue = null, ?string $newValue = null): AuditEvent
     {
-        $activity = $this->activities()->create([
-            'user_id' => Auth::id(),
-            'token_name' => $this->currentTokenName(),
-            'action' => $action,
-            'field' => $field,
-            'old_value' => $oldValue,
-            'new_value' => $newValue,
-        ]);
-
-        // Tag/assignee/dependency changes don't touch the task row (so the
-        // saved() board-cache hook doesn't fire) but do change how its card
-        // renders — invalidate here. Comment activity (added or deleted) doesn't
-        // appear on the board, so it never needs to bust the cache.
-        if ($this instanceof Task && ! in_array($action, ['commented', 'comment_deleted'], true)) {
-            BoardCache::touch($this->project_id);
-        }
-
-        $this->notifySubscribers($activity);
-
-        return $activity;
-    }
-
-    /**
-     * The name of the API/MCP token the current action is being performed with,
-     * or null when it is a direct web-session action. A transient (session)
-     * token has no name, so only real personal access tokens are attributed.
-     */
-    protected function currentTokenName(): ?string
-    {
-        $user = Auth::user();
-        $token = $user instanceof User ? $user->currentAccessToken() : null;
-
-        return $token instanceof PersonalAccessToken ? $token->name : null;
+        return AuditEvent::make($action, AuditCategory::Content)
+            ->withSubject($this->getMorphClass(), $this->getKey())
+            ->withMetadata(array_filter(
+                ['field' => $field, 'old' => $oldValue, 'new' => $newValue],
+                static fn (?string $value): bool => $value !== null,
+            ));
     }
 
     /**
      * Record an assignee change, capturing the names of the users added and
      * removed as a JSON snapshot. Names are stored (rather than IDs) so the
      * trail reflects who was assigned at the time, even after a later rename or
-     * deletion. Returns null when nothing actually changed.
+     * deletion. Records nothing when nothing actually changed.
      *
      * @param  array<int, int|string>  $attachedIds  user IDs newly assigned
      * @param  array<int, int|string>  $detachedIds  user IDs unassigned
      */
-    public function recordAssigneeChange(array $attachedIds, array $detachedIds): ?Activity
+    public function recordAssigneeChange(array $attachedIds, array $detachedIds): void
     {
         if ($attachedIds === [] && $detachedIds === []) {
-            return null;
+            return;
         }
 
         $names = User::query()
@@ -100,37 +81,34 @@ trait LogsActivity
             ->values()
             ->all();
 
-        $added = $resolve($attachedIds);
-        $removed = $resolve($detachedIds);
-
-        return $this->recordActivity(
+        Audit::record($this->contentAuditEvent(
             'assignee_changed',
             'assignees',
-            Activity::encodeValue($removed),
-            Activity::encodeValue($added),
-        );
+            Activity::encodeValue($resolve($detachedIds)),
+            Activity::encodeValue($resolve($attachedIds)),
+        ));
     }
 
     /**
      * Record a tag change, capturing the names of the tags added and removed as
-     * a JSON snapshot (added in new_value, removed in old_value). Returns null
-     * when nothing actually changed.
+     * a JSON snapshot (added in new_value, removed in old_value). Records
+     * nothing when nothing actually changed.
      *
      * @param  array<int, string>  $addedNames
      * @param  array<int, string>  $removedNames
      */
-    public function recordTagChange(array $addedNames, array $removedNames): ?Activity
+    public function recordTagChange(array $addedNames, array $removedNames): void
     {
         if ($addedNames === [] && $removedNames === []) {
-            return null;
+            return;
         }
 
-        return $this->recordActivity(
+        Audit::record($this->contentAuditEvent(
             'tags_changed',
             'tags',
             Activity::encodeValue(array_values($removedNames)),
             Activity::encodeValue(array_values($addedNames)),
-        );
+        ));
     }
 
     /**
@@ -143,32 +121,15 @@ trait LogsActivity
      * @param  string  $direction  the relationship keyword from this item's perspective ({@see RelationshipType::keywords()})
      * @param  string  $reference  the related item's reference
      */
-    public function recordDependencyChange(bool $linked, string $direction, string $reference): Activity
+    public function recordDependencyChange(bool $linked, string $direction, string $reference): void
     {
         $payload = Activity::encodeValue(['direction' => $direction, 'reference' => $reference]);
 
-        return $this->recordActivity(
+        Audit::record($this->contentAuditEvent(
             'dependency_changed',
             'dependencies',
             $linked ? null : $payload,
             $linked ? $payload : null,
-        );
-    }
-
-    /**
-     * Notify the item's subscribers (excluding the actor) about an update.
-     */
-    protected function notifySubscribers(Activity $activity): void
-    {
-        if (! $this instanceof Subscribable) {
-            return;
-        }
-
-        $actorId = Auth::id();
-
-        $this->notificationAudience()
-            ->unique('id')
-            ->reject(static fn (User $user) => $user->id === $actorId)
-            ->each(static fn (User $user) => $user->notify(new ItemActivity($activity)));
+        ));
     }
 }

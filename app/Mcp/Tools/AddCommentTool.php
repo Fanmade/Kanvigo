@@ -6,6 +6,7 @@ use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Facades\Audit;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -66,7 +67,7 @@ class AddCommentTool extends Tool
             'parent_id' => $parentId,
         ]);
 
-        $commentable->recordActivity('commented');
+        Audit::record($commentable->contentAuditEvent('commented'));
 
         return Response::structured([
             'id' => $comment->id,

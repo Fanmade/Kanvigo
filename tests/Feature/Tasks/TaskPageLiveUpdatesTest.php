@@ -46,7 +46,7 @@ it('pulls in activity recorded elsewhere on a live-updates tick', function () {
     $component = Livewire::actingAs($this->member)->test(ActivityFeed::class, ['subject' => $this->task]);
     $before = $component->instance()->activityCount;
 
-    $this->task->recordActivity('status_changed', 'status', Status::ToDo->value, Status::Done->value);
+    seedActivity($this->task, 'status_changed', 'status', Status::ToDo->value, Status::Done->value);
 
     $component->dispatch('live-refresh');
 

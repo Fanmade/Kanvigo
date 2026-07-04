@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('attachments:prune-inline')->daily();
 Schedule::command('tasks:auto-archive')->daily();
+Schedule::command('audit:outbox:drain')->everyMinute();
+Schedule::command('audit:outbox:prune')->daily();

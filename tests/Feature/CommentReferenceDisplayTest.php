@@ -15,7 +15,7 @@ it('renders a reference card linking to the entry on the posted comment', functi
     $project = Project::factory()->create(['short_name' => 'KAN']);
     joinProject($project, $member);
     $task = Task::factory()->for($project)->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
 
     $comment = $task->comments()->create(['user_id' => $member->id, 'body' => '<p>why?</p>']);
     $comment->activities()->attach($entry->id);
@@ -33,7 +33,7 @@ it('links a cross-task reference to the referenced entry\'s own task', function 
     joinProject($project, $member);
     $taskA = Task::factory()->for($project)->create();
     $taskB = Task::factory()->for($project)->create();
-    $entryOnB = $taskB->recordActivity('status_changed');
+    $entryOnB = seedActivity($taskB, 'status_changed');
 
     $comment = $taskA->comments()->create(['user_id' => $member->id, 'body' => '<p>see other task</p>']);
     $comment->activities()->attach($entryOnB->id);
@@ -50,7 +50,7 @@ it('renders a referenced comment once, not as its own reply (KAN-339)', function
     $project = Project::factory()->create(['short_name' => 'KAN']);
     joinProject($project, $member);
     $task = Task::factory()->for($project)->create();
-    $entry = $task->recordActivity('commented');
+    $entry = seedActivity($task, 'commented');
 
     $comment = $task->comments()->create(['user_id' => $member->id, 'body' => '<p>test</p>']);
     $comment->activities()->attach($entry->id);
@@ -88,7 +88,7 @@ it('renders reference cards without an N+1 as comments grow', function () {
         // eager-load would issue one extra subject/project query per card.
         foreach (range(1, $comments) as $ignored) {
             $other = Task::factory()->for($project)->create();
-            $entry = $other->recordActivity('status_changed');
+            $entry = seedActivity($other, 'status_changed');
             $comment = $host->comments()->create(['user_id' => $member->id, 'body' => '<p>q</p>']);
             $comment->activities()->attach($entry->id);
         }
@@ -112,7 +112,7 @@ it('drops the card when the referenced entry is deleted', function () {
     $project = Project::factory()->create(['short_name' => 'KAN']);
     joinProject($project, $member);
     $task = Task::factory()->for($project)->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
     $comment = $task->comments()->create(['user_id' => $member->id, 'body' => '<p>why?</p>']);
     $comment->activities()->attach($entry->id);
 

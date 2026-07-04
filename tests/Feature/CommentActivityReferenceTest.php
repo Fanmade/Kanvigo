@@ -10,8 +10,8 @@ it('lets a comment reference multiple activity entries', function () {
     $task = Task::factory()->for(Project::factory())->create();
     $comment = $task->comments()->create(['body' => '<p>why these?</p>']);
 
-    $first = $task->recordActivity('status_changed');
-    $second = $task->recordActivity('priority_changed');
+    $first = seedActivity($task, 'status_changed');
+    $second = seedActivity($task, 'priority_changed');
 
     $comment->activities()->attach([$first->id, $second->id]);
 
@@ -21,7 +21,7 @@ it('lets a comment reference multiple activity entries', function () {
 
 it('exposes the comments that reference an entry', function () {
     $task = Task::factory()->for(Project::factory())->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
 
     $a = $task->comments()->create(['body' => '<p>one</p>']);
     $b = $task->comments()->create(['body' => '<p>two</p>']);
@@ -36,7 +36,7 @@ it('allows referencing an entry from a comment on another task', function () {
     $taskA = Task::factory()->for($project)->create();
     $taskB = Task::factory()->for($project)->create();
 
-    $entryOnB = $taskB->recordActivity('status_changed');
+    $entryOnB = seedActivity($taskB, 'status_changed');
     $commentOnA = $taskA->comments()->create(['body' => '<p>cross-task</p>']);
 
     $commentOnA->activities()->attach($entryOnB->id);
@@ -47,7 +47,7 @@ it('allows referencing an entry from a comment on another task', function () {
 
 it('drops the reference link when the comment is deleted', function () {
     $task = Task::factory()->for(Project::factory())->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
     $comment = $task->comments()->create(['body' => '<p>bye</p>']);
     $comment->activities()->attach($entry->id);
 
@@ -58,7 +58,7 @@ it('drops the reference link when the comment is deleted', function () {
 
 it('drops the reference link when the activity is deleted', function () {
     $task = Task::factory()->for(Project::factory())->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
     $comment = $task->comments()->create(['body' => '<p>hi</p>']);
     $comment->activities()->attach($entry->id);
 
@@ -69,7 +69,7 @@ it('drops the reference link when the activity is deleted', function () {
 
 it('keeps a reference unique per comment and entry', function () {
     $task = Task::factory()->for(Project::factory())->create();
-    $entry = $task->recordActivity('status_changed');
+    $entry = seedActivity($task, 'status_changed');
     $comment = $task->comments()->create(['body' => '<p>dup</p>']);
 
     $comment->activities()->syncWithoutDetaching($entry->id);

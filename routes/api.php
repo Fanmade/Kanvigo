@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TaskTypeController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Middleware\SetAuditSource;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,7 +26,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum', 'throttle:api'])
+Route::middleware(['auth:sanctum', 'throttle:api', SetAuditSource::class.':api'])
     ->prefix('v1')
     ->name('api.v1.')
     ->group(static function (): void {

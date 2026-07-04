@@ -9,6 +9,7 @@ use App\Models\Activity;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Facades\Audit;
 use App\Support\ReferenceResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -356,7 +357,7 @@ class CommentList extends Component
 
         // Record the removal in the audit trail (with the reason, if given), the
         // same way posting a comment logs a 'commented' entry.
-        $this->commentable->recordActivity('comment_deleted', null, null, $reason);
+        Audit::record($this->commentable->contentAuditEvent('comment_deleted', null, null, $reason));
 
         $this->reset('confirmingDelete', 'deleteReason');
         unset($this->comments, $this->commentCount, $this->hasMoreComments);
@@ -392,7 +393,7 @@ class CommentList extends Component
             'parent_id' => $parentId,
         ]);
 
-        $commentable->recordActivity('commented');
+        Audit::record($commentable->contentAuditEvent('commented'));
 
         unset($this->comments, $this->commentCount, $this->hasMoreComments);
 

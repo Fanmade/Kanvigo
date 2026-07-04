@@ -2,7 +2,7 @@
 
 namespace App\Concerns;
 
-use App\Models\Activity;
+use App\Support\Facades\Audit;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -17,8 +17,6 @@ use Illuminate\Support\Carbon;
  * Requires {@see LogsActivity} on the model — archiving records an audit entry.
  *
  * @property Carbon|null $archived_at
- *
- * @method Activity recordActivity(string $action, ?string $field = null, ?string $oldValue = null, ?string $newValue = null)
  */
 trait Archivable
 {
@@ -34,7 +32,7 @@ trait Archivable
         $this->archived_at = Carbon::now();
         $this->save();
 
-        $this->recordActivity('archived');
+        Audit::record($this->contentAuditEvent('archived'));
     }
 
     /**
@@ -50,7 +48,7 @@ trait Archivable
         $this->archived_at = null;
         $this->save();
 
-        $this->recordActivity('unarchived');
+        Audit::record($this->contentAuditEvent('unarchived'));
     }
 
     /**
