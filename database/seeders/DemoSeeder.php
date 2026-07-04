@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
@@ -14,7 +15,7 @@ class DemoSeeder extends Seeder
     /**
      * Seed a small set of demo data for local development.
      */
-    public function run(): void
+    public function run(ProjectRoleProvisioner $provisioner): void
     {
         $admin = $this->resolveAdmin();
 
@@ -24,6 +25,13 @@ class DemoSeeder extends Seeder
         $project = Project::factory()
             ->create(['title' => 'Kanvigo Demo', 'short_name' => 'KAN']);
         $project->members()->sync($everyone->pluck('id'));
+
+        // Membership alone grants nothing: ProjectPolicy resolves everything
+        // through the delegated-permissions roles, so each member needs a
+        // project-scoped role or every check (even view-project) fails.
+        foreach ($everyone as $user) {
+            $provisioner->syncMember($project, $user, $user->is($admin) ? 'owner' : 'member');
+        }
 
         foreach (range(1, 4) as $i) {
             $rootTask = Task::factory()->for($project)->create([
