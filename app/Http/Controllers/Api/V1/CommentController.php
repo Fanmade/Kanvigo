@@ -81,19 +81,22 @@ class CommentController extends Controller
     {
         $model = $this->authorizedComment($comment, 'delete');
 
-        $reason = $request->validate([
+        $reason = trim((string) ($request->validate([
             'delete_reason' => ['nullable', 'string', 'max:255'],
-        ])['delete_reason'] ?? null;
+        ])['delete_reason'] ?? '')) ?: null;
 
         if ($model->replies()->exists()) {
             $model->forceFill([
                 'is_deleted' => true,
                 'body' => '',
-                'delete_reason' => trim((string) $reason) ?: null,
+                'delete_reason' => $reason,
             ])->save();
         } else {
             $model->delete();
         }
+
+        // Record the removal in the audit trail, mirroring the UI's entry.
+        Audit::record($model->inlineAttachmentOwner()->contentAuditEvent('comment_deleted', null, null, $reason));
 
         return response()->json(status: 204);
     }

@@ -29,6 +29,66 @@ trait LogsActivity
                 /** @var Model&self $model */
                 Audit::record($model->contentAuditEvent('created'));
             });
+
+        static::updated(
+            static function (Model $model): void {
+                /** @var Model&self $model */
+                $auditedFields = $model->auditedFieldChanges();
+
+                foreach ($auditedFields as $field => $action) {
+                    if (! $model->wasChanged($field)) {
+                        continue;
+                    }
+
+                    Audit::record($model->contentAuditEvent(
+                        $action,
+                        $field,
+                        $model->auditFieldSnapshot($field, $model->getOriginal($field)),
+                        $model->auditFieldSnapshot($field, $model->getAttribute($field)),
+                    ));
+                }
+            });
+
+        static::deleted(
+            static function (Model $model): void {
+                /** @var Model&self $model */
+                Audit::record($model->contentAuditEvent('deleted'));
+            });
+    }
+
+    /**
+     * The attributes whose changes are audited on every save, mapped to the
+     * action recorded for them (e.g. 'title' => 'title_changed'). Auditing at
+     * the model level covers every write path — UI, MCP, REST, console — so a
+     * new code path can't silently skip the trail.
+     *
+     * @return array<string, string>
+     */
+    protected function auditedFieldChanges(): array
+    {
+        return [];
+    }
+
+    /**
+     * The value snapshot stored for an audited field change. Free text is a
+     * PII liability in an immutable trail, so description bodies are recorded
+     * as "the field changed" without old/new content.
+     */
+    protected function auditFieldSnapshot(string $field, mixed $value): ?string
+    {
+        if ($value === null || $field === 'description') {
+            return null;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if ($value instanceof \BackedEnum) {
+            return (string) $value->value;
+        }
+
+        return (string) $value;
     }
 
     /**

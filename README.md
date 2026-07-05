@@ -166,6 +166,12 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   register additional sinks (a compliance ledger, a SIEM/webhook transport)
   against the stable `kanvigo/audit-contracts` package — see
   [docs/audit.md](docs/audit.md).
+- **Complete audit coverage** — beyond content changes, every security-relevant
+  action is recorded for compliance sinks (not shown in the feed):
+  authentication (logins, failures, lockouts, password and two-factor changes,
+  passkeys), membership and permission changes, invitations, content edits and
+  deletions across every surface (UI, MCP, REST API), API token lifecycle, and
+  account deactivation/deletion.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`

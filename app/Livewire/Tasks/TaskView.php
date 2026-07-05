@@ -544,10 +544,9 @@ class TaskView extends Component
             return;
         }
 
-        $old = $task->priority;
         $task->priority = $new;
+        // The LogsActivity updated-hook records the priority_changed activity.
         $task->save();
-        Audit::record($task->contentAuditEvent('priority_changed', 'priority', (string) $old->value, (string) $new->value));
 
         unset($this->task);
         Flux::toast(text: __('Priority updated.'), variant: 'success');

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Authorization\AccountPermissionProvisioner;
 use App\Enums\Permission;
+use App\Support\Facades\Audit;
 use Database\Factories\UserFactory;
 use Fanmade\DelegatedPermissions\Concerns\HasRoles;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,6 +22,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -71,7 +74,16 @@ class User extends Authenticatable implements PasskeyUser
             $user->public_id ??= (string) Str::ulid();
         });
 
+        // Registration is invitation-only, so account creation happens outside
+        // Fortify — audit it at the model level to cover every path.
+        static::created(static function (User $user): void {
+            Audit::record($user->securityAuditEvent('registered', AuditCategory::Authn));
+        });
+
         static::deleting(static function (User $user): void {
+            Audit::record($user->securityAuditEvent('user_deleted')
+                ->withMetadata(['force' => $user->isForceDeleting()]));
+
             if ($user->isForceDeleting()) {
                 $user->deleteAvatar();
 
@@ -84,6 +96,15 @@ class User extends Authenticatable implements PasskeyUser
             $user->subscribedProjects()->detach();
             $user->subscribedTasks()->detach();
         });
+    }
+
+    /**
+     * An account-lifecycle audit event with this user as its subject.
+     */
+    public function securityAuditEvent(string $action, AuditCategory $category = AuditCategory::Security): AuditEvent
+    {
+        return AuditEvent::make($action, $category)
+            ->withSubject($this->getMorphClass(), $this->getKey());
     }
 
     /**
@@ -131,7 +152,16 @@ class User extends Authenticatable implements PasskeyUser
         }
 
         $this->forceFill(['deactivated_at' => now()])->save();
+
+        foreach ($this->tokens()->pluck('name', 'id') as $tokenId => $tokenName) {
+            Audit::record(AuditEvent::make('token_revoked', AuditCategory::Token)
+                ->withSubject($this->getMorphClass(), $this->getKey())
+                ->withMetadata(['token_id' => $tokenId, 'token' => $tokenName, 'reason' => 'deactivated']));
+        }
+
         $this->tokens()->delete();
+
+        Audit::record($this->securityAuditEvent('user_deactivated'));
     }
 
     /**
@@ -144,6 +174,8 @@ class User extends Authenticatable implements PasskeyUser
         }
 
         $this->forceFill(['deactivated_at' => null])->save();
+
+        Audit::record($this->securityAuditEvent('user_reactivated'));
     }
 
     /**

@@ -22,7 +22,15 @@ class DeleteUserForm extends Component
             'password' => $this->currentPasswordRules(),
         ]);
 
-        tap(Auth::user(), $logout(...))->forceDelete();
+        // Delete while still authenticated so the audit trail attributes the
+        // removal to the user themselves, then end the session. The guard's
+        // logout cycles a non-empty remember token with a save() — on the
+        // already-deleted model that would re-insert the row — so clear it
+        // before logging out.
+        $user = Auth::user();
+        $user->forceDelete();
+        $user->setRememberToken('');
+        $logout();
 
         $this->redirect('/', navigate: true);
     }

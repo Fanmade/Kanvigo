@@ -3,9 +3,11 @@
 namespace App\Livewire\Settings;
 
 use App\Concerns\PasswordValidationRules;
+use App\Support\Facades\Audit;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Kanvigo\Audit\Contracts\AuditCategory;
 use Laravel\Fortify\Features;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -56,6 +58,8 @@ class Security extends Component
         Auth::user()->update([
             'password' => $validated['password'],
         ]);
+
+        Audit::record(Auth::user()->securityAuditEvent('password_changed', AuditCategory::Authn));
 
         $this->reset('current_password', 'password', 'password_confirmation');
 

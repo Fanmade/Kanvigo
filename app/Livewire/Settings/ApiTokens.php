@@ -3,8 +3,11 @@
 namespace App\Livewire\Settings;
 
 use App\Enums\TokenAbility;
+use App\Support\Facades\Audit;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 use Laravel\Sanctum\PersonalAccessToken;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -43,9 +46,17 @@ class ApiTokens extends Component
 
         $abilities = TokenAbility::abilitiesFor(TokenAbility::from($this->accessLevel));
 
-        $this->plainTextToken = Auth::user()
-            ->createToken($this->name, $abilities)
-            ->plainTextToken;
+        $token = Auth::user()->createToken($this->name, $abilities);
+
+        $this->plainTextToken = $token->plainTextToken;
+
+        Audit::record(AuditEvent::make('token_created', AuditCategory::Token)
+            ->withSubject(Auth::user()->getMorphClass(), Auth::id())
+            ->withMetadata([
+                'token_id' => $token->accessToken->getKey(),
+                'token' => $this->name,
+                'abilities' => $abilities,
+            ]));
 
         $this->reset('name', 'accessLevel');
 
@@ -61,7 +72,17 @@ class ApiTokens extends Component
     {
         $this->authorize('create-api-tokens');
 
-        Auth::user()->tokens()->whereKey($tokenId)->delete();
+        $token = Auth::user()->tokens()->whereKey($tokenId)->first();
+
+        if ($token === null) {
+            return;
+        }
+
+        $token->delete();
+
+        Audit::record(AuditEvent::make('token_revoked', AuditCategory::Token)
+            ->withSubject(Auth::user()->getMorphClass(), Auth::id())
+            ->withMetadata(['token_id' => $token->getKey(), 'token' => $token->name]));
 
         unset($this->tokens);
 

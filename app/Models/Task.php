@@ -107,6 +107,22 @@ class Task extends Model implements Dependable, Mentionable, Subscribable
         static::deleted(static fn (Task $task) => BoardCache::touch($task->project_id));
     }
 
+    /**
+     * Field edits audited on every write path (UI, MCP, REST). Priority is
+     * feed-worthy and shows up as activity; the rest are audit-only.
+     *
+     * @return array<string, string>
+     */
+    protected function auditedFieldChanges(): array
+    {
+        return [
+            'title' => 'title_changed',
+            'description' => 'description_changed',
+            'due_date' => 'due_date_changed',
+            'priority' => 'priority_changed',
+        ];
+    }
+
     public function inlineAttachmentOwner(): Project|Task
     {
         return $this;

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Concerns\SanitizesRichText;
+use App\Support\Facades\Audit;
 use Database\Factories\NoteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 
 /**
  * A personal note: the first user-owned, projectless entity. Private to its
@@ -57,6 +60,45 @@ class Note extends Model
                 $note->position = (int) static::query()->where('user_id', $note->user_id)->max('position') + 1;
             }
         });
+
+        // The note lifecycle is audited at the model level so every write path
+        // (Livewire, MCP, REST) is covered. Notes are not a feed subject, so
+        // these events flow to the outbox and ledger sinks only. Payloads stay
+        // reference-shaped: which fields changed, never the note's content.
+        static::created(static function (Note $note): void {
+            Audit::record($note->auditEvent('note_created')
+                ->withMetadata(['project_id' => $note->project_id]));
+        });
+
+        static::updated(static function (Note $note): void {
+            if ($note->wasChanged('converted_task_id') && $note->converted_task_id !== null) {
+                Audit::record($note->auditEvent('note_converted')
+                    ->withMetadata(['task_id' => $note->converted_task_id]));
+            }
+
+            $fields = array_values(array_diff(
+                array_keys($note->getChanges()),
+                ['updated_at', 'position', 'converted_task_id', 'deleted_at'],
+            ));
+
+            if ($fields !== []) {
+                Audit::record($note->auditEvent('note_updated')
+                    ->withMetadata(['fields' => $fields]));
+            }
+        });
+
+        static::deleted(static function (Note $note): void {
+            Audit::record($note->auditEvent('note_deleted'));
+        });
+    }
+
+    /**
+     * A content audit event with this note as its subject.
+     */
+    protected function auditEvent(string $action): AuditEvent
+    {
+        return AuditEvent::make($action, AuditCategory::Content)
+            ->withSubject($this->getMorphClass(), $this->getKey());
     }
 
     /**

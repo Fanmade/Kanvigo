@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Audit\AuditManager;
 use App\Audit\ContextResolver;
+use App\Audit\Listeners\RecordAuthenticationEvents;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -39,5 +40,7 @@ class AuditServiceProvider extends ServiceProvider
         Event::listen(JobExceptionOccurred::class, function (): void {
             $this->app->make(ContextResolver::class)->markQueueJob(false);
         });
+
+        Event::subscribe(RecordAuthenticationEvents::class);
     }
 }

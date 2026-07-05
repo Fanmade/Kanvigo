@@ -4,9 +4,12 @@ namespace App\Authorization;
 
 use App\Enums\Permission as AccountPermission;
 use App\Models\User;
+use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Fanmade\DelegatedPermissions\RoleManager;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 
 /**
  * Provisions the global (account-level) permission layer on the
@@ -77,7 +80,7 @@ readonly class AccountPermissionProvisioner
      */
     public function grant(User $user, AccountPermission $permission): void
     {
-        $user->assignRole($this->provision()[$permission->value]);
+        $this->apply($user, $this->provision()[$permission->value], granted: true);
     }
 
     /**
@@ -85,7 +88,7 @@ readonly class AccountPermissionProvisioner
      */
     public function revoke(User $user, AccountPermission $permission): void
     {
-        $user->removeRole($this->provision()[$permission->value]);
+        $this->apply($user, $this->provision()[$permission->value], granted: false);
     }
 
     /**
@@ -101,11 +104,31 @@ readonly class AccountPermissionProvisioner
             ->unique();
 
         foreach ($this->provision() as $name => $role) {
-            if ($wanted->contains($name)) {
-                $user->assignRole($role);
-            } else {
-                $user->removeRole($role);
-            }
+            $this->apply($user, $role, granted: $wanted->contains($name));
         }
+    }
+
+    /**
+     * Assign or remove one account-permission role, recording an audit event
+     * when the grant actually changed hands (idempotent re-grants and re-revokes
+     * stay silent, so the trail reflects real permission changes only).
+     */
+    protected function apply(User $user, Role $role, bool $granted): void
+    {
+        $held = $user->roles()->whereKey($role->getKey())->exists();
+
+        if ($granted) {
+            $user->assignRole($role);
+        } else {
+            $user->removeRole($role);
+        }
+
+        if ($held === $granted) {
+            return;
+        }
+
+        Audit::record(AuditEvent::make($granted ? 'permission_granted' : 'permission_revoked', AuditCategory::Authz)
+            ->withSubject($user->getMorphClass(), $user->getKey())
+            ->withMetadata(['permission' => $role->name]));
     }
 }

@@ -5,6 +5,7 @@ namespace App\Authorization;
 use App\Authorization\Exceptions\OwnerAlreadyAssigned;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\DelegatedPermissions;
 use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Fanmade\DelegatedPermissions\Models\Permission;
@@ -13,6 +14,8 @@ use Fanmade\DelegatedPermissions\Models\Role;
 use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 
 /**
  * Provisions a project's delegated role tree (owner → admin → member → viewer)
@@ -177,7 +180,7 @@ class ProjectRoleProvisioner
     {
         $roles = $this->provision($project);
 
-        $user->roles()
+        $held = $user->roles()
             ->where('scope_type', $project->getMorphClass())
             ->where('scope_id', $project->getKey())
             ->get()
@@ -185,6 +188,14 @@ class ProjectRoleProvisioner
 
         if ($roleName !== null) {
             $user->assignRole($roles[$roleName]);
+        }
+
+        $heldNames = $held->map(static fn (Role $role): string => (string) $role->name)->values()->all();
+
+        if ($roleName !== null && $heldNames !== [$roleName]) {
+            $this->recordRoleChange('role_assigned', $project, $user, $roleName, $heldNames);
+        } elseif ($roleName === null && $heldNames !== []) {
+            $this->recordRoleChange('role_removed', $project, $user, null, $heldNames);
         }
     }
 
@@ -204,7 +215,13 @@ class ProjectRoleProvisioner
             throw OwnerAlreadyAssigned::for($project);
         }
 
+        $newlyHeld = ! $user->roles()->whereKey($role->getKey())->exists();
+
         $user->assignRole($role);
+
+        if ($newlyHeld) {
+            $this->recordRoleChange('role_assigned', $project, $user, $roleName);
+        }
     }
 
     /**
@@ -215,7 +232,32 @@ class ProjectRoleProvisioner
     {
         $role = $this->projectRole($project, $roleName);
 
+        $wasHeld = $user->roles()->whereKey($role->getKey())->exists();
+
         $user->removeRole($role);
+
+        if ($wasHeld) {
+            $this->recordRoleChange('role_removed', $project, $user, $roleName);
+        }
+    }
+
+    /**
+     * Record a project-role grant or revocation in the audit trail. Role
+     * changes are authorization events, so they bypass the activity feed and
+     * flow to the compliance/transport sinks only.
+     *
+     * @param  array<int, string>  $replacedRoles  the roles a sync replaced, if any
+     */
+    protected function recordRoleChange(string $action, Project $project, User $user, ?string $roleName, array $replacedRoles = []): void
+    {
+        Audit::record(AuditEvent::make($action, AuditCategory::Authz)
+            ->withSubject($project->getMorphClass(), $project->getKey())
+            ->withMetadata(array_filter([
+                'member_id' => $user->getKey(),
+                'member' => $user->name,
+                'role' => $roleName,
+                'replaced' => $replacedRoles,
+            ], static fn (mixed $value): bool => $value !== null && $value !== [])));
     }
 
     /**

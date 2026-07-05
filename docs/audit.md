@@ -6,6 +6,35 @@ event and delivered to every registered **audit sink**. The default install
 ships with a single sink, the product **activity feed**, and behaves exactly
 like the classic activity log with zero configuration.
 
+## What is audited
+
+Beyond the content changes shown in the activity feed, the audit layer records
+every security-relevant action. These events do not appear in the feed; they
+flow to the outbox and to any registered compliance/transport sinks:
+
+- **Authentication** — login, logout, failed attempts, lockouts, password
+  resets and changes, email verification, registration (invitation
+  acceptance), the two-factor lifecycle (enable, confirm, disable, challenge,
+  failed challenge, recovery codes) and passkey registration, verification and
+  deletion.
+- **Authorization & membership** — project members added/removed, project role
+  grants/revocations, custom role creation/edits/deletion, account permission
+  grants/revocations, and the invitation lifecycle (created, resent, accepted,
+  revoked).
+- **Content edits & deletions** — task title/description/due-date/priority
+  edits, project title/short-name/description edits, the full note lifecycle
+  (create, edit, convert, delete), and task/project/user deletions — recorded
+  at the model level, so every write path (UI, MCP, REST API) is covered.
+  Description bodies are recorded as "the field changed" without content
+  snapshots (free text in an immutable trail is a PII liability).
+- **API tokens & accounts** — token creation and revocation (including the
+  bulk revoke on deactivation), account deactivation, reactivation and
+  deletion.
+
+The coverage matrix in `tests/Feature/Audit/AuditCoverageTest.php` asserts
+each of these actions produces an audit record, so a code path that skips the
+audit layer fails the suite.
+
 ## How events flow
 
 1. The action emits an event, which lands in a transactional **outbox** inside

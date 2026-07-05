@@ -14,6 +14,7 @@ use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\BoardCache;
+use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Flux\Flux;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
@@ -595,6 +598,10 @@ class ProjectShow extends Component
             }
 
             $project->members()->detach($member->getKey());
+
+            Audit::record(AuditEvent::make('member_removed', AuditCategory::Authz)
+                ->withSubject($project->getMorphClass(), $project->getKey())
+                ->withMetadata(['member_id' => $member->getKey(), 'member' => $member->name]));
 
             return true;
         });

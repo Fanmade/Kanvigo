@@ -69,6 +69,20 @@ class Project extends Model implements Mentionable, Subscribable
         ];
     }
 
+    /**
+     * Field edits audited on every write path (audit-only, not feed-worthy).
+     *
+     * @return array<string, string>
+     */
+    protected function auditedFieldChanges(): array
+    {
+        return [
+            'title' => 'title_changed',
+            'short_name' => 'short_name_changed',
+            'description' => 'description_changed',
+        ];
+    }
+
     public function inlineAttachmentOwner(): Project|Task
     {
         return $this;

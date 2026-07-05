@@ -11,12 +11,15 @@ use App\Mail\InvitationMail;
 use App\Models\Invitation;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -234,6 +237,10 @@ class UserManagement extends Component
 
         $invitation->forceFill(['expires_at' => now()->addDays(7)])->save();
 
+        Audit::record(AuditEvent::make('invitation_resent', AuditCategory::Authz)
+            ->withSubject($invitation->getMorphClass(), $invitation->getKey())
+            ->withMetadata(['email' => $invitation->email]));
+
         Mail::to($invitation->email)->send(new InvitationMail($invitation, $invitation->token));
 
         unset($this->pendingInvitations);
@@ -248,7 +255,12 @@ class UserManagement extends Component
     {
         $this->authorize('manage-users');
 
-        Invitation::query()->valid()->findOrFail($invitationId)->delete();
+        $invitation = Invitation::query()->valid()->findOrFail($invitationId);
+        $invitation->delete();
+
+        Audit::record(AuditEvent::make('invitation_revoked', AuditCategory::Authz)
+            ->withSubject($invitation->getMorphClass(), $invitation->getKey())
+            ->withMetadata(['email' => $invitation->email]));
 
         unset($this->pendingInvitations);
 

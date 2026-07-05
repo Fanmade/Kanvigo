@@ -7,8 +7,11 @@ use App\Concerns\PasswordValidationRules;
 use App\Models\Invitation;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\Facades\Audit;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -69,9 +72,19 @@ class AcceptInvitation extends Component
             $provisioner = app(ProjectRoleProvisioner::class);
             foreach (Project::whereKey($this->invitation->project_ids)->get() as $project) {
                 $provisioner->syncMember($project, $user, 'member');
+
+                Audit::record(AuditEvent::make('member_added', AuditCategory::Authz)
+                    ->withSubject($project->getMorphClass(), $project->getKey())
+                    ->withActor($user->getKey())
+                    ->withMetadata(['member_id' => $user->getKey(), 'member' => $user->name]));
             }
 
             $this->invitation->forceFill(['accepted_at' => now()])->save();
+
+            Audit::record(AuditEvent::make('invitation_accepted', AuditCategory::Authz)
+                ->withSubject($this->invitation->getMorphClass(), $this->invitation->getKey())
+                ->withActor($user->getKey())
+                ->withMetadata(['email' => $this->invitation->email]));
 
             return $user;
         });

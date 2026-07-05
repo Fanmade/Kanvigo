@@ -10,6 +10,7 @@ use App\Enums\Status;
 use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\PresentsTasks;
 use App\Mcp\Concerns\RequiresWriteAccess;
+use App\Support\Facades\Audit;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -20,7 +21,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Updates a task\'s title, description, priority, status and/or tags, identified by its reference (e.g. "PROJ-42"). Can also cancel the task with a reason (cancel_reason, optionally cancel_message) — which cancels its open subtasks too — or reopen a canceled task (reopen=true). Status, cancellation and tag changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Updates a task\'s title, description, priority, status and/or tags, identified by its reference (e.g. "PROJ-42"). Can also cancel the task with a reason (cancel_reason, optionally cancel_message) — which cancels its open subtasks too — or reopen a canceled task (reopen=true). All changes are recorded in the audit trail. Requires a write-access token; the user must be a member of the project.')]
 class UpdateTaskTool extends Tool
 {
     use NormalizesPlainText;
@@ -120,8 +121,16 @@ class UpdateTaskTool extends Tool
         }
 
         if ($typeProvided) {
+            $previousTypeName = $task->taskType?->name;
             $task->task_type_id = $type?->getKey();
-            $task->save();
+
+            if ($task->isDirty('task_type_id')) {
+                $task->save();
+                // Field edits (title/description/due date/priority) are audited by
+                // the LogsActivity updated-hook; the type name resolution lives
+                // here, mirroring the UI's type_changed entry.
+                Audit::record($task->contentAuditEvent('type_changed', 'type', $previousTypeName, $type?->name));
+            }
         }
 
         if ($cancelProvided) {

@@ -5,6 +5,7 @@ namespace App\Livewire\Projects;
 use App\Authorization\PermissionCatalog;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
+use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Fanmade\DelegatedPermissions\PermissionResolver;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Kanvigo\Audit\Contracts\AuditCategory;
+use Kanvigo\Audit\Contracts\AuditEvent;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -363,6 +366,10 @@ class ProjectRoles extends Component
 
         $roles->createRole($validated['name'], $parent, $names, $project);
 
+        Audit::record(AuditEvent::make('role_created', AuditCategory::Authz)
+            ->withSubject($project->getMorphClass(), $project->getKey())
+            ->withMetadata(['role' => $validated['name'], 'parent' => $parent->name, 'permissions' => $names]));
+
         $this->reset('name', 'permissionIds');
         $this->forgetRoleCaches();
 
@@ -434,12 +441,25 @@ class ProjectRoles extends Component
             ->filter(static fn (string $name): bool => in_array($name, ProjectRoleProvisioner::CATALOG, true))
             ->values();
 
-        foreach ($desired->diff($current) as $name) {
+        $granted = $desired->diff($current)->values();
+        $revoked = $current->diff($desired)->values();
+
+        foreach ($granted as $name) {
             $resolver->grant($role, $name);
         }
 
-        foreach ($current->diff($desired) as $name) {
+        foreach ($revoked as $name) {
             $resolver->revoke($role, $name);
+        }
+
+        if ($granted->isNotEmpty() || $revoked->isNotEmpty()) {
+            Audit::record(AuditEvent::make('role_updated', AuditCategory::Authz)
+                ->withSubject($this->project->getMorphClass(), $this->project->getKey())
+                ->withMetadata(array_filter([
+                    'role' => $role->name,
+                    'granted' => $granted->all(),
+                    'revoked' => $revoked->all(),
+                ], static fn (mixed $value): bool => $value !== [])));
         }
 
         $this->cancelEdit();
@@ -466,6 +486,11 @@ class ProjectRoles extends Component
             }
 
             $roles->deleteRole($role);
+
+            Audit::record(AuditEvent::make('role_deleted', AuditCategory::Authz)
+                ->withSubject($project->getMorphClass(), $project->getKey())
+                ->withMetadata(['role' => $role->name]));
+
             $this->forgetRoleCaches();
 
             Flux::toast(text: __('Role deleted.'), variant: 'success');
