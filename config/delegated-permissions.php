@@ -27,9 +27,14 @@ return [
     | (the first model argument is taken as the scope). Disable it to keep gate
     | checks untouched and call `hasPermission()` directly instead.
     |
+    | Disabled here: the app registers its own equivalent hook (see
+    | AppServiceProvider::registerPermissionGate()) that enforces the API token
+    | project scope before delegating to the resolver. The package hook would
+    | grant abilities before that scope check could deny them.
+    |
     */
 
-    'register_gate' => env('DELEGATED_PERMISSIONS_REGISTER_GATE', true),
+    'register_gate' => false,
 
     /*
     |--------------------------------------------------------------------------

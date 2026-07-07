@@ -211,7 +211,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   `invite-users`, `create-api-tokens`, `manage-users`) and Policies that resolve
   project access through inheritance-based, per-project delegated permissions.
 - **API tokens** — permitted users mint personal Sanctum tokens (read-only or
-  read & write) for MCP/API access and revoke them from Settings.
+  read & write) for MCP/API access and revoke them from Settings. A token can
+  optionally be restricted to selected projects: it then only sees and acts on
+  those projects (and cannot create new ones) across the REST API and MCP —
+  handy for giving an agent access to a single project. Unrestricted tokens
+  keep access to everything the owner can see.
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer
   token, that lets AI agents work with the projects and tasks the token's owner can
   access. Read tools (list/inspect) work with any token and surface each item's

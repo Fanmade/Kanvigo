@@ -24,6 +24,12 @@ Tokens carry one of two ability levels:
 - **Read-only** — may call the `GET` endpoints.
 - **Read & write** — may also create and update (the `POST`/`PATCH` endpoints).
 
+A token may additionally be **restricted to selected projects** when it is
+created. A restricted token only sees and acts on its allowed projects —
+out-of-scope references are `404`, listings are filtered, and creating new
+projects is `403` — while an unrestricted token (the default) accesses
+everything its owner can. The same restriction applies to the MCP server.
+
 A request without a valid token is `401`. A read-only token calling a write
 endpoint is `403`. A reference that does not exist *or* belongs to a project you
 cannot see is `404` — the API never reveals the existence of others' data.

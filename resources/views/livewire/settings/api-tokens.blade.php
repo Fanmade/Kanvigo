@@ -19,6 +19,25 @@
                 <flux:radio value="write" :label="__('Read and write')" :description="__('Can read and modify data')" />
             </flux:radio.group>
 
+            <flux:radio.group wire:model.live="projectScope" :label="__('Project access')" variant="cards" class="max-sm:flex-col">
+                <flux:radio value="all" :label="__('All projects')" :description="__('Can access every project you are a member of')" data-test="token-scope-all" />
+                <flux:radio value="selected" :label="__('Selected projects')" :description="__('Can only access the projects picked below')" data-test="token-scope-selected" />
+            </flux:radio.group>
+
+            @if ($projectScope === 'selected')
+                <flux:checkbox.group wire:model="selectedProjects" :label="__('Projects')" data-test="token-projects">
+                    @foreach ($this->projects as $project)
+                        <flux:checkbox
+                            :value="(string) $project->id"
+                            :label="$project->title"
+                            :description="$project->short_name"
+                            data-test="token-project-{{ $project->short_name }}"
+                        />
+                    @endforeach
+                </flux:checkbox.group>
+                <flux:error name="selectedProjects" />
+            @endif
+
             <div class="flex items-center gap-4">
                 <flux:button variant="primary" type="submit" data-test="create-token-button">{{ __('Create token') }}</flux:button>
             </div>
@@ -54,6 +73,7 @@
                                     <div class="flex items-center gap-2.5">
                                         <p class="font-medium tracking-tight">{{ $token['name'] }}</p>
                                         <flux:badge size="sm">{{ $token['abilities_label'] }}</flux:badge>
+                                        <flux:badge size="sm" color="indigo" data-test="token-projects-badge">{{ $token['projects_label'] }}</flux:badge>
                                     </div>
                                     <p class="text-zinc-500 dark:text-zinc-400 text-xs">
                                         {{ __('Created :time', ['time' => $token['created_at_diff']]) }}

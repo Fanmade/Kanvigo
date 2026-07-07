@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Settings\ApiTokens;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -49,6 +50,86 @@ test('a permitted user can revoke a token', function () {
         ->call('revoke', $tokenId);
 
     expect($user->tokens()->count())->toBe(0);
+});
+
+test('a token is unrestricted by default', function () {
+    $user = User::factory()->canCreateApiTokens()->create();
+
+    Livewire::actingAs($user)
+        ->test(ApiTokens::class)
+        ->set('name', 'Unrestricted')
+        ->call('createToken')
+        ->assertHasNoErrors();
+
+    $token = $user->tokens()->firstOrFail();
+
+    expect($token->restrictsProjects())->toBeFalse();
+    expect($token->projects()->count())->toBe(0);
+});
+
+test('a token can be restricted to selected projects', function () {
+    $user = User::factory()->canCreateApiTokens()->create();
+    $allowed = Project::factory()->withMembers([$user])->create();
+    Project::factory()->withMembers([$user])->create();
+
+    Livewire::actingAs($user)
+        ->test(ApiTokens::class)
+        ->set('name', 'Scoped')
+        ->set('projectScope', 'selected')
+        ->set('selectedProjects', [(string) $allowed->id])
+        ->call('createToken')
+        ->assertHasNoErrors();
+
+    $token = $user->tokens()->firstOrFail();
+
+    expect($token->restrictsProjects())->toBeTrue();
+    expect($token->projects()->pluck('projects.id')->all())->toBe([$allowed->id]);
+});
+
+test('a restricted token requires at least one selected project', function () {
+    $user = User::factory()->canCreateApiTokens()->create();
+    Project::factory()->withMembers([$user])->create();
+
+    Livewire::actingAs($user)
+        ->test(ApiTokens::class)
+        ->set('name', 'Scoped')
+        ->set('projectScope', 'selected')
+        ->set('selectedProjects', [])
+        ->call('createToken')
+        ->assertHasErrors('selectedProjects');
+
+    expect($user->tokens()->count())->toBe(0);
+});
+
+test('a token cannot be restricted to a project the user is not a member of', function () {
+    $user = User::factory()->canCreateApiTokens()->create();
+    Project::factory()->withMembers([$user])->create();
+    $foreign = Project::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(ApiTokens::class)
+        ->set('name', 'Scoped')
+        ->set('projectScope', 'selected')
+        ->set('selectedProjects', [(string) $foreign->id])
+        ->call('createToken')
+        ->assertHasErrors('selectedProjects');
+
+    expect($user->tokens()->count())->toBe(0);
+});
+
+test('the token list labels the project scope', function () {
+    $user = User::factory()->canCreateApiTokens()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'SCP']);
+
+    $unrestricted = $user->createToken('Legacy', ['read'])->accessToken;
+    $restricted = $user->createToken('Scoped', ['read'])->accessToken;
+    $restricted->forceFill(['restricts_projects' => true])->save();
+    $restricted->projects()->attach($project->id);
+
+    $tokens = collect(Livewire::actingAs($user)->test(ApiTokens::class)->instance()->tokens())->keyBy('id');
+
+    expect($tokens[$unrestricted->id]['projects_label'])->toBe(__('All projects'));
+    expect($tokens[$restricted->id]['projects_label'])->toBe('SCP');
 });
 
 test('a user without permission is forbidden', function () {

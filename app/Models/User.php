@@ -12,8 +12,10 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -55,9 +57,10 @@ class User extends Authenticatable implements PasskeyUser
     use HasApiTokens, HasFactory, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
 
     // The package's per-project permission check, aliased so it doesn't collide
-    // with the account-level hasPermission(Permission) above.
+    // with the account-level hasPermission(Permission) above and so
+    // hasScopedPermission() below can wrap it with the token project scope.
     use HasRoles {
-        hasPermission as hasScopedPermission;
+        hasPermission as protected resolveScopedPermission;
     }
 
     /**
@@ -198,13 +201,68 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * The projects this user has been granted access to.
+     * The projects this user has been granted access to. When the current
+     * request is authenticated by a project-restricted API token, the relation
+     * only yields the token's allowed projects, so every membership-derived
+     * listing (API, MCP tools) follows the token scope automatically. Web
+     * sessions and unrestricted tokens see the full membership.
      *
      * @return BelongsToMany<Project, $this>
      */
     public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Project::class)->withTimestamps();
+        $projects = $this->belongsToMany(Project::class)->withTimestamps();
+
+        $token = $this->currentAccessToken();
+
+        if ($token instanceof PersonalAccessToken && $token->restrictsProjects()) {
+            $projects->whereIn('projects.id', $token->projects()->select('projects.id'));
+        }
+
+        return $projects;
+    }
+
+    /**
+     * The package's per-project permission check, wrapped with the API token
+     * project scope: under a project-restricted token, account-scope
+     * permissions (null scope) and any scope outside the token's allowed
+     * projects are denied outright, before the package resolver runs. Web
+     * sessions and unrestricted tokens are unaffected.
+     */
+    public function hasScopedPermission(string $permission, ?Model $scope = null): bool
+    {
+        $token = $this->currentAccessToken();
+
+        if ($token instanceof PersonalAccessToken && $token->restrictsProjects()
+            && ! ($scope instanceof Project && $token->allowsProject($scope->id))) {
+            return false;
+        }
+
+        return $this->resolveScopedPermission($permission, $scope);
+    }
+
+    /**
+     * Whether the credential authenticating the current request may touch the
+     * given project. True for web sessions and unrestricted API tokens; a
+     * project-restricted token only passes for its allowed projects.
+     */
+    public function currentAccessTokenAllowsProject(Project $project): bool
+    {
+        $token = $this->currentAccessToken();
+
+        return ! ($token instanceof PersonalAccessToken && $token->restrictsProjects())
+            || $token->allowsProject($project->id);
+    }
+
+    /**
+     * The user's personal access tokens. Overrides the Sanctum trait relation
+     * only to type it to the app's token model.
+     *
+     * @return MorphMany<PersonalAccessToken, $this>
+     */
+    public function tokens(): MorphMany
+    {
+        return $this->morphMany(PersonalAccessToken::class, 'tokenable');
     }
 
     /**
