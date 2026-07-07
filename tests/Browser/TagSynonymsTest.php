@@ -25,7 +25,7 @@ it('adds a synonym from the edit dialog and persists it on save', function () {
         ->keys('@edit-tag-synonym-input', 'Enter')
         ->wait(0.6)
         ->assertVisible('@remove-synonym-0')
-        ->screenshot(false, 'tag-synonyms-edit')
+//        ->screenshot(false, 'tag-synonyms-edit')
         ->click('@save-tag')
         ->assertMissing('@edit-tag-name')
         ->assertNoJavascriptErrors();

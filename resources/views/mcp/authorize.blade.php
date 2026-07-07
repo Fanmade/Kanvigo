@@ -1,31 +1,29 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') === 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    {{-- Inline script to detect system dark mode preference and apply it immediately --}}
+    {{-- Apply dark mode immediately, honouring the appearance the user picked
+         in the app (Flux persists it in localStorage) before falling back to
+         the system preference. --}}
     <script>
         (function () {
-            const appearance = '{{ $appearance ?? "system" }}';
+            const appearance = localStorage.getItem('flux.appearance') || 'system';
 
-            if (appearance === 'system') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                if (prefersDark) {
-                    document.documentElement.classList.add('dark');
-                }
+            if (appearance === 'dark' || (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
             }
         })();
     </script>
 
     <style>
         html {
-            background-color: oklch(1 0 0);
+            background-color: #F8FAFC; /* zinc-50 */
         }
 
         html.dark {
-            background-color: oklch(0.145 0 0);
+            background-color: #0a0a0a; /* zinc-950 */
         }
     </style>
 
@@ -43,16 +41,16 @@
 
     @vite(['resources/css/app.css'])
 </head>
-<body class="font-sans antialiased bg-background text-foreground">
+<body class="font-sans antialiased bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
 <div class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
         <!-- Card Container -->
-        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+        <div class="rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
             <!-- Header -->
             <div class="flex flex-col space-y-1.5 p-6">
                 <div class="flex items-center justify-center mb-4">
                     <!-- Shield Icon -->
-                    <svg class="h-12 w-12 text-primary" stroke="currentColor" viewBox="0 0 24 24"
+                    <svg class="h-12 w-12 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                          xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
@@ -63,7 +61,7 @@
                     {{ __('Authorize :name', ['name' => $client->name]) }}
                 </h3>
 
-                <p class="text-sm text-muted-foreground text-center">
+                <p class="text-sm text-zinc-500 dark:text-zinc-400 text-center">
                     {{ __('This application will be able to:') }}<br/>{{ __('Use available MCP functionality.') }}
                 </p>
             </div>
@@ -71,8 +69,8 @@
             <!-- Content -->
             <div class="p-6 pt-0 space-y-4">
                 <!-- User Info -->
-                <div class="rounded-lg border p-4 bg-muted/50">
-                    <p class="text-sm text-muted-foreground mb-2">{{ __('Logged in as:') }}</p>
+                <div class="rounded-lg border border-zinc-200 p-4 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-2">{{ __('Logged in as:') }}</p>
                     <p class="font-medium">{{ $user->email }}</p>
                 </div>
 
@@ -82,39 +80,40 @@
                         <p class="text-sm font-medium">{{ __('Project access') }}</p>
 
                         <label class="flex items-start gap-2">
-                            <input type="radio" name="project_scope" value="all" form="authorizeForm" class="mt-1"
+                            <input type="radio" name="project_scope" value="all" form="authorizeForm" class="mt-1 accent-brand-600 dark:accent-brand-500"
                                    @checked(! $grantRestricts) data-test="oauth-scope-all">
                             <span class="text-sm">
                                 {{ __('All projects') }}
-                                <span class="block text-muted-foreground">{{ __('Can access every project you are a member of') }}</span>
+                                <span class="block text-zinc-500 dark:text-zinc-400">{{ __('Can access every project you are a member of') }}</span>
                             </span>
                         </label>
 
                         <label class="flex items-start gap-2">
-                            <input type="radio" name="project_scope" value="selected" form="authorizeForm" class="mt-1"
+                            <input type="radio" name="project_scope" value="selected" form="authorizeForm" class="mt-1 accent-brand-600 dark:accent-brand-500"
                                    @checked($grantRestricts) data-test="oauth-scope-selected">
                             <span class="text-sm">
                                 {{ __('Selected projects') }}
-                                <span class="block text-muted-foreground">{{ __('Can only access the projects picked below') }}</span>
+                                <span class="block text-zinc-500 dark:text-zinc-400">{{ __('Can only access the projects picked below') }}</span>
                             </span>
                         </label>
 
-                        <ul id="projectChoices" class="{{ $grantRestricts ? '' : 'hidden' }} max-h-40 space-y-2 overflow-y-auto rounded-lg border p-3">
+                        <ul id="projectChoices" class="{{ $grantRestricts ? '' : 'hidden' }} max-h-40 space-y-2 overflow-y-auto rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
                             @foreach($projects as $project)
                                 <li>
                                     <label class="flex items-center gap-2 text-sm">
                                         <input type="checkbox" name="projects[]" value="{{ $project->id }}" form="authorizeForm"
+                                               class="accent-brand-600 dark:accent-brand-500"
                                                @checked(in_array($project->id, $grantProjectIds, true))
                                                data-test="oauth-project-{{ $project->short_name }}">
                                         <span>{{ $project->title }}</span>
-                                        <span class="text-muted-foreground">{{ $project->short_name }}</span>
+                                        <span class="text-zinc-500 dark:text-zinc-400">{{ $project->short_name }}</span>
                                     </label>
                                 </li>
                             @endforeach
                         </ul>
 
                         @error('projects')
-                            <p class="text-sm text-red-600">{{ $message }}</p>
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
                 @else
@@ -131,13 +130,13 @@
                         <ul class="space-y-2">
                             @foreach($scopes as $scope)
                                 <li class="flex items-start gap-2">
-                                    <div class="rounded-full bg-primary/10 p-1 mt-0.5">
-                                        <div class="h-1.5 w-1.5 rounded-full bg-primary"></div>
+                                    <div class="rounded-full bg-brand-500/10 p-1 mt-0.5">
+                                        <div class="h-1.5 w-1.5 rounded-full bg-brand-500"></div>
                                     </div>
                                     {{-- The description is registered in English by Laravel MCP's
                                          scope setup; translate it dynamically (de.json carries the
                                          "Use MCP server" key). --}}
-                                    <span class="text-sm text-muted-foreground">
+                                    <span class="text-sm text-zinc-500 dark:text-zinc-400">
                                         {{ __($scope->description) }}
                                     </span>
                                 </li>
@@ -157,7 +156,7 @@
                     <input type="hidden" name="client_id" value="{{ $client->id }}">
                     <input type="hidden" name="auth_token" value="{{ $authToken }}">
                     <button type="submit"
-                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full">
+                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 disabled:pointer-events-none disabled:opacity-50 border border-zinc-300 bg-white hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900 dark:hover:bg-zinc-800 h-10 px-4 py-2 w-full">
                         <svg class="mr-2 h-4 w-4" stroke="currentColor" viewBox="0 0 24 24"
                              xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -175,7 +174,7 @@
                     <input type="hidden" name="client_id" value="{{ $client->id }}">
                     <input type="hidden" name="auth_token" value="{{ $authToken }}">
                     <button type="submit"
-                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full"
+                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-500 dark:bg-brand-500 dark:hover:bg-brand-400 h-10 px-4 py-2 w-full"
                             id="authorizeButton">
                         <span id="authorizeText">{{ __('Authorize') }}</span>
 
