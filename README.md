@@ -74,10 +74,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   status and is fully reversible. Tasks left in **Done** beyond a threshold are
   auto-archived by a daily job — configurable per project (and a global default),
   or set to 0 to turn it off for a project.
-- **Dashboard** — per-status task counts, a 14-day completion chart, and a "My
-  tasks" list for picking the next thing to work on: your in-progress and to-do
-  tasks plus unassigned to-do tasks across your projects (work assigned to others
-  is hidden), in-progress first.
+- **Dashboard** — per-status task counts, a project count linking to the projects
+  overview, a 14-day completion chart, and a "My tasks" list for picking the next
+  thing to work on: your in-progress and to-do tasks plus unassigned to-do tasks
+  across your projects (work assigned to others is hidden), in-progress first.
 - **Quick notes** — jot a personal note from anywhere (the command palette, the
   dashboard Notes panel, or the dedicated **Notes** page in the sidebar), with a
   rich-text body and inline images. The Notes page lists all your notes with

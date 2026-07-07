@@ -96,6 +96,13 @@ it('counts assigned tasks per status and projects', function () {
         ->and($component->instance()->projectCount())->toBe(1);
 });
 
+it('links the projects card to the projects overview page', function () {
+    $html = Livewire::actingAs($this->user)->test(Dashboard::class)->html();
+
+    expect($html)->toContain('data-test="dashboard-projects-card"')
+        ->and($html)->toContain('href="'.route('projects.index').'"');
+});
+
 it('caps the active task list at the render limit', function () {
     Task::factory()
         ->count(55)

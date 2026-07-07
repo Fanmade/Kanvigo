@@ -3,13 +3,15 @@
 
     {{-- Statistics --}}
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <flux:card class="flex flex-col gap-1">
-            <div class="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
-                <flux:icon.rectangle-stack variant="micro" />
-                <flux:text size="sm">{{ __('Projects') }}</flux:text>
-            </div>
-            <flux:heading size="xl">{{ $this->projectCount }}</flux:heading>
-        </flux:card>
+        <a href="{{ route('projects.index') }}" wire:navigate class="block" data-test="dashboard-projects-card">
+            <flux:card class="flex h-full flex-col gap-1 transition hover:shadow-md">
+                <div class="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                    <flux:icon.rectangle-stack variant="micro" />
+                    <flux:text size="sm">{{ __('Projects') }}</flux:text>
+                </div>
+                <flux:heading size="xl">{{ $this->projectCount }}</flux:heading>
+            </flux:card>
+        </a>
 
         @foreach ($this->statusCounts as $stat)
             <flux:card class="flex flex-col gap-1">
