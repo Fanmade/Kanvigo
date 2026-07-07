@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\McpClientGrant;
 use App\Models\PersonalAccessToken;
 use App\Models\Project;
 use App\Models\Task;
@@ -9,12 +10,14 @@ use App\Models\User;
 use App\Support\RichTextSanitizer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Response;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Passport\Passport;
 use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
@@ -33,6 +36,27 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+
+        // The consent screen shown while an MCP client (e.g. Claude Desktop)
+        // authorizes via OAuth, enriched with the user's projects and any
+        // existing grant so the connection's project scope can be picked
+        // (and re-picked on a later re-consent).
+        Passport::authorizationView(static function (array $parameters): Response {
+            /** @var User $user */
+            $user = $parameters['user'];
+
+            $grant = McpClientGrant::query()
+                ->where('oauth_client_id', $parameters['client']->getKey())
+                ->where('user_id', $user->getKey())
+                ->first();
+
+            return response()->view('mcp.authorize', [
+                ...$parameters,
+                'projects' => $user->projects()->orderBy('title')->get(['projects.id', 'projects.short_name', 'projects.title']),
+                'grantRestricts' => $grant?->restrictsProjects() ?? false,
+                'grantProjectIds' => $grant?->projects()->pluck('projects.id')->all() ?? [],
+            ]);
+        });
 
         $this->configureDefaults();
         $this->registerPermissionGate();

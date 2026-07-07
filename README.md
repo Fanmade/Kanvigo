@@ -217,8 +217,14 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   handy for giving an agent access to a single project. Unrestricted tokens
   keep access to everything the owner can see.
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer
-  token, that lets AI agents work with the projects and tasks the token's owner can
-  access. Read tools (list/inspect) work with any token and surface each item's
+  token or OAuth 2.1, that lets AI agents work with the projects and tasks the
+  authenticated user can access. Clients that require the MCP OAuth flow (e.g.
+  Claude Desktop's custom connectors) register themselves dynamically and send the
+  user through a browser consent screen; an OAuth connection acts with the user's
+  full read & write access, and the consent screen can limit it to selected
+  projects (re-authorizing lets you change the selection). Connected applications
+  are listed — and can be revoked — under Settings → API tokens. Static API tokens
+  from Settings keep working alongside. Read tools (list/inspect) work with any token and surface each item's
   dependencies (what blocks it, what it blocks, and whether it is currently
   blocked); write tools (create/update tasks, cancel or reopen tasks, set a task's
   assignees, create projects, add comments and threaded replies, link/unlink

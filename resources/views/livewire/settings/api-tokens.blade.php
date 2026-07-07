@@ -106,5 +106,45 @@
                 </div>
             </div>
         </section>
+
+        @if ($this->connections !== [])
+            <section class="mt-12">
+                <flux:heading>{{ __('Connected applications') }}</flux:heading>
+                <flux:subheading>{{ __('Applications you authorized via OAuth (e.g. Claude Desktop)') }}</flux:subheading>
+
+                <div class="mt-6 flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
+                    <div class="border rounded-lg border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                        @foreach ($this->connections as $connection)
+                            <div class="flex items-center justify-between p-4 {{ ! $loop->last ? 'border-b border-zinc-200 dark:border-zinc-700' : '' }}" data-test="oauth-connection-{{ $connection['id'] }}">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
+                                        <flux:icon.link class="size-5 text-zinc-500 dark:text-zinc-400" />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2.5">
+                                            <p class="font-medium tracking-tight">{{ $connection['client_name'] }}</p>
+                                            <flux:badge size="sm" color="indigo" data-test="connection-projects-badge">{{ $connection['projects_label'] }}</flux:badge>
+                                        </div>
+                                        <p class="text-zinc-500 dark:text-zinc-400 text-xs">
+                                            {{ __('Created :time', ['time' => $connection['created_at_diff']]) }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <flux:button
+                                    variant="ghost"
+                                    size="sm"
+                                    icon="trash"
+                                    icon:variant="outline"
+                                    wire:click="revokeConnection({{ $connection['id'] }})"
+                                    data-test="revoke-connection-{{ $connection['id'] }}"
+                                    class="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                />
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+        @endif
     </x-settings.layout>
 </section>

@@ -3,6 +3,7 @@
 namespace App\Livewire\Settings;
 
 use App\Enums\TokenAbility;
+use App\Models\McpClientGrant;
 use App\Models\PersonalAccessToken;
 use App\Models\Project;
 use App\Support\Facades\Audit;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Kanvigo\Audit\Contracts\AuditCategory;
 use Kanvigo\Audit\Contracts\AuditEvent;
+use Laravel\Passport\RefreshToken;
+use Laravel\Passport\Token;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -135,6 +138,68 @@ class ApiTokens extends Component
     public function dismissToken(): void
     {
         $this->plainTextToken = null;
+    }
+
+    /**
+     * Revoke an OAuth MCP connection: revoke every token the client holds for
+     * this user and delete the consent grant, so the client must re-authorize
+     * (and the user re-pick a project scope) to connect again.
+     */
+    public function revokeConnection(int $grantId): void
+    {
+        $this->authorize('create-api-tokens');
+
+        $grant = McpClientGrant::query()
+            ->where('user_id', Auth::id())
+            ->whereKey($grantId)
+            ->first();
+
+        if ($grant === null) {
+            return;
+        }
+
+        $tokenIds = Token::query()
+            ->where('user_id', Auth::id())
+            ->where('client_id', $grant->oauth_client_id)
+            ->pluck('id');
+
+        RefreshToken::query()->whereIn('access_token_id', $tokenIds)->update(['revoked' => true]);
+        Token::query()->whereKey($tokenIds)->update(['revoked' => true]);
+
+        Audit::record(AuditEvent::make('token_revoked', AuditCategory::Token)
+            ->withSubject(Auth::user()->getMorphClass(), Auth::id())
+            ->withMetadata(['token' => $grant->client->name, 'reason' => 'oauth_connection_revoked']));
+
+        $grant->delete();
+
+        unset($this->connections);
+
+        Flux::toast(text: __('Connection revoked.'), variant: 'success');
+    }
+
+    /**
+     * The user's OAuth MCP connections (e.g. Claude Desktop connectors),
+     * mapped for display.
+     *
+     * @return array<int, array{id: int, client_name: string, projects_label: string, created_at_diff: string}>
+     */
+    #[Computed]
+    public function connections(): array
+    {
+        return McpClientGrant::query()
+            ->where('user_id', Auth::id())
+            ->with(['client:id,name', 'projects:projects.id,projects.short_name'])
+            ->latest()
+            ->get()
+            ->map(static fn (McpClientGrant $grant): array => [
+                'id' => $grant->id,
+                'client_name' => $grant->client->name,
+                'projects_label' => $grant->restrictsProjects()
+                    ? $grant->projects->pluck('short_name')->sort()->implode(', ')
+                    : __('All projects'),
+                'created_at_diff' => $grant->created_at->diffForHumans(),
+            ])
+            ->all();
     }
 
     /**

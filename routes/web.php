@@ -6,6 +6,7 @@ use App\Http\Controllers\AttachmentViewController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\MentionSuggestionsController;
 use App\Http\Controllers\NoteAttachmentController;
+use App\Http\Controllers\OAuth\ApproveMcpAuthorizationController;
 use App\Http\Controllers\TaskPreviewController;
 use App\Http\Controllers\UserPreviewController;
 use App\Livewire\Admin\UserManagement;
@@ -35,6 +36,13 @@ Route::get('/', static function () {
 Route::livewire('/invitation/{invitation}/accept', AcceptInvitation::class)
     ->middleware('signed')
     ->name('invitation.accept');
+
+// Replace Passport's OAuth approve endpoint (same method, URI and name, so
+// this registration supersedes the package's) with one that also records the
+// project scope picked on the MCP consent screen.
+Route::post('/oauth/authorize', [ApproveMcpAuthorizationController::class, 'approve'])
+    ->middleware('auth')
+    ->name('passport.authorizations.approve');
 
 Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('dashboard', Dashboard::class)->name('dashboard');

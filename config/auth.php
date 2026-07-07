@@ -42,6 +42,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // OAuth 2.1 access tokens issued by Passport, used by MCP clients
+        // that require the OAuth flow (e.g. Claude Desktop).
+        'api' => [
+            'driver' => 'passport',
+            'provider' => 'users',
+        ],
     ],
 
     /*

@@ -24,6 +24,15 @@ Tokens carry one of two ability levels:
 - **Read-only** — may call the `GET` endpoints.
 - **Read & write** — may also create and update (the `POST`/`PATCH` endpoints).
 
+The MCP server at `/mcp` accepts the same personal access tokens, and
+additionally supports **OAuth 2.1** for MCP clients that require it (e.g.
+Claude Desktop): clients register dynamically and the user approves access in
+the browser. An OAuth connection acts with the user's full read & write access,
+optionally limited to selected projects on the consent screen — restricted
+connections behave like restricted tokens (filtered listings, out-of-scope
+references are `404`, no project creation). Connections are listed and revoked
+under *Settings → API tokens*.
+
 A token may additionally be **restricted to selected projects** when it is
 created. A restricted token only sees and acts on its allowed projects —
 out-of-scope references are `404`, listings are filtered, and creating new

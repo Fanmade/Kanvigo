@@ -25,9 +25,9 @@
     },
     "require": {
         "php": "^8.4",
+        "ext-dom": "*",
         "ext-gd": "*",
         "ext-imagick": "*",
-        "ext-dom": "*",
         "ext-libxml": "*",
         "ext-mbstring": "*",
         "fanmade/laravel-delegated-permissions": "^0.1.7",
@@ -36,6 +36,7 @@
         "laravel/fortify": "^1.37.2",
         "laravel/framework": "^13.7",
         "laravel/mcp": "^0.8.1",
+        "laravel/passport": "^13.7",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "livewire/blaze": "^1.0",
@@ -80,6 +81,7 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
+            "@php artisan passport:keys --no-interaction || true",
             "@php artisan migrate --force",
             "npm install",
             "npm run build"

@@ -29,6 +29,7 @@ use Kanvigo\Audit\Contracts\AuditEvent;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Passport\AccessToken;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
@@ -62,6 +63,14 @@ class User extends Authenticatable implements PasskeyUser
     use HasRoles {
         hasPermission as protected resolveScopedPermission;
     }
+
+    /**
+     * Memoised OAuth grant resolution for the current request (a grant lookup
+     * happens at most once per model instance).
+     */
+    private bool $oauthGrantResolved = false;
+
+    private ?McpClientGrant $oauthGrant = null;
 
     /**
      * Detach a user's collaborative relationships when their account is removed,
@@ -202,10 +211,11 @@ class User extends Authenticatable implements PasskeyUser
 
     /**
      * The projects this user has been granted access to. When the current
-     * request is authenticated by a project-restricted API token, the relation
-     * only yields the token's allowed projects, so every membership-derived
-     * listing (API, MCP tools) follows the token scope automatically. Web
-     * sessions and unrestricted tokens see the full membership.
+     * request is authenticated by a project-restricted credential (API token
+     * or OAuth connection), the relation only yields its allowed projects, so
+     * every membership-derived listing (API, MCP tools) follows the
+     * restriction automatically. Web sessions and unrestricted credentials
+     * see the full membership.
      *
      * @return BelongsToMany<Project, $this>
      */
@@ -213,28 +223,25 @@ class User extends Authenticatable implements PasskeyUser
     {
         $projects = $this->belongsToMany(Project::class)->withTimestamps();
 
-        $token = $this->currentAccessToken();
-
-        if ($token instanceof PersonalAccessToken && $token->restrictsProjects()) {
-            $projects->whereIn('projects.id', $token->projects()->select('projects.id'));
+        if (($restriction = $this->currentProjectRestriction()) !== null) {
+            $projects->whereIn('projects.id', $restriction->projects()->select('projects.id'));
         }
 
         return $projects;
     }
 
     /**
-     * The package's per-project permission check, wrapped with the API token
-     * project scope: under a project-restricted token, account-scope
-     * permissions (null scope) and any scope outside the token's allowed
+     * The package's per-project permission check, wrapped with the credential
+     * project scope: under a project-restricted API token or OAuth connection,
+     * account-scope permissions (null scope) and any scope outside the allowed
      * projects are denied outright, before the package resolver runs. Web
-     * sessions and unrestricted tokens are unaffected.
+     * sessions and unrestricted credentials are unaffected.
      */
     public function hasScopedPermission(string $permission, ?Model $scope = null): bool
     {
-        $token = $this->currentAccessToken();
+        $restriction = $this->currentProjectRestriction();
 
-        if ($token instanceof PersonalAccessToken && $token->restrictsProjects()
-            && ! ($scope instanceof Project && $token->allowsProject($scope->id))) {
+        if ($restriction !== null && ! ($scope instanceof Project && $restriction->allowsProject($scope->id))) {
             return false;
         }
 
@@ -243,15 +250,56 @@ class User extends Authenticatable implements PasskeyUser
 
     /**
      * Whether the credential authenticating the current request may touch the
-     * given project. True for web sessions and unrestricted API tokens; a
-     * project-restricted token only passes for its allowed projects.
+     * given project. True for web sessions and unrestricted credentials; a
+     * project-restricted API token or OAuth connection only passes for its
+     * allowed projects.
      */
     public function currentAccessTokenAllowsProject(Project $project): bool
     {
-        $token = $this->currentAccessToken();
+        $restriction = $this->currentProjectRestriction();
 
-        return ! ($token instanceof PersonalAccessToken && $token->restrictsProjects())
-            || $token->allowsProject($project->id);
+        return $restriction === null || $restriction->allowsProject($project->id);
+    }
+
+    /**
+     * The project restriction bound to the credential authenticating the
+     * current request, or null when it is unrestricted. A restricted Sanctum
+     * token carries the restriction itself; a Passport access token resolves
+     * it from the {@see McpClientGrant} recorded when the user approved the
+     * OAuth connection on the consent screen.
+     */
+    protected function currentProjectRestriction(): PersonalAccessToken|McpClientGrant|null
+    {
+        $token = $this->currentAccessCredential();
+
+        if ($token instanceof PersonalAccessToken) {
+            return $token->restrictsProjects() ? $token : null;
+        }
+
+        if ($token instanceof AccessToken) {
+            if (! $this->oauthGrantResolved) {
+                $this->oauthGrant = McpClientGrant::query()
+                    ->where('oauth_client_id', $token->oauth_client_id)
+                    ->where('user_id', $this->id)
+                    ->first();
+                $this->oauthGrantResolved = true;
+            }
+
+            return $this->oauthGrant?->restrictsProjects() === true ? $this->oauthGrant : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * The credential object authenticating the current request. Sanctum's
+     * trait types this as its own token model, but under the Passport guard
+     * it is a Passport {@see AccessToken} (the guard reuses withAccessToken),
+     * so the actual runtime union is wider than the vendor PHPDoc claims.
+     */
+    protected function currentAccessCredential(): mixed
+    {
+        return $this->currentAccessToken();
     }
 
     /**
