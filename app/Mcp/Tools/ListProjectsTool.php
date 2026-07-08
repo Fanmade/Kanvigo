@@ -60,7 +60,7 @@ class ListProjectsTool extends Tool
             'projects' => $schema->array()->items($schema->object([
                 'short_name' => $schema->string()->description('The project short name (2-4 uppercase letters).')->required(),
                 'title' => $schema->string()->description('The project title.')->required(),
-                'description' => $schema->string()->description('The project description as HTML; may be null.'),
+                'description' => $schema->string()->nullable()->description('The project description as HTML; may be null.'),
                 'task_count' => $schema->integer()->description('Number of top-level tasks in the project.')->required(),
             ]))->description('The projects the authenticated user is a member of.')->required(),
         ];

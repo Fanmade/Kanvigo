@@ -223,8 +223,8 @@ class UpdateTaskTool extends Tool
     {
         return [
             ...$this->taskWriteSchema($schema),
-            'cancel_reason' => $schema->string()->description('The cancellation reason (WontFix, Duplicate or Deprecated) when the task is canceled; null otherwise.'),
-            'cancel_message' => $schema->string()->description('The optional note left when the task was canceled; null otherwise.'),
+            'cancel_reason' => $schema->string()->nullable()->description('The cancellation reason (WontFix, Duplicate or Deprecated) when the task is canceled; null otherwise.'),
+            'cancel_message' => $schema->string()->nullable()->description('The optional note left when the task was canceled; null otherwise.'),
         ];
     }
 }

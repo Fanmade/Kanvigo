@@ -80,10 +80,10 @@ class ListNotesTool extends Tool
                 $schema->object([
                     'id' => $schema->integer()->description('The note id.')->required(),
                     'title' => $schema->string()->description('The note title.')->required(),
-                    'project' => $schema->string()->description('The attached project short_name, or null.'),
+                    'project' => $schema->string()->nullable()->description('The attached project short_name, or null.'),
                     'is_public' => $schema->boolean()->description('Whether the note is public to its project.')->required(),
                     'owned' => $schema->boolean()->description('Whether the authenticated user owns the note.')->required(),
-                    'converted_task' => $schema->string()->description('The task reference this note was converted into, or null.'),
+                    'converted_task' => $schema->string()->nullable()->description('The task reference this note was converted into, or null.'),
                 ])
             )->description('The accessible notes, newest first.')->required(),
             'page' => $this->pageSchema($schema),

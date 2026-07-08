@@ -108,7 +108,7 @@ class AddCommentTool extends Tool
         return [
             'id' => $schema->integer()->description('The created comment id.')->required(),
             'on' => $schema->string()->description('The reference of the item the comment was added to.')->required(),
-            'parent_id' => $schema->integer()->description('The id of the comment this one replies to, or null for a top-level comment.'),
+            'parent_id' => $schema->integer()->nullable()->description('The id of the comment this one replies to, or null for a top-level comment.'),
             'body' => $schema->string()->description('The comment body as HTML.')->required(),
         ];
     }

@@ -136,13 +136,13 @@ class ListTasksTool extends Tool
         return [
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
-                'parent' => $schema->string()->description('The parent task reference (e.g. "PROJ-42"), or null when this is a top-level task.'),
+                'parent' => $schema->string()->nullable()->description('The parent task reference (e.g. "PROJ-42"), or null when this is a top-level task.'),
                 'title' => $schema->string()->description('The task title.')->required(),
                 'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
-                'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
+                'due_date' => $schema->string()->nullable()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
                 'status' => $schema->string()->description('The task status.')->required(),
-                'type' => $schema->string()->description('The task type name, or null when the task is untyped.'),
-                'cancel_reason' => $schema->string()->description('Why the task was canceled (WontFix, Duplicate or Deprecated) when its status is Canceled; null otherwise. Use the get-task tool for the cancellation message.'),
+                'type' => $schema->string()->nullable()->description('The task type name, or null when the task is untyped.'),
+                'cancel_reason' => $schema->string()->nullable()->description('Why the task was canceled (WontFix, Duplicate or Deprecated) when its status is Canceled; null otherwise. Use the get-task tool for the cancellation message.'),
                 'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
                 'is_blocked' => $schema->boolean()->description('Whether the task has a blocker that is not yet complete. Use the get-task tool for the specific blocking/blocked references.')->required(),
             ]))->description('The tasks in the project.')->required(),

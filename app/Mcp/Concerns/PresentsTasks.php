@@ -46,11 +46,11 @@ trait PresentsTasks
         return [
             'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
             'title' => $schema->string()->description('The task title.')->required(),
-            'description' => $schema->string()->description('The task description as HTML; may be null.'),
+            'description' => $schema->string()->nullable()->description('The task description as HTML; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
-            'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
+            'due_date' => $schema->string()->nullable()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
-            'type' => $schema->string()->description('The task type name, or null when the task is untyped.'),
+            'type' => $schema->string()->nullable()->description('The task type name, or null when the task is untyped.'),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
         ];
     }

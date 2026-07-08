@@ -158,7 +158,7 @@ class CreateTaskTool extends Tool
     {
         return [
             ...$this->taskWriteSchema($schema),
-            'parent' => $schema->string()->description('The parent task reference when the task was nested, otherwise null.'),
+            'parent' => $schema->string()->nullable()->description('The parent task reference when the task was nested, otherwise null.'),
         ];
     }
 }

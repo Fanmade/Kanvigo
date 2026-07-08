@@ -99,7 +99,7 @@ class CreateProjectTool extends Tool
         return [
             'short_name' => $schema->string()->description('The created project short name.')->required(),
             'title' => $schema->string()->description('The created project title.')->required(),
-            'description' => $schema->string()->description('The project description as HTML; may be null.'),
+            'description' => $schema->string()->nullable()->description('The project description as HTML; may be null.'),
         ];
     }
 }

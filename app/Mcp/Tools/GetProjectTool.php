@@ -110,7 +110,7 @@ class GetProjectTool extends Tool
         return [
             'short_name' => $schema->string()->description('The project short name.')->required(),
             'title' => $schema->string()->description('The project title.')->required(),
-            'description' => $schema->string()->description('The project description as HTML; may be null.'),
+            'description' => $schema->string()->nullable()->description('The project description as HTML; may be null.'),
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
                 'title' => $schema->string()->description('The task title.')->required(),
@@ -120,7 +120,7 @@ class GetProjectTool extends Tool
             'attachments' => $schema->array()->items($schema->object([
                 'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),
                 'name' => $schema->string()->description('The attachment file name.')->required(),
-                'mime_type' => $schema->string()->description('The attachment MIME type; may be null.'),
+                'mime_type' => $schema->string()->nullable()->description('The attachment MIME type; may be null.'),
                 'is_inline' => $schema->boolean()->description('Whether the attachment is embedded inline in the description.')->required(),
             ]))->description('The files attached to the project, including inline description images.')->required(),
             'comments' => $this->commentsSchema($schema),

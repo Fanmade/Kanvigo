@@ -67,7 +67,7 @@ class GetUserTool extends Tool
         return [
             'id' => $schema->string()->description('The user\'s stable id.')->required(),
             'name' => $schema->string()->description('The user\'s display name.')->required(),
-            'email' => $schema->string()->description('The user\'s email, or null when you are not entitled to see it.'),
+            'email' => $schema->string()->nullable()->description('The user\'s email, or null when you are not entitled to see it.'),
         ];
     }
 }
