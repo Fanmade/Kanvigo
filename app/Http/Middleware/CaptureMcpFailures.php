@@ -50,6 +50,11 @@ class CaptureMcpFailures
 
         try {
             $response = $next($request);
+
+            // Auth has run by now — record who called and with which kind of
+            // credential, so Sanctum probes and OAuth clients are told apart.
+            $entry['user'] = $request->user()?->getKey();
+            $entry['credential'] = ($token = $request->user()?->currentAccessToken()) !== null ? class_basename($token) : null;
         } catch (Throwable $e) {
             self::write([
                 ...$entry,
