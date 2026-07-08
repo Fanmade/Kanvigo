@@ -6,8 +6,6 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
@@ -17,17 +15,8 @@ use Laravel\Passport\Token;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    // The authorization endpoints construct the OAuth server, which loads the
-    // signing keys at instantiation; generate them into a per-process temp
-    // directory so the tests do not depend on storage/ keys existing (CI).
-    $keyDir = sys_get_temp_dir().'/kanbrio-passport-keys-'.getmypid();
-    File::ensureDirectoryExists($keyDir);
-    Passport::loadKeysFrom($keyDir);
-
-    if (! file_exists($keyDir.'/oauth-private.key')) {
-        Artisan::call('passport:keys');
-    }
-
+    // Signing keys come from the base TestCase, which points Passport at
+    // per-process temp keys so no test depends on storage/ keys existing.
     $this->user = User::factory()->create();
     $this->allowed = Project::factory()->withMembers([$this->user])->create(['short_name' => 'ALW', 'title' => 'Allowed']);
     $this->other = Project::factory()->withMembers([$this->user])->create(['short_name' => 'OTH', 'title' => 'Other membership']);
