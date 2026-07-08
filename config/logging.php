@@ -54,8 +54,13 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
-            'ignore_exceptions' => false,
+            'channels' => explode(',', (string) env('LOG_STACK', 'single,stderr')),
+            // A broken sink (e.g. an unwritable laravel.log after a cron job
+            // owned by another user created it) must degrade to losing that
+            // sink's entries — never throw. With false, every report() and
+            // Log:: call explodes, turning any handled exception into a raw
+            // HTTP 500 with no trace anywhere (see McpBrokenLoggingTest).
+            'ignore_exceptions' => true,
         ],
 
         'single' => [

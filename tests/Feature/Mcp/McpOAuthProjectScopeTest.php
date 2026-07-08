@@ -328,6 +328,54 @@ it('does not revoke another user\'s connection', function () {
     expect(McpClientGrant::query()->whereKey($grant->id)->exists())->toBeTrue();
 });
 
+it('serves the task tools end-to-end with a really issued oauth token', function () {
+    // Full flow — authorize, approve, exchange the code for a JWT — so the MCP
+    // call runs through Passport's real guard instead of Passport::actingAs().
+    startAuthorization($this->user, $this->client)->assertOk();
+
+    $redirect = $this->post('/oauth/authorize', [
+        'state' => 'state-123',
+        'client_id' => $this->client->getKey(),
+        'auth_token' => session('authToken'),
+        'project_scope' => 'all',
+    ])->headers->get('Location');
+
+    parse_str(parse_url($redirect, PHP_URL_QUERY), $query);
+
+    $accessToken = $this->postJson('/oauth/token', [
+        'grant_type' => 'authorization_code',
+        'client_id' => $this->client->getKey(),
+        'redirect_uri' => 'https://claude.ai/api/mcp/auth_callback',
+        'code_verifier' => 'a-test-verifier-of-sufficient-length-1234567890',
+        'code' => $query['code'],
+    ])->assertOk()->json('access_token');
+
+    // Drop the browser-flow session and guards, so the MCP call below cannot
+    // piggyback on the web login and must authenticate via the JWT.
+    $this->flushSession();
+    auth()->forgetGuards();
+
+    $create = $this->withToken($accessToken)->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => ['name' => 'create-task-tool', 'arguments' => ['reference' => 'ALW', 'title' => 'Via real JWT']],
+    ]);
+
+    $create->assertOk();
+    expect($create->json('result.isError') ?? false)->toBeFalse();
+
+    $get = $this->withToken($accessToken)->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 2,
+        'method' => 'tools/call',
+        'params' => ['name' => 'get-task-tool', 'arguments' => ['reference' => 'ALW-1']],
+    ]);
+
+    $get->assertOk();
+    expect($get->content())->toContain('Via real JWT');
+});
+
 it('rejects OAuth tokens on the REST API, which stays Sanctum-only', function () {
     grantConnection($this->user, $this->client);
 

@@ -44,7 +44,7 @@ it('renders the consent screen in dark mode without JS errors', function () {
     $page->click('@oauth-scope-selected')
         ->assertVisible('@oauth-project-ABC');
 
-//    $page->screenshot(false, 'oauth-consent-dark');
+    //    $page->screenshot(false, 'oauth-consent-dark');
 
     $page->assertNoJavascriptErrors();
 });
@@ -66,7 +66,7 @@ it('renders the consent screen in light mode without JS errors', function () {
 
     $page->assertVisible('@oauth-scope-all');
 
-//    $page->screenshot(false, 'oauth-consent-light');
+    //    $page->screenshot(false, 'oauth-consent-light');
 
     $page->assertNoJavascriptErrors();
 });
