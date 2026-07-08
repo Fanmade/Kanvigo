@@ -45,8 +45,8 @@ trait ExposesComments
     {
         return $schema->array()->items($schema->object([
             'id' => $schema->integer()->description('The stable comment id.')->required(),
-            'parent_id' => $schema->integer()->description('The id of the comment this one replies to, or null for a top-level comment.'),
-            'author' => $schema->string()->description('The comment author\'s name; null if the author no longer exists.'),
+            'parent_id' => $schema->integer()->nullable()->description('The id of the comment this one replies to, or null for a top-level comment.'),
+            'author' => $schema->string()->nullable()->description('The comment author\'s name; null if the author no longer exists.'),
             'body' => $schema->string()->description('The comment body as HTML; empty for a deleted comment kept to preserve its replies.')->required(),
             'is_deleted' => $schema->boolean()->description('Whether the comment was deleted (tombstoned); its body is then empty.')->required(),
             'created_at' => $schema->string()->description('When the comment was posted, as an ISO 8601 timestamp.'),

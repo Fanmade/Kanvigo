@@ -121,7 +121,7 @@ trait PagesResults
         return $schema->object([
             'returned' => $schema->integer()->description('How many items this response carries.')->required(),
             'has_more' => $schema->boolean()->description('Whether more items remain beyond this page.')->required(),
-            'next_cursor' => $schema->string()->description('Pass as "cursor" to fetch the next page; null when no more remain.'),
+            'next_cursor' => $schema->string()->nullable()->description('Pass as "cursor" to fetch the next page; null when no more remain.'),
         ])->description('Pagination signal. Without a "limit" every item is returned and has_more is false.')->required();
     }
 }
