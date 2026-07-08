@@ -72,6 +72,7 @@ class CaptureMcpFailures
             ...$entry,
             'phase' => 'response',
             'status' => $response->getStatusCode(),
+            'bytes' => is_string($content = $response->getContent()) ? strlen($content) : null,
         ]);
 
         return $response;
