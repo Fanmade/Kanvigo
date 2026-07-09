@@ -18,6 +18,7 @@ use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Flux\Flux;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -697,5 +698,17 @@ class ProjectShow extends Component
     public function liveRefresh(): void
     {
         unset($this->project, $this->rootTasks, $this->publicNotes);
+    }
+
+    /**
+     * Lead the browser tab with the project's short name so several open project
+     * tabs stay distinguishable, e.g. "KAN · Kanvigo".
+     */
+    public function render(): View
+    {
+        $project = $this->project;
+
+        return view('livewire.projects.project-show')
+            ->title($project->short_name.' · '.$project->title);
     }
 }

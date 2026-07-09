@@ -20,6 +20,7 @@ use App\Models\TaskType;
 use App\Models\User;
 use App\Support\Facades\Audit;
 use Flux\Flux;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Enum;
@@ -667,5 +668,17 @@ class TaskView extends Component
         unset($this->task);
 
         Flux::toast(text: __('Task updated.'), variant: 'success');
+    }
+
+    /**
+     * Put the task's reference and title in the browser tab so several open task
+     * tabs stay distinguishable, e.g. "KAN-42 · Fix the board".
+     */
+    public function render(): View
+    {
+        $task = $this->task;
+
+        return view('livewire.tasks.task-view')
+            ->title($task->reference.' · '.$task->title);
     }
 }

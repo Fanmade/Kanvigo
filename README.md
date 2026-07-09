@@ -32,6 +32,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   and editing controls stay tucked away until needed.
 - **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}/board` for its
   board, and `/{SHORT}-{n}` for a task (e.g. `/ABC`, `/ABC/board`, `/ABC-42`).
+  The browser tab title carries the same context — a project page leads with its
+  short name, a task page with its reference and title (e.g. `ABC-42 · Fix the
+  board`) — so several open tabs stay distinguishable.
 - **Command palette** (`⌘K` / `Ctrl+K`) — search projects and tasks by
   title or tag, jump straight to a typed reference (`PROJ-42` or the compact
   `PROJ42`), find tasks by a bare number across your projects (prioritizing the

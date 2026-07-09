@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\TaskType;
 use App\Support\BlockedTasks;
 use App\Support\BoardCache;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -211,5 +212,15 @@ class ProjectBoard extends Component
         abort_unless($task->project_id === $this->project->id, 404);
 
         return $task;
+    }
+
+    /**
+     * Lead the browser tab with the project's short name so several open project
+     * tabs stay distinguishable, e.g. "KAN · Board".
+     */
+    public function render(): View
+    {
+        return view('livewire.projects.project-board')
+            ->title($this->project->short_name.' · '.__('Board'));
     }
 }

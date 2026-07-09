@@ -264,6 +264,7 @@ class ProjectTaskTypes extends Component
 
     public function render(): View
     {
-        return view('livewire.projects.project-task-types');
+        return view('livewire.projects.project-task-types')
+            ->title($this->project->short_name.' · '.__('Task types'));
     }
 }

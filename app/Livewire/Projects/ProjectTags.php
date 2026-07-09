@@ -387,6 +387,7 @@ class ProjectTags extends Component
 
     public function render(): View
     {
-        return view('livewire.projects.project-tags');
+        return view('livewire.projects.project-tags')
+            ->title($this->project->short_name.' · '.__('Tags'));
     }
 }
