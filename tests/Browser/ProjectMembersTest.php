@@ -18,7 +18,8 @@ it('lets the owner add a role to a member through the management modal', functio
         ->click('@manage-members')
         ->assertVisible('@manage-members-heading')
         ->assertSeeIn('@member-row-'.$member->id, 'Casey Member')
-        ->select('@add-member-role-'.$member->id, 'admin')
+        ->click('@add-member-role-'.$member->id)
+        ->click('@add-member-role-'.$member->id.'-admin')
         ->waitForText('Member role added.')
         ->assertVisible('@member-role-'.$member->id.'-admin')
         ->assertNoJavascriptErrors();

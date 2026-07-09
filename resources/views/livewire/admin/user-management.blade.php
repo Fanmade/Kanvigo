@@ -147,7 +147,7 @@
     </flux:modal>
 
     {{-- Manage a user's project memberships --}}
-    <flux:modal wire:model.self="managingProjects" class="md:w-md" data-test="manage-projects-modal">
+    <flux:modal wire:model.self="managingProjects" class="md:w-xl" data-test="manage-projects-modal">
         <div class="flex flex-col gap-4">
             <flux:heading size="lg">
                 {{ $this->managedUser ? __('Projects for :name', ['name' => $this->managedUser->name]) : __('Projects') }}
@@ -156,46 +156,48 @@
             <div class="flex max-h-96 flex-col gap-2 overflow-y-auto" data-test="manage-projects-list">
                 @foreach ($this->manageableProjects as $project)
                     @php($row = $this->projectRow($project))
-                    <div class="flex items-start justify-between gap-3" wire:key="mp-{{ $project->id }}" data-test="manage-project-row-{{ $project->id }}">
-                        <flux:text class="min-w-0 truncate pt-1">{{ $project->title }} <span class="text-zinc-400">{{ $project->short_name }}</span></flux:text>
+                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-lg px-2 py-1.5 hover:bg-zinc-50 dark:hover:bg-white/5" wire:key="mp-{{ $project->id }}" data-test="manage-project-row-{{ $project->id }}">
+                        <flux:text class="min-w-0 flex-1 truncate">{{ $project->title }} <span class="text-zinc-400">{{ $project->short_name }}</span></flux:text>
 
                         @if ($row['heldNames']->isEmpty())
                             <flux:button type="button" size="xs" variant="ghost" icon="plus" wire:click="addUserToProject({{ $project->id }})" data-test="mp-add-{{ $project->id }}">{{ __('Add') }}</flux:button>
                         @else
-                            <div class="flex flex-col items-end gap-1.5">
-                                <div class="flex flex-wrap justify-end gap-1" data-test="mp-roles-{{ $project->id }}">
-                                    @foreach ($row['heldNames'] as $name)
-                                        <flux:badge size="sm" data-test="mp-role-{{ $project->id }}-{{ $name }}">
-                                            {{ \Illuminate\Support\Str::headline($name) }}
-                                            @unless ($row['readonly'])
-                                                <flux:badge.close
-                                                    wire:click="removeUserProjectRole({{ $project->id }}, '{{ $name }}')"
-                                                    :aria-label="__('Remove role')"
-                                                    data-test="mp-remove-role-{{ $project->id }}-{{ $name }}"
-                                                />
-                                            @endunless
-                                        </flux:badge>
-                                    @endforeach
-                                </div>
+                            <div class="flex flex-wrap items-center justify-end gap-1.5" data-test="mp-roles-{{ $project->id }}">
+                                @foreach ($row['heldNames'] as $name)
+                                    <x-role-badge :name="$name" data-test="mp-role-{{ $project->id }}-{{ $name }}">
+                                        @unless ($row['readonly'])
+                                            <flux:badge.close
+                                                wire:click="removeUserProjectRole({{ $project->id }}, '{{ $name }}')"
+                                                :aria-label="__('Remove role')"
+                                                data-test="mp-remove-role-{{ $project->id }}-{{ $name }}"
+                                            />
+                                        @endunless
+                                    </x-role-badge>
+                                @endforeach
 
                                 @unless ($row['readonly'])
-                                    <div class="flex items-center gap-1.5">
-                                        @if ($row['addable']->isNotEmpty())
-                                            <flux:select
-                                                size="sm"
-                                                class="max-w-28"
-                                                :placeholder="__('Add role…')"
-                                                wire:change="addUserProjectRole({{ $project->id }}, $event.target.value)"
+                                    @if ($row['addable']->isNotEmpty())
+                                        <flux:dropdown position="bottom" align="end">
+                                            <flux:button
+                                                type="button"
+                                                size="xs"
+                                                variant="subtle"
+                                                icon="plus"
                                                 data-test="mp-add-role-{{ $project->id }}"
-                                            >
-                                                @foreach ($row['addable'] as $role)
-                                                    <flux:select.option value="{{ $role }}">{{ \Illuminate\Support\Str::headline($role) }}</flux:select.option>
-                                                @endforeach
-                                            </flux:select>
-                                        @endif
+                                            >{{ __('Add role') }}</flux:button>
 
-                                        <flux:button type="button" size="xs" variant="ghost" icon="x-mark" :aria-label="__('Remove member')" wire:click="removeUserFromProject({{ $project->id }})" data-test="mp-remove-{{ $project->id }}" />
-                                    </div>
+                                            <flux:menu>
+                                                @foreach ($row['addable'] as $role)
+                                                    <flux:menu.item
+                                                        wire:click="addUserProjectRole({{ $project->id }}, '{{ $role }}')"
+                                                        data-test="mp-add-role-{{ $project->id }}-{{ $role }}"
+                                                    >{{ \Illuminate\Support\Str::headline($role) }}</flux:menu.item>
+                                                @endforeach
+                                            </flux:menu>
+                                        </flux:dropdown>
+                                    @endif
+
+                                    <flux:button type="button" size="xs" variant="ghost" icon="x-mark" :aria-label="__('Remove member')" wire:click="removeUserFromProject({{ $project->id }})" data-test="mp-remove-{{ $project->id }}" />
                                 @endunless
                             </div>
                         @endif
