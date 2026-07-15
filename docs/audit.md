@@ -103,6 +103,33 @@ application key). Rotating the salt invalidates every token already published,
 which is the erasure lever for pseudonymised data that has already left the
 system.
 
+## Consuming the stream externally
+
+An external system pulls the instance-wide audit log from the REST API:
+
+```
+GET /api/v1/audit-events?after=<id>&limit=<n>
+```
+
+It returns a page of events plus a `next_cursor`. The cursor is the outbox id —
+a monotonic, commit-ordered sequence that is never renumbered — so a consumer
+that records the last id it saw resumes exactly there. Delivery is at-least-once
+and each event carries an `idempotency_key`, so a consumer re-reading after a
+crash deduplicates rather than double-counting. A short page (fewer than `limit`)
+means the consumer has caught up; it keeps polling the same cursor. `limit`
+defaults to 100 and is capped at 200.
+
+Each event is the versioned schema (`v`, `action`, `category`, subject, actor,
+metadata, context) with the outbox `id` added as the cursor. Payloads pass
+through the redaction boundary above, so the stream is minimized — the endpoint
+is an external consumer like any other.
+
+Because the stream spans every user and project — unlike the rest of the v1 API,
+which is scoped to the token owner — it is doubly gated: the acting user needs
+the account-level `manage-users` permission, and the token needs the dedicated
+`audit` ability (mintable from the API tokens screen only by an operator who
+holds that permission). An ordinary read/write token cannot reach it.
+
 ### Erasure vs. immutability
 
 An immutable trail and a right-to-erasure request pull in opposite directions.

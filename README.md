@@ -175,6 +175,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   passkeys), membership and permission changes, invitations, content edits and
   deletions across every surface (UI, MCP, REST API), API token lifecycle, and
   account deactivation/deletion.
+- **Audit event stream** — external systems (a SIEM, a compliance archiver) can
+  pull the instance-wide audit log from the REST API, paging forward by cursor
+  with at-least-once completeness. The feed is minimized at the boundary:
+  personal fields are pseudonymized and sensitive free text dropped. Reading it
+  needs the `manage-users` permission and a dedicated audit-scoped API token.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`

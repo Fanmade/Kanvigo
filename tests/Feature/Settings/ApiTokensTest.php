@@ -38,6 +38,70 @@ test('a permitted user can create a read and write token', function () {
     expect($user->tokens()->firstOrFail()->abilities)->toBe(['read', 'write']);
 });
 
+test('an operator with manage-users can create an audit-stream token', function () {
+    $operator = User::factory()->canCreateApiTokens()->canManageUsers()->create();
+
+    Livewire::actingAs($operator)
+        ->test(ApiTokens::class)
+        ->assertSet('canMintAuditTokens', true)
+        ->assertSeeHtml('token-access-audit')
+        ->set('name', 'SIEM feed')
+        ->set('accessLevel', 'audit')
+        ->call('createToken')
+        ->assertHasNoErrors();
+
+    $token = $operator->tokens()->firstOrFail();
+
+    expect($token->abilities)->toBe(['audit']);
+    // The audit scope is instance-wide, never project-restricted.
+    expect($token->restrictsProjects())->toBeFalse();
+});
+
+test('an audit token ignores a selected project scope', function () {
+    $operator = User::factory()->canCreateApiTokens()->canManageUsers()->create();
+    $project = Project::factory()->withMembers([$operator])->create();
+
+    Livewire::actingAs($operator)
+        ->test(ApiTokens::class)
+        ->set('name', 'SIEM feed')
+        ->set('accessLevel', 'audit')
+        ->set('projectScope', 'selected')
+        ->set('selectedProjects', [(string) $project->id])
+        ->call('createToken')
+        ->assertHasNoErrors();
+
+    $token = $operator->tokens()->firstOrFail();
+
+    expect($token->abilities)->toBe(['audit']);
+    expect($token->restrictsProjects())->toBeFalse();
+    expect($token->projects()->count())->toBe(0);
+});
+
+test('a user without manage-users cannot create an audit token', function () {
+    $user = User::factory()->canCreateApiTokens()->create();
+
+    Livewire::actingAs($user)
+        ->test(ApiTokens::class)
+        ->assertSet('canMintAuditTokens', false)
+        ->assertDontSeeHtml('token-access-audit')
+        ->set('name', 'Sneaky')
+        ->set('accessLevel', 'audit')
+        ->call('createToken')
+        ->assertHasErrors('accessLevel');
+
+    expect($user->tokens()->count())->toBe(0);
+});
+
+test('the token list labels an audit token', function () {
+    $operator = User::factory()->canCreateApiTokens()->canManageUsers()->create();
+
+    $audit = $operator->createToken('SIEM feed', ['audit'])->accessToken;
+
+    $tokens = collect(Livewire::actingAs($operator)->test(ApiTokens::class)->instance()->tokens())->keyBy('id');
+
+    expect($tokens[$audit->id]['abilities_label'])->toBe(__('Audit event stream'));
+});
+
 test('a permitted user can revoke a token', function () {
     $user = User::factory()->canCreateApiTokens()->create();
 

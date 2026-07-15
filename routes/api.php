@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AttachmentController;
+use App\Http\Controllers\Api\V1\AuditEventController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\DependencyController;
 use App\Http\Controllers\Api\V1\NoteController;
@@ -30,6 +31,14 @@ Route::middleware(['auth:sanctum', 'throttle:api', SetAuditSource::class.':api']
     ->prefix('v1')
     ->name('api.v1.')
     ->group(static function (): void {
+        // The instance-wide audit event stream. Unlike every other endpoint it
+        // is not scoped to the token owner's projects, so it carries its own
+        // gate: the manage-users permission plus a dedicated `audit` token
+        // ability (see EnsureTokenCanReadAudit).
+        Route::middleware('token.audit')
+            ->get('audit-events', [AuditEventController::class, 'index'])
+            ->name('audit-events.index');
+
         Route::get('user', [UserController::class, 'current'])->name('user');
         Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
 

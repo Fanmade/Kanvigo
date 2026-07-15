@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureTokenCanReadAudit;
 use App\Http\Middleware\EnsureTokenCanWrite;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SetLocale;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'token.write' => EnsureTokenCanWrite::class,
+            'token.audit' => EnsureTokenCanReadAudit::class,
         ]);
     })
     ->withExceptions(static function (Exceptions $exceptions): void {

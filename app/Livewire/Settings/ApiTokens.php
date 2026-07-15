@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Settings;
 
+use App\Enums\Permission;
 use App\Enums\TokenAbility;
 use App\Models\McpClientGrant;
 use App\Models\PersonalAccessToken;
@@ -27,7 +28,7 @@ class ApiTokens extends Component
     #[Validate('required|string|max:255')]
     public string $name = '';
 
-    #[Validate('required|in:read,write')]
+    #[Validate('required|in:read,write,audit')]
     public string $accessLevel = 'read';
 
     #[Validate('required|in:all,selected')]
@@ -57,9 +58,21 @@ class ApiTokens extends Component
 
         $this->validate();
 
-        $projectIds = $this->projectScope === 'selected' ? $this->allowedSelectedProjectIds() : [];
+        $level = TokenAbility::from($this->accessLevel);
 
-        $abilities = TokenAbility::abilitiesFor(TokenAbility::from($this->accessLevel));
+        // The audit stream is instance-wide, so it is gated on the account-level
+        // manage-users permission and is never project-scoped.
+        if ($level === TokenAbility::Audit && ! $this->canMintAuditTokens()) {
+            throw ValidationException::withMessages([
+                'accessLevel' => __('You do not have permission to create audit tokens.'),
+            ]);
+        }
+
+        $restrictsProjects = $level !== TokenAbility::Audit && $this->projectScope === 'selected';
+
+        $projectIds = $restrictsProjects ? $this->allowedSelectedProjectIds() : [];
+
+        $abilities = TokenAbility::abilitiesFor($level);
 
         $newToken = Auth::user()->createToken($this->name, $abilities);
 
@@ -71,7 +84,7 @@ class ApiTokens extends Component
                 'abilities' => $abilities,
             ]));
 
-        if ($this->projectScope === 'selected') {
+        if ($restrictsProjects) {
             $accessToken = Auth::user()->tokens()->whereKey($newToken->accessToken->getKey())->firstOrFail();
             $accessToken->forceFill(['restricts_projects' => true])->save();
             $accessToken->projects()->attach($projectIds);
@@ -203,6 +216,32 @@ class ApiTokens extends Component
     }
 
     /**
+     * Whether the user may mint an audit-stream token — an instance operator
+     * with the account-level manage-users permission. Drives the admin-only
+     * access-level option and re-checked on submit.
+     */
+    #[Computed]
+    public function canMintAuditTokens(): bool
+    {
+        return Auth::user()->can(Permission::ManageUsers->value);
+    }
+
+    /**
+     * The display label for a token's granted abilities: the audit stream, the
+     * read/write split otherwise.
+     *
+     * @param  array<int, string>  $abilities
+     */
+    private static function abilitiesLabel(array $abilities): string
+    {
+        return match (true) {
+            in_array(TokenAbility::Audit->value, $abilities, true) => TokenAbility::Audit->label(),
+            in_array(TokenAbility::Write->value, $abilities, true) => TokenAbility::Write->label(),
+            default => TokenAbility::Read->label(),
+        };
+    }
+
+    /**
      * The user's project memberships, offered as choices when restricting a
      * new token to selected projects.
      *
@@ -232,9 +271,7 @@ class ApiTokens extends Component
             ->map(static fn (PersonalAccessToken $token): array => [
                 'id' => $token->id,
                 'name' => $token->name,
-                'abilities_label' => in_array(TokenAbility::Write->value, $token->abilities ?? [], true)
-                    ? TokenAbility::Write->label()
-                    : TokenAbility::Read->label(),
+                'abilities_label' => self::abilitiesLabel($token->abilities ?? []),
                 'projects_label' => $token->restrictsProjects()
                     ? $token->projects->pluck('short_name')->sort()->implode(', ')
                     : __('All projects'),

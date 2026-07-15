@@ -14,17 +14,22 @@
                 :placeholder="__('e.g. My laptop')"
             />
 
-            <flux:radio.group wire:model="accessLevel" :label="__('Access level')" variant="cards" class="max-sm:flex-col">
-                <flux:radio value="read" :label="__('Read-only')" :description="__('Can read data')" />
-                <flux:radio value="write" :label="__('Read and write')" :description="__('Can read and modify data')" />
+            <flux:radio.group wire:model.live="accessLevel" :label="__('Access level')" variant="cards" class="max-sm:flex-col">
+                <flux:radio value="read" :label="__('Read-only')" :description="__('Can read data')" data-test="token-access-read" />
+                <flux:radio value="write" :label="__('Read and write')" :description="__('Can read and modify data')" data-test="token-access-write" />
+                @if ($this->canMintAuditTokens)
+                    <flux:radio value="audit" :label="__('Audit event stream')" :description="__('Read the instance-wide audit log')" data-test="token-access-audit" />
+                @endif
             </flux:radio.group>
 
-            <flux:radio.group wire:model.live="projectScope" :label="__('Project access')" variant="cards" class="max-sm:flex-col">
-                <flux:radio value="all" :label="__('All projects')" :description="__('Can access every project you are a member of')" data-test="token-scope-all" />
-                <flux:radio value="selected" :label="__('Selected projects')" :description="__('Can only access the projects picked below')" data-test="token-scope-selected" />
-            </flux:radio.group>
+            @if ($accessLevel !== 'audit')
+                <flux:radio.group wire:model.live="projectScope" :label="__('Project access')" variant="cards" class="max-sm:flex-col">
+                    <flux:radio value="all" :label="__('All projects')" :description="__('Can access every project you are a member of')" data-test="token-scope-all" />
+                    <flux:radio value="selected" :label="__('Selected projects')" :description="__('Can only access the projects picked below')" data-test="token-scope-selected" />
+                </flux:radio.group>
+            @endif
 
-            @if ($projectScope === 'selected')
+            @if ($accessLevel !== 'audit' && $projectScope === 'selected')
                 <flux:checkbox.group wire:model="selectedProjects" :label="__('Projects')" data-test="token-projects">
                     @foreach ($this->projects as $project)
                         <flux:checkbox
