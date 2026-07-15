@@ -2,6 +2,8 @@
 
 namespace App\Audit;
 
+use App\Audit\Pii\AuditRedactor;
+use App\Audit\Sinks\RedactingSink;
 use Illuminate\Database\DatabaseTransactionsManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -53,21 +55,40 @@ class AuditManager
     }
 
     /**
-     * The registered sinks, resolved once from config('audit.sinks').
+     * The registered sinks, resolved once from config('audit.sinks'). An entry
+     * is either a class string, or a class => options pair; a sink that ships
+     * events out of the system declares 'redact' => true and is handed the
+     * redacted copy of every event instead of the internal one.
      *
      * @return list<AuditSink>
      */
     public function sinks(): array
     {
-        return $this->sinks ??= array_map(static function (string $class): AuditSink {
+        if ($this->sinks !== null) {
+            return $this->sinks;
+        }
+
+        $sinks = [];
+
+        foreach (config('audit.sinks', []) as $key => $value) {
+            [$class, $options] = is_array($value) ? [$key, $value] : [$value, []];
+
+            if (! is_string($class)) {
+                throw new InvalidArgumentException('An audit sink entry with options must be keyed by its class name.');
+            }
+
             $sink = app($class);
 
             if (! $sink instanceof AuditSink) {
                 throw new InvalidArgumentException("Audit sink [{$class}] must implement ".AuditSink::class.'.');
             }
 
-            return $sink;
-        }, array_values(config('audit.sinks', [])));
+            $sinks[] = ($options['redact'] ?? false)
+                ? new RedactingSink($sink, app(AuditRedactor::class))
+                : $sink;
+        }
+
+        return $this->sinks = $sinks;
     }
 
     /**

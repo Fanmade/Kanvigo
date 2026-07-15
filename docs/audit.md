@@ -71,3 +71,51 @@ or ships them, and `policy()` declares how it runs:
 Register the class in `config/audit.php` under `sinks`. Sinks run alongside
 each other; each receives every event it accepts, so you can run the feed, a
 compliance ledger and a webhook transport in parallel without touching core.
+
+## PII & redaction
+
+Audit events carry personal data — the actor, IP addresses, e-mail addresses,
+name snapshots, and free text such as a cancellation message. `config/audit.php`
+classifies every field of an event as **public**, **pii** or **sensitive** under
+`pii.fields`, with per-action overrides under `pii.actions` (the same `old`/`new`
+keys hold a task title in one event and a free-text message in the next). Fields
+are public unless listed, so a new metadata key is never over-shared by accident.
+
+This classification is the one shared vocabulary the sinks read. A sink that
+ships events out of the system opts into redaction, and then only ever sees the
+minimised copy:
+
+```php
+'sinks' => [
+    ActivityLogSink::class,                 // internal — full fidelity
+    WebhookSink::class => ['redact' => true],
+],
+```
+
+Redaction applies one strategy per class (`pii.strategies`): **pii** fields are
+tokenised — replaced by a stable pseudonym, so a consumer can still correlate
+the same person across events without ever seeing them — and **sensitive** fields
+are dropped. The internal record is untouched: the outbox row and the activity
+feed always keep the real values.
+
+Tokens are a keyed hash salted with `AUDIT_PII_TOKEN_SALT` (falling back to the
+application key). Rotating the salt invalidates every token already published,
+which is the erasure lever for pseudonymised data that has already left the
+system.
+
+### Erasure vs. immutability
+
+An immutable trail and a right-to-erasure request pull in opposite directions.
+The position, to be confirmed with your own legal review before you rely on it:
+
+- The **internal** trail is the system of record and is not edited in place. A
+  user's personal data is removed from it by account deletion and by the outbox
+  retention window, not by rewriting history.
+- **Published** events carry pseudonyms rather than identities, so erasure at an
+  external consumer is achieved by destroying the key (rotating the salt), not by
+  chasing down copies.
+- A compliance ledger (the Chronicle bridge) encrypts classified fields per
+  subject and erases by destroying that subject's key — the ciphertext stays, so
+  the chain still verifies.
+- A **legal hold** outranks an erasure request: while a subject is on hold the
+  ledger refuses to erase. That conflict is resolved by policy, not by code.
