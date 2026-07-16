@@ -19,6 +19,7 @@ use App\Mcp\Tools\ListTasksTool;
 use App\Mcp\Tools\RemoveDependencyTool;
 use App\Mcp\Tools\SetAssigneesTool;
 use App\Mcp\Tools\UpdateNoteTool;
+use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -120,6 +121,7 @@ class KanvigoServer extends Server
         GetUserTool::class,
         GetAttachmentTool::class,
         CreateProjectTool::class,
+        UpdateProjectTool::class,
         CreateTaskTool::class,
         UpdateTaskTool::class,
         AddCommentTool::class,

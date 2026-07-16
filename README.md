@@ -235,8 +235,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   from Settings keep working alongside. Read tools (list/inspect) work with any token and surface each item's
   dependencies (what blocks it, what it blocks, and whether it is currently
   blocked); write tools (create/update tasks, cancel or reopen tasks, set a task's
-  assignees, create projects, add comments and threaded replies, link/unlink
-  dependencies) require a token with write access. Descriptions and comment bodies
+  assignees, create and update projects, add comments and threaded replies,
+  link/unlink dependencies) require a token with write access. Descriptions and comment bodies
   are exchanged as HTML (sanitized to an allow-list on write). Inspecting a project
   or task also returns its comment thread and any cancellation reason, and agents
   can read attachments by their id — inline description images, audio, and
