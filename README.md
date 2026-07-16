@@ -168,7 +168,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   log above is the default sink and needs no configuration. Self-hosters can
   register additional sinks (a compliance ledger, a SIEM/webhook transport)
   against the stable `kanvigo/audit-contracts` package — see
-  [docs/audit.md](docs/audit.md).
+  [docs/audit.md](docs/audit.md). An optional
+  [`kanvigo/audit-chronicle`](https://github.com/Fanmade/kanvigo-audit-chronicle)
+  bridge adds a tamper-evident, hash-chained compliance ledger (WORM anchoring
+  and GDPR crypto-shredding) with a single `composer require` — the core never
+  depends on it.
 - **Complete audit coverage** — beyond content changes, every security-relevant
   action is recorded for compliance sinks (not shown in the feed):
   authentication (logins, failures, lockouts, password and two-factor changes,

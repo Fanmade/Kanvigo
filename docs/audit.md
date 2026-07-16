@@ -72,6 +72,24 @@ Register the class in `config/audit.php` under `sinks`. Sinks run alongside
 each other; each receives every event it accepts, so you can run the feed, a
 compliance ledger and a webhook transport in parallel without touching core.
 
+### Compliance ledger (optional Chronicle bridge)
+
+For a tamper-evident, hash-chained compliance ledger you don't have to build a
+sink yourself. The optional
+[`kanvigo/audit-chronicle`](https://github.com/Fanmade/kanvigo-audit-chronicle)
+package bridges the audit layer to
+[Chronicle](https://github.com/laravel-chronicle/core) — an append-only ledger
+with signed checkpoints, WORM anchoring (S3 Object Lock) and per-subject GDPR
+crypto-shredding. The core never depends on it; a self-hoster opts in:
+
+```bash
+composer require kanvigo/audit-chronicle
+php artisan audit:chronicle:install
+```
+
+The command registers a fail-closed `ChronicleSink` and prints the hardening
+checklist (signing key, encryption, scheduled verification, anchoring).
+
 ## PII & redaction
 
 Audit events carry personal data — the actor, IP addresses, e-mail addresses,

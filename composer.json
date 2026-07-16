@@ -64,6 +64,9 @@
         "pestphp/pest-plugin-laravel": "^4.1",
         "pestphp/pest-plugin-type-coverage": "^4.0"
     },
+    "suggest": {
+        "kanvigo/audit-chronicle": "Optional tamper-evident compliance-ledger audit sink (hash-chained, WORM anchoring, GDPR crypto-shredding) via the Chronicle bridge; the core never depends on it."
+    },
     "autoload": {
         "psr-4": {
             "App\\": "app/",
