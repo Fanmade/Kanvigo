@@ -17,6 +17,7 @@ use App\Livewire\Settings\Passkeys;
 use App\Livewire\Settings\Security;
 use App\Livewire\Settings\TwoFactor;
 use App\Livewire\Settings\TwoFactor\RecoveryCodes;
+use App\Models\Attachment;
 use App\Models\Invitation;
 use App\Models\Note;
 use App\Models\Project;
@@ -26,10 +27,13 @@ use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Laravel\Passkeys\Events\PasskeyRegistered;
 use Laravel\Passkeys\Events\PasskeyVerified;
@@ -516,5 +520,79 @@ describe('token and account lifecycle events', function () {
         $event = assertAudited('user_deleted', 'security');
         expect($event['metadata']['force'])->toBeTrue()
             ->and($event['actor_id'])->toBe($user->id);
+    });
+});
+
+describe('read and access events', function () {
+    it('audits an attachment download through the REST API', function () {
+        Storage::fake(config('attachments.disk'));
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['short_name' => 'ABC']);
+        joinProject($project, $user);
+        $task = Task::factory()->for($project)->create();
+
+        Sanctum::actingAs($user, ['read', 'write']);
+
+        $id = $this->post(
+            "/api/v1/tasks/{$task->reference}/attachments",
+            ['file' => UploadedFile::fake()->create('secret.pdf', 16, 'application/pdf')],
+            ['Accept' => 'application/json'],
+        )->json('data.id');
+
+        $this->get("/api/v1/attachments/{$id}")->assertOk();
+
+        $event = assertAudited('attachment_downloaded', 'access');
+        expect($event['subject_type'])->toBe((new Attachment)->getMorphClass())
+            ->and($event['subject_id'])->toBe($id)
+            ->and($event['metadata']['name'])->toBe('secret.pdf')
+            ->and($event['actor_id'])->toBe($user->id);
+    });
+
+    it("audits one member viewing another member's contact info", function () {
+        $viewer = User::factory()->create();
+        $target = User::factory()->create();
+        $project = Project::factory()->create(['short_name' => 'ABC']);
+        joinProject($project, $viewer);
+        joinProject($project, $target);
+
+        Sanctum::actingAs($viewer, ['read']);
+
+        $this->getJson("/api/v1/users/{$target->public_id}")
+            ->assertOk()
+            ->assertJsonPath('data.email', $target->email);
+
+        $event = assertAudited('contact_info_viewed', 'access');
+        expect($event['metadata']['member_id'])->toBe($target->id)
+            ->and($event['metadata']['member'])->toBe($target->name)
+            ->and($event['actor_id'])->toBe($viewer->id)
+            ->and($event['subject_id'])->toBeNull();
+    });
+
+    it('does not audit a member viewing their own contact info', function () {
+        $user = User::factory()->create();
+
+        Sanctum::actingAs($user, ['read']);
+
+        $this->getJson('/api/v1/user')->assertOk();
+        $this->getJson("/api/v1/users/{$user->public_id}")->assertOk();
+
+        expect(auditOutboxEvents('contact_info_viewed'))->toBeEmpty();
+    });
+
+    it('audits a read of the audit export stream', function () {
+        $operator = User::factory()->canManageUsers()->create();
+        Project::factory()->withMembers([$operator])->create();
+
+        Auth::forgetGuards();
+
+        $this->withToken($operator->createToken('SIEM', ['audit'])->plainTextToken)
+            ->getJson('/api/v1/audit-events?limit=50')
+            ->assertOk();
+
+        $event = assertAudited('audit_stream_read', 'access');
+        expect($event['metadata']['after'])->toBe(0)
+            ->and($event['metadata']['limit'])->toBe(50)
+            ->and($event['metadata'])->toHaveKey('returned')
+            ->and($event['actor_id'])->toBe($operator->id);
     });
 });

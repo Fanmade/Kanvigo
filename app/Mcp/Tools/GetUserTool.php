@@ -2,7 +2,9 @@
 
 namespace App\Mcp\Tools;
 
+use App\Audit\AccessAudit;
 use App\Models\User;
+use App\Support\Facades\Audit;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -36,10 +38,18 @@ class GetUserTool extends Tool
             return Response::error('No user with id "'.$validated['id'].'" exists, or you do not share a project with them.');
         }
 
+        $seesContactInfo = $viewer->can('viewContactInfo', $user);
+
+        // Audit only the disclosure of another member's contact info — seeing
+        // your own is not "who looked at whom" and would be high-volume noise.
+        if ($seesContactInfo && $user->getKey() !== $viewer->getAuthIdentifier()) {
+            Audit::record(AccessAudit::contactInfoViewed($user));
+        }
+
         return Response::structured([
             'id' => $user->public_id,
             'name' => $user->name,
-            'email' => $viewer->can('viewContactInfo', $user) ? $user->email : null,
+            'email' => $seesContactInfo ? $user->email : null,
         ]);
     }
 

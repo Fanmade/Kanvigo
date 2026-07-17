@@ -6,8 +6,21 @@ use App\Mcp\Tools\GetUserTool;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
+
+/**
+ * The latest `contact_info_viewed` access event recorded in the outbox, or null.
+ *
+ * @return array<string, mixed>|null
+ */
+function latestContactInfoView(): ?array
+{
+    $row = DB::table('audit_outbox')->where('event->action', 'contact_info_viewed')->orderBy('id')->get()->last();
+
+    return $row === null ? null : json_decode((string) $row->event, true, flags: JSON_THROW_ON_ERROR);
+}
 
 it('resolves a shared-project user with their email', function () {
     $project = Project::factory()->create();
@@ -50,4 +63,29 @@ it('errors for an unknown user id', function () {
 
     KanvigoServer::actingAs($viewer)->tool(GetUserTool::class, ['id' => 'nope'])
         ->assertHasErrors();
+});
+
+it('audits the disclosure of a shared-project user\'s contact info', function () {
+    $project = Project::factory()->create();
+    $viewer = User::factory()->create();
+    $target = User::factory()->create();
+    joinProject($project, [$viewer, $target]);
+
+    KanvigoServer::actingAs($viewer)->tool(GetUserTool::class, ['id' => $target->public_id])->assertOk();
+
+    $event = latestContactInfoView();
+    expect($event)->not->toBeNull()
+        ->and($event['category'])->toBe('access')
+        ->and($event['metadata']['member_id'])->toBe($target->id)
+        ->and($event['actor_id'])->toBe($viewer->id);
+});
+
+it('does not audit when the email is withheld from an access-all viewer', function () {
+    $viewer = User::factory()->create();
+    $viewer->syncPermissions([Permission::AccessAllProjects]);
+    $target = User::factory()->create();
+
+    KanvigoServer::actingAs($viewer)->tool(GetUserTool::class, ['id' => $target->public_id])->assertOk();
+
+    expect(latestContactInfoView())->toBeNull();
 });

@@ -30,6 +30,12 @@ flow to the outbox and to any registered compliance/transport sinks:
 - **API tokens & accounts** — token creation and revocation (including the
   bulk revoke on deactivation), account deactivation, reactivation and
   deletion.
+- **Read & access** — a curated slice of high-value read events ("who looked at
+  what"): reading the instance-wide audit export stream, one member viewing
+  another's contact info (email) through the REST or MCP user endpoints, and
+  attachment downloads (REST, web and note attachments). Ordinary list and page
+  reads are deliberately not audited — this slice is the rare, sensitive access
+  worth a forensic record, not every view.
 
 The coverage matrix in `tests/Feature/Audit/AuditCoverageTest.php` asserts
 each of these actions produces an audit record, so a code path that skips the
@@ -147,6 +153,11 @@ which is scoped to the token owner — it is doubly gated: the acting user needs
 the account-level `manage-users` permission, and the token needs the dedicated
 `audit` ability (mintable from the API tokens screen only by an operator who
 holds that permission). An ordinary read/write token cannot reach it.
+
+Reading the stream is itself an access event, recorded for the internal "who
+exported the log" trail — but those read events are excluded from the stream's
+own output, so a polling consumer never reads its own reads back (and a quiet
+system's stream still settles to an empty "caught up" page).
 
 ### Erasure vs. immutability
 

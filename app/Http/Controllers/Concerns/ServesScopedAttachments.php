@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Audit\AccessAudit;
 use App\Models\Attachment;
+use App\Support\Facades\Audit;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -44,6 +46,8 @@ trait ServesScopedAttachments
         $disk = Storage::disk($attachment->disk);
 
         abort_unless($disk->exists($attachment->path), 404);
+
+        Audit::record(AccessAudit::attachmentDownloaded($attachment));
 
         return $disk->download($attachment->path, $attachment->name);
     }

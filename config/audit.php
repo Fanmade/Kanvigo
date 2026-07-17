@@ -114,6 +114,10 @@ return [
             'attachment_removed' => [
                 'metadata' => ['old' => DataClass::Sensitive->value],
             ],
+            // The downloaded file's name — free text that can itself carry PII.
+            'attachment_downloaded' => [
+                'metadata' => ['name' => DataClass::Sensitive->value],
+            ],
         ],
 
         /*

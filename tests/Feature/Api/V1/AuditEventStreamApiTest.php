@@ -123,3 +123,23 @@ it('rejects an out-of-range limit', function () {
         ->getJson('/api/v1/audit-events?limit=500')
         ->assertStatus(422);
 });
+
+it('records reading the stream but never reflects those reads back into it', function () {
+    $token = auditToken($this->operator);
+
+    // First read: records an `audit_stream_read` event in the outbox...
+    withToken($token)->getJson('/api/v1/audit-events')->assertOk();
+
+    expect(DB::table('audit_outbox')->count())->toBeGreaterThan(0);
+    $streamReads = DB::table('audit_outbox')
+        ->where('event->action', 'audit_stream_read')
+        ->count();
+    expect($streamReads)->toBe(1);
+
+    // ...but a second read never returns the first read's own event, so a
+    // polling consumer can't loop on itself.
+    $second = withToken($token)->getJson('/api/v1/audit-events')->assertOk();
+
+    expect(collect($second->json('data'))->pluck('action'))
+        ->not->toContain('audit_stream_read');
+});

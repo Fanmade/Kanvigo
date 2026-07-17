@@ -179,6 +179,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   passkeys), membership and permission changes, invitations, content edits and
   deletions across every surface (UI, MCP, REST API), API token lifecycle, and
   account deactivation/deletion.
+- **Read/access auditing** — a curated slice of high-value read events is
+  recorded too ("who looked at what"): reading the audit export stream, one
+  member viewing another's contact info, and attachment downloads. Routine list
+  and page reads are deliberately excluded.
 - **Audit event stream** — external systems (a SIEM, a compliance archiver) can
   pull the instance-wide audit log from the REST API, paging forward by cursor
   with at-least-once completeness. The feed is minimized at the boundary:

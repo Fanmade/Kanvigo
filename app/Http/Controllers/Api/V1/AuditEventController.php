@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Audit\AccessAudit;
 use App\Audit\Pii\AuditRedactor;
 use App\Http\Controllers\Controller;
+use App\Support\Facades\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +25,12 @@ use Kanvigo\Audit\Contracts\AuditEvent;
  * Every event is passed through the {@see AuditRedactor} first: this is an
  * external boundary, so personal fields are tokenized and sensitive free text
  * dropped, while the internal outbox row keeps full fidelity.
+ *
+ * Reading the stream is itself an access event ({@see AccessAudit::streamRead()}),
+ * recorded to the outbox for the internal "who exported the log" trail. Those
+ * `audit_stream_read` rows are excluded from this endpoint's own output, so a
+ * polling consumer never reads its own reads back — which would keep the stream
+ * from ever settling to a short "caught up" page.
  */
 class AuditEventController extends Controller
 {
@@ -46,6 +54,10 @@ class AuditEventController extends Controller
 
         $rows = DB::table('audit_outbox')
             ->where('id', '>', $after)
+            // A consumer reading the stream never needs its own reads reflected
+            // back; excluding them here (LIMIT applies after the filter, so the
+            // page stays full) keeps the stream from looping on itself.
+            ->where('event->action', '!=', 'audit_stream_read')
             ->orderBy('id')
             ->limit($limit)
             ->get(['id', 'event']);
@@ -61,6 +73,8 @@ class AuditEventController extends Controller
         // A full page means there may be more; a short page means the consumer
         // has caught up and should keep polling the same cursor.
         $nextCursor = $rows->count() === $limit ? (int) $rows->last()->id : null;
+
+        Audit::record(AccessAudit::streamRead($after, $limit, count($data)));
 
         return response()->json([
             'data' => $data,
