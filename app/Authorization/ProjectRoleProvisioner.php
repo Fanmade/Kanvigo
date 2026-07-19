@@ -38,6 +38,7 @@ class ProjectRoleProvisioner
         'Tags' => ['manage-tags', 'tag-tasks'],
         'Attachments' => ['manage-attachments', 'delete-attachment'],
         'Comments' => ['create-comment', 'moderate-comments'],
+        'Docs' => ['create-doc', 'edit-doc', 'delete-doc'],
     ];
 
     /**
@@ -53,6 +54,7 @@ class ProjectRoleProvisioner
         'manage-tags', 'tag-tasks',
         'manage-attachments', 'delete-attachment',
         'create-comment', 'moderate-comments',
+        'create-doc', 'edit-doc', 'delete-doc',
     ];
 
     /**
@@ -72,6 +74,7 @@ class ProjectRoleProvisioner
             'manage-tags', 'tag-tasks',
             'manage-attachments', 'delete-attachment',
             'create-comment',
+            'create-doc', 'edit-doc', 'delete-doc',
         ],
         'admin' => [
             'view-project', 'view-activity-log',
@@ -80,6 +83,7 @@ class ProjectRoleProvisioner
             'manage-attachments', 'delete-attachment',
             'create-comment', 'moderate-comments',
             'manage-settings', 'delete-project',
+            'create-doc', 'edit-doc', 'delete-doc',
         ],
         'owner' => self::CATALOG,
     ];

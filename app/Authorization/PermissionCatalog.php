@@ -45,6 +45,9 @@ class PermissionCatalog
         'delete-attachment' => 'Delete attachments',
         'create-comment' => 'Write comments',
         'moderate-comments' => 'Moderate comments',
+        'create-doc' => 'Create docs',
+        'edit-doc' => 'Edit docs',
+        'delete-doc' => 'Delete docs',
     ];
 
     /**
@@ -75,6 +78,9 @@ class PermissionCatalog
         'delete-attachment' => 'Delete',
         'create-comment' => 'Write',
         'moderate-comments' => 'Moderate',
+        'create-doc' => 'Create',
+        'edit-doc' => 'Edit',
+        'delete-doc' => 'Delete',
     ];
 
     /**

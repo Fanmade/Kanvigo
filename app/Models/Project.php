@@ -197,6 +197,16 @@ class Project extends Model implements Mentionable, Subscribable
     }
 
     /**
+     * The reference docs owned by this project.
+     *
+     * @return HasMany<Doc, $this>
+     */
+    public function docs(): HasMany
+    {
+        return $this->hasMany(Doc::class);
+    }
+
+    /**
      * The tags owned by this project.
      *
      * @return HasMany<Tag, $this>
@@ -228,14 +238,16 @@ class Project extends Model implements Mentionable, Subscribable
 
     /**
      * The project that owns the given item — the project itself, or the project a
-     * task belongs to. Null for anything else (or null input). Used to resolve the
-     * owning project of a comment's commentable or an attachment's attachable.
+     * task or doc belongs to. Null for anything else (or null input). Used to
+     * resolve the owning project of a comment's commentable or an attachment's
+     * attachable.
      */
     public static function ownerOf(?Model $model): ?Project
     {
         return match (true) {
             $model instanceof Project => $model,
             $model instanceof Task => $model->project,
+            $model instanceof Doc => $model->project,
             default => null,
         };
     }

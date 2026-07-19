@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Activity;
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 
@@ -85,6 +86,34 @@ class ReferenceResolver
         }
 
         return Project::query()->where('short_name', $shortName)->first();
+    }
+
+    /**
+     * Resolve a doc reference (e.g. "PROJ-D3") into its model. The "-D" infix
+     * keeps it from colliding with the task ("PROJ-3") and project ("PROJ")
+     * reference forms.
+     *
+     * Returns null when the reference is malformed or no matching doc exists.
+     */
+    public static function doc(string $reference): ?Doc
+    {
+        if (! preg_match('/^('.self::SHORT_NAME.')-D(\d+)$/', strtoupper(trim($reference)), $matches)) {
+            return null;
+        }
+
+        [, $shortName, $docNumber] = $matches;
+
+        $project = Project::query()->where('short_name', $shortName)->first();
+
+        if ($project === null) {
+            return null;
+        }
+
+        return Doc::query()
+            ->with('project')
+            ->where('project_id', $project->id)
+            ->where('doc_number', (int) $docNumber)
+            ->first();
     }
 
     /**
