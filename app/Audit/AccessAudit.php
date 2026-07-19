@@ -35,6 +35,18 @@ final class AccessAudit
     }
 
     /**
+     * An administrator opening the user-administration directory, which lists
+     * every account's contact info at once. Recorded once per panel open (not
+     * per row or per render), so it captures "who accessed the directory"
+     * without the noise of a per-person event for a bulk view. The operator is
+     * the actor; there is no single subject.
+     */
+    public static function userDirectoryViewed(): AuditEvent
+    {
+        return AuditEvent::make('user_directory_viewed', AuditCategory::Access);
+    }
+
+    /**
      * One member viewing another member's contact info (email). The viewed user
      * travels in the conventional member/member_id metadata keys — both already
      * classified Pii, so they are tokenised in the published stream while the

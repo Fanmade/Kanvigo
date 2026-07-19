@@ -595,4 +595,19 @@ describe('read and access events', function () {
             ->and($event['metadata'])->toHaveKey('returned')
             ->and($event['actor_id'])->toBe($operator->id);
     });
+
+    it('audits an administrator opening the user directory, once per open not per render', function () {
+        $admin = User::factory()->canManageUsers()->create();
+
+        Livewire::actingAs($admin)
+            ->test(UserManagement::class)
+            // Re-renders (searching) must not re-audit — the event is per open.
+            ->set('search', 'a')
+            ->set('search', 'ab');
+
+        $event = assertAudited('user_directory_viewed', 'access');
+        expect($event['actor_id'])->toBe($admin->id)
+            ->and($event['subject_id'])->toBeNull()
+            ->and(auditOutboxEvents('user_directory_viewed'))->toHaveCount(1);
+    });
 });

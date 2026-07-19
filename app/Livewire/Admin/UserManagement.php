@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Actions\AddProjectMember;
 use App\Actions\RemoveProjectMember;
+use App\Audit\AccessAudit;
 use App\Authorization\AccountPermissionProvisioner;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\Permission;
@@ -55,6 +56,11 @@ class UserManagement extends Component
     public function mount(): void
     {
         $this->authorize('viewAny', User::class);
+
+        // The directory lists every account's contact info, so opening it is an
+        // access event in its own right. Recorded once here (on open), not per
+        // row or per render — see App\Audit\AccessAudit.
+        Audit::record(AccessAudit::userDirectoryViewed());
     }
 
     /**
