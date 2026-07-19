@@ -7,9 +7,22 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
+
+/**
+ * The decoded `attachment_downloaded` access events currently in the outbox.
+ *
+ * @return Collection<int, array<string, mixed>>
+ */
+function attachmentDownloadAudits(): Collection
+{
+    return DB::table('audit_outbox')->where('event->action', 'attachment_downloaded')->orderBy('id')->get()
+        ->map(static fn (object $row): array => json_decode((string) $row->event, true, flags: JSON_THROW_ON_ERROR));
+}
 
 beforeEach(function () {
     config()->set('attachments.disk', 'attachments');
@@ -212,4 +225,67 @@ it('errors when the id argument is missing', function () {
     KanvigoServer::actingAs($this->member)
         ->tool(GetAttachmentTool::class, [])
         ->assertHasErrors();
+});
+
+it('audits serving image content as an attachment download', function () {
+    Storage::disk('attachments')->put('attachments/diagram.png', 'png-bytes');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/diagram.png',
+        'name' => 'diagram.png',
+        'mime_type' => 'image/png',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk();
+
+    $event = attachmentDownloadAudits()->sole();
+    expect($event['category'])->toBe('access')
+        ->and($event['subject_type'])->toBe($attachment->getMorphClass())
+        ->and($event['subject_id'])->toBe($attachment->id)
+        ->and($event['metadata']['name'])->toBe('diagram.png')
+        ->and($event['actor_id'])->toBe($this->member->id);
+});
+
+it('audits serving text content as an attachment download', function () {
+    Storage::disk('attachments')->put('attachments/error.log', 'boom');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/error.log',
+        'name' => 'error.log',
+        'mime_type' => 'text/plain',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk();
+
+    expect(attachmentDownloadAudits()->sole()['subject_id'])->toBe($attachment->id);
+});
+
+it('does not audit the metadata-only fallthrough for a non-viewable type', function () {
+    Storage::disk('attachments')->put('attachments/spec.pdf', 'pdf-bytes');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/spec.pdf',
+        'name' => 'spec.pdf',
+        'mime_type' => 'application/pdf',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('cannot be displayed inline');
+
+    expect(attachmentDownloadAudits())->toBeEmpty();
 });

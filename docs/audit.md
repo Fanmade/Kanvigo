@@ -33,9 +33,10 @@ flow to the outbox and to any registered compliance/transport sinks:
 - **Read & access** — a curated slice of high-value read events ("who looked at
   what"): reading the instance-wide audit export stream, one member viewing
   another's contact info (email) through the REST or MCP user endpoints, and
-  attachment downloads (REST, web and note attachments). Ordinary list and page
-  reads are deliberately not audited — this slice is the rare, sensitive access
-  worth a forensic record, not every view.
+  attachment downloads (REST, web and note attachments, plus serving attachment
+  content through the MCP get-attachment tool). Ordinary list and page reads are
+  deliberately not audited — this slice is the rare, sensitive access worth a
+  forensic record, not every view.
 
 The coverage matrix in `tests/Feature/Audit/AuditCoverageTest.php` asserts
 each of these actions produces an audit record, so a code path that skips the

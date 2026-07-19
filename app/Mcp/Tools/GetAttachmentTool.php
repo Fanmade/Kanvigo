@@ -2,7 +2,9 @@
 
 namespace App\Mcp\Tools;
 
+use App\Audit\AccessAudit;
 use App\Models\Attachment;
+use App\Support\Facades\Audit;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Support\Facades\Storage;
@@ -69,18 +71,29 @@ class GetAttachmentTool extends Tool
         $mimeType = (string) $attachment->mime_type;
         $contents = (string) $disk->get($attachment->path);
 
-        if (str_starts_with($mimeType, 'image/')) {
-            return Response::image($contents, $mimeType);
-        }
-
-        if (str_starts_with($mimeType, 'audio/')) {
-            return Response::audio($contents, $mimeType);
-        }
-
+        $isImage = str_starts_with($mimeType, 'image/');
+        $isAudio = str_starts_with($mimeType, 'audio/');
         // Inline text-based files (logs, JSON, …) so an agent can read them — but
         // only if the bytes are actually valid UTF-8, so a binary file mislabelled
         // as text falls through to the metadata link rather than emitting garbage.
-        if ($this->isTextual($mimeType) && mb_check_encoding($contents, 'UTF-8')) {
+        $isInlineText = $this->isTextual($mimeType) && mb_check_encoding($contents, 'UTF-8');
+
+        // Serving the bytes (image, audio or inline text) is a content read of the
+        // attachment over MCP — audit it like a REST/web download. The metadata-only
+        // fallthrough below discloses no content, so it is not audited.
+        if ($isImage || $isAudio || $isInlineText) {
+            Audit::record(AccessAudit::attachmentDownloaded($attachment));
+        }
+
+        if ($isImage) {
+            return Response::image($contents, $mimeType);
+        }
+
+        if ($isAudio) {
+            return Response::audio($contents, $mimeType);
+        }
+
+        if ($isInlineText) {
             return Response::text($this->inlineText($attachment, $contents, $validated['offset'] ?? 0));
         }
 
