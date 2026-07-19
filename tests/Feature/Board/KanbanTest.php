@@ -228,6 +228,50 @@ it('filters the board by priority', function () {
         ->and($tasks->first()->priority)->toBe(Priority::Highest);
 });
 
+it('filters the board by assignee', function () {
+    $other = User::factory()->create();
+    joinProject($this->project, $other);
+
+    $mine = Task::factory()->for($this->project)->status(Status::Planned)->create();
+    $mine->assignees()->attach($this->member->id);
+    $theirs = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $theirs->assignees()->attach($other->id);
+
+    $columns = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('assigneeFilter', $this->member->id)
+        ->instance()->columns();
+
+    $ids = collect($columns)->flatMap(fn ($column) => $column['tasks'])->pluck('id');
+
+    expect($ids)->toContain($mine->id)
+        ->and($ids)->not->toContain($theirs->id)
+        // The unassigned seed task is excluded once an assignee filter is set.
+        ->and($ids)->not->toContain($this->task->id);
+});
+
+it('pins the current user first in the assignee filter, then others by name', function () {
+    $zara = User::factory()->create(['name' => 'Zara']);
+    $aaron = User::factory()->create(['name' => 'Aaron']);
+    joinProject($this->project, [$zara, $aaron]);
+
+    $members = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->instance()->members();
+
+    expect($members->first()->id)->toBe($this->member->id)
+        ->and($members->slice(1)->pluck('name')->values()->all())->toBe(['Aaron', 'Zara']);
+});
+
+it('counts the assignee filter in the active filter badge', function () {
+    $count = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('assigneeFilter', $this->member->id)
+        ->instance()->activeFilterCount();
+
+    expect($count)->toBe(1);
+});
+
 it('filters a single column by its own title search', function () {
     $this->task->update(['title' => 'Polish the board']);
     $other = Task::factory()->for($this->project)->status(Status::Planned)->create(['title' => 'Unrelated work']);

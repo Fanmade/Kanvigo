@@ -54,7 +54,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   each card also has a keyboard-accessible "Move to" menu. Cards keep the order
   you arrange them in within each column. Each column has its own search — a
   compact icon that expands to a search box — to filter that column's cards by
-  title or reference. The board refreshes
+  title or reference. A Filters menu narrows the whole board by priority, type and
+  assignee — with your own tasks ("assigned to me") offered first. The board refreshes
   automatically as others make changes — a per-user "Live updates" toggle turns
   this off — and never refreshes mid-drag.
 - **Project overview** — each project page lists its top-level tasks and shows

@@ -35,6 +35,16 @@
                                 @endforeach
                             </flux:select>
                         @endif
+                        @if ($this->members->isNotEmpty())
+                            <flux:select variant="listbox" wire:model.live="assigneeFilter" size="sm" :label="__('Assignee')" data-test="assignee-filter">
+                                <flux:select.option value="">{{ __('Anyone') }}</flux:select.option>
+                                @foreach ($this->members as $member)
+                                    <flux:select.option :value="$member->id">
+                                        {{ $member->getKey() === auth()->id() ? __('Assigned to me') : $member->name }}
+                                    </flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        @endif
                     </flux:popover>
                 </flux:dropdown>
 

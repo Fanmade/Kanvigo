@@ -9,6 +9,7 @@ use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskType;
+use App\Models\User;
 use App\Support\BlockedTasks;
 use App\Support\BoardCache;
 use Illuminate\Contracts\View\View;
@@ -35,6 +36,8 @@ class ProjectBoard extends Component
     public ?int $priorityFilter = null;
 
     public ?int $typeFilter = null;
+
+    public ?int $assigneeFilter = null;
 
     public bool $showArchived = false;
 
@@ -72,7 +75,28 @@ class ProjectBoard extends Component
     {
         return ($this->showArchived ? 1 : 0)
             + ($this->priorityFilter ? 1 : 0)
-            + ($this->typeFilter ? 1 : 0);
+            + ($this->typeFilter ? 1 : 0)
+            + ($this->assigneeFilter ? 1 : 0);
+    }
+
+    /**
+     * The project's members, offered in the board's assignee filter with the
+     * current user pinned first ("assigned to me") when they are a member —
+     * access-all viewers who are not members simply don't appear, since only
+     * members can be assigned tasks.
+     *
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    #[Computed]
+    public function members(): \Illuminate\Support\Collection
+    {
+        $currentUserId = auth()->id();
+
+        return $this->project->members()
+            ->orderBy('name')
+            ->get()
+            ->sortBy(static fn (User $member): int => $member->getKey() === $currentUserId ? 0 : 1)
+            ->values();
     }
 
     /**
@@ -124,6 +148,10 @@ class ProjectBoard extends Component
 
         if ($this->typeFilter) {
             $tasks = $tasks->filter(fn (Task $task): bool => $task->task_type_id === $this->typeFilter);
+        }
+
+        if ($this->assigneeFilter) {
+            $tasks = $tasks->filter(fn (Task $task): bool => $task->assignees->contains('id', $this->assigneeFilter));
         }
 
         return $this->buildColumns($tasks, $this->columnSearch);
