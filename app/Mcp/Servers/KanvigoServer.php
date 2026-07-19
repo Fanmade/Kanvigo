@@ -8,7 +8,9 @@ use App\Mcp\Tools\ConvertNoteTool;
 use App\Mcp\Tools\CreateNoteTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateTaskTool;
+use App\Mcp\Tools\FindUsersTool;
 use App\Mcp\Tools\GetAttachmentTool;
+use App\Mcp\Tools\GetCurrentUserTool;
 use App\Mcp\Tools\GetNoteTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetTaskTool;
@@ -89,8 +91,11 @@ use Laravel\Mcp\Server\Tool;
     Users are referenced by a stable "id" wherever they appear (task assignees, comment authors).
     Pass that id to the get-user tool to resolve the person's name and — when you share a project
     with them or hold user-administration access — their email. You can only resolve users you share
-    a project with. Use set-assignees to set a task's assignees by those ids (an absolute set — pass
-    every id that should be assigned, or an empty list to clear); only project members can be assigned.
+    a project with. To assign work to a person you first need their id: use get-current-user to get
+    your own id ("assign this to me"), and find-users to look someone up by a name or email fragment
+    among the people you share a project with ("assign this to Dana"). Then use set-assignees to set
+    a task's assignees by those ids (an absolute set — pass every id that should be assigned, or an
+    empty list to clear); only project members can be assigned.
 
     The add-comment tool can post a reply by passing "reply_to" with the id of the comment to answer;
     replies stay one level deep, so replying to a reply attaches to the root comment.
@@ -119,6 +124,8 @@ class KanvigoServer extends Server
         ListTasksTool::class,
         GetTaskTool::class,
         GetUserTool::class,
+        GetCurrentUserTool::class,
+        FindUsersTool::class,
         GetAttachmentTool::class,
         CreateProjectTool::class,
         UpdateProjectTool::class,

@@ -251,8 +251,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   can read attachments by their id — inline description images, audio, and
   text-based files (logs, JSON, XML, CSV, …) returned inline as text, with a byte
   offset to page through large files. Users appear by a stable id that a get-user
-  tool resolves to a name (and, for shared-project members or admins, an email).
-  Project reads (list-tasks, get-project, list-notes) return the full set by default
+  tool resolves to a name (and, for shared-project members or admins, an email); to
+  assign work, agents resolve the id they need with get-current-user ("assign this
+  to me") or find-users, a name/email lookup across the people you share a project
+  with. Project reads (list-tasks, get-project, list-notes) return the full set by default
   but accept an optional limit with an explicit cursor to page very large projects
   without ever truncating silently. Personal notes have their own tools (create,
   list, get, update and convert-to-task), referenced by a numeric note id.
