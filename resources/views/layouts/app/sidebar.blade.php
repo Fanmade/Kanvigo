@@ -78,6 +78,29 @@
                  would compete with it for the slack — only push from `sm` up. --}}
             <flux:spacer class="max-sm:hidden" />
 
+            {{-- Global shortcut to the app's most-used action, sitting to the left of
+                 the account avatar. Fires the same no-payload open-create-task event
+                 as the command palette, so the create-task modal infers the project
+                 from the current route, auto-selects a sole project, or falls back to
+                 its project picker. Dispatched via Livewire.dispatch (not wire:click)
+                 because the header layout is not itself a Livewire component. Only
+                 shown when the user has a project to add a task to, mirroring the
+                 command palette's gate. The label collapses to an icon on mobile,
+                 where the search bar claims the header width. --}}
+            @if (auth()->user()->projects()->exists())
+                <flux:button
+                    variant="primary"
+                    icon="plus"
+                    size="sm"
+                    class="me-3"
+                    x-on:click="Livewire.dispatch('open-create-task')"
+                    :aria-label="__('New task')"
+                    data-test="toolbar-new-task"
+                >
+                    <span class="max-sm:hidden">{{ __('New task') }}</span>
+                </flux:button>
+            @endif
+
             {{-- Persist the notifications menu across wire:navigate transitions so its
                  30s poll and unread state survive page changes instead of re-mounting
                  (and re-querying) on every navigation. --}}

@@ -40,7 +40,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   `PROJ42`), find tasks by a bare number across your projects (prioritizing the
   one you're viewing), and run quick actions including creating a task from anywhere.
 - **Create task dialog** — one dialog for creating tasks, opened from the board,
-  a project, a parent task or the command palette. Pick the target project and an
+  a project, a parent task, the command palette, or the New task shortcut in the
+  top toolbar. Pick the target project and an
   optional parent task (offered only where nesting stays within the depth limit) —
   both preselected from the page you opened it on — set the title, a rich-text
   description, priority, status, an optional type and due date, and add tags and
