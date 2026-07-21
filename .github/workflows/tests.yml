@@ -42,7 +42,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ghostscript
 
       - name: Setup Node
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: '22'
 
@@ -107,7 +107,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ghostscript
 
       - name: Setup Node
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: '22'
 
@@ -154,7 +154,7 @@ jobs:
 
       - name: Update Coverage Badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: schneegans/dynamic-badges-action@0e50b8bad39e7e1afd3e4e9c2b7dd145fad07501 # v1.8.0
+        uses: schneegans/dynamic-badges-action@28b0fa8bdeb46170ac397105ece0c1fe58f68910 # v1.9.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: 89b10cbc79557b748b8f50d2955dd9f6
