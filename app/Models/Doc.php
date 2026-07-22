@@ -4,10 +4,12 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
+use App\Concerns\HasReferences;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasTags;
 use App\Concerns\LogsActivity;
 use App\Concerns\SanitizesRichText;
+use App\Contracts\Referenceable;
 use Database\Factories\DocFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,10 +50,10 @@ use InvalidArgumentException;
  * @property-read Collection<int, Doc> $children
  */
 #[Fillable(['title', 'body', 'is_public', 'parent_id'])]
-class Doc extends Model
+class Doc extends Model implements Referenceable
 {
     /** @use HasFactory<DocFactory> */
-    use HasAttachments, HasComments, HasFactory, HasScopedNumber, HasTags, LogsActivity, SanitizesRichText, SoftDeletes {
+    use HasAttachments, HasComments, HasFactory, HasReferences, HasScopedNumber, HasTags, LogsActivity, SanitizesRichText, SoftDeletes {
         LogsActivity::auditFieldSnapshot as protected baseAuditFieldSnapshot;
     }
 

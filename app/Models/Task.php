@@ -9,6 +9,7 @@ use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
 use App\Concerns\HasDependencies;
 use App\Concerns\HasMentions;
+use App\Concerns\HasReferences;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
 use App\Concerns\HasTags;
@@ -18,6 +19,7 @@ use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use App\Contracts\Dependable;
 use App\Contracts\Mentionable;
+use App\Contracts\Referenceable;
 use App\Contracts\Subscribable;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
@@ -61,10 +63,10 @@ use Illuminate\Support\Collection;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Task> $children
  */
 #[Fillable(['title', 'description', 'priority', 'due_date'])]
-class Task extends Model implements Dependable, Mentionable, Subscribable
+class Task extends Model implements Dependable, Mentionable, Referenceable, Subscribable
 {
     /** @use HasFactory<TaskFactory> */
-    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasMentions, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable, PrunesInlineAttachments, SanitizesRichText;
+    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasMentions, HasReferences, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable, PrunesInlineAttachments, SanitizesRichText;
 
     protected string $scopedNumberColumn = 'task_number';
 
