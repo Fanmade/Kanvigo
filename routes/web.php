@@ -12,6 +12,8 @@ use App\Http\Controllers\UserPreviewController;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
 use App\Livewire\Dashboard;
+use App\Livewire\Docs\DocList;
+use App\Livewire\Docs\DocView;
 use App\Livewire\Invitations\AcceptInvitation;
 use App\Livewire\Invitations\InviteUser;
 use App\Livewire\Notes\NoteList;
@@ -97,6 +99,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.board');
 
+    Route::livewire('/{short_name}/docs', DocList::class)
+        ->where('short_name', '[A-Z]{2,4}')
+        ->name('project.docs');
+
     Route::livewire('/{short_name}/tags', ProjectTags::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.tags');
@@ -112,6 +118,15 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::get('/{short_name}-{task_number}/preview', TaskPreviewController::class)
         ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])
         ->name('task.preview');
+
+    /*
+     * A doc's "PROJ-D<n>" reference. Registered before the task route: the "-D"
+     * infix keeps the two apart (a task number is digits only), and this order
+     * keeps that explicit.
+     */
+    Route::livewire('/{short_name}-D{doc_number}', DocView::class)
+        ->where(['short_name' => '[A-Z]{2,4}', 'doc_number' => '\d+'])
+        ->name('doc.show');
 
     Route::livewire('/{short_name}-{task_number}', TaskView::class)
         ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Concerns\HandlesAttachments;
 use App\Models\Attachment;
+use App\Models\Doc;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
@@ -19,7 +20,7 @@ use Illuminate\Support\Str;
  */
 class StoreAttachment
 {
-    public function handle(UploadedFile $file, Project|Task|Note $attachable, bool $isInline = false, ?int $uploadedBy = null): Attachment
+    public function handle(UploadedFile $file, Project|Task|Note|Doc $attachable, bool $isInline = false, ?int $uploadedBy = null): Attachment
     {
         // Read metadata and contents before storing: when the temporary upload
         // and target disks match, store() moves the file, after which it can no

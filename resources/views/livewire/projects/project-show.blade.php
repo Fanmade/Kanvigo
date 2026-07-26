@@ -12,6 +12,10 @@
             <x-live-updates-toggle/>
             <livewire:subscriptions.subscription-toggle :subscribable="$this->project"
                                                         :wire:key="'sub-project-'.$this->project->id"/>
+            <flux:button size="sm" variant="ghost" icon="document-text" :href="route('project.docs', $this->project)"
+                         wire:navigate data-test="project-docs-link">
+                {{ __('Docs') }}
+            </flux:button>
             <flux:button size="sm" variant="primary" icon="view-columns" :href="route('project.board', $this->project)"
                          wire:navigate>
                 {{ __('Board') }}

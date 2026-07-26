@@ -31,7 +31,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   forward or back along the progression (Planned ⇄ To do ⇄ In progress ⇄ Done) —
   and editing controls stay tucked away until needed.
 - **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}/board` for its
-  board, and `/{SHORT}-{n}` for a task (e.g. `/ABC`, `/ABC/board`, `/ABC-42`).
+  board, `/{SHORT}-{n}` for a task and `/{SHORT}-D{n}` for a doc (e.g. `/ABC`,
+  `/ABC/board`, `/ABC-42`, `/ABC-D3`).
   The browser tab title carries the same context — a project page leads with its
   short name, a task page with its reference and title (e.g. `ABC-42 · Fix the
   board`) — so several open tabs stay distinguishable.
@@ -94,6 +95,13 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   step: the task takes the note's title and body, and the note keeps a
   "Converted → PROJ-N" link. Also available through the MCP tools. See
   [docs/quick-notes.md](docs/quick-notes.md).
+- **Reference docs** — statusless knowledge pages that belong to a project:
+  specs, decisions and background, referenced as `PROJ-D3` and reached from the
+  **Docs** button on the project page. Docs nest into a tree, are written with the
+  same rich-text editor (including inline images and file attachments) as
+  descriptions, and start as drafts only editors can see until they are published
+  to the project. A doc page shows the docs nested under it and the tasks and docs
+  it links to — plus everything linking back to it.
 - **Multi-assignee** tasks for pairing and ensemble work, with a one-click "assign
   to me" on the task page and in the create-task dialog.
 - **Profile avatars** — upload a profile picture (cropped to a square) from

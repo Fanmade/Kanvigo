@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Actions\StoreAttachment;
 use App\Models\Attachment;
+use App\Models\Doc;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
@@ -17,7 +18,7 @@ use Livewire\WithFileUploads;
 
 /**
  * Adds attachment uploading, listing, and removal to a page component that
- * renders a single Project, Task or Note.
+ * renders a single Project, Task, Doc or Note.
  *
  * @property string $description
  */
@@ -33,7 +34,7 @@ trait HandlesAttachments
     /**
      * The model that uploaded files should be attached to.
      */
-    abstract protected function attachable(): Project|Task|Note;
+    abstract protected function attachable(): Project|Task|Note|Doc;
 
     /**
      * Persist freshly dropped or selected files as soon as they finish uploading.
@@ -158,7 +159,7 @@ trait HandlesAttachments
      * Move an uploaded file onto the configured disk and create its attachment
      * record via the shared {@see StoreAttachment} action.
      */
-    private function storeAttachment(TemporaryUploadedFile $file, Project|Task|Note $attachable, bool $isInline = false): Attachment
+    private function storeAttachment(TemporaryUploadedFile $file, Project|Task|Note|Doc $attachable, bool $isInline = false): Attachment
     {
         return app(StoreAttachment::class)->handle($file, $attachable, $isInline);
     }
