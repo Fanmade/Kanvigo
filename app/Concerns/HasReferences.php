@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Contracts\Referenceable;
+use App\Enums\ReferenceOrigin;
 use App\Models\Doc;
 use App\Models\Reference;
 use App\Models\Task;
@@ -91,11 +92,13 @@ trait HasReferences
 
     /**
      * Record that this item references the given one, creating the link if it
-     * does not already exist.
+     * does not already exist. An existing link keeps its origin, so re-adding a
+     * link that inline text already created does not turn it manual (or vice
+     * versa).
      *
      * @throws InvalidArgumentException when the link would reference the item itself.
      */
-    public function addReference(Model&Referenceable $target): Reference
+    public function addReference(Model&Referenceable $target, ReferenceOrigin $origin = ReferenceOrigin::Manual): Reference
     {
         if ($target->is($this)) {
             throw new InvalidArgumentException('An item cannot reference itself.');
@@ -106,11 +109,60 @@ trait HasReferences
             'source_id' => $this->getKey(),
             'target_type' => $target->getMorphClass(),
             'target_id' => $target->getKey(),
+        ], [
+            'origin' => $origin,
         ]);
 
         $this->unsetRelation('outgoingReferences');
 
         return $reference;
+    }
+
+    /**
+     * Reconcile the links written into this item's rich text with the given
+     * targets: inline links to items no longer mentioned are dropped, and newly
+     * mentioned items are linked. Manual links are left untouched — including
+     * when the text happens to mention an already-manually-linked item, which
+     * keeps its curated origin.
+     *
+     * @param  iterable<Model&Referenceable>  $targets
+     */
+    public function syncInlineReferences(iterable $targets): void
+    {
+        /** @var array<string, Model&Referenceable> $wanted */
+        $wanted = [];
+
+        foreach ($targets as $target) {
+            if (! $target->is($this)) {
+                $wanted[$target->getMorphClass().':'.$target->getKey()] = $target;
+            }
+        }
+
+        foreach ($this->outgoingReferences()->get() as $reference) {
+            $key = $reference->target_type.':'.$reference->target_id;
+
+            // Already linked: keep the row (whatever its origin) and take the
+            // target off the to-create list.
+            if (isset($wanted[$key])) {
+                unset($wanted[$key]);
+
+                continue;
+            }
+
+            if ($reference->origin === ReferenceOrigin::Inline) {
+                $reference->delete();
+            }
+        }
+
+        foreach ($wanted as $target) {
+            $this->outgoingReferences()->create([
+                'target_type' => $target->getMorphClass(),
+                'target_id' => $target->getKey(),
+                'origin' => ReferenceOrigin::Inline,
+            ]);
+        }
+
+        $this->unsetRelation('outgoingReferences');
     }
 
     /**

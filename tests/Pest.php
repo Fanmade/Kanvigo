@@ -2,10 +2,12 @@
 
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Activity;
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\Facades\Audit;
+use App\Support\InlineReferenceParser;
 use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -95,6 +97,20 @@ function userWithRole(Project $project, string $role): User
     joinProject($project, $user, $role);
 
     return $user;
+}
+
+/**
+ * The stored markup of an inline #reference to a task or doc, as the rich-text
+ * editor writes it — the shape {@see InlineReferenceParser} reads
+ * back when it reconciles an item's links.
+ */
+function inlineReference(Task|Doc $item): string
+{
+    $type = $item instanceof Doc ? 'doc' : 'task';
+
+    return '<a class="reference" data-type="reference" data-item-type="'.$type.'"'
+        .' data-id="'.$item->getKey().'" data-label="'.$item->reference.'"'
+        .' href="/'.$item->reference.'">'.$item->reference.'</a>';
 }
 
 /**

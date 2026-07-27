@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -10,7 +11,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 /**
- * Tells a user they were @mentioned in a task/project description or a comment.
+ * Tells a user they were @mentioned in a task/project description, a doc body or
+ * a comment.
  *
  * Unlike {@see ItemActivity} (which fans out to every subscriber of an item),
  * this is delivered only to the mentioned user. It mirrors ItemActivity's
@@ -21,7 +23,7 @@ class UserMentioned extends Notification
     use Queueable;
     use ResolvesSubjectUrl;
 
-    public function __construct(public Project|Task $subject, public ?User $actor) {}
+    public function __construct(public Project|Task|Doc $subject, public ?User $actor) {}
 
     /**
      * @return array<int, string>
@@ -40,7 +42,7 @@ class UserMentioned extends Notification
             'action' => 'mentioned',
             'subject_type' => class_basename($this->subject),
             'subject_id' => $this->subject->id,
-            'reference' => $this->subject instanceof Task ? $this->subject->reference : $this->subject->short_name,
+            'reference' => $this->subject instanceof Project ? $this->subject->short_name : $this->subject->reference,
             'title' => $this->subject->title,
             'actor' => $this->actor?->name,
             'url' => $this->subjectUrl($this->subject),

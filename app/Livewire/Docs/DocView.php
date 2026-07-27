@@ -3,14 +3,13 @@
 namespace App\Livewire\Docs;
 
 use App\Concerns\HandlesAttachments;
-use App\Contracts\Referenceable;
+use App\Concerns\ShowsReferences;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Doc;
 use App\Models\Project;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -38,6 +37,7 @@ use Livewire\Component;
 class DocView extends Component
 {
     use HandlesAttachments;
+    use ShowsReferences;
 
     #[Locked]
     public string $shortName;
@@ -96,6 +96,11 @@ class DocView extends Component
         return $this->doc;
     }
 
+    protected function referenceable(): Doc
+    {
+        return $this->doc;
+    }
+
     /**
      * The endpoint the editor fetches @mention / #reference suggestions from.
      */
@@ -127,10 +132,10 @@ class DocView extends Component
      * The docs nested directly under this one that the viewer may see: drafts
      * only for editors, mirroring the doc policy.
      *
-     * @return EloquentCollection<int, Doc>
+     * @return Collection<int, Doc>
      */
     #[Computed]
-    public function childDocs(): EloquentCollection
+    public function childDocs(): Collection
     {
         return $this->canUpdate
             ? $this->doc->children
@@ -157,27 +162,6 @@ class DocView extends Component
         }
 
         return $ancestors;
-    }
-
-    /**
-     * The items this doc links to, and the ones linking back to it, each limited
-     * to what the viewer may see (a link can point at a draft doc).
-     *
-     * @return Collection<int, Model&Referenceable>
-     */
-    #[Computed]
-    public function linkedItems(): Collection
-    {
-        return $this->viewable($this->doc->references());
-    }
-
-    /**
-     * @return Collection<int, Model&Referenceable>
-     */
-    #[Computed]
-    public function backlinks(): Collection
-    {
-        return $this->viewable($this->doc->referencedBy());
     }
 
     /**
@@ -320,19 +304,6 @@ class DocView extends Component
         Flux::toast(text: __('Doc deleted.'), variant: 'success');
 
         $this->redirectRoute('project.docs', ['short_name' => $shortName], navigate: true);
-    }
-
-    /**
-     * Keep only the items the viewer may see.
-     *
-     * @param  Collection<int, Model&Referenceable>  $items
-     * @return Collection<int, Model&Referenceable>
-     */
-    private function viewable(Collection $items): Collection
-    {
-        return $items
-            ->filter(static fn (Model&Referenceable $item): bool => Gate::allows('view', $item))
-            ->values();
     }
 
     /**

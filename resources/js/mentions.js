@@ -28,9 +28,10 @@ import Suggestion from '@tiptap/suggestion';
 async function mentionablesFor(editor) {
     const host = editor?.options?.element?.closest?.('[data-mentionables-url]');
     const url = host?.getAttribute('data-mentionables-url');
+    const empty = { users: [], tasks: [], docs: [] };
 
     if (!url) {
-        return { users: [], tasks: [] };
+        return empty;
     }
 
     if (!host.__mentionables) {
@@ -38,12 +39,32 @@ async function mentionablesFor(editor) {
             headers: { Accept: 'application/json' },
             credentials: 'same-origin',
         })
-            .then((response) => (response.ok ? response.json() : { users: [], tasks: [] }))
-            .then((data) => ({ users: data.users ?? [], tasks: data.tasks ?? [] }))
-            .catch(() => ({ users: [], tasks: [] }));
+            .then((response) => (response.ok ? response.json() : empty))
+            .then((data) => ({ users: data.users ?? [], tasks: data.tasks ?? [], docs: data.docs ?? [] }))
+            .catch(() => empty);
     }
 
     return host.__mentionables;
+}
+
+/**
+ * The `#` reference candidates for a query: the project's tasks first, then its
+ * docs, each tagged with the item type the server needs to resolve the link.
+ */
+async function referenceCandidates(query, editor) {
+    const { tasks, docs } = await mentionablesFor(editor);
+    const needle = query.toLowerCase();
+
+    return [
+        ...tasks.map((task) => ({ ...task, itemType: 'task' })),
+        ...docs.map((doc) => ({ ...doc, itemType: 'doc' })),
+    ]
+        .filter(
+            (item) =>
+                item.reference.toLowerCase().includes(needle) ||
+                item.title.toLowerCase().includes(needle),
+        )
+        .slice(0, 8);
 }
 
 /**
@@ -255,12 +276,28 @@ const MentionMark = Mark.create({
 });
 
 /**
- * The `#` task-reference node, rendered as a relative link to the task. It reuses
- * the Mention machinery but renders an anchor (so it is a real link everywhere the
- * content is shown) instead of a span.
+ * The `#` reference node — a task or a doc — rendered as a relative link to the
+ * referenced item (`/KAN-42`, `/KAN-D3`). It reuses the Mention machinery but
+ * renders an anchor (so it is a real link everywhere the content is shown)
+ * instead of a span.
+ *
+ * `data-item-type` records which kind the id belongs to, so the server can
+ * resolve the link back to its item and maintain the backlink. It is absent on
+ * references written before docs existed, which are read as tasks.
  */
 const ReferenceNode = Mention.extend({
     name: 'reference',
+
+    addAttributes() {
+        return {
+            ...this.parent?.(),
+            itemType: {
+                default: 'task',
+                parseHTML: (element) => element.getAttribute('data-item-type') || 'task',
+                renderHTML: (attributes) => ({ 'data-item-type': attributes.itemType ?? 'task' }),
+            },
+        };
+    },
 
     parseHTML() {
         return [{ tag: 'a[data-type="reference"]' }];
@@ -276,6 +313,7 @@ const ReferenceNode = Mention.extend({
                 class: 'reference',
                 'data-type': 'reference',
                 'data-id': node.attrs.id,
+                'data-item-type': node.attrs.itemType ?? 'task',
                 'data-label': reference,
                 href: `/${reference}`,
             },
@@ -286,32 +324,24 @@ const ReferenceNode = Mention.extend({
     renderText: ({ node }) => node.attrs.label ?? '',
     suggestion: {
         char: '#',
-        items: async ({ query, editor }) => {
-            const { tasks } = await mentionablesFor(editor);
-            const needle = query.toLowerCase();
-
-            return tasks
-                .filter(
-                    (task) =>
-                        task.reference.toLowerCase().includes(needle) ||
-                        task.title.toLowerCase().includes(needle),
-                )
-                .slice(0, 8);
-        },
+        items: ({ query, editor }) => referenceCandidates(query, editor),
         command: ({ editor, range, props }) => {
             editor
                 .chain()
                 .focus()
                 .insertContentAt(range, [
-                    { type: 'reference', attrs: { id: props.id, label: props.reference } },
+                    {
+                        type: 'reference',
+                        attrs: { id: props.id, label: props.reference, itemType: props.itemType ?? 'task' },
+                    },
                     { type: 'text', text: ' ' },
                 ])
                 .run();
         },
         render: () =>
             suggestionRenderer(
-                (task) =>
-                    `<span class="mention-suggestion-ref">${escapeHtml(task.reference)}</span> ${escapeHtml(task.title)}`,
+                (item) =>
+                    `<span class="mention-suggestion-ref">${escapeHtml(item.reference)}</span> ${escapeHtml(item.title)}`,
             ),
     },
 });

@@ -17,6 +17,7 @@ use App\Concerns\LogsActivity;
 use App\Concerns\Nestable;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
+use App\Concerns\SyncsInlineReferences;
 use App\Contracts\Dependable;
 use App\Contracts\Mentionable;
 use App\Contracts\Referenceable;
@@ -66,7 +67,7 @@ use Illuminate\Support\Collection;
 class Task extends Model implements Dependable, Mentionable, Referenceable, Subscribable
 {
     /** @use HasFactory<TaskFactory> */
-    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasMentions, HasReferences, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable, PrunesInlineAttachments, SanitizesRichText;
+    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasMentions, HasReferences, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable, PrunesInlineAttachments, SanitizesRichText, SyncsInlineReferences;
 
     protected string $scopedNumberColumn = 'task_number';
 

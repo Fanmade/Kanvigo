@@ -10,6 +10,7 @@ use App\Concerns\ManagesDependencies;
 use App\Concerns\ManagesParent;
 use App\Concerns\ManagesTags;
 use App\Concerns\PromptsParentClose;
+use App\Concerns\ShowsReferences;
 use App\Enums\CancelReason;
 use App\Enums\CascadePreference;
 use App\Enums\Priority;
@@ -45,6 +46,7 @@ class TaskView extends Component
     use ManagesParent;
     use ManagesTags;
     use PromptsParentClose;
+    use ShowsReferences;
 
     #[Locked]
     public string $shortName;
@@ -124,7 +126,10 @@ class TaskView extends Component
         $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
         $task = Task::query()
-            ->with(['assignees', 'tags', 'taskType', 'project', 'parent', 'ancestors', 'children', 'descendants'])
+            ->with([
+                'assignees', 'tags', 'taskType', 'project', 'parent', 'ancestors', 'children', 'descendants',
+                ...Task::referenceItemsEagerLoad(),
+            ])
             ->where('project_id', $project->id)
             ->where('task_number', $this->taskNumber)
             ->firstOrFail();
@@ -149,6 +154,11 @@ class TaskView extends Component
     }
 
     protected function dependable(): Task
+    {
+        return $this->task;
+    }
+
+    protected function referenceable(): Task
     {
         return $this->task;
     }

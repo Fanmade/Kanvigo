@@ -158,25 +158,7 @@
                     <flux:separator variant="subtle" />
 
                     {{-- Cross-references: what this doc points at, and what points back. --}}
-                    <div class="flex flex-col gap-2" data-test="doc-links">
-                        <flux:heading size="sm">{{ __('Links') }}</flux:heading>
-
-                        @forelse ($this->linkedItems as $item)
-                            <x-reference-item :item="$item" />
-                        @empty
-                            <flux:text size="sm" class="text-zinc-400">{{ __('No linked items yet.') }}</flux:text>
-                        @endforelse
-                    </div>
-
-                    <div class="flex flex-col gap-2" data-test="doc-backlinks">
-                        <flux:heading size="sm">{{ __('Linked from') }}</flux:heading>
-
-                        @forelse ($this->backlinks as $item)
-                            <x-reference-item :item="$item" />
-                        @empty
-                            <flux:text size="sm" class="text-zinc-400">{{ __('Nothing links here yet.') }}</flux:text>
-                        @endforelse
-                    </div>
+                    @include('partials.references')
 
                     <flux:separator variant="subtle" />
 

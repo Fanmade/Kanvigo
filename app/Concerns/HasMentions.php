@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Contracts\Mentionable;
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -85,7 +86,8 @@ trait HasMentions
     /**
      * Notify the users newly @mentioned (excluding the actor — you don't get
      * pinged for mentioning yourself) and auto-subscribe them to the surrounding
-     * item, mirroring how assigning a user subscribes them.
+     * item, mirroring how assigning a user subscribes them. A doc has no
+     * subscribers, so a mention there notifies without subscribing.
      *
      * @param  list<int>  $attachedIds
      */
@@ -99,7 +101,12 @@ trait HasMentions
         }
 
         $subject = $this->mentionSubject();
-        $subject->subscribers()->syncWithoutDetaching($recipientIds);
+
+        // Tasks and projects take subscribers; a doc does not, so a mention there
+        // notifies the user without subscribing them to anything.
+        if ($subject instanceof Task || $subject instanceof Project) {
+            $subject->subscribers()->syncWithoutDetaching($recipientIds);
+        }
 
         $actor = Auth::user();
         $actor = $actor instanceof User ? $actor : null;
@@ -109,10 +116,12 @@ trait HasMentions
     }
 
     /**
-     * The subscribable item a mention belongs to: a task/project mentions itself,
-     * while a comment mention belongs to the commented-on task or project.
+     * The item a mention belongs to — where the notification links and, when the
+     * item takes subscribers, where the subscription is recorded: a task, project
+     * or doc mentions itself, while a comment mention belongs to the commented-on
+     * task or project.
      */
-    abstract protected function mentionSubject(): Project|Task;
+    abstract protected function mentionSubject(): Project|Task|Doc;
 
     /**
      * The rich-text content to scan for mentions. A model carries one of the

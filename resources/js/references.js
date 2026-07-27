@@ -6,6 +6,9 @@
  * endpoint and shows it in a floating card. The preview respects access — the
  * endpoint 403s/404s for tasks the reader can't see or that no longer exist — so
  * the card simply doesn't appear in those cases. The link itself always works.
+ *
+ * Doc references carry no preview endpoint, so they are skipped rather than
+ * fetched: hovering one simply shows no card.
  */
 
 import { escapeHtml, registerHovercard } from './hovercard';
@@ -16,7 +19,11 @@ registerHovercard({
     endpoint: (anchor) => {
         const href = anchor.getAttribute('href');
 
-        return href ? `${href}/preview` : null;
+        if (!href || anchor.getAttribute('data-item-type') === 'doc') {
+            return null;
+        }
+
+        return `${href}/preview`;
     },
     title: (data) => `${data.reference} · ${data.title}`,
     render: (data) => {

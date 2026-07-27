@@ -150,15 +150,21 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   view, and available through the REST and MCP APIs.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
-- **Mentions & references** — in any description or comment, type `@` to mention a
-  project member (they are notified and auto-subscribed to the item) and `#` to
-  reference a task, picked from an autocomplete of the project's members and tasks.
+- **Mentions & references** — in any description, doc body or comment, type `@` to
+  mention a project member (they are notified, and auto-subscribed to the item where
+  it takes subscribers) and `#` to reference a task or a doc, picked from an
+  autocomplete of the project's members, tasks and docs — drafts only for the
+  editors who can open them.
   A mention's label can be shortened after picking — trim the trailing words (e.g.
   `@Jon Doe` → `@Jon`) and it stays linked to the same person.
   Mentions render as links to the member's profile, and references as links to the
-  task — wherever the content is shown — each with a hover preview card: a mention
-  shows the user's name, avatar and their role in the project; a reference shows the
-  task's title, status, priority, assignees and progress.
+  task or doc — wherever the content is shown. A task reference carries a hover
+  preview card (title, status, priority, assignees, progress), and a mention one
+  showing the user's name, avatar and their role in the project.
+  Referencing an item also links the two: the referenced task or doc lists the
+  mention as a backlink, and removing the reference from the text unlinks them
+  again. Links added directly through the API are kept separately and are never
+  removed by an edit.
 - **Rich-text descriptions & comments** — task/project descriptions and comments are
   edited with a Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) supporting
   headings, lists, links, quotes, code and inline images pasted or dropped straight in.

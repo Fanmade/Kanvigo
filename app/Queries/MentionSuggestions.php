@@ -3,19 +3,23 @@
 namespace App\Queries;
 
 use App\Enums\Status;
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Policies\DocPolicy;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Builds the client-side autocomplete dataset for @mentions and #references in
  * the rich-text editor: a project's members (mention targets) and its open tasks
- * (reference targets). Shared by every editor host (task page, project page,
- * comments) so the shape stays consistent.
+ * and docs (reference targets). Shared by every editor host (task page, doc page,
+ * project page, comments) so the shape stays consistent.
  *
  * The set is filtered in the browser as the user types, so it is intentionally
- * small: members are bounded by project membership, and canceled tasks — which
- * can never be a sensible link target — are excluded.
+ * small: members are bounded by project membership, canceled tasks — which can
+ * never be a sensible link target — are excluded, and drafts are offered only to
+ * the editors who can open them.
  */
 class MentionSuggestions
 {
@@ -23,6 +27,7 @@ class MentionSuggestions
      * @return array{
      *     users: list<array{id: int, name: string}>,
      *     tasks: list<array{id: int, reference: string, title: string}>,
+     *     docs: list<array{id: int, reference: string, title: string}>,
      * }
      */
     public function handle(Project $project): array
@@ -47,6 +52,37 @@ class MentionSuggestions
             ])
             ->all();
 
-        return ['users' => array_values($users), 'tasks' => array_values($tasks)];
+        return [
+            'users' => array_values($users),
+            'tasks' => array_values($tasks),
+            'docs' => $this->docs($project),
+        ];
+    }
+
+    /**
+     * The project's docs, as reference targets. Drafts are included only when the
+     * viewer may edit docs — the same rule {@see DocPolicy::view()}
+     * applies — so the autocomplete never offers a doc the author cannot open.
+     *
+     * @return list<array{id: int, reference: string, title: string}>
+     */
+    private function docs(Project $project): array
+    {
+        $docs = $project->docs()->orderBy('doc_number');
+
+        if (! Gate::allows('edit-doc', $project)) {
+            $docs->where('is_public', true);
+        }
+
+        return array_values($docs->get()
+            // The reference accessor reads $doc->project; share the one instance
+            // so building references stays a single query, not one per doc.
+            ->each(static fn (Doc $doc) => $doc->setRelation('project', $project))
+            ->map(static fn (Doc $doc): array => [
+                'id' => (int) $doc->id,
+                'reference' => (string) $doc->reference,
+                'title' => $doc->title,
+            ])
+            ->all());
     }
 }

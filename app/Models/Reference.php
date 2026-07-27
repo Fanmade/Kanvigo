@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ReferenceOrigin;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -17,12 +18,23 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $source_id
  * @property string $target_type
  * @property int $target_id
+ * @property ReferenceOrigin $origin
  */
 class Reference extends Model
 {
     protected $table = 'item_references';
 
     protected $guarded = [];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'origin' => ReferenceOrigin::class,
+        ];
+    }
 
     /**
      * The item that makes the reference.

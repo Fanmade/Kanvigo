@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Comments\CommentList;
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -25,6 +26,26 @@ it('builds the member and open-task autocomplete dataset for a project', functio
         ->and(collect($data['tasks'])->pluck('id'))->toContain($task->id)->not->toContain($canceled->id)
         ->and(collect($data['tasks'])->firstWhere('id', $task->id))
         ->toBe(['id' => $task->id, 'reference' => $task->reference, 'title' => 'Do the thing']);
+});
+
+it('offers docs as reference targets, drafts only to editors', function () {
+    $project = Project::factory()->create();
+    $editor = userWithRole($project, 'member');
+    $viewer = userWithRole($project, 'viewer');
+
+    $published = Doc::factory()->for($project)->published()->create(['title' => 'Style guide']);
+    $draft = Doc::factory()->for($project)->create();
+
+    $this->actingAs($editor);
+    $forEditor = app(MentionSuggestions::class)->handle($project);
+
+    $this->actingAs($viewer);
+    $forViewer = app(MentionSuggestions::class)->handle($project);
+
+    expect(collect($forEditor['docs'])->pluck('id'))->toContain($published->id, $draft->id)
+        ->and(collect($forEditor['docs'])->firstWhere('id', $published->id))
+        ->toBe(['id' => $published->id, 'reference' => $published->reference, 'title' => 'Style guide'])
+        ->and(collect($forViewer['docs'])->pluck('id'))->toContain($published->id)->not->toContain($draft->id);
 });
 
 it('serves the mention dataset to a project member', function () {

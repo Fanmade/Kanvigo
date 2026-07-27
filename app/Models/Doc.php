@@ -4,11 +4,14 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
+use App\Concerns\HasMentions;
 use App\Concerns\HasReferences;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasTags;
 use App\Concerns\LogsActivity;
 use App\Concerns\SanitizesRichText;
+use App\Concerns\SyncsInlineReferences;
+use App\Contracts\Mentionable;
 use App\Contracts\Referenceable;
 use Database\Factories\DocFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -50,10 +53,10 @@ use InvalidArgumentException;
  * @property-read Collection<int, Doc> $children
  */
 #[Fillable(['title', 'body', 'is_public', 'parent_id'])]
-class Doc extends Model implements Referenceable
+class Doc extends Model implements Mentionable, Referenceable
 {
     /** @use HasFactory<DocFactory> */
-    use HasAttachments, HasComments, HasFactory, HasReferences, HasScopedNumber, HasTags, LogsActivity, SanitizesRichText, SoftDeletes {
+    use HasAttachments, HasComments, HasFactory, HasMentions, HasReferences, HasScopedNumber, HasTags, LogsActivity, SanitizesRichText, SoftDeletes, SyncsInlineReferences {
         LogsActivity::auditFieldSnapshot as protected baseAuditFieldSnapshot;
     }
 
@@ -151,6 +154,28 @@ class Doc extends Model implements Referenceable
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * The users who may be @mentioned in this doc's body: the project's members,
+     * mirroring a task description. A mention in a still-unpublished draft
+     * notifies the member deliberately — the doc itself stays editor-only until
+     * it is published.
+     *
+     * @return list<int>
+     */
+    public function mentionableUserIds(): array
+    {
+        return array_values(array_map('intval', $this->project->members()->pluck('users.id')->all()));
+    }
+
+    /**
+     * A doc is its own mention subject. Unlike a task it takes no subscribers, so
+     * a mention notifies the user without subscribing them to anything.
+     */
+    protected function mentionSubject(): Doc
+    {
+        return $this;
     }
 
     /**

@@ -251,6 +251,10 @@
 
                     <flux:separator variant="subtle" />
 
+                    @include('partials.references')
+
+                    <flux:separator variant="subtle" />
+
                     @include('partials.tags')
 
                     <flux:separator variant="subtle" />

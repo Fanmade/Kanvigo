@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Docs\DocView;
+use App\Livewire\Tasks\TaskView;
 use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
@@ -170,6 +171,27 @@ describe('editing a doc', function () {
             ->assertForbidden();
 
         expect($doc->refresh()->is_public)->toBeTrue();
+    });
+});
+
+describe('references on the task page', function () {
+    it('shows what a task links to and what links back, hiding drafts', function () {
+        $doc = Doc::factory()->for($this->project)->published()->create();
+        $draft = Doc::factory()->for($this->project)->create();
+        $task = Task::factory()->for($this->project)->create([
+            'description' => '<p>'.inlineReference($doc).inlineReference($draft).'</p>',
+        ]);
+
+        $backlinking = Doc::factory()->for($this->project)->published()->create([
+            'body' => '<p>'.inlineReference($task).'</p>',
+        ]);
+
+        Livewire::actingAs($this->viewer)
+            ->test(TaskView::class, ['short_name' => 'ABC', 'task_number' => $task->task_number])
+            ->assertSeeHtml('data-test="item-links"')
+            ->assertSeeHtml('data-test="reference-item-'.$doc->reference.'"')
+            ->assertSeeHtml('data-test="reference-item-'.$backlinking->reference.'"')
+            ->assertDontSeeHtml('data-test="reference-item-'.$draft->reference.'"');
     });
 });
 

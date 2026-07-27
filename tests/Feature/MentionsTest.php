@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -140,6 +141,39 @@ it('notifies a member mentioned in a comment and subscribes them to the item', f
 
     Notification::assertSentTo($member, UserMentioned::class);
     expect($task->subscribers()->whereKey($member->id)->exists())->toBeTrue();
+});
+
+it('notifies a member mentioned in a doc body and links the notification to the doc', function () {
+    Notification::fake();
+
+    $author = User::factory()->create();
+    $member = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    joinProject($project, $author);
+    joinProject($project, $member);
+
+    $this->actingAs($author);
+    $doc = Doc::factory()->for($project)->create([
+        'body' => '<p>'.mentionSpan($member->id).'</p>',
+    ]);
+
+    expect($doc->mentions()->whereKey($member->id)->exists())->toBeTrue();
+
+    Notification::assertSentTo($member, UserMentioned::class, function (UserMentioned $notification) use ($doc, $member): bool {
+        $payload = $notification->toArray($member);
+
+        return $payload['url'] === route('doc.show', ['short_name' => 'ABC', 'doc_number' => $doc->doc_number])
+            && $payload['reference'] === $doc->reference;
+    });
+});
+
+it('drops a doc mention of someone outside the project', function () {
+    $stranger = User::factory()->create();
+    $doc = Doc::factory()->create([
+        'body' => '<p>'.mentionSpan($stranger->id).'</p>',
+    ]);
+
+    expect($doc->mentions()->count())->toBe(0);
 });
 
 it('only notifies newly-mentioned users, not on every save', function () {
