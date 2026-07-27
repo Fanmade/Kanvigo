@@ -105,6 +105,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   links to, and a **Referenced by** section listing every task and doc whose text
   cites it — the way back to the work the doc belongs to. Docs are searchable from
   the command palette, and also available through the MCP tools and the REST API.
+  See [docs/reference-docs.md](docs/reference-docs.md).
 - **Multi-assignee** tasks for pairing and ensemble work, with a one-click "assign
   to me" on the task page and in the create-task dialog.
 - **Profile avatars** — upload a profile picture (cropped to a square) from
@@ -384,7 +385,7 @@ They require the Playwright Chromium binary (`npx playwright install chromium`).
   comments, notifications, invitations).
 - `app/Concerns/` — shared model traits (scoped numbering, activity logging,
   comments, tags, attachments, subscriptions).
-- `app/Models/` — Project, Task, Comment, Attachment, Activity,
+- `app/Models/` — Project, Task, Doc, Reference, Comment, Attachment, Activity,
   Invitation, User.
 - `app/Policies/` — per-resource authorization cascading through membership.
 - `lang/` — English source strings inline; German in `de.json` and `de/`.

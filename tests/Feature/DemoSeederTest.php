@@ -25,3 +25,27 @@ it('seeds demo members with working project roles', function () {
         ->and($member->can('view-project', $project))->toBeTrue()
         ->and($member->can('view', $task))->toBeTrue();
 });
+
+/**
+ * The seeded doc bodies carry hand-written reference markup, so this also guards
+ * that markup staying in step with the parser: if the two drift, the demo data
+ * silently stops producing backlinks.
+ */
+it('seeds a doc tree whose inline reference links a demo task', function () {
+    $this->seed(DemoSeeder::class);
+
+    $project = Project::query()->where('short_name', 'KAN')->firstOrFail();
+
+    $handbook = $project->docs()->where('title', 'Team handbook')->firstOrFail();
+    $definition = $project->docs()->where('title', 'Definition of done')->firstOrFail();
+
+    expect($handbook->is_public)->toBeTrue()
+        ->and($handbook->children)->toHaveCount(2)
+        ->and($definition->parent_id)->toBe($handbook->id)
+        ->and($project->docs()->where('is_public', false)->count())->toBe(1);
+
+    $referenced = $definition->references()->first();
+
+    expect($referenced)->not->toBeNull()
+        ->and($referenced->referencedBy()->first()?->is($definition))->toBeTrue();
+});

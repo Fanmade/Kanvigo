@@ -104,8 +104,9 @@ sent and returned **by name** (`High`, `WontFix`), `status` by its value
 `GET /users/{id}`. Paginated responses wrap the records in `data` alongside `links`
 and `meta`.
 
-Reference docs use a `PROJ-D3` reference (the project short name, `-D` and a
-per-project doc number) and are always addressed by it. A doc is a draft until it
+Reference docs (see [docs/reference-docs.md](reference-docs.md)) use a `PROJ-D3`
+reference (the project short name, `-D` and a per-project doc number) and are
+always addressed by it. A doc is a draft until it
 is published (`is_public`): a draft is only visible to members who may edit the
 project's docs, and 404s for everyone else.
 

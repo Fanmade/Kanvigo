@@ -7,6 +7,7 @@ use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\InlineReferenceParser;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
@@ -51,7 +52,60 @@ class DemoSeeder extends Seeder
             ->get()
             ->each(static fn (Task $task) => $task->assignees()->syncWithoutDetaching([$admin->id]));
 
+        $this->seedDocs($project);
         $this->seedCompletionActivity($admin, Task::all());
+    }
+
+    /**
+     * Seed a small doc tree so the reference docs feature has something to show
+     * out of the box: a published handbook with two nested pages, one of them
+     * citing a demo task — the inline reference links the two, giving that task
+     * a backlink — plus a draft, so the draft/published split is visible too.
+     */
+    private function seedDocs(Project $project): void
+    {
+        $task = $project->tasks()->orderBy('task_number')->firstOrFail();
+
+        $handbook = $project->docs()->create([
+            'title' => 'Team handbook',
+            'is_public' => true,
+            'body' => '<p>How this team works: the pages below are the short version. '
+                .'Docs are project knowledge that has no status — specs, decisions and background '
+                .'that outlive any single task.</p>',
+        ]);
+
+        $project->docs()->create([
+            'title' => 'Definition of done',
+            'parent_id' => $handbook->id,
+            'is_public' => true,
+            'body' => '<p>A task is done when it is reviewed, tested and documented. '
+                .'The current example is '.$this->inlineReference($task).', which follows this checklist.</p>',
+        ]);
+
+        $project->docs()->create([
+            'title' => 'Release checklist',
+            'parent_id' => $handbook->id,
+            'is_public' => true,
+            'body' => '<ul><li>Run the test suite</li><li>Update the changelog</li><li>Tag the release</li></ul>',
+        ]);
+
+        $project->docs()->create([
+            'title' => 'Onboarding notes (work in progress)',
+            'body' => '<p>Still being written — only members who may edit docs can see this draft.</p>',
+        ]);
+    }
+
+    /**
+     * The markup the rich-text editor writes for an inline #reference, so seeded
+     * bodies produce real cross-references (and backlinks) on save.
+     *
+     * @see InlineReferenceParser
+     */
+    private function inlineReference(Task $task): string
+    {
+        return '<a class="reference" data-type="reference" data-item-type="task"'
+            .' data-id="'.$task->getKey().'" data-label="'.$task->reference.'"'
+            .' href="/'.$task->reference.'">'.$task->reference.'</a>';
     }
 
     /**
