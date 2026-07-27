@@ -85,6 +85,12 @@ describe('finding docs', function () {
         expect(app(GlobalSearch::class)->search($this->viewer, $draft->reference))->toBeEmpty();
     });
 
+    it('returns nothing for a user without any project', function () {
+        Doc::factory()->for($this->project)->published()->create(['title' => 'Style guide']);
+
+        expect(app(GlobalSearch::class)->search(User::factory()->create(), 'Style'))->toBeEmpty();
+    });
+
     it('still resolves a task reference alongside the doc form', function () {
         $task = Task::factory()->for($this->project)->create(['title' => 'Deploy fix']);
 

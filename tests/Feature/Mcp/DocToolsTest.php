@@ -77,6 +77,22 @@ it('hides drafts from a member who cannot edit docs', function () {
         ->assertDontSee($draft->reference);
 });
 
+it('errors listing docs with a malformed pagination cursor', function () {
+    KanvigoServer::actingAs($this->editor)
+        ->tool(ListDocsTool::class, ['reference' => 'ABC', 'limit' => 1, 'cursor' => 'not-a-cursor'])
+        ->assertHasErrors();
+});
+
+it('errors listing the docs under a parent from another project', function () {
+    $other = Project::factory()->create(['short_name' => 'XYZ']);
+    joinProject($other, $this->editor);
+    $foreign = Doc::factory()->for($other)->create();
+
+    KanvigoServer::actingAs($this->editor)
+        ->tool(ListDocsTool::class, ['reference' => 'ABC', 'parent' => $foreign->reference])
+        ->assertHasErrors();
+});
+
 it('errors listing docs of a project the user cannot access', function () {
     Project::factory()->create(['short_name' => 'XYZ']);
 
@@ -187,6 +203,45 @@ it('errors creating a doc with a parent from another project', function () {
     expect(Doc::where('title', 'Storage')->exists())->toBeFalse();
 });
 
+it('errors creating a doc that would breach the nesting depth limit', function () {
+    Sanctum::actingAs($this->editor, ['read', 'write']);
+
+    $node = Doc::factory()->for($this->project)->create();
+
+    for ($level = 2; $level <= Doc::MAX_NESTING_DEPTH; $level++) {
+        $node = Doc::factory()->childOf($node)->create();
+    }
+
+    KanvigoServer::tool(CreateDocTool::class, [
+        'reference' => 'ABC',
+        'title' => 'One level too deep',
+        'parent' => $node->reference,
+    ])->assertHasErrors();
+
+    expect(Doc::where('title', 'One level too deep')->exists())->toBeFalse();
+});
+
+it('errors creating a doc in a project the user cannot access', function () {
+    Sanctum::actingAs($this->editor, ['read', 'write']);
+    Project::factory()->create(['short_name' => 'XYZ']);
+
+    KanvigoServer::tool(CreateDocTool::class, ['reference' => 'XYZ', 'title' => 'Sneaky'])->assertHasErrors();
+
+    expect(Doc::where('title', 'Sneaky')->exists())->toBeFalse();
+});
+
+it('errors creating a doc under a parent that does not exist', function () {
+    Sanctum::actingAs($this->editor, ['read', 'write']);
+
+    KanvigoServer::tool(CreateDocTool::class, [
+        'reference' => 'ABC',
+        'title' => 'Orphan',
+        'parent' => 'ABC-D99',
+    ])->assertHasErrors();
+
+    expect(Doc::where('title', 'Orphan')->exists())->toBeFalse();
+});
+
 it('errors creating a doc without the create-doc permission', function () {
     Sanctum::actingAs($this->viewer, ['read', 'write']);
 
@@ -259,6 +314,29 @@ it('errors nesting a doc under its own nested doc', function () {
         ->assertHasErrors();
 
     expect($doc->refresh()->parent_id)->toBeNull();
+});
+
+it('errors re-parenting a doc under one from another project', function () {
+    Sanctum::actingAs($this->editor, ['read', 'write']);
+    $other = Project::factory()->create(['short_name' => 'XYZ']);
+    joinProject($other, $this->editor);
+    $foreign = Doc::factory()->for($other)->create();
+    $doc = Doc::factory()->for($this->project)->create();
+
+    KanvigoServer::tool(UpdateDocTool::class, ['reference' => $doc->reference, 'parent' => $foreign->reference])
+        ->assertHasErrors();
+
+    expect($doc->refresh()->parent_id)->toBeNull();
+});
+
+it('errors updating a doc with a read-only token', function () {
+    Sanctum::actingAs($this->editor, ['read']);
+    $doc = Doc::factory()->for($this->project)->create(['title' => 'Style guide']);
+
+    KanvigoServer::tool(UpdateDocTool::class, ['reference' => $doc->reference, 'title' => 'Hijacked'])
+        ->assertHasErrors();
+
+    expect($doc->refresh()->title)->toBe('Style guide');
 });
 
 it('errors updating a doc without the edit-doc permission', function () {

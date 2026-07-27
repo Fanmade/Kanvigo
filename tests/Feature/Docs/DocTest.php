@@ -2,6 +2,7 @@
 
 use App\Models\Doc;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use App\Support\ReferenceResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,6 +78,13 @@ describe('doc nesting', function () {
             ->toThrow(InvalidArgumentException::class);
     });
 
+    it('rejects a parent that no longer exists', function () {
+        $doc = Doc::factory()->create();
+
+        expect(fn () => $doc->update(['parent_id' => $doc->id + 999]))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
     it('rejects a doc as its own parent', function () {
         $doc = Doc::factory()->create();
         $doc->parent_id = $doc->id;
@@ -139,6 +147,36 @@ describe('doc access', function () {
             ->and($viewer->can('create-doc', $project))->toBeFalse();
     });
 
+    it('follows a custom role permission by permission', function () {
+        $project = Project::factory()->create(['short_name' => 'ABC']);
+
+        $author = userWithPermissions($project, ['create-doc']);
+        $editor = userWithPermissions($project, ['edit-doc']);
+        $deleter = userWithPermissions($project, ['delete-doc']);
+
+        $draft = Doc::factory()->for($project)->create();
+        $published = Doc::factory()->for($project)->published()->create();
+
+        // create-doc alone lets a member add docs, but not read the drafts of
+        // others, edit them, or delete them.
+        expect($author->can('create-doc', $project))->toBeTrue()
+            ->and($author->can('view', $draft))->toBeFalse()
+            ->and($author->can('view', $published))->toBeTrue()
+            ->and($author->can('update', $published))->toBeFalse()
+            ->and($author->can('delete', $published))->toBeFalse();
+
+        // edit-doc is what makes drafts visible, and what tagging is gated on.
+        expect($editor->can('view', $draft))->toBeTrue()
+            ->and($editor->can('update', $draft))->toBeTrue()
+            ->and($editor->can('tag', $draft))->toBeTrue()
+            ->and($editor->can('create-doc', $project))->toBeFalse()
+            ->and($editor->can('delete', $draft))->toBeFalse();
+
+        expect($deleter->can('delete', $published))->toBeTrue()
+            ->and($deleter->can('update', $published))->toBeFalse()
+            ->and($deleter->can('view', $draft))->toBeFalse();
+    });
+
     it('hides docs from a non-member', function () {
         $project = Project::factory()->create(['short_name' => 'ABC']);
         $stranger = User::factory()->create();
@@ -162,6 +200,18 @@ describe('doc references', function () {
 
         expect(ReferenceResolver::doc('ABC-42'))->toBeNull()
             ->and(ReferenceResolver::doc('ABC-D999'))->toBeNull()
+            ->and(ReferenceResolver::doc('XYZ-D1'))->toBeNull()
             ->and(ReferenceResolver::doc('nonsense'))->toBeNull();
+    });
+
+    it('resolves either kind of item from a mixed reference', function () {
+        $project = Project::factory()->create(['short_name' => 'ABC']);
+        $doc = Doc::factory()->for($project)->create();
+        $task = Task::factory()->for($project)->create();
+
+        expect(ReferenceResolver::referenceable($doc->reference)?->is($doc))->toBeTrue()
+            ->and(ReferenceResolver::referenceable($task->reference)?->is($task))->toBeTrue()
+            ->and(ReferenceResolver::referenceable('ABC'))->toBeNull()
+            ->and(ReferenceResolver::referenceable('nonsense'))->toBeNull();
     });
 });

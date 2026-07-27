@@ -114,6 +114,32 @@ describe('editing a doc', function () {
             ->and($doc->parent_id)->toBe($parent->id);
     });
 
+    it('links the doc to what the saved body references', function () {
+        $doc = Doc::factory()->for($this->project)->create();
+        $task = Task::factory()->for($this->project)->create();
+
+        // What the editor's `#` picker leaves in the body when a task is chosen.
+        Livewire::actingAs($this->editor)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $doc->doc_number])
+            ->call('edit')
+            ->set('body', '<p>See '.inlineReference($task).'</p>')
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSeeHtml('data-test="reference-item-'.$task->reference.'"');
+
+        expect($doc->refresh()->references()->first()?->is($task))->toBeTrue()
+            ->and($task->referencedBy()->first()?->is($doc))->toBeTrue();
+
+        // Taking the reference back out of the body unlinks them again.
+        Livewire::actingAs($this->editor)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $doc->doc_number])
+            ->call('edit')
+            ->set('body', '<p>Nothing to see here.</p>')
+            ->call('save');
+
+        expect($doc->refresh()->references())->toBeEmpty();
+    });
+
     it('surfaces a parent that would close a cycle as a field error', function () {
         $doc = Doc::factory()->for($this->project)->create();
         $child = Doc::factory()->childOf($doc)->create();
@@ -174,6 +200,25 @@ describe('editing a doc', function () {
     });
 });
 
+describe('the breadcrumb', function () {
+    it('stops at an ancestor the viewer may not see', function () {
+        $draftRoot = Doc::factory()->for($this->project)->create(['title' => 'Internal plan']);
+        $published = Doc::factory()->childOf($draftRoot)->published()->create();
+
+        Livewire::actingAs($this->editor)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $published->doc_number])
+            ->assertSeeHtml('data-test="doc-ancestor-'.$draftRoot->id.'"');
+
+        // The viewer reaches the published doc but never learns about the draft
+        // it sits under — the trail simply starts at the doc itself.
+        Livewire::actingAs($this->viewer)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $published->doc_number])
+            ->assertOk()
+            ->assertDontSeeHtml('data-test="doc-ancestor-'.$draftRoot->id.'"')
+            ->assertDontSee('Internal plan');
+    });
+});
+
 describe('references on the task page', function () {
     it('shows what a task links to and what links back, hiding drafts', function () {
         $doc = Doc::factory()->for($this->project)->published()->create();
@@ -229,6 +274,24 @@ describe('nesting and deleting', function () {
             ->assertRedirect('/ABC-D2');
 
         expect(Doc::where('title', 'Storage')->firstOrFail()->parent_id)->toBe($doc->id);
+    });
+
+    it('surfaces a nested doc that would breach the depth limit as a field error', function () {
+        $node = Doc::factory()->for($this->project)->create();
+
+        for ($level = 2; $level <= Doc::MAX_NESTING_DEPTH; $level++) {
+            $node = Doc::factory()->childOf($node)->create();
+        }
+
+        Livewire::actingAs($this->editor)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $node->doc_number])
+            ->call('startCreatingChild')
+            ->set('childTitle', 'One level too deep')
+            ->call('createChild')
+            ->assertHasErrors('childTitle')
+            ->assertNoRedirect();
+
+        expect(Doc::where('title', 'One level too deep')->exists())->toBeFalse();
     });
 
     it('deletes the doc and returns to the doc index', function () {

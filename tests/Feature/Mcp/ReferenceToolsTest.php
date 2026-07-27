@@ -143,6 +143,30 @@ it('errors unlinking two items that are not linked', function () {
     ])->assertHasErrors();
 });
 
+it('errors unlinking with a read-only token', function () {
+    Sanctum::actingAs($this->editor, ['read']);
+    $task = Task::factory()->for($this->project)->create();
+    $doc = Doc::factory()->for($this->project)->create();
+    $task->addReference($doc);
+
+    KanvigoServer::tool(RemoveReferenceTool::class, [
+        'reference' => $task->reference,
+        'related_reference' => $doc->reference,
+    ])->assertHasErrors();
+
+    expect($task->references())->toHaveCount(1);
+});
+
+it('errors unlinking from an item that does not exist', function () {
+    Sanctum::actingAs($this->editor, ['read', 'write']);
+    $doc = Doc::factory()->for($this->project)->create();
+
+    KanvigoServer::tool(RemoveReferenceTool::class, [
+        'reference' => 'ABC-999',
+        'related_reference' => $doc->reference,
+    ])->assertHasErrors();
+});
+
 // references on the read tools
 
 it('reports a task\'s references and backlinks, hiding drafts from a viewer', function () {

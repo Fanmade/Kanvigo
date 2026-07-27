@@ -188,6 +188,49 @@ describe('writing docs', function () {
         expect($doc->refresh()->body)->toContain('Body');
     });
 
+    it('patches the body and the published flag', function () {
+        Sanctum::actingAs($this->editor, ['read', 'write']);
+        $doc = Doc::factory()->for($this->project)->published()->create(['body' => '<p>Old</p>']);
+
+        $this->patchJson("/api/v1/docs/{$doc->reference}", ['body' => '<p>Fresh</p>', 'is_public' => false])
+            ->assertOk()
+            ->assertJsonPath('data.body', '<p>Fresh</p>')
+            ->assertJsonPath('data.is_public', false);
+
+        // Clearing the body is a null, not an omission.
+        $this->patchJson("/api/v1/docs/{$doc->reference}", ['body' => null])
+            ->assertOk()
+            ->assertJsonPath('data.body', null);
+    });
+
+    it('422s creating a doc that would breach the nesting depth limit', function () {
+        Sanctum::actingAs($this->editor, ['read', 'write']);
+
+        $node = Doc::factory()->for($this->project)->create();
+
+        for ($level = 2; $level <= Doc::MAX_NESTING_DEPTH; $level++) {
+            $node = Doc::factory()->childOf($node)->create();
+        }
+
+        $this->postJson('/api/v1/projects/ABC/docs', ['title' => 'One level too deep', 'parent' => $node->reference])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('parent');
+
+        expect(Doc::where('title', 'One level too deep')->exists())->toBeFalse();
+    });
+
+    it('404s re-parenting a doc under one from another project', function () {
+        Sanctum::actingAs($this->editor, ['read', 'write']);
+        $other = Project::factory()->create(['short_name' => 'XYZ']);
+        joinProject($other, $this->editor);
+        $foreign = Doc::factory()->for($other)->create();
+        $doc = Doc::factory()->for($this->project)->create();
+
+        $this->patchJson("/api/v1/docs/{$doc->reference}", ['parent' => $foreign->reference])->assertNotFound();
+
+        expect($doc->refresh()->parent_id)->toBeNull();
+    });
+
     it('re-parents a doc and moves it back to the top level', function () {
         Sanctum::actingAs($this->editor, ['read', 'write']);
         $parent = Doc::factory()->for($this->project)->create();

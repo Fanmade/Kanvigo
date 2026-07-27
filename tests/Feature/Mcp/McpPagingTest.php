@@ -2,8 +2,10 @@
 
 use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\GetProjectTool;
+use App\Mcp\Tools\ListDocsTool;
 use App\Mcp\Tools\ListNotesTool;
 use App\Mcp\Tools\ListTasksTool;
+use App\Models\Doc;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
@@ -38,6 +40,36 @@ it('returns every task and signals no more when no limit is given', function () 
             ->where('page.has_more', false)
             ->where('page.next_cursor', null)
             ->has('tasks', 3)
+            ->etc());
+});
+
+it('caps docs to the limit and walks the rest with the cursor', function () {
+    // doc_number is assigned in creation order, so paging is deterministic.
+    $docs = collect(range(1, 3))->map(fn () => Doc::factory()->for($this->project)->published()->create());
+    $references = $docs->pluck('reference')->all();
+
+    $first = KanvigoServer::actingAs($this->user)
+        ->tool(ListDocsTool::class, ['reference' => 'ABC', 'limit' => 2]);
+
+    $first->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('page.returned', 2)
+            ->where('page.has_more', true)
+            ->where('docs.0.reference', $references[0])
+            ->where('docs.1.reference', $references[1])
+            ->etc());
+
+    $cursor = structured($first, 'page.next_cursor');
+    expect($cursor)->not->toBeNull();
+
+    KanvigoServer::actingAs($this->user)
+        ->tool(ListDocsTool::class, ['reference' => 'ABC', 'limit' => 2, 'cursor' => $cursor])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('page.returned', 1)
+            ->where('page.has_more', false)
+            ->where('page.next_cursor', null)
+            ->where('docs.0.reference', $references[2])
             ->etc());
 });
 
