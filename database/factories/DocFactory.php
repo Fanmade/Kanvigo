@@ -21,8 +21,8 @@ class DocFactory extends Factory
         return [
             'project_id' => Project::factory(),
             'parent_id' => null,
-            'title' => fake()->sentence(4),
-            'body' => '<p>'.fake()->paragraph().'</p>',
+            'title' => DemoContent::docTitle(),
+            'body' => DemoContent::docBody(),
             'is_public' => false,
         ];
     }

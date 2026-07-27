@@ -23,8 +23,8 @@ class TaskFactory extends Factory
     {
         return [
             'project_id' => Project::factory(),
-            'title' => fake()->sentence(4),
-            'description' => fake()->paragraph(),
+            'title' => DemoContent::taskTitle(),
+            'description' => DemoContent::taskDescription(),
             // Default to a working status; the terminal Canceled state is opt-in.
             'status' => fake()->randomElement(Status::columns()),
             'due_date' => null,

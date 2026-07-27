@@ -21,9 +21,9 @@ class ProjectFactory extends Factory
     public function definition(): array
     {
         return [
-            'title' => fake()->unique()->company(),
+            'title' => DemoContent::projectTitle(),
             'short_name' => strtoupper(fake()->unique()->lexify('???')),
-            'description' => fake()->paragraph(),
+            'description' => DemoContent::projectDescription(),
         ];
     }
 

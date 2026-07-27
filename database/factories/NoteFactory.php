@@ -23,8 +23,8 @@ class NoteFactory extends Factory
             'user_id' => User::factory(),
             'project_id' => null,
             'is_public' => false,
-            'title' => fake()->sentence(4),
-            'body' => '<p>'.fake()->paragraph().'</p>',
+            'title' => DemoContent::noteTitle(),
+            'body' => DemoContent::noteBody(),
         ];
     }
 
