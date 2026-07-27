@@ -4,8 +4,10 @@ use App\Http\Controllers\Api\V1\AttachmentController;
 use App\Http\Controllers\Api\V1\AuditEventController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\DependencyController;
+use App\Http\Controllers\Api\V1\DocController;
 use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\ProjectController;
+use App\Http\Controllers\Api\V1\ReferenceController;
 use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TaskTypeController;
@@ -50,6 +52,9 @@ Route::middleware(['auth:sanctum', 'throttle:api', SetAuditSource::class.':api']
 
         Route::get('tasks/{reference}', [TaskController::class, 'show'])->name('tasks.show');
 
+        Route::get('projects/{short_name}/docs', [DocController::class, 'index'])->name('projects.docs.index');
+        Route::get('docs/{reference}', [DocController::class, 'show'])->name('docs.show');
+
         Route::get('notes', [NoteController::class, 'index'])->name('notes.index');
         Route::get('notes/{note}', [NoteController::class, 'show'])->whereNumber('note')->name('notes.show');
 
@@ -73,6 +78,19 @@ Route::middleware(['auth:sanctum', 'throttle:api', SetAuditSource::class.':api']
 
             Route::post('tasks/{reference}/dependencies', [DependencyController::class, 'store'])->name('tasks.dependencies.store');
             Route::delete('tasks/{reference}/dependencies/{related}', [DependencyController::class, 'destroy'])->name('tasks.dependencies.destroy');
+
+            Route::post('projects/{short_name}/docs', [DocController::class, 'store'])->name('projects.docs.store');
+            Route::patch('docs/{reference}', [DocController::class, 'update'])->name('docs.update');
+            Route::delete('docs/{reference}', [DocController::class, 'destroy'])->name('docs.destroy');
+
+            /*
+             * Cross-references are the same endpoint from either end: both paths
+             * resolve whichever item — task or doc — the reference names.
+             */
+            Route::post('tasks/{reference}/references', [ReferenceController::class, 'store'])->name('tasks.references.store');
+            Route::delete('tasks/{reference}/references/{related}', [ReferenceController::class, 'destroy'])->name('tasks.references.destroy');
+            Route::post('docs/{reference}/references', [ReferenceController::class, 'store'])->name('docs.references.store');
+            Route::delete('docs/{reference}/references/{related}', [ReferenceController::class, 'destroy'])->name('docs.references.destroy');
 
             Route::post('projects/{short_name}/comments', [CommentController::class, 'storeOnProject'])->name('projects.comments.store');
             Route::post('tasks/{reference}/comments', [CommentController::class, 'storeOnTask'])->name('tasks.comments.store');

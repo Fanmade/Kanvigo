@@ -12,7 +12,10 @@ namespace App\Support;
  *
  * {@see $deprioritized} sinks an entry to the bottom of the palette (e.g. a
  * completed or canceled task), so it never sits above the action a user is
- * reaching for.
+ * reaching for. {@see $badge} marks an entry with a short at-a-glance qualifier
+ * shown beside the reference — today only `draft`, for an unpublished doc. It is
+ * a marker, not a label: the palette owns the wording, keeping this DTO free of
+ * presentation (and of translation) just like {@see $icon}.
  */
 readonly class SearchResult
 {
@@ -26,5 +29,6 @@ readonly class SearchResult
         public ?TaskProgress $progress = null,
         public ?string $event = null,
         public bool $deprioritized = false,
+        public ?string $badge = null,
     ) {}
 }

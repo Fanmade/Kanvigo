@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\Status;
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -32,12 +33,13 @@ class GlobalSearch
     }
 
     /**
-     * Search the user's accessible projects and tasks.
+     * Search the user's accessible projects, tasks and reference docs.
      *
-     * A query that parses as a reference (e.g. "PROJ-42", or the compact "PROJ42")
-     * yields a pinned "jump to" result at the top. A bare number ("42") surfaces
-     * every accessible task with that number, ordered so the current project's
-     * task (when $contextShortName is given) comes first. Text/tag matches follow.
+     * A query that parses as a reference (e.g. "PROJ-42", the compact "PROJ42",
+     * or a doc's "PROJ-D3") yields a pinned "jump to" result at the top. A bare
+     * number ("42") surfaces every accessible task with that number,
+     * ordered so the current project's task (when $contextShortName is given)
+     * comes first. Text/tag matches follow.
      *
      * @param  string|null  $contextShortName  the short_name of the project the user is
      *                                         currently viewing, used to break ties on bare-number matches
@@ -72,6 +74,7 @@ class GlobalSearch
         return $results
             ->merge($this->projects($projectIds, $query))
             ->merge($this->tasks($projectIds, $query))
+            ->merge($this->docs($user, $projectIds, $query))
             ->unique(static fn (SearchResult $result): string => $result->type.':'.$result->reference)
             ->values();
     }
@@ -81,7 +84,9 @@ class GlobalSearch
      */
     private function referenceJump(User $user, string $query): ?SearchResult
     {
-        $model = ReferenceResolver::commentable($this->normalizeReference($query));
+        $reference = $this->normalizeReference($query);
+
+        $model = ReferenceResolver::doc($reference) ?? ReferenceResolver::commentable($reference);
 
         if ($model === null || ! $user->can('view', $model)) {
             return null;
@@ -93,7 +98,10 @@ class GlobalSearch
     /**
      * Normalize a typed reference so a compact task reference like "PROJ42" (no
      * separator) resolves the same as "PROJ-42". Anything else is returned
-     * untouched (uppercased) for the resolver to handle.
+     * untouched (uppercased) for the resolver to handle — including a doc
+     * reference, which is only ever typed in its "PROJ-D3" form: the compact
+     * "PROJD3" is ambiguous (project "PROJD", task 3) and is left as a plain
+     * text search rather than guessed at.
      */
     private function normalizeReference(string $query): string
     {
@@ -190,6 +198,39 @@ class GlobalSearch
     }
 
     /**
+     * The project's reference docs matching the query by title or tag, most
+     * recently updated first.
+     *
+     * Drafts are visible only to members who may edit that project's docs, so the
+     * matches are authorized per doc rather than filtered in SQL: the fetch takes
+     * a wider slice and the viewable ones are cut back to the limit.
+     *
+     * @param  array<int, int>  $projectIds
+     * @return Collection<int, SearchResult>
+     */
+    private function docs(User $user, array $projectIds, string $query): Collection
+    {
+        $like = $this->like($query);
+        $operator = $this->likeOperator();
+
+        return Doc::query()
+            ->with('project')
+            ->whereIn('project_id', $projectIds)
+            ->where(static fn (Builder $builder): Builder => $builder
+                ->where('title', $operator, $like)
+                ->orWhereHas('tags', static fn (Builder $tag): Builder => $tag
+                    ->where('name', $operator, $like)
+                    ->orWhereHas('synonyms', static fn (Builder $synonym): Builder => $synonym->where('name', $operator, $like))))
+            ->latest('updated_at')
+            ->limit(self::LIMIT * 4)
+            ->get()
+            ->filter(static fn (Doc $doc): bool => $user->can('view', $doc))
+            ->take(self::LIMIT)
+            ->map(fn (Doc $doc): SearchResult => $this->toResult($doc))
+            ->values();
+    }
+
+    /**
      * The stored status values the palette treats as low-priority — terminal
      * states (completed or canceled) that should rank below active tasks.
      *
@@ -206,9 +247,24 @@ class GlobalSearch
     /**
      * Map a resolved model into a palette result.
      */
-    private function toResult(Project|Task $model, bool $pinned = false): SearchResult
+    private function toResult(Project|Task|Doc $model, bool $pinned = false): SearchResult
     {
         return match (true) {
+            $model instanceof Doc => new SearchResult(
+                type: 'doc',
+                title: $model->title,
+                icon: 'document-text',
+                url: route('doc.show', [
+                    'short_name' => $model->project->short_name,
+                    'doc_number' => $model->doc_number,
+                ]),
+                reference: $model->reference,
+                pinned: $pinned,
+                // A draft is the editor's own work in progress; flag it so it is
+                // never mistaken for published project knowledge. The palette
+                // renders the wording — this stays a plain marker.
+                badge: $model->is_public ? null : 'draft',
+            ),
             $model instanceof Task => new SearchResult(
                 type: 'task',
                 title: $model->title,

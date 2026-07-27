@@ -4,6 +4,7 @@ use App\Http\Controllers\AttachmentDownloadController;
 use App\Http\Controllers\AttachmentThumbnailController;
 use App\Http\Controllers\AttachmentViewController;
 use App\Http\Controllers\AvatarController;
+use App\Http\Controllers\DocPreviewController;
 use App\Http\Controllers\MentionSuggestionsController;
 use App\Http\Controllers\NoteAttachmentController;
 use App\Http\Controllers\OAuth\ApproveMcpAuthorizationController;
@@ -114,6 +115,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::get('/{short_name}/mentionables', MentionSuggestionsController::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.mentionables');
+
+    Route::get('/{short_name}-D{doc_number}/preview', DocPreviewController::class)
+        ->where(['short_name' => '[A-Z]{2,4}', 'doc_number' => '\d+'])
+        ->name('doc.preview');
 
     Route::get('/{short_name}-{task_number}/preview', TaskPreviewController::class)
         ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])

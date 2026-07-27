@@ -69,6 +69,15 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `PUT`    | `/tasks/{reference}/assignees`                        | write   | Replace a task's assignees (`assignee_ids`: the stable user ids from the task's `assignees`). |
 | `POST`   | `/tasks/{reference}/dependencies`                     | write   | Link a dependency (`direction`: `blocked_by` / `blocks`). |
 | `DELETE` | `/tasks/{reference}/dependencies/{related}`           | write   | Unlink a dependency. |
+| `GET`    | `/projects/{short_name}/docs`                         | read    | A project's reference docs (paginated, tree order). Filter: `parent`. Drafts only for doc editors. |
+| `POST`   | `/projects/{short_name}/docs`                         | write   | Create a doc (`title`, optional `body`, `parent`, `is_public`). |
+| `GET`    | `/docs/{reference}`                                   | read    | A single doc (`PROJ-D3`) with body, nested docs, links and attachments. |
+| `PATCH`  | `/docs/{reference}`                                   | write   | Update a doc's title, body, parent (`null` for top level) or `is_public`. |
+| `DELETE` | `/docs/{reference}`                                   | write   | Delete a doc. Nested docs are kept and read as top-level. |
+| `POST`   | `/tasks/{reference}/references`                       | write   | Cross-link the task to another task or doc (`related`). |
+| `DELETE` | `/tasks/{reference}/references/{related}`             | write   | Remove that cross-link. |
+| `POST`   | `/docs/{reference}/references`                        | write   | Cross-link the doc to another task or doc (`related`). |
+| `DELETE` | `/docs/{reference}/references/{related}`              | write   | Remove that cross-link. |
 | `GET`    | `/projects/{short_name}/comments`                     | read    | A project's comments (paginated, threaded). |
 | `POST`   | `/projects/{short_name}/comments`                     | write   | Comment on a project (`parent_id` to reply). |
 | `GET`    | `/tasks/{reference}/comments`                         | read    | A task's comments (paginated, threaded). |
@@ -94,6 +103,19 @@ sent and returned **by name** (`High`, `WontFix`), `status` by its value
 `id` (the value carried on assignees and comment authors); resolve it through
 `GET /users/{id}`. Paginated responses wrap the records in `data` alongside `links`
 and `meta`.
+
+Reference docs use a `PROJ-D3` reference (the project short name, `-D` and a
+per-project doc number) and are always addressed by it. A doc is a draft until it
+is published (`is_public`): a draft is only visible to members who may edit the
+project's docs, and 404s for everyone else.
+
+Cross-references link a task or doc to another task or doc; both `references`
+paths above are the same endpoint, resolving whichever item the reference names.
+The task and doc detail responses carry `references` (what the item links to) and
+`referenced_by` (its backlinks), each filtered to what the caller may see. Links
+made through the API are curated and survive edits; the ones written inline in a
+body as a reference to another item follow that text instead, so they come back
+when the text is saved again.
 
 ## Example
 

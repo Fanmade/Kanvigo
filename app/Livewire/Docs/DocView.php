@@ -290,8 +290,9 @@ class DocView extends Component
     }
 
     /**
-     * Delete the doc and return to the project's doc index. Docs nested under it
-     * are kept, moving up to the top level (the parent link is nulled).
+     * Delete the doc and return to the project's doc index. The delete is soft,
+     * and the docs nested under it are kept — they surface at the top level of
+     * the tree while their parent is gone, so nothing is stranded behind it.
      */
     public function delete(): void
     {

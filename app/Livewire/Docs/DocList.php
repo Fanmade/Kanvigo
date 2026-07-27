@@ -45,6 +45,11 @@ class DocList extends Component
     #[Url(as: 'q')]
     public string $search = '';
 
+    /**
+     * Whether the create-doc dialog is open. URL-bound (aliased to `create`) so
+     * the command palette can deep-link straight to the open form.
+     */
+    #[Url(as: 'create')]
     public bool $creating = false;
 
     public string $newTitle = '';

@@ -36,10 +36,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   The browser tab title carries the same context — a project page leads with its
   short name, a task page with its reference and title (e.g. `ABC-42 · Fix the
   board`) — so several open tabs stay distinguishable.
-- **Command palette** (`⌘K` / `Ctrl+K`) — search projects and tasks by
-  title or tag, jump straight to a typed reference (`PROJ-42` or the compact
-  `PROJ42`), find tasks by a bare number across your projects (prioritizing the
-  one you're viewing), and run quick actions including creating a task from anywhere.
+- **Command palette** (`⌘K` / `Ctrl+K`) — search projects, tasks and reference docs
+  by title or tag (an unpublished doc is marked as a draft), jump straight to a
+  typed reference (`PROJ-42`, the compact `PROJ42`, or a doc's `PROJ-D3`), find
+  tasks by a bare number across your projects (prioritizing the one you're
+  viewing), and run quick actions including creating a task or a doc from anywhere.
 - **Create task dialog** — one dialog for creating tasks, opened from the board,
   a project, a parent task, the command palette, or the New task shortcut in the
   top toolbar. Pick the target project and an
@@ -101,8 +102,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   same rich-text editor (including inline images and file attachments) as
   descriptions, and start as drafts only editors can see until they are published
   to the project. A doc page shows the docs nested under it and the tasks and docs
-  it links to — plus everything linking back to it. Also available through the MCP
-  tools.
+  it links to — plus everything linking back to it. Docs are searchable from the
+  command palette, and also available through the MCP tools and the REST API.
 - **Multi-assignee** tasks for pairing and ensemble work, with a one-click "assign
   to me" on the task page and in the create-task dialog.
 - **Profile avatars** — upload a profile picture (cropped to a square) from
@@ -159,9 +160,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   A mention's label can be shortened after picking — trim the trailing words (e.g.
   `@Jon Doe` → `@Jon`) and it stays linked to the same person.
   Mentions render as links to the member's profile, and references as links to the
-  task or doc — wherever the content is shown. A task reference carries a hover
-  preview card (title, status, priority, assignees, progress), and a mention one
-  showing the user's name, avatar and their role in the project.
+  task or doc — wherever the content is shown — each with a hover preview card: a
+  task shows its title, status, priority, assignees and progress, a doc whether it
+  is a draft, the opening of its body and how many docs are nested under it, and a
+  mention the user's name, avatar and their role in the project.
   Referencing an item also links the two: the referenced task or doc lists the
   mention as a backlink, and removing the reference from the text unlinks them
   again. Links added directly through the API are kept separately and are never
@@ -281,7 +283,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   without ever truncating silently. Personal notes have their own tools (create,
   list, get, update and convert-to-task), referenced by a numeric note id.
 - **REST API** — a versioned, documented HTTP API under `/api/v1` for projects,
-  tasks, comments, assignees and dependencies, authenticated with the same personal
+  tasks, reference docs, comments, assignees, dependencies and cross-references,
+  authenticated with the same personal
   access tokens (Bearer; read tokens for the GET endpoints, write tokens to create
   and update). A dedicated user endpoint resolves the stable user id carried by
   assignees and comment authors to a name, with the email shown only to those

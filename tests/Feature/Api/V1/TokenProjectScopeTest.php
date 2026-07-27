@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Permission;
+use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -67,6 +68,14 @@ it('reads and writes normally within the allowed projects', function () {
         ->assertCreated();
 
     expect($this->allowed->tasks()->where('title', 'Created in scope')->exists())->toBeTrue();
+});
+
+it('404s docs of an out-of-scope project', function () {
+    $doc = Doc::factory()->for($this->other)->published()->create();
+    $token = createProjectRestrictedToken($this->user, [$this->allowed]);
+
+    withToken($token)->getJson("/api/v1/docs/{$doc->reference}")->assertNotFound();
+    withToken($token)->getJson('/api/v1/projects/OTH/docs')->assertNotFound();
 });
 
 it('denies write attempts on an out-of-scope project with a 404', function () {

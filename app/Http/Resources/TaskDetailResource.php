@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\SerializesReferences;
 use App\Models\Attachment;
 use App\Models\Task;
 use App\Models\User;
@@ -9,14 +10,16 @@ use Illuminate\Http\Request;
 
 /**
  * The full task representation returned by the show endpoint: the lean
- * {@see TaskResource} fields plus assignees, dependencies, subtasks, attachments,
- * the cancellation note and rolled-up progress. The list endpoints keep using the
- * lean resource to stay cheap.
+ * {@see TaskResource} fields plus assignees, dependencies, cross-references,
+ * subtasks, attachments, the cancellation note and rolled-up progress. The list
+ * endpoints keep using the lean resource to stay cheap.
  *
  * @mixin Task
  */
 class TaskDetailResource extends TaskResource
 {
+    use SerializesReferences;
+
     /**
      * @return array<string, mixed>
      */
@@ -34,6 +37,7 @@ class TaskDetailResource extends TaskResource
                 'name' => $user->name,
             ])->values()->all(),
             ...$this->relationshipReferences(),
+            ...$this->referenceLists($this->resource),
             'children' => $this->children->map(static fn (Task $child): array => [
                 'reference' => $shortName.'-'.$child->task_number,
                 'title' => $child->title,

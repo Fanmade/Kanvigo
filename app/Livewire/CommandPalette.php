@@ -3,11 +3,14 @@
 namespace App\Livewire;
 
 use App\Enums\Permission;
+use App\Models\Project;
 use App\Models\User;
 use App\Support\GlobalSearch;
 use App\Support\SearchResult;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -83,6 +86,15 @@ class CommandPalette extends Component
 
         $actions->push(new SearchResult(type: 'action', title: __('New note'), icon: 'pencil-square', event: 'open-create-note'));
 
+        if (($docProject = $this->docCreationProject($user)) !== null) {
+            $actions->push(new SearchResult(
+                type: 'action',
+                title: __('New doc'),
+                url: route('project.docs', ['short_name' => $docProject->short_name, 'create' => 1]),
+                icon: 'document-text',
+            ));
+        }
+
         if ($user->hasPermission(Permission::CreateProjects)) {
             $actions->push(new SearchResult(type: 'action', title: __('New project'), url: route('projects.index', ['create' => 1]), icon: 'folder-plus'));
         }
@@ -100,6 +112,27 @@ class CommandPalette extends Component
         return $actions
             ->filter(static fn (SearchResult $action): bool => str_contains(mb_strtolower($action->title), mb_strtolower($query)))
             ->values();
+    }
+
+    /**
+     * The project a "New doc" action would create the doc in: the project being
+     * viewed when the palette was opened, or — off any project page — the user's
+     * only one. A doc always belongs to a project, so with several projects and
+     * no context there is nothing to preselect and the action is left out.
+     */
+    private function docCreationProject(User $user): ?Project
+    {
+        $projects = $user->projects()
+            ->when(
+                $this->contextShortName !== null,
+                fn (Builder $query): Builder => $query->where('short_name', strtoupper($this->contextShortName)),
+            )
+            ->limit(2)
+            ->get();
+
+        $project = $projects->count() === 1 ? $projects->first() : null;
+
+        return $project !== null && Gate::allows('create-doc', $project) ? $project : null;
     }
 
     /**

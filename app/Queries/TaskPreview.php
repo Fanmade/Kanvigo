@@ -14,6 +14,7 @@ class TaskPreview
 {
     /**
      * @return array{
+     *     type: string,
      *     reference: string,
      *     title: string,
      *     url: string,
@@ -29,6 +30,8 @@ class TaskPreview
         $progress = $task->progress();
 
         return [
+            // The hovercard renders tasks and docs differently; this says which.
+            'type' => 'task',
             'reference' => $task->reference,
             'title' => $task->title,
             'url' => route('task.show', [
