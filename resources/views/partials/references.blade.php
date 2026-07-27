@@ -2,7 +2,13 @@
     The cross-reference panels for a task or doc rail: the items it links to
     (written as #references in its rich text, or linked through the API), and the
     items linking back to it. Both lists only ever show what the reader may open.
+
+    Pass `showBacklinks => false` where the page gives backlinks a section of their
+    own — the doc page lists them in full under the body — so the rail doesn't
+    repeat them.
 --}}
+@php($showBacklinks = $showBacklinks ?? true)
+
 <div class="flex flex-col gap-2" data-test="item-links">
     <flux:heading size="sm">{{ __('Links') }}</flux:heading>
 
@@ -13,12 +19,14 @@
     @endforelse
 </div>
 
-<div class="flex flex-col gap-2" data-test="item-backlinks">
-    <flux:heading size="sm">{{ __('Linked from') }}</flux:heading>
+@if ($showBacklinks)
+    <div class="flex flex-col gap-2" data-test="item-backlinks">
+        <flux:heading size="sm">{{ __('Linked from') }}</flux:heading>
 
-    @forelse ($this->backlinks as $item)
-        <x-reference-item :item="$item" wire:key="backlink-{{ $item->getMorphClass() }}-{{ $item->getKey() }}" />
-    @empty
-        <flux:text size="sm" class="text-zinc-400">{{ __('Nothing links here yet.') }}</flux:text>
-    @endforelse
-</div>
+        @forelse ($this->backlinks as $item)
+            <x-reference-item :item="$item" wire:key="backlink-{{ $item->getMorphClass() }}-{{ $item->getKey() }}" />
+        @empty
+            <flux:text size="sm" class="text-zinc-400">{{ __('Nothing links here yet.') }}</flux:text>
+        @endforelse
+    </div>
+@endif

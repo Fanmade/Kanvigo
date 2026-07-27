@@ -73,7 +73,7 @@ describe('reading a doc', function () {
 });
 
 describe('doc cross-references', function () {
-    it('lists linked items and backlinks the viewer may see', function () {
+    it('lists linked items in the rail and what references the doc below it', function () {
         $doc = Doc::factory()->for($this->project)->published()->create();
         $task = Task::factory()->for($this->project)->create();
         $draft = Doc::factory()->for($this->project)->create();
@@ -85,9 +85,43 @@ describe('doc cross-references', function () {
 
         Livewire::actingAs($this->viewer)
             ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $doc->doc_number])
+            // The rail lists what the doc points at…
             ->assertSeeHtml('data-test="reference-item-'.$task->reference.'"')
-            ->assertSeeHtml('data-test="reference-item-'.$backlinking->reference.'"')
-            ->assertDontSeeHtml('data-test="reference-item-'.$draft->reference.'"');
+            ->assertDontSeeHtml('data-test="reference-item-'.$draft->reference.'"')
+            // …and the section below the body lists where it is cited, once.
+            ->assertSeeHtml('data-test="doc-backlinks-section"')
+            ->assertSeeHtml('data-test="backlink-'.$backlinking->reference.'"')
+            ->assertDontSeeHtml('data-test="reference-item-'.$backlinking->reference.'"');
+    });
+
+    it('shows a doc referenced from another doc body, hiding drafts from a viewer', function () {
+        $doc = Doc::factory()->for($this->project)->published()->create();
+
+        $citingDoc = Doc::factory()->for($this->project)->published()->create([
+            'body' => '<p>'.inlineReference($doc).'</p>',
+        ]);
+        $citingDraft = Doc::factory()->for($this->project)->create([
+            'body' => '<p>'.inlineReference($doc).'</p>',
+        ]);
+
+        Livewire::actingAs($this->editor)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $doc->doc_number])
+            ->assertSeeHtml('data-test="backlink-'.$citingDoc->reference.'"')
+            ->assertSeeHtml('data-test="backlink-'.$citingDraft->reference.'"');
+
+        // A draft citing the doc must not disclose itself through the backlink.
+        Livewire::actingAs($this->viewer)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $doc->doc_number])
+            ->assertSeeHtml('data-test="backlink-'.$citingDoc->reference.'"')
+            ->assertDontSeeHtml('data-test="backlink-'.$citingDraft->reference.'"');
+    });
+
+    it('leaves the section out entirely while nothing references the doc', function () {
+        $doc = Doc::factory()->for($this->project)->published()->create();
+
+        Livewire::actingAs($this->editor)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $doc->doc_number])
+            ->assertDontSeeHtml('data-test="doc-backlinks-section"');
     });
 });
 

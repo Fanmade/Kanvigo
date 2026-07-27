@@ -116,6 +116,21 @@
                         </x-list-card>
                     </div>
                 @endif
+
+                {{-- Where this doc is cited: every task and doc whose text
+                     references it, so a reader can get back to the work it
+                     belongs to. Hidden entirely until something links here. --}}
+                @if ($this->backlinks->isNotEmpty())
+                    <div data-test="doc-backlinks-section">
+                        <flux:heading size="sm" class="mb-2">{{ __('Referenced by') }}</flux:heading>
+
+                        <x-list-card data-test="doc-backlinks">
+                            @foreach ($this->backlinks as $item)
+                                <x-backlink-row :item="$item" />
+                            @endforeach
+                        </x-list-card>
+                    </div>
+                @endif
             </div>
 
             {{-- Metadata rail --}}
@@ -157,8 +172,9 @@
 
                     <flux:separator variant="subtle" />
 
-                    {{-- Cross-references: what this doc points at, and what points back. --}}
-                    @include('partials.references')
+                    {{-- What this doc points at. What points back at it gets a
+                         section of its own under the body. --}}
+                    @include('partials.references', ['showBacklinks' => false])
 
                     <flux:separator variant="subtle" />
 

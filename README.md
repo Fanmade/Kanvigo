@@ -101,9 +101,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   **Docs** button on the project page. Docs nest into a tree, are written with the
   same rich-text editor (including inline images and file attachments) as
   descriptions, and start as drafts only editors can see until they are published
-  to the project. A doc page shows the docs nested under it and the tasks and docs
-  it links to — plus everything linking back to it. Docs are searchable from the
-  command palette, and also available through the MCP tools and the REST API.
+  to the project. A doc page shows the docs nested under it, the tasks and docs it
+  links to, and a **Referenced by** section listing every task and doc whose text
+  cites it — the way back to the work the doc belongs to. Docs are searchable from
+  the command palette, and also available through the MCP tools and the REST API.
 - **Multi-assignee** tasks for pairing and ensemble work, with a one-click "assign
   to me" on the task page and in the create-task dialog.
 - **Profile avatars** — upload a profile picture (cropped to a square) from
