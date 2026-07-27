@@ -117,6 +117,22 @@ class ReferenceResolver
     }
 
     /**
+     * Resolve a cross-referenceable reference into its item: a doc ("PROJ-D3")
+     * or a task ("PROJ-42"). The "-D" infix picks the doc form; everything else
+     * is read as a task reference.
+     *
+     * Returns null when the reference is malformed or resolves to nothing.
+     */
+    public static function referenceable(string $reference): Task|Doc|null
+    {
+        $reference = strtoupper(trim($reference));
+
+        return preg_match('/^'.self::SHORT_NAME.'-D\d+$/', $reference) === 1
+            ? self::doc($reference)
+            : self::task($reference);
+    }
+
+    /**
      * Resolve any commentable reference into its model: a task ("PROJ-42")
      * or a project ("PROJ").
      *

@@ -6,25 +6,10 @@ use App\Models\Note;
 use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
-use Laravel\Mcp\Request;
-use RuntimeException;
 
 trait PresentsNotes
 {
-    /**
-     * The authenticated user as the concrete model. A tool only ever runs for an
-     * authenticated token, so this narrows the request's user type honestly.
-     */
-    protected function authenticatedUser(Request $request): User
-    {
-        $user = $request->user();
-
-        if (! $user instanceof User) {
-            throw new RuntimeException('The MCP request is not authenticated.');
-        }
-
-        return $user;
-    }
+    use ResolvesAuthenticatedUser;
 
     /**
      * The structured payload for a single note.

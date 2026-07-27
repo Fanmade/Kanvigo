@@ -50,6 +50,14 @@ trait HasReferences
     }
 
     /**
+     * The item's human-readable reference, read off the model's own accessor.
+     */
+    public function getReference(): string
+    {
+        return (string) $this->reference;
+    }
+
+    /**
      * The links where this item is the source (pointing at the items it references).
      *
      * @return MorphMany<Reference, $this>

@@ -4,22 +4,28 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\AddCommentTool;
 use App\Mcp\Tools\AddDependencyTool;
+use App\Mcp\Tools\AddReferenceTool;
 use App\Mcp\Tools\ConvertNoteTool;
+use App\Mcp\Tools\CreateDocTool;
 use App\Mcp\Tools\CreateNoteTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\FindUsersTool;
 use App\Mcp\Tools\GetAttachmentTool;
 use App\Mcp\Tools\GetCurrentUserTool;
+use App\Mcp\Tools\GetDocTool;
 use App\Mcp\Tools\GetNoteTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetTaskTool;
 use App\Mcp\Tools\GetUserTool;
+use App\Mcp\Tools\ListDocsTool;
 use App\Mcp\Tools\ListNotesTool;
 use App\Mcp\Tools\ListProjectsTool;
 use App\Mcp\Tools\ListTasksTool;
 use App\Mcp\Tools\RemoveDependencyTool;
+use App\Mcp\Tools\RemoveReferenceTool;
 use App\Mcp\Tools\SetAssigneesTool;
+use App\Mcp\Tools\UpdateDocTool;
 use App\Mcp\Tools\UpdateNoteTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateTaskTool;
@@ -62,15 +68,33 @@ use Laravel\Mcp\Server\Tool;
     related_reference) and the remove-dependency tool to unlink them. Self-dependencies and cycles
     are rejected.
 
-    Task and project descriptions and comment bodies are HTML, restricted to a small allow-list:
+    A project also holds reference docs: statusless knowledge pages (specs, decisions, background)
+    that live beside the tasks. A doc is referenced by its project's short_name, "-D" and a
+    project-wide doc number, e.g. "PROJ-D3", and has a title, an optional HTML body, tags and
+    attachments. Docs nest into a tree like tasks (a doc reports its "parent" and the docs nested
+    under it). A doc is a draft until it is published: a draft is visible only to members who may
+    edit docs, a published doc to everyone who can see the project. Use list-docs (the project's
+    docs, optionally only those under a "parent"), get-doc (returns the body and links), create-doc
+    and update-doc (change the title, body, parent or published flag).
+
+    Tasks and docs can also be cross-referenced: a plain link between two items, in any combination
+    of tasks and docs. A reference is pure navigation — unlike a dependency it never blocks anything
+    and may be circular. The get-task and get-doc tools report "references" (what the item links to)
+    and "referenced_by" (its backlinks). Use add-reference and remove-reference to curate links.
+    Links can also be written inline in an item's text as a reference to another item; those follow
+    the text, so they reappear when re-saved and are removed by editing the text — the tools only
+    manage curated links.
+
+    Task and project descriptions, doc bodies and comment bodies are HTML, restricted to a small allow-list:
     headings, bold/italic, lists, links, blockquotes, code, and inline images (rendered as a
     thumbnail linking to the full-size image). The get tools return this content as HTML, and the
     create/update/comment tools expect it as HTML — whatever you send is sanitized to that
     allow-list, so unsupported tags are dropped.
 
-    Projects and tasks may have file attachments, including images embedded inline in their
-    descriptions. The get tools list each attachment's id; pass that id to the get-attachment
-    tool to retrieve the file's content (images and audio are returned as viewable content).
+    Projects, tasks and docs may have file attachments, including images embedded inline in their
+    descriptions or bodies. The get tools list each attachment's id; pass that id to the
+    get-attachment tool to retrieve the file's content (images and audio are returned as viewable
+    content).
 
     Projects and tasks can also carry a discussion thread. The get tools (not the list tools)
     return a "comments" array, oldest first; each comment has an id, author name, body,
@@ -100,19 +124,28 @@ use Laravel\Mcp\Server\Tool;
     The add-comment tool can post a reply by passing "reply_to" with the id of the comment to answer;
     replies stay one level deep, so replying to a reply attaches to the root comment.
 
-    By default list-tasks, get-project and list-notes return every item, so you get the full project
-    context in one call. For very large projects you can page instead: pass a "limit" to cap how many
-    tasks (or notes) come back; the response then carries a "page" object (for get-project, "tasks_page")
+    By default list-tasks, list-docs, get-project and list-notes return every item, so you get the full
+    project context in one call. For very large projects you can page instead: pass a "limit" to cap how
+    many tasks (docs, notes) come back; the response then carries a "page" object (for get-project, "tasks_page")
     with "has_more" and a "next_cursor" you pass back as "cursor" to fetch the next page. Without a limit
     "has_more" is always false — nothing is ever truncated silently.
 
     Read tools (list/get) are available to any token. Write tools (create/update/comment, link or
-    unlink dependencies, and the note create/update/convert tools) require a token with write
-    access and return an error for read-only tokens. Creating a project also requires the
-    "create-projects" permission.
+    unlink dependencies and references, the doc create/update tools, and the note
+    create/update/convert tools) require a token with write access and return an error for read-only
+    tokens. Creating a project also requires the "create-projects" permission, and creating or
+    editing a doc the project's "create-doc"/"edit-doc" permission.
     TEXT)]
 class KanvigoServer extends Server
 {
+    /**
+     * How many tools a single tools/list page carries. Raised above the package
+     * default (15) so the whole toolset — tasks, docs, references, notes and the
+     * user lookups — is advertised in one page: a client that does not follow the
+     * pagination cursor would otherwise never see the tools at the end of the list.
+     */
+    public int $defaultPaginationLength = 50;
+
     /**
      * The tools registered with this MCP server.
      *
@@ -135,6 +168,12 @@ class KanvigoServer extends Server
         SetAssigneesTool::class,
         AddDependencyTool::class,
         RemoveDependencyTool::class,
+        ListDocsTool::class,
+        GetDocTool::class,
+        CreateDocTool::class,
+        UpdateDocTool::class,
+        AddReferenceTool::class,
+        RemoveReferenceTool::class,
         ListNotesTool::class,
         GetNoteTool::class,
         CreateNoteTool::class,

@@ -101,7 +101,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   same rich-text editor (including inline images and file attachments) as
   descriptions, and start as drafts only editors can see until they are published
   to the project. A doc page shows the docs nested under it and the tasks and docs
-  it links to — plus everything linking back to it.
+  it links to — plus everything linking back to it. Also available through the MCP
+  tools.
 - **Multi-assignee** tasks for pairing and ensemble work, with a one-click "assign
   to me" on the task page and in the create-task dialog.
 - **Profile avatars** — upload a profile picture (cropped to a square) from
@@ -259,9 +260,14 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   are listed — and can be revoked — under Settings → API tokens. Static API tokens
   from Settings keep working alongside. Read tools (list/inspect) work with any token and surface each item's
   dependencies (what blocks it, what it blocks, and whether it is currently
-  blocked); write tools (create/update tasks, cancel or reopen tasks, set a task's
-  assignees, create and update projects, add comments and threaded replies,
-  link/unlink dependencies) require a token with write access. Descriptions and comment bodies
+  blocked) and its cross-references (the tasks and docs it links to, and its
+  backlinks); write tools (create/update tasks, cancel or reopen tasks, set a task's
+  assignees, create and update projects, create and update reference docs, add
+  comments and threaded replies, link/unlink dependencies and references) require a
+  token with write access. A project's reference docs have their own tools
+  (list-docs, get-doc, create-doc, update-doc) addressed by the same `PROJ-D3`
+  reference as the UI, with drafts visible only to agents whose user may edit docs.
+  Descriptions, doc bodies and comment bodies
   are exchanged as HTML (sanitized to an allow-list on write). Inspecting a project
   or task also returns its comment thread and any cancellation reason, and agents
   can read attachments by their id — inline description images, audio, and
@@ -270,7 +276,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   tool resolves to a name (and, for shared-project members or admins, an email); to
   assign work, agents resolve the id they need with get-current-user ("assign this
   to me") or find-users, a name/email lookup across the people you share a project
-  with. Project reads (list-tasks, get-project, list-notes) return the full set by default
+  with. Project reads (list-tasks, list-docs, get-project, list-notes) return the full set by default
   but accept an optional limit with an explicit cursor to page very large projects
   without ever truncating silently. Personal notes have their own tools (create,
   list, get, update and convert-to-task), referenced by a numeric note id.

@@ -2,16 +2,20 @@
 
 use App\Mcp\Tools\AddCommentTool;
 use App\Mcp\Tools\ConvertNoteTool;
+use App\Mcp\Tools\CreateDocTool;
 use App\Mcp\Tools\CreateNoteTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateTaskTool;
+use App\Mcp\Tools\GetDocTool;
 use App\Mcp\Tools\GetNoteTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetTaskTool;
 use App\Mcp\Tools\GetUserTool;
+use App\Mcp\Tools\ListDocsTool;
 use App\Mcp\Tools\ListNotesTool;
 use App\Mcp\Tools\ListProjectsTool;
 use App\Mcp\Tools\ListTasksTool;
+use App\Mcp\Tools\UpdateDocTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use Illuminate\Support\Arr;
 
@@ -57,6 +61,16 @@ it('declares every null-capable output field as nullable', function (string $too
     ]],
     'create-task' => [CreateTaskTool::class, ['description', 'due_date', 'type', 'parent']],
     'update-task' => [UpdateTaskTool::class, ['description', 'due_date', 'type', 'cancel_reason', 'cancel_message']],
+    'list-docs' => [ListDocsTool::class, [
+        'docs.items.properties.parent',
+        'page.properties.next_cursor',
+    ]],
+    'get-doc' => [GetDocTool::class, [
+        'body', 'parent',
+        'attachments.items.properties.mime_type',
+    ]],
+    'create-doc' => [CreateDocTool::class, ['body', 'parent']],
+    'update-doc' => [UpdateDocTool::class, ['body', 'parent']],
     'list-notes' => [ListNotesTool::class, [
         'notes.items.properties.project',
         'notes.items.properties.converted_task',

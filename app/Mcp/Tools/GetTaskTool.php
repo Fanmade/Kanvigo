@@ -4,6 +4,8 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\ExposesComments;
 use App\Mcp\Concerns\ExposesDependencies;
+use App\Mcp\Concerns\ExposesReferences;
+use App\Mcp\Concerns\ResolvesAuthenticatedUser;
 use App\Models\Attachment;
 use App\Models\Task;
 use App\Models\User;
@@ -17,12 +19,14 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets a single task by its reference (e.g. "PROJ-42"), including status, priority, type, description, tags, assignees and its project reference. Only tasks in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets a single task by its reference (e.g. "PROJ-42"), including status, priority, type, description, tags, assignees, the tasks and docs it cross-references, and its project reference. Only tasks in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetTaskTool extends Tool
 {
     use ExposesComments;
     use ExposesDependencies;
+    use ExposesReferences;
+    use ResolvesAuthenticatedUser;
 
     /**
      * Handle the tool request.
@@ -68,6 +72,7 @@ class GetTaskTool extends Tool
             ])->values()->all(),
             'progress' => ['done' => $progress->done, 'total' => $progress->total],
             ...$this->dependencyPayload($task),
+            ...$this->referencePayload($task, $this->authenticatedUser($request)),
             'assignees' => $task->assignees->map(static fn (User $user): array => [
                 'id' => $user->public_id,
                 'name' => $user->name,
@@ -127,6 +132,7 @@ class GetTaskTool extends Tool
                 'total' => $schema->integer()->description('The total number of descendant tasks (the whole subtree below this task).')->required(),
             ])->description('Completion rolled up from this task\'s subtree.')->required(),
             ...$this->dependencySchema($schema),
+            ...$this->referenceSchema($schema),
             'assignees' => $schema->array()->items($schema->object([
                 'id' => $schema->string()->description('The assignee\'s stable user id; pass it to the get-user tool or the set-assignees tool.')->required(),
                 'name' => $schema->string()->description('The assignee name.')->required(),
