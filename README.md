@@ -1,12 +1,20 @@
-# Kanvigo
+<p align="center">
+  <img src="resources/images/logo.svg" alt="" width="88">
+</p>
 
-![Tests](https://github.com/Fanmade/Kanvigo/actions/workflows/tests.yml/badge.svg)
-![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Fanmade/89b10cbc79557b748b8f50d2955dd9f6/raw/coverage.json)
+<h1 align="center">Kanvigo</h1>
 
-A minimalist, invitation-only Kanban project-management tool. Organize work as
-**Projects → nestable Tasks** (a project has tasks; tasks have subtasks), with
-human-readable scoped URLs, a drag-and-drop board, comments, attachments, an
-audit trail, and per-project notifications.
+<p align="center">
+  A minimalist, invitation-only Kanban project-management tool.<br>
+  Organize work as <strong>Projects → nestable Tasks</strong>, on a board built for keyboards, agents and audits.
+</p>
+
+<p align="center">
+  <img src="https://github.com/Fanmade/Kanvigo/actions/workflows/tests.yml/badge.svg" alt="Tests">
+  <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Fanmade/89b10cbc79557b748b8f50d2955dd9f6/raw/coverage.json" alt="Coverage">
+</p>
+
+![The Kanvigo board](docs/images/board.png)
 
 Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
@@ -16,293 +24,156 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
 ## Features
 
-- **Projects & nestable Tasks** — a project contains tasks, and tasks nest into
-  subtasks (up to a configurable depth, default three) with flat per-project task
-  numbers. A task page shows its place in the tree, its subtasks, and a progress
-  rollup over the whole subtree. A task can be moved under a different parent or
-  detached to the top level. Closing a parent can cascade to its open subtasks
-  (ask / always / never), starting a subtask pulls the parent into progress, and
-  completing the last open subtask can prompt to close the parent (ask / always /
-  never).
-- **Focused item views** — the project and task pages keep the description
-  front and centre, with metadata (status, priority, assignees, dependencies,
-  dates) gathered in a compact side rail. Status and priority are badges that open
-  a dropdown to change them — with one-click buttons beside the status to step it
-  forward or back along the progression (Planned ⇄ To do ⇄ In progress ⇄ Done) —
-  and editing controls stay tucked away until needed.
-- **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}/board` for its
-  board, `/{SHORT}-{n}` for a task and `/{SHORT}-D{n}` for a doc (e.g. `/ABC`,
-  `/ABC/board`, `/ABC-42`, `/ABC-D3`).
-  The browser tab title carries the same context — a project page leads with its
-  short name, a task page with its reference and title (e.g. `ABC-42 · Fix the
-  board`) — so several open tabs stay distinguishable.
-- **Command palette** (`⌘K` / `Ctrl+K`) — search projects, tasks and reference docs
-  by title or tag (an unpublished doc is marked as a draft), jump straight to a
-  typed reference (`PROJ-42`, the compact `PROJ42`, or a doc's `PROJ-D3`), find
-  tasks by a bare number across your projects (prioritizing the one you're
-  viewing), and run quick actions including creating a task or a doc from anywhere.
-- **Create task dialog** — one dialog for creating tasks, opened from the board,
-  a project, a parent task, the command palette, or the New task shortcut in the
-  top toolbar. Pick the target project and an
-  optional parent task (offered only where nesting stays within the depth limit) —
-  both preselected from the page you opened it on — set the title, a rich-text
-  description, priority, status, an optional type and due date, and add tags and
-  assignees inline. A "Create another" option keeps the dialog open — retaining
-  the project, parent, priority and status — to add several tasks in a row. After
-  creating, a dismissible toast links straight to the new task.
-- **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
-  In progress, Done), per project or globally across every project you can see.
-  Dragging is smoothly animated with highlighted drop targets and works on touch;
-  each card also has a keyboard-accessible "Move to" menu. Cards keep the order
-  you arrange them in within each column. Each column has its own search — a
-  compact icon that expands to a search box — to filter that column's cards by
-  title or reference. A Filters menu narrows the whole board by priority, type and
-  assignee — with your own tasks ("assigned to me") offered first. The board refreshes
-  automatically as others make changes — a per-user "Live updates" toggle turns
-  this off — and never refreshes mid-drag.
-- **Project overview** — each project page lists its top-level tasks and shows
-  every root task's direct subtasks as quick links to drill straight into them. The
-  task list is collapsible (collapsed by default) and filterable — closed (Done &
-  Canceled) and archived tasks are hidden until you opt in, and it can be narrowed
-  by priority, tags or assignees — selecting several at once, matching any or all
-  of them. The lists and comments update automatically as others make changes
-  (Live updates).
-- **Completion progress bars** — any task with subtasks shows a progress rollup
-  based on the share of its descendant tasks done, on the project overview (per
-  root task) and on the task's detail page.
-- **Cancellation** — abandon a task with a reason (Won't fix, Duplicate or
-  Deprecated) and an optional note, instead of deleting it. Cancelling a task also
-  cancels its open subtasks. Canceled tasks keep their full history and are taken
-  off the board and out of active counts, but stay visible on the project overview;
-  reopening one returns it to Planned.
-- **Archiving** — archive finished tasks to clear them from the
-  board and project overview without deleting them. Archived items are hidden by
-  default and revealed with a "Show archived" toggle; archiving keeps a task's
-  status and is fully reversible. Tasks left in **Done** beyond a threshold are
-  auto-archived by a daily job — configurable per project (and a global default),
-  or set to 0 to turn it off for a project.
-- **Dashboard** — per-status task counts, a project count linking to the projects
-  overview, a 14-day completion chart, and a "My tasks" list for picking the next
-  thing to work on: your in-progress and to-do tasks plus unassigned to-do tasks
-  across your projects (work assigned to others is hidden), in-progress first.
-- **Quick notes** — jot a personal note from anywhere (the command palette, the
-  dashboard Notes panel, or the dedicated **Notes** page in the sidebar), with a
-  rich-text body and inline images. The Notes page lists all your notes with
-  create, edit, convert and delete in one place, search and filter by project, pin
-  favourites to the top, and reorder them by hand. A note is private to you by
-  default; attach it to a project you belong to and you can make it public, so
-  that project's members can read it in the project's Notes section (read-only —
-  only the owner edits, re-shares or deletes). Convert a note into a task in one
-  step: the task takes the note's title and body, and the note keeps a
-  "Converted → PROJ-N" link. Also available through the MCP tools. See
+### Work management
+
+- **Projects & nestable tasks** — a project holds tasks, and tasks nest into
+  subtasks (configurable depth, default three) with flat per-project numbers. A
+  task can be re-parented or detached, and parent/child status cascades are
+  configurable (ask / always / never) in both directions.
+- **Kanban board** — drag-and-drop across Planned, To do, In progress and Done,
+  per project or globally. Touch-friendly, with a keyboard-accessible "Move to"
+  menu on every card, per-column search, filters by priority, type and assignee,
+  and manual card order. Live updates keep it current, never mid-drag.
+- **Project overview** — a collapsible, filterable list of top-level tasks, each
+  with its direct subtasks as quick links. Closed and archived tasks stay hidden
+  until you ask for them.
+- **Focused item views** — description front and centre, metadata (status,
+  priority, assignees, dependencies, dates) gathered in a compact side rail.
+  Status and priority are badges that open a dropdown, with one-click buttons to
+  step status along the progression.
+- **Create task dialog** — one dialog, opened from the board, a project, a parent
+  task, the command palette or the toolbar, with project and parent preselected
+  from where you opened it. "Create another" keeps it open for a run of tasks.
+- **Progress rollups** — any task with subtasks shows a completion bar over its
+  whole subtree, on the project overview and on the task page.
+- **Priorities, types & due dates** — five priority levels (subtasks inherit
+  their parent's), per-project task types (Feature, Bug and Chore by default,
+  editable by admins), and due dates highlighted on the board when overdue.
+- **Tags** — color-coded per-project labels with optional icons and synonyms
+  they are also found by. A management page handles renaming, recoloring,
+  merging and deleting.
+- **Relationships** — typed links between tasks: blocks / blocked by, relates
+  to, duplicates, clones and causes. Only blocking affects scheduling (a card is
+  flagged "Blocked" while a blocker is open); cycles are rejected.
+- **Cancellation & archiving** — abandon a task with a reason (Won't fix,
+  Duplicate, Deprecated) instead of deleting it, or archive finished work. Both
+  keep the full history and are reversible; Done tasks are auto-archived after a
+  per-project threshold.
+- **Dashboard** — per-status counts, a 14-day completion chart, and a "My tasks"
+  list of your in-progress and to-do work plus unassigned to-do tasks.
+
+### Writing & collaboration
+
+- **Rich text everywhere** — descriptions, doc bodies and comments are written in
+  a Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) with headings, lists,
+  links, quotes, code and inline images pasted or dropped straight in.
+- **Comments** — one-level replies, editing and soft-delete tombstones,
+  collapsible per user, arriving live without disturbing a reply you're typing.
+- **Mentions & references** — type `@` to mention a project member (notifying and
+  subscribing them) or `#` to reference a task or doc. Both render as links with
+  a hover preview card, and a reference links the two items, with a backlink on
+  the target that disappears when the text does.
+- **Reference docs** — statusless knowledge pages that belong to a project
+  (`PROJ-D3`): specs, decisions and background, nested into a tree, drafts until
+  published, each listing what it links to and everything that cites it. See
+  [docs/reference-docs.md](docs/reference-docs.md).
+- **Quick notes** — jot a personal note from anywhere, optionally share it
+  read-only with a project, and convert it into a task in one step. See
   [docs/quick-notes.md](docs/quick-notes.md).
-- **Reference docs** — statusless knowledge pages that belong to a project:
-  specs, decisions and background, referenced as `PROJ-D3` and reached from the
-  **Docs** button on the project page. Docs nest into a tree, are written with the
-  same rich-text editor (including inline images and file attachments) as
-  descriptions, and start as drafts only editors can see until they are published
-  to the project. A doc page shows the docs nested under it, the tasks and docs it
-  links to, and a **Referenced by** section listing every task and doc whose text
-  cites it — the way back to the work the doc belongs to. Docs are searchable from
-  the command palette, and also available through the MCP tools and the REST API.
-  See [docs/reference-docs.md](docs/reference-docs.md).
-- **Multi-assignee** tasks for pairing and ensemble work, with a one-click "assign
-  to me" on the task page and in the create-task dialog.
-- **Profile avatars** — upload a profile picture (cropped to a square) from
-  profile settings; it shows wherever you appear — assignees, comment authors and
-  member lists — with your initials as the fallback when you have none.
-- **User profiles** — every user has a profile page showing their avatar, the
-  projects you share with them, and their recent activity in projects you can see.
-  Mentions, comment authors and member lists link to it. A profile is visible only
-  to people who share a project with the user (and to admins who can see every
-  project).
-- **Comments** with one-level replies, editing, and soft-delete tombstones, written
-  with the same rich-text editor as descriptions. The whole section can be collapsed,
-  remembered per user. New comments and activity from others appear automatically
-  while "Live updates" is on, without interrupting a reply you're typing.
 - **Attachments** — drag files onto a description to upload them, with inline
-  image and PDF thumbnails. Files above the size limit are rejected with a
-  clear message.
-- **Tags** — label tasks with color-coded tags, scoped to their project and
-  shown as badges with a colored dot, or an optional icon in the tag's color. Add
-  one from a searchable list of the project's most-used tags, or create a new tag
-  on the spot and pick its color and icon. A per-project tag page lets members
-  create tags as well as rename, recolor and set the icon of tags (renaming onto an existing tag merges
-  the two), while admins and owners can delete them or merge several duplicates
-  into one chosen tag — re-tagging affected tasks before the others are removed,
-  and optionally keeping the merged names as synonyms of the survivor. Each tag
-  can carry synonyms — alternative names it is also found by when searching, so a
-  "Research" tag turns up when you type "evaluation". Every change is recorded in
-  the activity log.
-- **Task types** — classify a task by an optional type, scoped to its project and
-  shown as a colored badge with an optional icon on its board card. Each project starts with a
-  sensible default set (Feature, Bug, Chore); pick one when creating a task or
-  change it later from the task page, and filter the board to a single type.
-  Admins can add, rename, recolor, re-icon, reorder and delete a project's types
-  from its task-types page; deleting a type leaves its tasks untyped.
-- **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
-  default) on tasks, each shown as a coloured, icon'd badge, with new subtasks
-  inheriting their parent task's priority. Pickers and filters list them highest
-  first. Board columns are ordered by priority and can be filtered to a level.
-- **Due dates** on tasks, highlighted on the board when overdue.
-- **Relationships** — link a task to another (by reference) with a typed
-  relationship: blocks / blocked by, relates to (symmetric), duplicates /
-  duplicated by, clones / cloned by, or causes / caused by. Only blocking links
-  affect scheduling — a card is flagged "Blocked" on the board while any blocker
-  is unfinished, and blocking cycles (and self-links) are rejected; the other
-  types are purely informational. Relationships are grouped by type on the task
-  view, and available through the REST and MCP APIs.
-- **Notifications** — subscribe per project (assignment auto-subscribes you),
-  manage everything from a dedicated page, unread badge in the header.
-- **Mentions & references** — in any description, doc body or comment, type `@` to
-  mention a project member (they are notified, and auto-subscribed to the item where
-  it takes subscribers) and `#` to reference a task or a doc, picked from an
-  autocomplete of the project's members, tasks and docs — drafts only for the
-  editors who can open them.
-  A mention's label can be shortened after picking — trim the trailing words (e.g.
-  `@Jon Doe` → `@Jon`) and it stays linked to the same person.
-  Mentions render as links to the member's profile, and references as links to the
-  task or doc — wherever the content is shown — each with a hover preview card: a
-  task shows its title, status, priority, assignees and progress, a doc whether it
-  is a draft, the opening of its body and how many docs are nested under it, and a
-  mention the user's name, avatar and their role in the project.
-  Referencing an item also links the two: the referenced task or doc lists the
-  mention as a backlink, and removing the reference from the text unlinks them
-  again. Links added directly through the API are kept separately and are never
-  removed by an edit.
-- **Rich-text descriptions & comments** — task/project descriptions and comments are
-  edited with a Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) supporting
-  headings, lists, links, quotes, code and inline images pasted or dropped straight in.
-- **Activity log** — polymorphic audit trail of creations, status, priority,
-  assignment, tag and dependency changes, plus cancellations and reopenings,
-  naming what changed (which assignees, which tags, which dependency, the cancel
-  reason) and noting when an action was performed via an API/MCP token (flagged
-  generically, without revealing the token's private name). Collapsed by default;
-  the open/closed state is remembered per user. Relative times ("5 hours ago")
-  reveal the exact date and time on hover, here and on comments. Any entry can be
-  discussed: **Discuss** drops a reference to it into the comment composer (a
-  comment may reference several entries, even ones on other tasks), and the posted
-  comment shows a card per reference linking back to the entry — opening the feed
-  and scrolling to it, navigating across tasks where needed.
-- **Pluggable audit sinks** — every audited action is emitted once through a
-  transactional outbox and fanned out to configurable audit sinks; the activity
-  log above is the default sink and needs no configuration. Self-hosters can
-  register additional sinks (a compliance ledger, a SIEM/webhook transport)
-  against the stable `kanvigo/audit-contracts` package — see
-  [docs/audit.md](docs/audit.md). An optional
-  [`kanvigo/audit-chronicle`](https://github.com/Fanmade/kanvigo-audit-chronicle)
-  bridge adds a tamper-evident, hash-chained compliance ledger (WORM anchoring
-  and GDPR crypto-shredding) with a single `composer require` — the core never
-  depends on it.
-- **Complete audit coverage** — beyond content changes, every security-relevant
-  action is recorded for compliance sinks (not shown in the feed):
-  authentication (logins, failures, lockouts, password and two-factor changes,
-  passkeys), membership and permission changes, invitations, content edits and
-  deletions across every surface (UI, MCP, REST API), API token lifecycle, and
-  account deactivation/deletion.
-- **Read/access auditing** — a curated slice of high-value read events is
-  recorded too ("who looked at what"): reading the audit export stream, one
-  member viewing another's contact info, attachment downloads, and an
-  administrator opening the user-administration directory. Routine list and page
-  reads are deliberately excluded.
-- **Audit event stream** — external systems (a SIEM, a compliance archiver) can
-  pull the instance-wide audit log from the REST API, paging forward by cursor
-  with at-least-once completeness. The feed is minimized at the boundary:
-  personal fields are pseudonymized and sensitive free text dropped. Reading it
-  needs the `manage-users` permission and a dedicated audit-scoped API token.
-- **Invitation-only onboarding** via signed, expiring email links (public
-  registration is disabled).
-- **User administration** — an admin-only area (gated by the `manage-users`
-  permission) to review every account (including how many pending invitations
-  each has sent), grant or revoke permissions, manage which projects each user
-  belongs to and their role, resend or revoke pending invitations, and deactivate
-  (reversible, blocks sign-in) or remove accounts. Removed accounts are
-  soft-deleted with their assignments dropped; comments they wrote are kept as the
-  work of a "deleted user".
+  image and PDF thumbnails; oversized files are rejected with a clear message.
+- **Notifications** — subscribe per project (assignment subscribes you
+  automatically), with an unread badge in the header and a management page.
+- **Profiles & avatars** — upload a profile picture (initials as the fallback);
+  a profile page shows the projects you share with someone and their recent
+  activity, visible only to people who share a project with them.
+- **Multi-assignee tasks** — for pairing and ensemble work, with a one-click
+  "assign to me".
+
+### Navigation & appearance
+
+- **Readable scoped URLs** — `/ABC` for a project, `/ABC/board` for its board,
+  `/ABC-42` for a task and `/ABC-D3` for a doc. The browser tab title carries the
+  same context, so many open tabs stay distinguishable.
+- **Command palette** (`⌘K` / `Ctrl+K`) — search projects, tasks and docs, jump
+  straight to a typed reference (`PROJ-42`, `PROJ42`, `PROJ-D3`), find tasks by a
+  bare number, and run quick actions such as creating a task or a doc.
+- **Appearance** — English and German following the browser language, light and
+  dark, and an optional full-width layout for large displays.
+
+### Access & administration
+
+- **Invitation-only onboarding** — public registration is disabled; users are
+  invited by signed, expiring email links.
+- **Authentication** — Fortify-backed login with email verification, two-factor
+  and passkeys.
 - **Project roles & membership** — each member holds one or more per-project
-  roles, and what they may do is the union of those roles' permissions (so you
-  can mix two custom roles on the same person). Four roles are seeded
-  — owner (the project's creator), admin, member and a read-only viewer — and
-  anyone with the manage-roles permission can define **custom roles** for a
-  project. Each project has exactly one owner; ownership is never handed out as a
-  second role. Every custom role is created under a chosen **parent role** and
-  may hold only a subset of that parent's permissions, so delegation can never
-  escalate beyond it. What a member may do follows from the permissions their
-  roles hold: every member can contribute — create and work on tasks, comment,
-  attach files — while editing the project's settings (title, short name,
-  description) and deleting it require the matching permission, held by admins,
-  the owner, and any custom role granted it. From the project page a manager
-  adds and removes a member's roles as chips, **edits a custom role's permissions
-  in place**, and can prefill a new role by **copying the permissions of an
-  existing role** (bounded by the chosen parent) as a starting point. A manager
-  only ever sees the roles they hold and those beneath them — never a parent role
-  or the system role. Managing a user's
-  memberships from the user-administration area requires the member-management
-  permission on the project in question (or the system role), so account
-  administration alone does not grant the run of every project.
+  roles and may do the union of their permissions. Owner, admin, member and a
+  read-only viewer are seeded; custom roles are created under a parent role and
+  bounded by its permissions, so delegation can never escalate. Managers assign
+  roles as chips from the project page and only ever see roles at or below their
+  own.
 - **Cross-project access** — the account-level `access-all-projects` permission
-  (grantable from user administration) lets staff see and open every project,
-  whether or not they are a member. It is a read/visibility grant only: such a
-  user's project list shows all projects, but contributing to or administering a
-  project still requires a scoped role on it.
-- **Authorization** via native Gates (`create-projects`, `access-all-projects`,
-  `invite-users`, `create-api-tokens`, `manage-users`) and Policies that resolve
-  project access through inheritance-based, per-project delegated permissions.
-- **API tokens** — permitted users mint personal Sanctum tokens (read-only or
-  read & write) for MCP/API access and revoke them from Settings. A token can
-  optionally be restricted to selected projects: it then only sees and acts on
-  those projects (and cannot create new ones) across the REST API and MCP —
-  handy for giving an agent access to a single project. Unrestricted tokens
-  keep access to everything the owner can see.
-- **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer
-  token or OAuth 2.1, that lets AI agents work with the projects and tasks the
-  authenticated user can access. Clients that require the MCP OAuth flow (e.g.
-  Claude Desktop's custom connectors) register themselves dynamically and send the
-  user through a browser consent screen; an OAuth connection acts with the user's
-  full read & write access, and the consent screen can limit it to selected
-  projects (re-authorizing lets you change the selection). Connected applications
-  are listed — and can be revoked — under Settings → API tokens. Static API tokens
-  from Settings keep working alongside. Read tools (list/inspect) work with any token and surface each item's
-  dependencies (what blocks it, what it blocks, and whether it is currently
-  blocked) and its cross-references (the tasks and docs it links to, and its
-  backlinks); write tools (create/update tasks, cancel or reopen tasks, set a task's
-  assignees, create and update projects, create and update reference docs, add
-  comments and threaded replies, link/unlink dependencies and references) require a
-  token with write access. A project's reference docs have their own tools
-  (list-docs, get-doc, create-doc, update-doc) addressed by the same `PROJ-D3`
-  reference as the UI, with drafts visible only to agents whose user may edit docs.
-  Descriptions, doc bodies and comment bodies
-  are exchanged as HTML (sanitized to an allow-list on write). Inspecting a project
-  or task also returns its comment thread and any cancellation reason, and agents
-  can read attachments by their id — inline description images, audio, and
-  text-based files (logs, JSON, XML, CSV, …) returned inline as text, with a byte
-  offset to page through large files. Users appear by a stable id that a get-user
-  tool resolves to a name (and, for shared-project members or admins, an email); to
-  assign work, agents resolve the id they need with get-current-user ("assign this
-  to me") or find-users, a name/email lookup across the people you share a project
-  with. Project reads (list-tasks, list-docs, get-project, list-notes) return the full set by default
-  but accept an optional limit with an explicit cursor to page very large projects
-  without ever truncating silently. Personal notes have their own tools (create,
-  list, get, update and convert-to-task), referenced by a numeric note id.
+  lets staff see every project. It grants visibility only; contributing still
+  requires a role on the project.
+- **User administration** — an admin-only area to review accounts, grant
+  permissions, manage memberships, resend or revoke invitations, and deactivate
+  or remove accounts. Removed accounts are soft-deleted; comments they wrote stay
+  as the work of a "deleted user".
+- **Authorization** — native Gates (`create-projects`, `access-all-projects`,
+  `invite-users`, `create-api-tokens`, `manage-users`) over policies that resolve
+  project access through inheritance-based delegated permissions.
+
+### Audit & compliance
+
+- **Activity log** — a polymorphic trail of creations, status, priority,
+  assignment, tag and dependency changes, cancellations and reopenings, naming
+  exactly what changed and flagging actions taken through an API or MCP token.
+  Any entry can be discussed: **Discuss** drops a reference to it into the
+  comment composer, and the posted comment links back to the entry.
+- **Complete coverage** — beyond content changes, every security-relevant action
+  is recorded for compliance sinks: authentication, membership and permission
+  changes, invitations, edits and deletions across every surface (UI, MCP, REST),
+  API-token lifecycle, and account deactivation or deletion.
+- **Read/access auditing** — a curated slice of high-value reads is recorded too:
+  reading the audit stream, viewing another member's contact info, attachment
+  downloads, and opening the user-administration directory. Routine page and list
+  reads are deliberately excluded.
+- **Pluggable audit sinks** — every audited action is emitted once through a
+  transactional outbox and fanned out to configurable sinks; the activity log is
+  the default and needs no configuration. Self-hosters can register their own
+  against `kanvigo/audit-contracts`, or add the optional
+  [`kanvigo/audit-chronicle`](https://github.com/Fanmade/kanvigo-audit-chronicle)
+  bridge for a hash-chained, tamper-evident ledger with WORM anchoring and GDPR
+  crypto-shredding. See [docs/audit.md](docs/audit.md).
+- **Audit event stream** — external systems (a SIEM, a compliance archiver) pull
+  the instance-wide log from the REST API by cursor with at-least-once
+  completeness, pseudonymized and minimized at the boundary. Requires the
+  `manage-users` permission and an audit-scoped token.
+
+### API & integrations
+
 - **REST API** — a versioned, documented HTTP API under `/api/v1` for projects,
-  tasks, reference docs, comments, assignees, dependencies and cross-references,
-  authenticated with the same personal
-  access tokens (Bearer; read tokens for the GET endpoints, write tokens to create
-  and update). A dedicated user endpoint resolves the stable user id carried by
-  assignees and comment authors to a name, with the email shown only to those
-  entitled. Responses are consistent JSON resources, lists are paginated, and access
-  is scoped to the caller's projects exactly like the rest of the app. Interactive
-  OpenAPI docs live at `/docs/api` (local only). See [docs/api.md](docs/api.md).
-- **Localization** — English and German, defaulting to the browser language with
-  a switcher in Appearance settings.
-- **Full-width layout** — an Appearance setting to let page content span the whole
-  screen instead of the default centered reading column, for large displays.
+  tasks, docs, comments, assignees, dependencies and references. Bearer
+  authentication, consistent JSON resources, paginated lists, and access scoped
+  to the caller's projects exactly like the rest of the app. Interactive OpenAPI
+  docs live at `/docs/api` (local only). See [docs/api.md](docs/api.md).
+- **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a
+  bearer token or OAuth 2.1, that lets AI agents work with the projects, tasks,
+  docs, notes and attachments the authenticated user can access. Read tools work
+  with any token; write tools need a write token. Clients that require the OAuth
+  flow (e.g. Claude Desktop) register dynamically and consent in the browser,
+  optionally limited to selected projects, and are revocable under Settings → API
+  tokens.
+- **API tokens** — permitted users mint personal Sanctum tokens (read-only or
+  read & write) from Settings and revoke them there. A token can be restricted to
+  selected projects — handy for giving an agent access to a single project.
 
 ## Tech stack
 
 - PHP 8.4+ / Laravel 13
 - Livewire 4 + Flux UI Pro
-- Laravel Fortify (login, email verification, 2FA, passkeys)
+- Laravel Fortify (login, email verification, 2FA, passkeys), Sanctum & Passport
 - Tailwind CSS 4
 - SQLite (default), Vite
 - Pest 4, Larastan, Pint
@@ -339,8 +210,10 @@ ADMIN_PASSWORD=change-me
 ```
 
 The admin can create projects and invite users. In `local`, the `DemoSeeder`
-also populates example projects and tasks (with nested subtasks) (and seeds its
-own demo admin if none is configured).
+also populates two example projects for a fictional stargazing app — a named
+team, typed and tagged tasks with subtasks, blockers, comments, notes and a doc
+tree — so a fresh install looks like the screenshot above (it seeds its own demo
+admin if none is configured).
 
 ## Inviting users
 
@@ -348,7 +221,8 @@ Public registration is disabled by design. Users with the `invite-users`
 capability send a signed invitation link by email (use the bottom of the
 sidebar). With `MAIL_MAILER=log` (the default), the link is written to
 `storage/logs/laravel.log`. Opening the link lets the invitee set their name and
-password, after which they land on the security setup page.
+password, after which they land on the security setup page.  
+Configure a proper e-mail driver on your production environment to send out real invitation mails.
 
 ## Testing & quality
 
@@ -379,14 +253,9 @@ composer test:browser
 
 They require the Playwright Chromium binary (`npx playwright install chromium`).
 
-## Project layout
+## Documentation
 
-- `app/Livewire/` — class-based Livewire components (board, projects, tasks,
-  comments, notifications, invitations).
-- `app/Concerns/` — shared model traits (scoped numbering, activity logging,
-  comments, tags, attachments, subscriptions).
-- `app/Models/` — Project, Task, Doc, Reference, Comment, Attachment, Activity,
-  Invitation, User.
-- `app/Policies/` — per-resource authorization cascading through membership.
-- `lang/` — English source strings inline; German in `de.json` and `de/`.
-- `routes/web.php` — scoped routing for projects and tasks.
+- [docs/api.md](docs/api.md) — the REST API: authentication, endpoints, tokens.
+- [docs/audit.md](docs/audit.md) — the audit layer and writing your own sink.
+- [docs/quick-notes.md](docs/quick-notes.md) — quick notes.
+- [docs/reference-docs.md](docs/reference-docs.md) — reference docs.
