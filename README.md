@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Fanmade/89b10cbc79557b748b8f50d2955dd9f6/raw/coverage.json" alt="Coverage">
 </p>
 
-![The Kanvigo board](docs/images/board.png)
+![The Kanvigo board, shown in light and dark mode](docs/images/board.png)
 
 Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
@@ -76,10 +76,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Reference docs** — statusless knowledge pages that belong to a project
   (`PROJ-D3`): specs, decisions and background, nested into a tree, drafts until
   published, each listing what it links to and everything that cites it. See
-  [docs/reference-docs.md](docs/reference-docs.md).
+  [docs/using/reference-docs.md](docs/using/reference-docs.md).
 - **Quick notes** — jot a personal note from anywhere, optionally share it
   read-only with a project, and convert it into a task in one step. See
-  [docs/quick-notes.md](docs/quick-notes.md).
+  [docs/using/quick-notes.md](docs/using/quick-notes.md).
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails; oversized files are rejected with a clear message.
 - **Notifications** — subscribe per project (assignment subscribes you
@@ -145,7 +145,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   against `kanvigo/audit-contracts`, or add the optional
   [`kanvigo/audit-chronicle`](https://github.com/Fanmade/kanvigo-audit-chronicle)
   bridge for a hash-chained, tamper-evident ledger with WORM anchoring and GDPR
-  crypto-shredding. See [docs/audit.md](docs/audit.md).
+  crypto-shredding. See [docs/developing/audit.md](docs/developing/audit.md).
 - **Audit event stream** — external systems (a SIEM, a compliance archiver) pull
   the instance-wide log from the REST API by cursor with at-least-once
   completeness, pseudonymized and minimized at the boundary. Requires the
@@ -157,7 +157,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   tasks, docs, comments, assignees, dependencies and references. Bearer
   authentication, consistent JSON resources, paginated lists, and access scoped
   to the caller's projects exactly like the rest of the app. Interactive OpenAPI
-  docs live at `/docs/api` (local only). See [docs/api.md](docs/api.md).
+  docs live at `/docs/api` (local only). See [docs/developing/api.md](docs/developing/api.md).
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a
   bearer token or OAuth 2.1, that lets AI agents work with the projects, tasks,
   docs, notes and attachments the authenticated user can access. Read tools work
@@ -215,47 +215,35 @@ team, typed and tagged tasks with subtasks, blockers, comments, notes and a doc
 tree — so a fresh install looks like the screenshot above (it seeds its own demo
 admin if none is configured).
 
-## Inviting users
-
-Public registration is disabled by design. Users with the `invite-users`
-capability send a signed invitation link by email (use the bottom of the
-sidebar). With `MAIL_MAILER=log` (the default), the link is written to
-`storage/logs/laravel.log`. Opening the link lets the invitee set their name and
-password, after which they land on the security setup page.  
-Configure a proper e-mail driver on your production environment to send out real invitation mails.
+Public registration is disabled: the admin invites everyone else by email. See
+[Inviting users](docs/using/inviting-users.md).
 
 ## Testing & quality
 
-The full quality gate runs Pint, Larastan, and Pest:
+The full quality gate runs Pint, Larastan and Pest:
 
 ```bash
 composer test
 ```
 
-Individual checks:
-
-```bash
-composer lint          # Pint (apply fixes)
-composer types:check   # Larastan / PHPStan
-php artisan test       # Pest
-composer test:coverage # Pest with line coverage + minimum threshold
-```
-
-CI measures line coverage on every run, fails if it drops below the configured
-threshold, and publishes the current level to the coverage badge above.
-
-Browser tests (Pest 4 + Playwright) live in `tests/Browser` and run as a
-separate suite so the default gate stays fast and Playwright-free:
+Browser tests (Pest 4 + Playwright) are a separate suite, so the default gate
+stays fast and Playwright-free:
 
 ```bash
 composer test:browser
 ```
 
-They require the Playwright Chromium binary (`npx playwright install chromium`).
+See [Testing & quality](docs/developing/testing.md) for the individual checks,
+the coverage threshold and the browser-suite caveats.
 
 ## Documentation
 
-- [docs/api.md](docs/api.md) — the REST API: authentication, endpoints, tokens.
-- [docs/audit.md](docs/audit.md) — the audit layer and writing your own sink.
-- [docs/quick-notes.md](docs/quick-notes.md) — quick notes.
-- [docs/reference-docs.md](docs/reference-docs.md) — reference docs.
+Full index: [docs/README.md](docs/README.md).
+
+- **Using Kanvigo** — [inviting users](docs/using/inviting-users.md),
+  [quick notes](docs/using/quick-notes.md),
+  [reference docs](docs/using/reference-docs.md).
+- **Developing & integrating** — [REST API](docs/developing/api.md),
+  [audit layer](docs/developing/audit.md),
+  [testing & quality](docs/developing/testing.md).
+- [CHANGELOG.md](CHANGELOG.md) — notable changes.

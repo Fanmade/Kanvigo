@@ -52,9 +52,30 @@ class DemoSeeder extends Seeder
             ->get()
             ->each(static fn (Task $task) => $task->assignees()->syncWithoutDetaching([$admin->id]));
 
+        $this->shuffleBoardOrder();
         $this->seedDocs($app);
         $this->seedNotes($app, $team);
         $this->seedCompletionActivity($admin, Task::all());
+    }
+
+    /**
+     * Give the seeded cards a hand-arranged board order.
+     *
+     * Cards sort by their drag-and-drop `position` and fall back to the id, so
+     * seeding them top-down leaves every column reading strictly by task number
+     * — parents above their own subtasks, oldest first — which no real board
+     * ever looks like. Assigning a shuffled position per column mimics a team
+     * that has ordered its lanes by what it picks up next.
+     */
+    private function shuffleBoardOrder(): void
+    {
+        foreach (Status::columns() as $status) {
+            foreach (Task::query()->where('status', $status)->pluck('id')->shuffle() as $index => $id) {
+                // A plain query update: repositioning is not an edit worth
+                // recording in the activity feed of a fresh demo install.
+                Task::query()->whereKey($id)->update(['position' => $index + 1]);
+            }
+        }
     }
 
     /**

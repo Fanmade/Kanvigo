@@ -60,6 +60,23 @@ it('seeds two projects whose tasks carry types, tags, assignees and priorities',
 });
 
 /**
+ * Cards fall back to the id when they share a position, so seeded-in-order data
+ * renders every lane as a tidy ascending list. The seeder hands out a shuffled
+ * position per column instead, the way a team that arranges its board would.
+ */
+it('gives every seeded card a distinct board position within its column', function () {
+    $this->seed(DemoSeeder::class);
+
+    foreach (Status::columns() as $status) {
+        $positions = Task::query()->where('status', $status)->pluck('position');
+
+        expect($positions)->not->toBeEmpty()
+            ->and($positions->unique())->toHaveCount($positions->count())
+            ->and($positions->min())->toBeGreaterThan(0);
+    }
+});
+
+/**
  * The states that are easy to forget when demoing — a blocked card, a canceled
  * task and an archived one — are seeded on purpose.
  */

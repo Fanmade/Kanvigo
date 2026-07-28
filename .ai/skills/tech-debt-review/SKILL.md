@@ -1,6 +1,6 @@
 ---
 name: tech-debt-review
-description: Run the recurring technical-debt review for this project. Activate when asked to run the tech-debt review, the monthly code-health/code-quality review, to detect code smells and improvement opportunities across stability/maintainability/security, to find removable/dead code, or to record code-health metrics (coverage, mutation score, hotspots). Combines deterministic checks (composer/npm audit, Larastan, Pint, line/type coverage, mutation testing, churn×complexity hotspots) with an LLM review across a rotating code slice, then PROPOSES findings as triage tasks on the Kanvigo board — it never edits, fixes, or deletes code. State and metrics history live in docs/TECH_DEBT.md.
+description: Run the recurring technical-debt review for this project. Activate when asked to run the tech-debt review, the monthly code-health/code-quality review, to detect code smells and improvement opportunities across stability/maintainability/security, to find removable/dead code, or to record code-health metrics (coverage, mutation score, hotspots). Combines deterministic checks (composer/npm audit, Larastan, Pint, line/type coverage, mutation testing, churn×complexity hotspots) with an LLM review across a rotating code slice, then PROPOSES findings as triage tasks on the Kanvigo board — it never edits, fixes, or deletes code. State and metrics history live in .ai/state/TECH_DEBT.md.
 ---
 
 # Tech-Debt Review Playbook
@@ -9,7 +9,7 @@ A recurring review that hunts code smells and improvement opportunities across
 **stability, maintainability, and security**, and tracks honest health metrics
 over time. It **proposes** — the user triages. It never edits, fixes, or deletes code.
 
-State lives in `docs/TECH_DEBT.md` (the ledger): `last_review_head`,
+State lives in `.ai/state/TECH_DEBT.md` (the ledger): `last_review_head`,
 `slice_pointer`, the wont-fix suppression list, and the metrics history table.
 
 > Coverage & mutation use **PCOV** (`php8.5-pcov`), the active coverage driver since
@@ -21,7 +21,7 @@ State lives in `docs/TECH_DEBT.md` (the ledger): `last_review_head`,
 
 ## Step 0 — Read the ledger first
 
-Read `docs/TECH_DEBT.md`. Extract from the frontmatter:
+Read `.ai/state/TECH_DEBT.md`. Extract from the frontmatter:
 
 - `last_review_head` — the commit the previous cycle ended at (scope floor).
 - `slice_pointer` — index into the rotation list below; this cycle reviews that slice.
@@ -241,7 +241,7 @@ The composite is **secondary** — weighted toward mutation score because test
 *quality* is the honest signal; line coverage is low-weighted and trend-framed so
 it can't be gamed into a target. If MSI is scoped/sampled (danger classes), note that.
 
-**Update `docs/TECH_DEBT.md`:**
+**Update `.ai/state/TECH_DEBT.md`:**
 
 1. Append a row to the **Metrics history** table: date, slice reviewed, MSI,
    type cov, line cov, danger-quadrant count, Health, and Δ vs the previous row.
