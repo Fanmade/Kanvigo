@@ -16,6 +16,7 @@ use Illuminate\JsonSchema\Types\Type;
 trait PresentsDocs
 {
     use ExposesReferences;
+    use ExposesUrls;
     use ResolvesAuthenticatedUser;
 
     /**
@@ -29,6 +30,7 @@ trait PresentsDocs
 
         return [
             ...$this->docListPayload($doc),
+            'url' => $this->itemUrl($doc),
             'body' => $doc->body,
             'tags' => $doc->tags->pluck('name')->all(),
             'children' => $doc->children
@@ -73,6 +75,7 @@ trait PresentsDocs
     {
         return [
             ...$this->docListSchema($schema),
+            'url' => $this->urlSchema($schema, 'doc'),
             'body' => $schema->string()->nullable()->description('The doc body as HTML; may be null while the doc is empty.'),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the doc.')->required(),
             'children' => $schema->array()->items($schema->object([

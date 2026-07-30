@@ -53,6 +53,11 @@ use Laravel\Mcp\Server\Tool;
     is a member of; tasks inherit access from their project. If a project or task does not exist
     or the user cannot access it, the tool returns an error.
 
+    A reference like "PROJ-42" carries no domain. Whenever you link to a project, task or doc, use
+    the "url" returned by the get-project/get-task/get-doc tools and by the create/update tools —
+    it is the absolute address on this instance. Never build a link from a reference and a guessed
+    domain: this instance is self-hosted and its address is not derivable from the reference.
+
     A task can be canceled (abandoned with a reason) rather than deleted. The update-task tool
     accepts a "cancel_reason" (one of "WontFix", "Duplicate", "Deprecated") with an optional
     "cancel_message" to cancel a task — which also cancels its open subtasks — and "reopen": true

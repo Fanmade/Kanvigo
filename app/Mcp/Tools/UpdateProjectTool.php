@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\ExposesUrls;
 use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
@@ -16,6 +17,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Updates a project\'s title and/or description, identified by its short_name (e.g. "PROJ"). The change is recorded in the audit trail. Requires a write-access token, and the user must be able to manage the project\'s settings.')]
 class UpdateProjectTool extends Tool
 {
+    use ExposesUrls;
     use NormalizesPlainText;
     use RequiresWriteAccess;
 
@@ -69,6 +71,7 @@ class UpdateProjectTool extends Tool
 
         return Response::structured([
             'short_name' => $project->short_name,
+            'url' => $this->itemUrl($project),
             'title' => $project->title,
             'description' => $project->description,
         ]);
@@ -103,6 +106,7 @@ class UpdateProjectTool extends Tool
     {
         return [
             'short_name' => $schema->string()->description('The project short name.')->required(),
+            'url' => $this->urlSchema($schema, 'project'),
             'title' => $schema->string()->description('The updated project title.')->required(),
             'description' => $schema->string()->nullable()->description('The project description as HTML; may be null.'),
         ];

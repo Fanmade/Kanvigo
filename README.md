@@ -164,7 +164,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   with any token; write tools need a write token. Clients that require the OAuth
   flow (e.g. Claude Desktop) register dynamically and consent in the browser,
   optionally limited to selected projects, and are revocable under Settings → API
-  tokens.
+  tokens. Projects, tasks and docs are returned with their absolute URL on this
+  instance, so agents link to the real board instead of guessing an address.
 - **API tokens** — permitted users mint personal Sanctum tokens (read-only or
   read & write) from Settings and revoke them there. A token can be restricted to
   selected projects — handy for giving an agent access to a single project.

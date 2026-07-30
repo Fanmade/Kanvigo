@@ -17,6 +17,8 @@ use Laravel\Mcp\Response;
  */
 trait PresentsTasks
 {
+    use ExposesUrls;
+
     /**
      * The core task write payload, shared by the create and update tools.
      *
@@ -26,6 +28,7 @@ trait PresentsTasks
     {
         return [
             'reference' => $task->reference,
+            'url' => $this->itemUrl($task),
             'title' => $task->title,
             'description' => $task->description,
             'priority' => $task->priority->name,
@@ -45,6 +48,7 @@ trait PresentsTasks
     {
         return [
             'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
+            'url' => $this->urlSchema($schema, 'task'),
             'title' => $schema->string()->description('The task title.')->required(),
             'description' => $schema->string()->nullable()->description('The task description as HTML; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),

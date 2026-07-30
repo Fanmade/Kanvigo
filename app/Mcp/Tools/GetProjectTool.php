@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\ExposesComments;
+use App\Mcp\Concerns\ExposesUrls;
 use App\Mcp\Concerns\PagesResults;
 use App\Models\Attachment;
 use App\Models\Project;
@@ -21,6 +22,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 class GetProjectTool extends Tool
 {
     use ExposesComments;
+    use ExposesUrls;
     use PagesResults;
 
     /**
@@ -70,6 +72,7 @@ class GetProjectTool extends Tool
 
         return Response::structured([
             'short_name' => $project->short_name,
+            'url' => $this->itemUrl($project),
             'title' => $project->title,
             'description' => $project->description,
             'tasks' => $tasks->all(),
@@ -109,6 +112,7 @@ class GetProjectTool extends Tool
     {
         return [
             'short_name' => $schema->string()->description('The project short name.')->required(),
+            'url' => $this->urlSchema($schema, 'project'),
             'title' => $schema->string()->description('The project title.')->required(),
             'description' => $schema->string()->nullable()->description('The project description as HTML; may be null.'),
             'tasks' => $schema->array()->items($schema->object([

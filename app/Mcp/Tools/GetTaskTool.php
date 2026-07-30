@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Mcp\Concerns\ExposesComments;
 use App\Mcp\Concerns\ExposesDependencies;
 use App\Mcp\Concerns\ExposesReferences;
+use App\Mcp\Concerns\ExposesUrls;
 use App\Mcp\Concerns\ResolvesAuthenticatedUser;
 use App\Models\Attachment;
 use App\Models\Task;
@@ -26,6 +27,7 @@ class GetTaskTool extends Tool
     use ExposesComments;
     use ExposesDependencies;
     use ExposesReferences;
+    use ExposesUrls;
     use ResolvesAuthenticatedUser;
 
     /**
@@ -53,6 +55,7 @@ class GetTaskTool extends Tool
 
         return Response::structured([
             'reference' => $task->reference,
+            'url' => $this->itemUrl($task),
             'title' => $task->title,
             'description' => $task->description,
             'priority' => $task->priority->name,
@@ -110,6 +113,7 @@ class GetTaskTool extends Tool
     {
         return [
             'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
+            'url' => $this->urlSchema($schema, 'task'),
             'title' => $schema->string()->description('The task title.')->required(),
             'description' => $schema->string()->nullable()->description('The task description as HTML; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
