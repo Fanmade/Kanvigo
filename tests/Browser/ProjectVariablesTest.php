@@ -49,6 +49,29 @@ it('shows a variable value in a task description and its name when unset', funct
         ->assertNoJavascriptErrors();
 });
 
+it('confirms a rename before rewriting the text that uses it', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    joinProject($project, $user);
+    $variable = Variable::factory()->for($project)->create(['name' => 'hero', 'value' => 'Robin Hood']);
+    $task = Task::factory()->for($project)->create(['description' => '<p>Enter [hero].</p>']);
+
+    $this->actingAs($user);
+
+    $page = visit("/{$project->short_name}/variables");
+
+    $page->click("@edit-variable-{$variable->id}")
+        ->fill('@edit-variable-name', 'lead')
+        ->click('@save-variable')
+        ->assertVisible('@confirm-rename')
+        ->click('@confirm-rename')
+        ->assertMissing('@confirm-rename')
+        ->assertNoJavascriptErrors();
+
+    expect($variable->fresh()->name)->toBe('lead')
+        ->and($task->fresh()->description)->toContain('[lead]');
+});
+
 it('reaches the variables page from the project header', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);

@@ -59,12 +59,66 @@ class VariableSyntax
     }
 
     /**
+     * Rewrite every usage of one name as another, leaving the rest of the content
+     * — including bracketed text that is not a usage, and anything quoted
+     * verbatim — exactly as it was. Returns null when the content does not use
+     * the name, so callers can skip the write.
+     *
+     * This is the one operation that changes stored bytes, and it is deliberate:
+     * a rename changes what the pointer is *called* while the document says the
+     * same thing, so rewriting is what keeps it saying it.
+     */
+    public static function rename(?string $html, string $from, string $to): ?string
+    {
+        if ($html === null || ! str_contains($html, '['.$from.']')) {
+            return null;
+        }
+
+        $document = HTMLDocument::createFromString('<div>'.$html.'</div>', LIBXML_NOERROR);
+        $wrapper = $document->querySelector('div');
+
+        if (! $wrapper instanceof Element) {
+            return null;
+        }
+
+        $rewritten = false;
+        self::renameIn($wrapper, $from, $to, $rewritten);
+
+        return $rewritten ? $wrapper->innerHTML : null;
+    }
+
+    /**
      * Whether the element's content is quoted verbatim, so usages inside it are
      * literal text rather than variables.
      */
     public static function isVerbatim(Element $element): bool
     {
         return in_array(mb_strtolower($element->tagName), self::VERBATIM_ELEMENTS, true);
+    }
+
+    /**
+     * Walk the node's children, replacing usages of one name in text and
+     * recursing into elements. Verbatim elements are skipped whole, so a rename
+     * never touches text that would not have rendered as a usage anyway.
+     */
+    private static function renameIn(Node $node, string $from, string $to, bool &$rewritten): void
+    {
+        foreach ($node->childNodes as $child) {
+            if ($child instanceof Text) {
+                $replaced = str_replace('['.$from.']', '['.$to.']', $child->textContent);
+
+                if ($replaced !== $child->textContent) {
+                    $child->textContent = $replaced;
+                    $rewritten = true;
+                }
+
+                continue;
+            }
+
+            if ($child instanceof Element && ! self::isVerbatim($child)) {
+                self::renameIn($child, $from, $to, $rewritten);
+            }
+        }
     }
 
     /**

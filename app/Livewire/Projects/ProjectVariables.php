@@ -2,13 +2,16 @@
 
 namespace App\Livewire\Projects;
 
+use App\Jobs\RewriteVariableUsages;
 use App\Models\Project;
+use App\Models\User;
 use App\Models\Variable;
 use App\Models\VariableUsage;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -22,13 +25,15 @@ use Livewire\Component;
  * start rendering as unset, so recreating the variable brings them back. The
  * confirmation says so.
  *
- * Renaming from here is deliberately absent: it rewrites every usage and is its
- * own flow (KAN-461).
+ * Renaming is confirmed separately, because it is the one operation that
+ * rewrites content: the document goes on saying the same thing, so its usages
+ * have to follow the new name ({@see RewriteVariableUsages}).
  *
  * @property-read Project $project
  * @property-read Collection<int, Variable> $variables
  * @property-read array<string, int> $usageCounts
  * @property-read array<string, int> $unknownNames
+ * @property-read int $renameUsageCount
  */
 class ProjectVariables extends Component
 {
@@ -38,6 +43,9 @@ class ProjectVariables extends Component
     public string $shortName;
 
     public bool $editing = false;
+
+    /** Whether the rename confirmation is open, awaiting a yes. */
+    public bool $confirmingRename = false;
 
     /** The variable being edited, or null while creating a new one. */
     public ?int $editingVariableId = null;
@@ -119,6 +127,7 @@ class ProjectVariables extends Component
         $this->authorize('manage-variables', $this->project);
 
         $this->editingVariableId = null;
+        $this->confirmingRename = false;
         $this->editName = $name;
         $this->editValue = '';
         $this->editDescription = '';
@@ -136,6 +145,7 @@ class ProjectVariables extends Component
         $variable = $this->project->variables()->whereKey($variableId)->firstOrFail();
 
         $this->editingVariableId = $variable->id;
+        $this->confirmingRename = false;
         $this->editName = $variable->name;
         $this->editValue = $variable->value ?? '';
         $this->editDescription = $variable->description ?? '';
@@ -171,6 +181,74 @@ class ProjectVariables extends Component
             'editDescription' => __('description'),
         ]);
 
+        // A rename is a refactor, not an edit: it rewrites every usage in the
+        // project's content, so it is confirmed separately.
+        if ($variable !== null && $this->editName !== $variable->name) {
+            $this->confirmingRename = true;
+
+            return;
+        }
+
+        $this->persist($project, $variable);
+    }
+
+    /**
+     * Apply a confirmed rename: save the variable under its new name, then
+     * rewrite its usages so no document is left pointing at a name that no
+     * longer exists.
+     */
+    public function rename(): void
+    {
+        $project = $this->project;
+        $this->authorize('manage-variables', $project);
+
+        $variable = $project->variables()->whereKey($this->editingVariableId)->firstOrFail();
+
+        $this->editName = Variable::normalizeName($this->editName);
+
+        // Re-validate: the name has been through another request since save().
+        $this->validate(
+            ['editName' => Variable::nameRules($project, $variable)],
+            ['editName.regex' => __('A name starts with a letter and uses only lowercase letters, digits, underscores and hyphens.'),
+                'editName.unique' => __('A variable with that name already exists.')],
+            ['editName' => __('name')],
+        );
+
+        $from = $variable->name;
+
+        $this->confirmingRename = false;
+        $this->persist($project, $variable, __('Variable renamed. Its usages are being updated.'));
+
+        $actor = Auth::user();
+
+        RewriteVariableUsages::dispatch(
+            $project->getKey(),
+            $from,
+            $this->editName,
+            $actor instanceof User ? $actor->id : null,
+        );
+    }
+
+    /**
+     * How many usages a rename would rewrite, from the usage index. A count that
+     * lags is a count that is a little low — the rename itself re-reads each
+     * item's current content.
+     */
+    #[Computed]
+    public function renameUsageCount(): int
+    {
+        $variable = $this->editingVariableId === null
+            ? null
+            : $this->variables->firstWhere('id', $this->editingVariableId);
+
+        return $variable === null ? 0 : ($this->usageCounts[$variable->name] ?? 0);
+    }
+
+    /**
+     * Write the dialog's fields to a new or existing variable and close it.
+     */
+    protected function persist(Project $project, ?Variable $variable, ?string $message = null): void
+    {
         $attributes = [
             'name' => $this->editName,
             'value' => $this->editValue,
@@ -185,9 +263,11 @@ class ProjectVariables extends Component
 
         $this->editing = false;
         $this->editingVariableId = null;
-        unset($this->variables, $this->unknownNames);
+        unset($this->variables, $this->unknownNames, $this->renameUsageCount);
 
-        Flux::toast(text: $variable === null ? __('Variable created.') : __('Variable updated.'), variant: 'success');
+        $message ??= $variable === null ? __('Variable created.') : __('Variable updated.');
+
+        Flux::toast(text: $message, variant: 'success');
     }
 
     /**

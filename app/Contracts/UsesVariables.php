@@ -24,6 +24,11 @@ interface UsesVariables
     public function variableNamespaceProjectId(): ?int;
 
     /**
+     * The column holding this item's rich-text content — what a rename rewrites.
+     */
+    public function variableContentColumn(): string;
+
+    /**
      * The rich-text content to scan for `[name]` usages.
      */
     public function variableContent(): ?string;

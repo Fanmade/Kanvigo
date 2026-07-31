@@ -84,6 +84,11 @@ class Comment extends Model implements Mentionable, UsesVariables
         };
     }
 
+    public function variableContentColumn(): string
+    {
+        return 'body';
+    }
+
     public function inlineAttachmentOwner(): Project|Task
     {
         $commentable = $this->commentable;

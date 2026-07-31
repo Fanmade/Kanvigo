@@ -108,19 +108,22 @@ trait IndexesVariableUsages
     abstract public function variableNamespaceProjectId(): ?int;
 
     /**
-     * The rich-text content to scan. A model carries one of the description/body
-     * columns; the other is simply absent.
+     * The column holding this item's rich-text content. Most items describe
+     * themselves in `description`; docs and comments carry a `body` and override
+     * this.
+     */
+    public function variableContentColumn(): string
+    {
+        return 'description';
+    }
+
+    /**
+     * The rich-text content to scan for `[name]` usages.
      */
     public function variableContent(): ?string
     {
-        foreach (['description', 'body'] as $attribute) {
-            $value = $this->getAttribute($attribute);
+        $value = $this->getAttribute($this->variableContentColumn());
 
-            if (filled($value)) {
-                return (string) $value;
-            }
-        }
-
-        return null;
+        return filled($value) ? (string) $value : null;
     }
 }

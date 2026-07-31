@@ -143,4 +143,31 @@
             </div>
         </form>
     </flux:modal>
+
+    {{-- Rename confirmation. A rename is the one operation that rewrites stored
+         content, so it is never a side effect of pressing Save. --}}
+    <flux:modal wire:model="confirmingRename" class="md:w-96" data-test="confirm-rename-modal">
+        <div class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('Rename this variable?') }}</flux:heading>
+            <flux:text class="text-zinc-500">
+                {{ trans_choice(
+                    '{0}No text uses it yet, so nothing else changes.|{1}Its :count usage will be rewritten to the new name.|[2,*]Its :count usages will be rewritten to the new name.',
+                    $this->renameUsageCount,
+                    ['count' => $this->renameUsageCount],
+                ) }}
+            </flux:text>
+            <flux:text size="sm" class="text-zinc-400">
+                {{ __('The text keeps saying the same thing — only the name it points at changes. Each edit shows up in the item’s history.') }}
+            </flux:text>
+
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button variant="primary" wire:click="rename" data-test="confirm-rename">
+                    {{ __('Rename') }}
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

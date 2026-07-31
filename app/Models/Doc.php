@@ -159,11 +159,17 @@ class Doc extends Model implements Mentionable, Referenceable, UsesVariables
     }
 
     /**
-     * A doc's `[name]` usages resolve against the project it belongs to.
+     * A doc's `[name]` usages resolve against the project it belongs to, and
+     * live in its body.
      */
     public function variableNamespaceProjectId(): ?int
     {
         return $this->project_id;
+    }
+
+    public function variableContentColumn(): string
+    {
+        return 'body';
     }
 
     /**
