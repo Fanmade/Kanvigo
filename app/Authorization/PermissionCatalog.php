@@ -48,6 +48,7 @@ class PermissionCatalog
         'create-doc' => 'Create docs',
         'edit-doc' => 'Edit docs',
         'delete-doc' => 'Delete docs',
+        'manage-variables' => 'Manage variables',
     ];
 
     /**
@@ -81,6 +82,7 @@ class PermissionCatalog
         'create-doc' => 'Create',
         'edit-doc' => 'Edit',
         'delete-doc' => 'Delete',
+        'manage-variables' => 'Manage',
     ];
 
     /**
@@ -97,6 +99,7 @@ class PermissionCatalog
         'cancel-task' => 'Abandon a task with a reason',
         'manage-dependencies' => 'Mark tasks as blocking or blocked by others',
         'moderate-comments' => "Edit or delete other people's comments",
+        'manage-variables' => 'Create variables and set what they stand for',
     ];
 
     /**

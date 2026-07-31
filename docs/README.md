@@ -1,8 +1,8 @@
 # Documentation
 
-Two halves: how to *use* Kanvigo, and how to *work on or integrate with* it.
-The [README](../README.md) is the front door — what Kanvigo is, the feature
-list, and how to get it running.
+Two halves: how to *use* Kanvigo, and how to *work on or integrate with* it,
+plus the decision records behind the design. The [README](../README.md) is the
+front door — what Kanvigo is, the feature list, and how to get it running.
 
 ## Using Kanvigo
 
@@ -21,6 +21,11 @@ list, and how to get it running.
   to write your own sink.
 - [Testing & quality](developing/testing.md) — the quality gate, the browser
   suite, and the testing conventions.
+
+## Architecture decisions
+
+- [0001 — Project variables substitute at read time](adr/0001-project-variables.md)
+  — why `[name]` stays in the stored content and resolves on read.
 
 ## Elsewhere
 

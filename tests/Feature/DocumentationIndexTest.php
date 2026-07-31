@@ -25,11 +25,14 @@ it('lists every documentation page in the index', function (string $page) use ($
 })->with('documentation pages');
 
 /**
- * The two halves are the whole point of the split: a page directly in `docs/`
- * belongs to neither audience, and is how the old flat folder creeps back.
+ * The halves are the whole point of the split: a page directly in `docs/`
+ * belongs to no audience, and is how the old flat folder creeps back. `adr/` is
+ * the third home — a decision record documents a choice, not the product.
  */
-it('keeps every documentation page in the usage or developer half', function (string $page) {
-    expect(str_starts_with($page, 'using/') || str_starts_with($page, 'developing/'))->toBeTrue();
+it('keeps every documentation page in the usage, developer or decision half', function (string $page) {
+    $homes = ['using/', 'developing/', 'adr/'];
+
+    expect(array_filter($homes, static fn (string $home): bool => str_starts_with($page, $home)))->not->toBeEmpty();
 })->with('documentation pages');
 
 it('does not link pages from the index that no longer exist', function () use ($docsPath) {

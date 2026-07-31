@@ -217,6 +217,16 @@ class Project extends Model implements Mentionable, Subscribable
     }
 
     /**
+     * The variables defined for this project, in name order.
+     *
+     * @return HasMany<Variable, $this>
+     */
+    public function variables(): HasMany
+    {
+        return $this->hasMany(Variable::class)->orderBy('name');
+    }
+
+    /**
      * The task types configured for this project.
      *
      * @return HasMany<TaskType, $this>

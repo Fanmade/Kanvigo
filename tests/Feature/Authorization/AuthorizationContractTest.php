@@ -4,6 +4,7 @@ use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\Permission;
 use App\Policies\ProjectPolicy;
 use App\Policies\TaskPolicy;
+use App\Policies\VariablePolicy;
 
 /**
  * Every permission name the package's Gate::before can match an ability against
@@ -26,7 +27,7 @@ it('keeps policy ability names from colliding with a grantable permission', func
     // permission the user holds in the scope (and never denies), short-circuiting
     // the policy. An ability named after a catalog permission would therefore be
     // auto-granted and its method body — including any added restriction — skipped.
-    foreach ([ProjectPolicy::class, TaskPolicy::class] as $policy) {
+    foreach ([ProjectPolicy::class, TaskPolicy::class, VariablePolicy::class] as $policy) {
         $abilities = array_map(
             static fn (ReflectionMethod $method): string => $method->getName(),
             (new ReflectionClass($policy))->getMethods(ReflectionMethod::IS_PUBLIC),
