@@ -6,9 +6,9 @@
     uploaded as an inline attachment, then inserted at the cursor by the
     `richEditor` Alpine component. See resources/js/app.js.
 
-    When `mentionablesUrl` is supplied, the editor offers @mention / #reference
-    autocomplete, fetching the project's members and tasks from that endpoint the
-    first time a `@` or `#` is typed.
+    When `mentionablesUrl` is supplied, the editor offers @mention / #reference /
+    [variable] autocomplete, fetching the project's members, tasks and variables
+    from that endpoint the first time a `@`, `#` or `[` is typed.
 
     The toolbar is set either explicitly (`toolbar="…"`) or by a named `preset`,
     which keeps the shared button sets in one place instead of hand-copied strings:
@@ -28,7 +28,12 @@
     x-on:paste.capture="handlePaste($event)"
     x-on:dragover.prevent
     x-on:drop.capture.prevent="handleDrop($event)"
-    @if ($mentionablesUrl !== null) data-mentionables-url="{{ $mentionablesUrl }}" @endif
+    @if ($mentionablesUrl !== null)
+        data-mentionables-url="{{ $mentionablesUrl }}"
+        {{-- The `[` picker renders these client-side, so they are translated here. --}}
+        data-variable-create-label="{{ __('Create variable…') }}"
+        data-variable-unset-label="{{ __('No value yet') }}"
+    @endif
 >
     <flux:editor
         wire:model="{{ $property }}"

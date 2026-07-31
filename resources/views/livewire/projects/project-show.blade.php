@@ -404,4 +404,10 @@
             </div>
         </flux:modal>
     @endcan
+    {{-- The editor's "Create variable…" dialog: one per page, wherever a `[`
+         picker asks for a name it does not know yet. --}}
+    @can('manage-variables', $this->project)
+        <livewire:variables.create-variable :short-name="$this->project->short_name" />
+    @endcan
 </div>
+

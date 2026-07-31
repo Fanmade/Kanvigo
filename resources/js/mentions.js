@@ -1,10 +1,10 @@
-import { Mark, mergeAttributes } from '@tiptap/core';
+import { Extension, Mark, mergeAttributes } from '@tiptap/core';
 import Mention from '@tiptap/extension-mention';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
 
 /**
- * @mention / #reference support for the Flux (Tiptap) rich-text editor.
+ * @mention / #reference / [variable] support for the Flux (Tiptap) rich-text editor.
  *
  *   - `mention`   — a member, triggered by `@`, implemented as a *mark* over the
  *                   visible "@Name" text so its label can be shortened (trimming
@@ -12,6 +12,9 @@ import Suggestion from '@tiptap/suggestion';
  *                   `<span class="mention" data-type="mention" data-id="…">@Name</span>`.
  *   - `reference` — a task, triggered by `#`, an atomic inline node rendered as a
  *                   link `<a class="reference" data-type="reference" data-id="…" href="/KAN-42">KAN-42</a>`.
+ *   - `variable`  — a project variable, triggered by `[`, inserted as plain text
+ *                   `[hero]`: a usage is text, not a node, so anything that can
+ *                   type can write one.
  *
  * The suggestion list filters the project's members and tasks, fetched on demand
  * from the `data-mentionables-url` endpoint on the editor wrapper the first time a
@@ -19,16 +22,21 @@ import Suggestion from '@tiptap/suggestion';
  * from the saved `data-id`s, so anything typed here is validated there.
  */
 
+/** The editor's wrapper element, which carries the suggestion endpoint and labels. */
+function hostOf(editor) {
+    return editor?.options?.element?.closest?.('[data-mentionables-url]') ?? null;
+}
+
 /**
- * Lazily load and cache the `{ users, tasks }` suggestion dataset for a given
- * editor instance from its wrapper's `data-mentionables-url`. Returns empty lists
- * when no endpoint is present (editors without project context) or on failure, so
- * suggestions degrade to simply offering nothing.
+ * Lazily load and cache the suggestion dataset for a given editor instance from
+ * its wrapper's `data-mentionables-url`. Returns empty lists when no endpoint is
+ * present (editors without project context) or on failure, so suggestions degrade
+ * to simply offering nothing.
  */
 async function mentionablesFor(editor) {
-    const host = editor?.options?.element?.closest?.('[data-mentionables-url]');
+    const host = hostOf(editor);
     const url = host?.getAttribute('data-mentionables-url');
-    const empty = { users: [], tasks: [], docs: [] };
+    const empty = { users: [], tasks: [], docs: [], variables: [], canCreateVariables: false };
 
     if (!url) {
         return empty;
@@ -40,7 +48,13 @@ async function mentionablesFor(editor) {
             credentials: 'same-origin',
         })
             .then((response) => (response.ok ? response.json() : empty))
-            .then((data) => ({ users: data.users ?? [], tasks: data.tasks ?? [], docs: data.docs ?? [] }))
+            .then((data) => ({
+                users: data.users ?? [],
+                tasks: data.tasks ?? [],
+                docs: data.docs ?? [],
+                variables: data.variables ?? [],
+                canCreateVariables: data.can_create_variables ?? false,
+            }))
             .catch(() => empty);
     }
 
@@ -78,6 +92,7 @@ function suggestionRenderer(renderRow) {
     let items = [];
     let highlighted = 0;
     let onSelect = null;
+    let editor = null;
 
     const close = () => {
         panel?.remove();
@@ -107,6 +122,7 @@ function suggestionRenderer(renderRow) {
     const build = (props) => {
         items = props.items;
         onSelect = props.command;
+        editor = props.editor;
         highlighted = 0;
 
         if (!panel) {
@@ -120,7 +136,7 @@ function suggestionRenderer(renderRow) {
             const row = document.createElement('button');
             row.type = 'button';
             row.className = 'mention-suggestion';
-            row.innerHTML = renderRow(item);
+            row.innerHTML = renderRow(item, editor);
             row.addEventListener('mousedown', (event) => {
                 event.preventDefault();
                 onSelect(item);
@@ -346,4 +362,128 @@ const ReferenceNode = Mention.extend({
     },
 });
 
-export const mentionExtensions = [MentionMark, ReferenceNode];
+const variableSuggestionKey = new PluginKey('variableSuggestion');
+
+/**
+ * A complete variable name: at least two characters, starting with a letter.
+ * Mirrors Variable::NAME_PATTERN — the picker must never offer to create a name
+ * the server would reject.
+ */
+const VARIABLE_NAME = /^[a-z][a-z0-9_-]+$/;
+
+/** A label the server rendered onto the editor host, or a plain fallback. */
+function hostLabel(editor, attribute, fallback) {
+    return hostOf(editor)?.getAttribute(attribute) ?? fallback;
+}
+
+/**
+ * The `[` picker candidates: the project's variables matching the query, plus —
+ * for someone who may manage them — an offer to define the typed name. The offer
+ * appears whenever no variable has exactly that name, so a query that merely
+ * prefixes an existing one can still create its own.
+ */
+async function variableCandidates(query, editor) {
+    const { variables, canCreateVariables } = await mentionablesFor(editor);
+    const needle = query.toLowerCase();
+
+    const matches = variables
+        .filter(
+            (variable) =>
+                variable.name.includes(needle) ||
+                (variable.value ?? '').toLowerCase().includes(needle),
+        )
+        .slice(0, 8);
+
+    const exists = variables.some((variable) => variable.name === needle);
+
+    if (canCreateVariables && !exists && VARIABLE_NAME.test(needle)) {
+        matches.push({ name: needle, create: true });
+    }
+
+    return matches;
+}
+
+/**
+ * Where a "Create variable…" pick is waiting to come back to: the editor and the
+ * range the typed `[name` occupies, so the finished variable lands exactly where
+ * it was asked for. One at a time — the dialog is modal.
+ */
+let pendingVariable = null;
+
+function requestVariable(editor, range, name) {
+    pendingVariable = { editor, range, host: hostOf(editor) };
+
+    window.Livewire?.dispatch('create-variable', { name });
+}
+
+/** Replace the typed `[name` with the finished usage — plain text, not a node. */
+function insertUsage(editor, range, name) {
+    editor.chain().focus().insertContentAt(range, [{ type: 'text', text: `[${name}]` }]).run();
+}
+
+document.addEventListener('livewire:init', () => {
+    window.Livewire.on('variable-created', (payload) => {
+        const pending = pendingVariable;
+        pendingVariable = null;
+
+        if (!pending) {
+            return;
+        }
+
+        // The cached dataset predates the new variable; drop it so the next `[`
+        // offers it.
+        delete pending.host.__mentionables;
+
+        insertUsage(pending.editor, pending.range, payload?.name);
+    });
+});
+
+/**
+ * The `[variable]` picker.
+ *
+ * A usage is plain text — `[hero]`, not an atomic node — because that is exactly
+ * what the server parses and what an agent writing through MCP can produce. The
+ * editor therefore always shows the raw name and never the value: you are editing
+ * the source, and substituted text would let the cursor land inside a marker you
+ * cannot see.
+ *
+ * Nothing is intercepted at save time. Typing or pasting a name no variable
+ * defines saves fine and renders as unset — writing before you have decided is
+ * the point of the feature, not an error to block.
+ */
+const VariableSuggestion = Extension.create({
+    name: 'variableSuggestion',
+
+    addProseMirrorPlugins() {
+        return [
+            Suggestion({
+                editor: this.editor,
+                char: '[',
+                pluginKey: variableSuggestionKey,
+                allowSpaces: false,
+                items: ({ query, editor }) => variableCandidates(query, editor),
+                command: ({ editor, range, props }) => {
+                    if (props.create) {
+                        requestVariable(editor, range, props.name);
+
+                        return;
+                    }
+
+                    insertUsage(editor, range, props.name);
+                },
+                render: () =>
+                    suggestionRenderer((item, editor) => {
+                        const name = `<span class="mention-suggestion-ref">[${escapeHtml(item.name)}]</span>`;
+
+                        if (item.create) {
+                            return `${name} ${escapeHtml(hostLabel(editor, 'data-variable-create-label', 'Create variable…'))}`;
+                        }
+
+                        return `${name} ${escapeHtml(item.value ?? hostLabel(editor, 'data-variable-unset-label', 'No value yet'))}`;
+                    }),
+            }),
+        ];
+    },
+});
+
+export const mentionExtensions = [MentionMark, ReferenceNode, VariableSuggestion];
