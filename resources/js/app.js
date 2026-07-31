@@ -4,6 +4,7 @@ import Sortable from 'sortablejs';
 import { mentionExtensions } from './mentions';
 import './references';
 import './mention-hovercard';
+import './variable-hovercard';
 
 /**
  * The Tiptap Image node, extended so an inline image can link to its full-size

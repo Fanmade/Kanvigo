@@ -36,7 +36,7 @@ it('keeps every documentation page in the usage, developer or decision half', fu
 })->with('documentation pages');
 
 it('does not link pages from the index that no longer exist', function () use ($docsPath) {
-    preg_match_all('/\]\((?!https?:)([^)#]+\.md)\)/', file_get_contents($docsPath.'/README.md'), $matches);
+    preg_match_all('/]\((?!https?:)([^)#]+\.md)\)/', file_get_contents($docsPath.'/README.md'), $matches);
 
     $linked = collect($matches[1])->reject(static fn (string $link): bool => str_starts_with($link, '../'));
 

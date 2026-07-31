@@ -268,7 +268,9 @@
                         </div>
 
                         @if ($note->body)
-                            <x-expandable-description :content="$note->body" :short-name="$this->project->short_name"/>
+                            {{-- A note is user-owned and projectless, so it has no variable
+                                 namespace: its [name] usages stay literal even here. --}}
+                            <x-expandable-description :content="$note->body" :short-name="$this->project->short_name" :variables="false"/>
                         @endif
                     </flux:card>
                 @endforeach

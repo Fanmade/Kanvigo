@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\RichTextSanitizer;
+use App\Support\VariableSubstitutor;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Response;
@@ -28,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(RichTextSanitizer::class);
+        // Shared for the request so a page showing many descriptions and comments
+        // loads each project's variables once.
+        $this->app->singleton(VariableSubstitutor::class);
     }
 
     /**
