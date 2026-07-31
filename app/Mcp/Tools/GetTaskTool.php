@@ -6,6 +6,7 @@ use App\Mcp\Concerns\ExposesComments;
 use App\Mcp\Concerns\ExposesDependencies;
 use App\Mcp\Concerns\ExposesReferences;
 use App\Mcp\Concerns\ExposesUrls;
+use App\Mcp\Concerns\ExposesVariables;
 use App\Mcp\Concerns\ResolvesAuthenticatedUser;
 use App\Models\Attachment;
 use App\Models\Task;
@@ -28,6 +29,7 @@ class GetTaskTool extends Tool
     use ExposesDependencies;
     use ExposesReferences;
     use ExposesUrls;
+    use ExposesVariables;
     use ResolvesAuthenticatedUser;
 
     /**
@@ -76,6 +78,7 @@ class GetTaskTool extends Tool
             'progress' => ['done' => $progress->done, 'total' => $progress->total],
             ...$this->dependencyPayload($task),
             ...$this->referencePayload($task, $this->authenticatedUser($request)),
+            ...$this->variablePayload($task),
             'assignees' => $task->assignees->map(static fn (User $user): array => [
                 'id' => $user->public_id,
                 'name' => $user->name,
@@ -137,6 +140,7 @@ class GetTaskTool extends Tool
             ])->description('Completion rolled up from this task\'s subtree.')->required(),
             ...$this->dependencySchema($schema),
             ...$this->referenceSchema($schema),
+            ...$this->variableSchema($schema),
             'assignees' => $schema->array()->items($schema->object([
                 'id' => $schema->string()->description('The assignee\'s stable user id; pass it to the get-user tool or the set-assignees tool.')->required(),
                 'name' => $schema->string()->description('The assignee name.')->required(),

@@ -10,6 +10,7 @@ use App\Mcp\Tools\CreateDocTool;
 use App\Mcp\Tools\CreateNoteTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateTaskTool;
+use App\Mcp\Tools\CreateVariableTool;
 use App\Mcp\Tools\FindUsersTool;
 use App\Mcp\Tools\GetAttachmentTool;
 use App\Mcp\Tools\GetCurrentUserTool;
@@ -22,6 +23,7 @@ use App\Mcp\Tools\ListDocsTool;
 use App\Mcp\Tools\ListNotesTool;
 use App\Mcp\Tools\ListProjectsTool;
 use App\Mcp\Tools\ListTasksTool;
+use App\Mcp\Tools\ListVariablesTool;
 use App\Mcp\Tools\RemoveDependencyTool;
 use App\Mcp\Tools\RemoveReferenceTool;
 use App\Mcp\Tools\SetAssigneesTool;
@@ -29,6 +31,7 @@ use App\Mcp\Tools\UpdateDocTool;
 use App\Mcp\Tools\UpdateNoteTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateTaskTool;
+use App\Mcp\Tools\UpdateVariableTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -135,11 +138,29 @@ use Laravel\Mcp\Server\Tool;
     with "has_more" and a "next_cursor" you pass back as "cursor" to fetch the next page. Without a limit
     "has_more" is always false — nothing is ever truncated silently.
 
+    A project can define variables: named stand-ins for facts that recur or are not decided yet,
+    written in prose as "[name]" — e.g. "[main_protagonist]" showing "Robin Hood" wherever it
+    appears. The stored text always keeps the literal "[name]"; changing the value changes every
+    place at once. get-task and get-doc therefore return the body exactly as stored plus a
+    "variables" sidecar listing the variables that content uses and their current values: resolve
+    the names against it when reading, and leave "[name]" untouched when writing the body back,
+    or you would bake in a value and delete the usage. A variable with a null value is undecided,
+    not broken — that is the point during early planning, and it renders as its own name.
+
+    Use list-variables to see a project's vocabulary, create-variable to add one, and
+    update-variable to change what it stands for or to rename it. Writing "[name]" in a description,
+    doc body or comment never creates a variable — a mistyped name would otherwise become permanent
+    project vocabulary — so call create-variable explicitly when a name should become part of it.
+    Renaming rewrites every usage in the project's content; update-variable reports how many items
+    it changed under "usages_rewritten". There is no delete tool for variables: deleting one
+    silently changes what existing documents show.
+
     Read tools (list/get) are available to any token. Write tools (create/update/comment, link or
     unlink dependencies and references, the doc create/update tools, and the note
     create/update/convert tools) require a token with write access and return an error for read-only
-    tokens. Creating a project also requires the "create-projects" permission, and creating or
-    editing a doc the project's "create-doc"/"edit-doc" permission.
+    tokens. Creating a project also requires the "create-projects" permission, creating or
+    editing a doc the project's "create-doc"/"edit-doc" permission, and creating or updating a
+    variable its "manage-variables" permission.
     TEXT)]
 class KanvigoServer extends Server
 {
@@ -184,6 +205,9 @@ class KanvigoServer extends Server
         CreateNoteTool::class,
         UpdateNoteTool::class,
         ConvertNoteTool::class,
+        ListVariablesTool::class,
+        CreateVariableTool::class,
+        UpdateVariableTool::class,
     ];
 
     /**

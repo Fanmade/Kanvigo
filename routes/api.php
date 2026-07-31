@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TaskTypeController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\VariableController;
 use App\Http\Middleware\SetAuditSource;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +50,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', SetAuditSource::class.':api']
         Route::get('projects/{short_name}/tasks', [TaskController::class, 'index'])->name('projects.tasks.index');
         Route::get('projects/{short_name}/task-types', [TaskTypeController::class, 'index'])->name('projects.task-types.index');
         Route::get('projects/{short_name}/tags', [TagController::class, 'index'])->name('projects.tags.index');
+        Route::get('projects/{short_name}/variables', [VariableController::class, 'index'])->name('projects.variables.index');
 
         Route::get('tasks/{reference}', [TaskController::class, 'show'])->name('tasks.show');
 

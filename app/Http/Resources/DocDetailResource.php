@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\Concerns\SerializesReferences;
+use App\Http\Resources\Concerns\SerializesVariables;
 use App\Models\Attachment;
 use App\Models\Doc;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 class DocDetailResource extends DocResource
 {
     use SerializesReferences;
+    use SerializesVariables;
 
     /**
      * @return array<string, mixed>
@@ -39,6 +41,7 @@ class DocDetailResource extends DocResource
                     'is_public' => $child->is_public,
                 ])->values()->all(),
             ...$this->referenceLists($this->resource),
+            ...$this->variableList($this->resource),
             'attachments' => $this->attachments->map(static fn (Attachment $attachment): array => [
                 'id' => $attachment->id,
                 'name' => $attachment->name,

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\Concerns\SerializesReferences;
+use App\Http\Resources\Concerns\SerializesVariables;
 use App\Models\Attachment;
 use App\Models\Task;
 use App\Models\User;
@@ -19,6 +20,7 @@ use Illuminate\Http\Request;
 class TaskDetailResource extends TaskResource
 {
     use SerializesReferences;
+    use SerializesVariables;
 
     /**
      * @return array<string, mixed>
@@ -38,6 +40,7 @@ class TaskDetailResource extends TaskResource
             ])->values()->all(),
             ...$this->relationshipReferences(),
             ...$this->referenceLists($this->resource),
+            ...$this->variableList($this->resource),
             'children' => $this->children->map(static fn (Task $child): array => [
                 'reference' => $shortName.'-'.$child->task_number,
                 'title' => $child->title,

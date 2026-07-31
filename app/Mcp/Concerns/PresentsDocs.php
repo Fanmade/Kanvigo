@@ -17,6 +17,7 @@ trait PresentsDocs
 {
     use ExposesReferences;
     use ExposesUrls;
+    use ExposesVariables;
     use ResolvesAuthenticatedUser;
 
     /**
@@ -41,6 +42,7 @@ trait PresentsDocs
                     'is_public' => $child->is_public,
                 ])->values()->all(),
             ...$this->referencePayload($doc, $user),
+            ...$this->variablePayload($doc),
             'attachments' => $doc->attachments->map(static fn (Attachment $attachment): array => [
                 'id' => $attachment->id,
                 'name' => $attachment->name,
@@ -84,6 +86,7 @@ trait PresentsDocs
                 'is_public' => $schema->boolean()->description('Whether the nested doc is published.')->required(),
             ]))->description('The docs nested directly under this one that the user may see.')->required(),
             ...$this->referenceSchema($schema),
+            ...$this->variableSchema($schema),
             'attachments' => $schema->array()->items($schema->object([
                 'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),
                 'name' => $schema->string()->description('The attachment file name.')->required(),
