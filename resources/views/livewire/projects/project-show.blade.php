@@ -20,13 +20,20 @@
                          wire:navigate>
                 {{ __('Board') }}
             </flux:button>
-            @can('manage-tags', $this->project)
+            @canany(['manage-tags', 'manage-variables'], $this->project)
                 <flux:dropdown align="end">
                     <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')"
                                  data-test="project-actions"/>
                     <flux:menu>
-                        <flux:menu.item icon="tag" :href="route('project.tags', $this->project)" wire:navigate
-                                        data-test="manage-tags-link">{{ __('Manage tags') }}</flux:menu.item>
+                        @can('manage-tags', $this->project)
+                            <flux:menu.item icon="tag" :href="route('project.tags', $this->project)" wire:navigate
+                                            data-test="manage-tags-link">{{ __('Manage tags') }}</flux:menu.item>
+                        @endcan
+                        @can('manage-variables', $this->project)
+                            <flux:menu.item icon="variable" :href="route('project.variables', $this->project)"
+                                            wire:navigate
+                                            data-test="manage-variables-link">{{ __('Manage variables') }}</flux:menu.item>
+                        @endcan
                         @can('manageSettings', $this->project)
                             <flux:menu.item icon="bookmark-square" :href="route('project.task-types', $this->project)"
                                             wire:navigate
@@ -44,7 +51,7 @@
                         @endcan
                     </flux:menu>
                 </flux:dropdown>
-            @endcan
+            @endcanany
         </div>
     </div>
 

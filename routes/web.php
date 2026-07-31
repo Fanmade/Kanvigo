@@ -24,6 +24,7 @@ use App\Livewire\Projects\ProjectList;
 use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Projects\ProjectTags;
 use App\Livewire\Projects\ProjectTaskTypes;
+use App\Livewire\Projects\ProjectVariables;
 use App\Livewire\Tasks\TaskView;
 use App\Livewire\Users\UserProfile;
 use Illuminate\Support\Facades\Auth;
@@ -107,6 +108,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('/{short_name}/tags', ProjectTags::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.tags');
+
+    Route::livewire('/{short_name}/variables', ProjectVariables::class)
+        ->where('short_name', '[A-Z]{2,4}')
+        ->name('project.variables');
 
     Route::livewire('/{short_name}/task-types', ProjectTaskTypes::class)
         ->where('short_name', '[A-Z]{2,4}')
