@@ -35,6 +35,10 @@
                                     {{ $variable->value }}
                                 </flux:text>
                             @endif
+                            @php($uses = $this->usageCounts[$variable->name] ?? 0)
+                            <flux:text size="sm" class="text-zinc-400" data-test="variable-usage-{{ $variable->id }}">
+                                {{ trans_choice('{0}Unused|{1}:count use|[2,*]:count uses', $uses, ['count' => $uses]) }}
+                            </flux:text>
                         </div>
                         @if ($variable->description !== null)
                             <flux:text size="sm" class="text-zinc-400" data-test="variable-description-{{ $variable->id }}">
@@ -64,6 +68,39 @@
                     </div>
                 </div>
             @endforeach
+        </div>
+    @endif
+
+    {{-- Names used in content that no variable defines. They render as unset, so
+         listing them is how they get resolved rather than quietly lost. --}}
+    @if ($this->unknownNames !== [])
+        <div class="flex flex-col gap-3" data-test="unknown-names">
+            <flux:heading size="lg">{{ __('Used but not defined') }}</flux:heading>
+            <flux:text class="text-zinc-500">
+                {{ __('These names appear in this project’s text but have no variable, so they show as unset.') }}
+            </flux:text>
+
+            <div class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10">
+                @foreach ($this->unknownNames as $name => $uses)
+                    <div class="flex items-center justify-between gap-3 p-3" wire:key="unknown-{{ $name }}" data-test="unknown-name-{{ $name }}">
+                        <div class="flex min-w-0 items-center gap-2">
+                            <flux:text size="sm" class="font-mono text-zinc-500">[{{ $name }}]</flux:text>
+                            <flux:text size="sm" class="text-zinc-400">
+                                {{ trans_choice('{1}:count use|[2,*]:count uses', $uses, ['count' => $uses]) }}
+                            </flux:text>
+                        </div>
+                        <flux:button
+                            size="xs"
+                            variant="ghost"
+                            icon="plus"
+                            wire:click="startCreate('{{ $name }}')"
+                            data-test="define-{{ $name }}"
+                        >
+                            {{ __('Define') }}
+                        </flux:button>
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
 

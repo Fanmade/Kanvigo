@@ -13,6 +13,7 @@ use App\Concerns\HasReferences;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
 use App\Concerns\HasTags;
+use App\Concerns\IndexesVariableUsages;
 use App\Concerns\LogsActivity;
 use App\Concerns\Nestable;
 use App\Concerns\PrunesInlineAttachments;
@@ -22,6 +23,7 @@ use App\Contracts\Dependable;
 use App\Contracts\Mentionable;
 use App\Contracts\Referenceable;
 use App\Contracts\Subscribable;
+use App\Contracts\UsesVariables;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -64,10 +66,10 @@ use Illuminate\Support\Collection;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Task> $children
  */
 #[Fillable(['title', 'description', 'priority', 'due_date'])]
-class Task extends Model implements Dependable, Mentionable, Referenceable, Subscribable
+class Task extends Model implements Dependable, Mentionable, Referenceable, Subscribable, UsesVariables
 {
     /** @use HasFactory<TaskFactory> */
-    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasMentions, HasReferences, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable, PrunesInlineAttachments, SanitizesRichText, SyncsInlineReferences;
+    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasMentions, HasReferences, HasScopedNumber, HasSubscribers, HasTags, IndexesVariableUsages, LogsActivity, Nestable, PrunesInlineAttachments, SanitizesRichText, SyncsInlineReferences;
 
     protected string $scopedNumberColumn = 'task_number';
 
@@ -172,6 +174,14 @@ class Task extends Model implements Dependable, Mentionable, Referenceable, Subs
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * A task's `[name]` usages resolve against the project it belongs to.
+     */
+    public function variableNamespaceProjectId(): ?int
+    {
+        return $this->project_id;
     }
 
     /**

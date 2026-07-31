@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Concerns\HasMentions;
+use App\Concerns\IndexesVariableUsages;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use App\Contracts\Mentionable;
+use App\Contracts\UsesVariables;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,9 +30,10 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $user
  */
 #[Fillable(['user_id', 'body', 'parent_id'])]
-class Comment extends Model implements Mentionable
+class Comment extends Model implements Mentionable, UsesVariables
 {
     use HasMentions;
+    use IndexesVariableUsages;
     use PrunesInlineAttachments;
     use SanitizesRichText;
 
@@ -64,6 +67,21 @@ class Comment extends Model implements Mentionable
         return [
             'is_deleted' => 'boolean',
         ];
+    }
+
+    /**
+     * A comment's `[name]` usages resolve against the project of whatever it was
+     * written on — a task, a doc, or the project itself.
+     */
+    public function variableNamespaceProjectId(): ?int
+    {
+        $commentable = $this->commentable;
+
+        return match (true) {
+            $commentable instanceof Project => $commentable->getKey(),
+            $commentable instanceof Task, $commentable instanceof Doc => $commentable->project_id,
+            default => null,
+        };
     }
 
     public function inlineAttachmentOwner(): Project|Task

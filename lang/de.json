@@ -189,6 +189,7 @@
   "Deactivate": "Deaktivieren",
   "Deactivated": "Deaktiviert",
   "Default": "Standard",
+  "Define": "Definieren",
   "Delete": "Löschen",
   "Delete account": "Konto löschen",
   "Delete attachments": "Anhänge löschen",
@@ -655,6 +656,7 @@
   "The selected project is not valid.": "Das ausgewählte Projekt ist ungültig.",
   "The task cannot be nested there: it would exceed the maximum nesting depth.": "Die Aufgabe kann dort nicht verschachtelt werden: Die maximale Verschachtelungstiefe würde überschritten.",
   "Theme": "Erscheinungsbild",
+  "These names appear in this project’s text but have no variable, so they show as unset.": "Diese Namen kommen im Text dieses Projekts vor, haben aber keine Variable und werden daher als ohne Wert angezeigt.",
   "This action requires a token with audit access.": "Diese Aktion erfordert ein Token mit Audit-Zugriff.",
   "This action requires a token with write access.": "Diese Aktion erfordert ein Token mit Schreibzugriff.",
   "This application will be able to:": "Diese Anwendung wird Folgendes können:",
@@ -711,6 +713,7 @@
   "Use MCP server": "MCP-Server nutzen",
   "Use the entire screen width instead of a centered column. Best on large displays.": "Nutzt die gesamte Bildschirmbreite statt einer zentrierten Spalte. Ideal für große Bildschirme.",
   "Used as [name] in text. Lowercase letters, digits, underscores and hyphens.": "Wird im Text als [name] verwendet. Kleinbuchstaben, Ziffern, Unterstriche und Bindestriche.",
+  "Used but not defined": "Verwendet, aber nicht definiert",
   "Used for git branch names, e.g. feat or bugfix. Optional.": "Wird für Git-Branch-Namen verwendet, z. B. feat oder bugfix. Optional.",
   "User administration": "Benutzerverwaltung",
   "Username": "Benutzername",
@@ -747,5 +750,7 @@
   "You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.": "Bei der Anmeldung wirst du nach einer sicheren, zufälligen PIN gefragt, die du aus der TOTP-fähigen App auf deinem Smartphone abrufen kannst.",
   "Your account has been deactivated.": "Dein Konto wurde deaktiviert.",
   "Your email address is unverified.": "Deine E-Mail-Adresse ist nicht bestätigt.",
-  "{0}Unused|{1}:count task|[2,*]:count tasks": "{0}Ungenutzt|{1}:count Aufgabe|[2,*]:count Aufgaben"
+  "{0}Unused|{1}:count task|[2,*]:count tasks": "{0}Ungenutzt|{1}:count Aufgabe|[2,*]:count Aufgaben",
+  "{0}Unused|{1}:count use|[2,*]:count uses": "{0}Ungenutzt|{1}:count Verwendung|[2,*]:count Verwendungen",
+  "{1}:count use|[2,*]:count uses": "{1}:count Verwendung|[2,*]:count Verwendungen"
 }

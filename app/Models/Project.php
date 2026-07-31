@@ -6,11 +6,13 @@ use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
 use App\Concerns\HasMentions;
 use App\Concerns\HasSubscribers;
+use App\Concerns\IndexesVariableUsages;
 use App\Concerns\LogsActivity;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use App\Contracts\Mentionable;
 use App\Contracts\Subscribable;
+use App\Contracts\UsesVariables;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,10 +32,10 @@ use Illuminate\Validation\Rule;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['title', 'short_name', 'description', 'auto_archive_days'])]
-class Project extends Model implements Mentionable, Subscribable
+class Project extends Model implements Mentionable, Subscribable, UsesVariables
 {
     /** @use HasFactory<ProjectFactory> */
-    use HasAttachments, HasComments, HasFactory, HasMentions, HasSubscribers, LogsActivity, PrunesInlineAttachments, SanitizesRichText;
+    use HasAttachments, HasComments, HasFactory, HasMentions, HasSubscribers, IndexesVariableUsages, LogsActivity, PrunesInlineAttachments, SanitizesRichText;
 
     /**
      * Display precedence of the base project roles (lower wins). Custom roles
@@ -214,6 +216,14 @@ class Project extends Model implements Mentionable, Subscribable
     public function tags(): HasMany
     {
         return $this->hasMany(Tag::class);
+    }
+
+    /**
+     * A project's own description resolves against its own variables.
+     */
+    public function variableNamespaceProjectId(): ?int
+    {
+        return $this->getKey();
     }
 
     /**

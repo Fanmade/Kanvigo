@@ -8,11 +8,13 @@ use App\Concerns\HasMentions;
 use App\Concerns\HasReferences;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasTags;
+use App\Concerns\IndexesVariableUsages;
 use App\Concerns\LogsActivity;
 use App\Concerns\SanitizesRichText;
 use App\Concerns\SyncsInlineReferences;
 use App\Contracts\Mentionable;
 use App\Contracts\Referenceable;
+use App\Contracts\UsesVariables;
 use Database\Factories\DocFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,10 +55,10 @@ use InvalidArgumentException;
  * @property-read Collection<int, Doc> $children
  */
 #[Fillable(['title', 'body', 'is_public', 'parent_id'])]
-class Doc extends Model implements Mentionable, Referenceable
+class Doc extends Model implements Mentionable, Referenceable, UsesVariables
 {
     /** @use HasFactory<DocFactory> */
-    use HasAttachments, HasComments, HasFactory, HasMentions, HasReferences, HasScopedNumber, HasTags, LogsActivity, SanitizesRichText, SoftDeletes, SyncsInlineReferences {
+    use HasAttachments, HasComments, HasFactory, HasMentions, HasReferences, HasScopedNumber, HasTags, IndexesVariableUsages, LogsActivity, SanitizesRichText, SoftDeletes, SyncsInlineReferences {
         LogsActivity::auditFieldSnapshot as protected baseAuditFieldSnapshot;
     }
 
@@ -154,6 +156,14 @@ class Doc extends Model implements Mentionable, Referenceable
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * A doc's `[name]` usages resolve against the project it belongs to.
+     */
+    public function variableNamespaceProjectId(): ?int
+    {
+        return $this->project_id;
     }
 
     /**

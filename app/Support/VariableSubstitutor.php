@@ -20,27 +20,16 @@ use Illuminate\Support\Facades\DB;
  * not at the mercy of the allow-list — and the value, which is plain author
  * text, is escaped here.
  *
- * A name only resolves when the project actually defines it: unknown bracketed
- * text is left exactly as written, so footnote markers and ordinary prose are
- * never mangled. A defined but valueless variable renders its own name in the
+ * What counts as a usage is {@see VariableSyntax}, shared with the usage index
+ * so the two can never disagree. A name only resolves when the project actually
+ * defines it: unknown bracketed text is left exactly as written, so footnote
+ * markers and ordinary prose are never mangled. A defined but valueless variable renders its own name in the
  * "unset" style — a visible hole, which is the placeholder workflow the feature
  * exists for. Values are never themselves substituted, so a value containing
  * `[other]` renders literally and no cycle is possible on the render path.
  */
 class VariableSubstitutor
 {
-    /**
-     * A variable usage: the name pattern of {@see Variable::NAME_PATTERN} inside
-     * square brackets.
-     */
-    private const string USAGE_PATTERN = '/\[([a-z][a-z0-9_-]+)]/';
-
-    /**
-     * Elements whose text is quoted verbatim, where brackets are far more likely
-     * to be array indexes or literal syntax than a variable usage.
-     */
-    private const array VERBATIM_ELEMENTS = ['code', 'pre'];
-
     /**
      * The loaded variable maps, keyed by project short name — one query per
      * project per request, however many descriptions and comments a page shows.
@@ -110,7 +99,7 @@ class VariableSubstitutor
                 continue;
             }
 
-            if ($child instanceof Element && ! in_array(mb_strtolower($child->tagName), self::VERBATIM_ELEMENTS, true)) {
+            if ($child instanceof Element && ! VariableSyntax::isVerbatim($child)) {
                 $this->substituteInNode($document, $child, $variables);
             }
         }
@@ -130,7 +119,7 @@ class VariableSubstitutor
             return;
         }
 
-        $parts = preg_split(self::USAGE_PATTERN, $content, flags: PREG_SPLIT_DELIM_CAPTURE);
+        $parts = preg_split(VariableSyntax::PATTERN, $content, flags: PREG_SPLIT_DELIM_CAPTURE);
 
         if ($parts === false || count($parts) === 1) {
             return;

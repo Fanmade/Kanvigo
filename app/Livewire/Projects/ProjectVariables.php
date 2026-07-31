@@ -4,6 +4,7 @@ namespace App\Livewire\Projects;
 
 use App\Models\Project;
 use App\Models\Variable;
+use App\Models\VariableUsage;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,6 +27,8 @@ use Livewire\Component;
  *
  * @property-read Project $project
  * @property-read Collection<int, Variable> $variables
+ * @property-read array<string, int> $usageCounts
+ * @property-read array<string, int> $unknownNames
  */
 class ProjectVariables extends Component
 {
@@ -74,15 +77,49 @@ class ProjectVariables extends Component
     }
 
     /**
-     * Open the dialog to create a brand-new variable. The same dialog handles
-     * edits; a null editingVariableId marks create mode.
+     * How often each name is used across the project's content, from the usage
+     * index. Derived state that is allowed to lag, so it is read for display
+     * only — never to decide what a page renders.
+     *
+     * @return array<string, int>
      */
-    public function startCreate(): void
+    #[Computed]
+    public function usageCounts(): array
+    {
+        return VariableUsage::query()
+            ->where('project_id', $this->project->getKey())
+            ->groupBy('name')
+            ->selectRaw('name, count(*) as total')
+            ->pluck('total', 'name')
+            ->all();
+    }
+
+    /**
+     * Names used in this project's content that no variable defines — written
+     * before the variable was created, or left behind when one was deleted.
+     * Listing them is how they get resolved rather than lost.
+     *
+     * @return array<string, int>
+     */
+    #[Computed]
+    public function unknownNames(): array
+    {
+        $defined = $this->variables->pluck('name')->all();
+
+        return array_diff_key($this->usageCounts, array_flip($defined));
+    }
+
+    /**
+     * Open the dialog to create a brand-new variable, optionally pre-filled with
+     * a name already used in the content. The same dialog handles edits; a null
+     * editingVariableId marks create mode.
+     */
+    public function startCreate(string $name = ''): void
     {
         $this->authorize('manage-variables', $this->project);
 
         $this->editingVariableId = null;
-        $this->editName = '';
+        $this->editName = $name;
         $this->editValue = '';
         $this->editDescription = '';
         $this->resetValidation();
@@ -148,7 +185,7 @@ class ProjectVariables extends Component
 
         $this->editing = false;
         $this->editingVariableId = null;
-        unset($this->variables);
+        unset($this->variables, $this->unknownNames);
 
         Flux::toast(text: $variable === null ? __('Variable created.') : __('Variable updated.'), variant: 'success');
     }
@@ -164,7 +201,8 @@ class ProjectVariables extends Component
 
         $project->variables()->whereKey($variableId)->firstOrFail()->delete();
 
-        unset($this->variables);
+        // The usages stay; they simply become unknown names from now on.
+        unset($this->variables, $this->unknownNames);
 
         Flux::toast(text: __('Variable deleted.'), variant: 'success');
     }

@@ -44,6 +44,45 @@ it('lists the project variables with their values and descriptions', function ()
         ->assertSeeText('No value yet');
 });
 
+it('shows how often each variable is used', function () {
+    Variable::factory()->for($this->project)->create(['name' => 'hero', 'value' => 'Robin Hood']);
+    Variable::factory()->for($this->project)->create(['name' => 'villain', 'value' => 'The Sheriff']);
+    Task::factory()->for($this->project)->create(['description' => '<p>[hero] arrives.</p>']);
+    Task::factory()->for($this->project)->create(['description' => '<p>[hero] leaves.</p>']);
+
+    variablesPage()
+        ->assertSeeText('2 uses')
+        ->assertSeeText('Unused');
+});
+
+it('surfaces names used in content that no variable defines', function () {
+    Task::factory()->for($this->project)->create(['description' => '<p>[sidekick] waits.</p>']);
+
+    variablesPage()
+        ->assertSeeHtml('data-test="unknown-names"')
+        ->assertSeeText('[sidekick]');
+});
+
+it('offers to define an unknown name with it pre-filled', function () {
+    Task::factory()->for($this->project)->create(['description' => '<p>[sidekick] waits.</p>']);
+
+    variablesPage()
+        ->call('startCreate', 'sidekick')
+        ->assertSet('editName', 'sidekick')
+        ->set('editValue', 'Little John')
+        ->call('save')
+        ->assertHasNoErrors()
+        // Defining it moves the name out of the unknown list.
+        ->assertDontSeeHtml('data-test="unknown-names"');
+});
+
+it('leaves the unknown list out when every used name is defined', function () {
+    Variable::factory()->for($this->project)->create(['name' => 'hero', 'value' => 'Robin Hood']);
+    Task::factory()->for($this->project)->create(['description' => '<p>[hero] arrives.</p>']);
+
+    variablesPage()->assertDontSeeHtml('data-test="unknown-names"');
+});
+
 it('creates a variable', function () {
     variablesPage()
         ->call('startCreate')
