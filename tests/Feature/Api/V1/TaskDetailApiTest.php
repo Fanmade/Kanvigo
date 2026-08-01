@@ -44,6 +44,53 @@ it('returns full task detail on show', function () {
         ]]);
 });
 
+it('returns the task description as stored', function () {
+    $task = Task::factory()->for($this->project)->create([
+        'description' => '<p>Write the <strong>opening</strong> scene.</p>',
+    ]);
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $this->getJson("/api/v1/tasks/{$task->reference}")
+        ->assertOk()
+        ->assertJsonPath('data.description', '<p>Write the <strong>opening</strong> scene.</p>');
+});
+
+it('returns a null description for a task without one', function () {
+    $task = Task::factory()->for($this->project)->create(['description' => null]);
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $this->getJson("/api/v1/tasks/{$task->reference}")
+        ->assertOk()
+        ->assertJsonPath('data.description', null);
+});
+
+it('round-trips a description written through the API', function () {
+    $task = Task::factory()->for($this->project)->create();
+
+    Sanctum::actingAs($this->user, ['read', 'write']);
+
+    $this->patchJson("/api/v1/tasks/{$task->reference}", ['description' => '<p>Rewritten.</p>'])
+        ->assertOk();
+
+    // The API accepted a description long before it returned one; a client can
+    // now read back what it wrote.
+    $this->getJson("/api/v1/tasks/{$task->reference}")
+        ->assertOk()
+        ->assertJsonPath('data.description', '<p>Rewritten.</p>');
+});
+
+it('keeps the description out of the task list, which stays lean', function () {
+    Task::factory()->for($this->project)->create(['description' => '<p>Long prose.</p>']);
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $task = $this->getJson('/api/v1/projects/ABC/tasks')->assertOk()->json('data.0');
+
+    expect($task)->not->toHaveKey('description');
+});
+
 it('does not expose assignee email addresses in task detail', function () {
     $task = Task::factory()->for($this->project)->create();
     $assignee = User::factory()->create(['email' => 'dana@example.com']);

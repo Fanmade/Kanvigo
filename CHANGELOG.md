@@ -21,6 +21,13 @@ Kanvigo is under active development and does not yet follow semantic versioning.
   that rewrites usages, command-palette search by name or value, MCP tools, and a
   REST endpoint. See [docs/using/variables.md](docs/using/variables.md).
 
+### Fixed
+
+- The REST task detail response (`GET /api/v1/tasks/{reference}`) now returns the
+  task `description`. The API accepted one on create and update but never gave it
+  back, so a client could not read what it had written. The task *list* stays lean
+  and still omits it.
+
 ### Changed
 
 - Documentation is split into usage (`docs/using/`) and developer

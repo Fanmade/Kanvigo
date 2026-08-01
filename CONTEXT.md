@@ -52,6 +52,10 @@ canonical home instead of being smeared across task descriptions. A doc is eithe
 the project).
 _Avoid_: Page, article, wiki page
 
+**Subdoc**:
+A doc's direct child. Like subtask, a relative term rather than a kind of thing:
+docs nest, so the same doc is a subdoc of its parent and a parent to its own.
+
 **Note**:
 A personal, user-owned capture. Unlike a doc, a note is private to its author by
 default and need not belong to a project at all; it may optionally be attached to
@@ -89,6 +93,15 @@ mentions and cross-references as any other content.
 **Mention**:
 Naming a user inside content (`@name`), which links to them and subscribes them to
 the item's activity.
+
+## Export *(designed, not yet built — KAN-455)*
+
+**Export**:
+Producing a standalone copy of an item's content in a portable format, for reading
+outside Kanvigo. An export is a snapshot: never live, never read back in. What it
+contains is chosen per export, and what a person may export follows from the
+project's permissions, not from what they can see.
+_Avoid_: Download, print, share, backup
 
 ## Activity
 

@@ -42,7 +42,7 @@ it('rejects an unauthenticated request', function () {
     $this->getJson('/api/v1/projects/ABC/variables')->assertUnauthorized();
 });
 
-it('reports the variables a task description uses', function () {
+it('returns a task description as stored, with the variables alongside it', function () {
     Sanctum::actingAs($this->member, ['read']);
 
     Variable::factory()->for($this->project)->create(['name' => 'hero', 'value' => 'Robin Hood']);
@@ -51,6 +51,8 @@ it('reports the variables a task description uses', function () {
 
     $this->getJson('/api/v1/tasks/'.$task->reference)
         ->assertOk()
+        // Substituting on read would make a read-edit-write round trip destructive.
+        ->assertJsonPath('data.description', '<p>[hero] arrives.</p>')
         // Only what the content names — the project's other variables stay out.
         ->assertJsonCount(1, 'data.variables')
         ->assertJsonPath('data.variables.0', ['name' => 'hero', 'value' => 'Robin Hood']);

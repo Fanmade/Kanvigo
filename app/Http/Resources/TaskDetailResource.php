@@ -11,9 +11,10 @@ use Illuminate\Http\Request;
 
 /**
  * The full task representation returned by the show endpoint: the lean
- * {@see TaskResource} fields plus assignees, dependencies, cross-references,
- * subtasks, attachments, the cancellation note and rolled-up progress. The list
- * endpoints keep using the lean resource to stay cheap.
+ * {@see TaskResource} fields plus the description, assignees, dependencies,
+ * cross-references, subtasks, attachments, the cancellation note and rolled-up
+ * progress. The list endpoints keep using the lean resource to stay cheap — the
+ * description is the reason, being far the largest field.
  *
  * @mixin Task
  */
@@ -32,6 +33,10 @@ class TaskDetailResource extends TaskResource
 
         return [
             ...parent::toArray($request),
+            // The stored HTML, exactly as written — `[name]` variable usages
+            // included. Resolving them here would make a read-edit-write round
+            // trip destructive; the `variables` list below carries their values.
+            'description' => $this->description,
             'cancel_message' => $this->cancel_message,
             'progress' => ['done' => $progress->done, 'total' => $progress->total],
             'assignees' => $this->assignees->map(static fn (User $user): array => [

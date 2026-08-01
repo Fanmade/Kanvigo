@@ -63,7 +63,7 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `GET`    | `/projects/{short_name}/tags`                         | read    | A project's tags (with usage counts). |
 | `GET`    | `/projects/{short_name}/variables`                    | read    | A project's variables with their current values. |
 | `POST`   | `/projects/{short_name}/tasks`                        | write   | Create a task. |
-| `GET`    | `/tasks/{reference}`                                  | read    | A single task. |
+| `GET`    | `/tasks/{reference}`                                  | read    | A single task with its description, assignees, dependencies, links, subtasks and attachments. |
 | `PATCH`  | `/tasks/{reference}`                                  | write   | Update a task's fields, status, type or tags. |
 | `POST`   | `/tasks/{reference}/cancel`                           | write   | Cancel a task (`cancel_reason` + optional `cancel_message`). |
 | `POST`   | `/tasks/{reference}/reopen`                           | write   | Reopen a canceled task. |
@@ -112,9 +112,9 @@ is published (`is_public`): a draft is only visible to members who may edit the
 project's docs, and 404s for everyone else.
 
 [Variables](../using/variables.md) are project-scoped stand-ins written in prose as
-`[name]`. Content is returned **exactly as stored**, with the markers intact, and
-the task and doc detail responses carry a `variables` array naming the variables
-that content uses and their current values. Resolve the markers against that array
+`[name]`. A task's `description` and a doc's `body` are returned **exactly as
+stored**, with the markers intact, and both detail responses carry a `variables`
+array naming the variables that content uses and their current values. Resolve the markers against that array
 when reading, and send the body back unchanged: substituting the values into the
 text would delete every usage on the next write. Writing `[name]` in a body never
 creates a variable — a mistyped name must not become permanent project vocabulary.
