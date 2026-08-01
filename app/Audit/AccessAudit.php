@@ -67,7 +67,7 @@ final class AccessAudit
      * Copying to the clipboard and downloading are the same event — the content
      * has left either way.
      *
-     * @param  array<string, bool>  $options
+     * @param  array<string, bool|string>  $options
      */
     public static function contentExported(Task|Doc $item, string $format, array $options): AuditEvent
     {

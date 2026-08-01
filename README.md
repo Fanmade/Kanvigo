@@ -86,8 +86,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   read-only with a project, and convert it into a task in one step. See
   [docs/using/quick-notes.md](docs/using/quick-notes.md).
 - **Export** — take a task or doc out as Markdown, copied to the clipboard or
-  downloaded as a file, with an optional YAML header of its metadata. See
-  [docs/using/export.md](docs/using/export.md).
+  downloaded as a file, optionally with its whole subtree and a YAML header of
+  its metadata. See [docs/using/export.md](docs/using/export.md).
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails; oversized files are rejected with a clear message.
 - **Notifications** — subscribe per project (assignment subscribes you

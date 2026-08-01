@@ -94,7 +94,7 @@ mentions and cross-references as any other content.
 Naming a user inside content (`@name`), which links to them and subscribes them to
 the item's activity.
 
-## Export *(designed, not yet built — KAN-455)*
+## Export
 
 **Export**:
 Producing a standalone copy of an item's content in a portable format, for reading

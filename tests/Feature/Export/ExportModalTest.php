@@ -46,13 +46,15 @@ describe('the modal', function () {
             ->assertSet('exportMetadata', true);
     });
 
-    it('shows only the metadata option — the other controls arrive with their features', function () {
+    it('offers no subtree controls for an item without descendants', function () {
         exportTaskView()
             ->call('startExport')
             ->assertSeeHtml('data-test="export-metadata"')
             ->assertSeeHtml('data-test="export-copy"')
             ->assertSeeHtml('data-test="export-download"')
+            ->assertDontSeeHtml('data-test="export-descendants"')
             ->assertDontSeeHtml('data-test="export-depth"')
+            // Formats are still a later task, so no dropdown for them yet.
             ->assertDontSeeHtml('data-test="export-format"');
     });
 
@@ -64,6 +66,98 @@ describe('the modal', function () {
             ->assertSeeHtml('data-test="export-doc"')
             ->call('startExport')
             ->assertSet('exporting', true);
+    });
+});
+
+describe('the subtree controls', function () {
+    it('offers descendants once the task has children, and the rest only after it is on', function () {
+        Task::factory()->for($this->project)->childOf($this->task)->create();
+
+        $component = exportTaskView()->call('startExport');
+
+        $component->assertSeeHtml('data-test="export-descendants"')
+            ->assertSet('exportDescendants', false)
+            // Nothing to configure until descendants are actually included.
+            ->assertDontSeeHtml('data-test="export-depth"')
+            ->assertDontSeeHtml('data-test="export-canceled"');
+
+        $component->set('exportDescendants', true)
+            ->assertSet('exportDepth', 'all')
+            ->assertDontSeeHtml('data-test="export-canceled"');
+    });
+
+    it('offers a depth select only once the subtree is more than one level deep', function () {
+        $child = Task::factory()->for($this->project)->childOf($this->task)->create();
+
+        exportTaskView()
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->assertDontSeeHtml('data-test="export-depth"');
+
+        Task::factory()->for($this->project)->childOf($child)->create();
+
+        exportTaskView()
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->assertSeeHtml('data-test="export-depth"');
+    });
+
+    it('offers the canceled toggle only when the subtree holds a canceled task', function () {
+        Task::factory()->for($this->project)->childOf($this->task)->canceled()->create();
+
+        exportTaskView()
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->assertSeeHtml('data-test="export-canceled"')
+            ->assertSet('exportCanceled', false);
+    });
+
+    it('offers the drafts toggle only when a nested draft is there to include', function () {
+        $doc = Doc::factory()->for($this->project)->create(['is_public' => true]);
+        $published = Doc::factory()->for($this->project)->create(['is_public' => true, 'parent_id' => $doc->id]);
+
+        $view = fn (): object => Livewire::actingAs($this->member)
+            ->test(DocView::class, ['short_name' => 'ABC', 'doc_number' => $doc->doc_number])
+            ->call('startExport')
+            ->set('exportDescendants', true);
+
+        $view()->assertDontSeeHtml('data-test="export-drafts"');
+
+        $published->update(['is_public' => false]);
+
+        $view()->assertSeeHtml('data-test="export-drafts"');
+    });
+
+    it('exports the subtree the options describe', function () {
+        $child = Task::factory()->for($this->project)->childOf($this->task)->create(['title' => 'Nested work']);
+        Task::factory()->for($this->project)->childOf($child)->create(['title' => 'Deeper still']);
+
+        exportTaskView()
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->set('exportDepth', '1')
+            ->call('copyExport')
+            ->assertDispatched('export-copied', function (string $_event, array $params): bool {
+                return str_contains($params['markdown'], '## Nested work')
+                    && ! str_contains($params['markdown'], 'Deeper still');
+            });
+    });
+
+    it('records the subtree options in the audit event', function () {
+        Task::factory()->for($this->project)->childOf($this->task)->create();
+
+        exportTaskView()
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->set('exportCanceled', true)
+            ->call('copyExport');
+
+        $event = lastExportAuditEvent();
+
+        expect($event['metadata']['descendants'])->toBeTrue()
+            ->and($event['metadata']['depth'])->toBe('all')
+            ->and($event['metadata']['canceled'])->toBeTrue()
+            ->and($event['metadata']['drafts'])->toBeFalse();
     });
 });
 

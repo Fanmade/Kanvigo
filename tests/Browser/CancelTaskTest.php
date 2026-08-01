@@ -29,7 +29,11 @@ it('cancels a task with a reason through the UI, warning about open subtasks', f
         ->assertVisible('@canceled-banner')
         ->assertSeeIn('@cancel-reason-badge', 'Duplicate')
         ->assertSeeIn('@canceled-banner', 'Superseded by ABC-9')
-        ->assertMissing('@task-actions')
+        // The menu itself stays — a canceled task can still be exported — but
+        // there is nothing left to cancel.
+        ->click('@task-actions')
+        ->assertMissing('@cancel-task')
+        ->assertVisible('@export-task')
         ->assertNoJavascriptErrors();
 
     expect($task->fresh()->status)->toBe(Status::Canceled);

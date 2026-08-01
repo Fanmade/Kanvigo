@@ -11,6 +11,7 @@ use App\Support\Export\Converters\StrikethroughConverter;
 use App\Support\RichTextSanitizer;
 use App\Support\VariableSubstitutor;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use League\HTMLToMarkdown\Converter\TableConverter;
 use League\HTMLToMarkdown\HtmlConverter;
@@ -59,7 +60,64 @@ class MarkdownExporter
             $sections[] = $body;
         }
 
+        foreach ($options->descendants ? $this->subtree($item, $options) : [] as $descendant) {
+            $sections[] = $this->headingFor($descendant['item'], $descendant['level']);
+
+            $metadata = $this->inlineMetadata($descendant['item']);
+
+            if ($metadata !== '') {
+                $sections[] = $metadata;
+            }
+
+            $body = $this->body($descendant['item']);
+
+            if ($body !== '') {
+                $sections[] = $body;
+            }
+        }
+
         return implode("\n\n", $sections)."\n";
+    }
+
+    /**
+     * The item's subtree, depth-first in the order the board shows it, flattened
+     * with each entry's level relative to the exported item (a direct child is
+     * level 1).
+     *
+     * Filtered items take their own subtree with them: what hangs below a
+     * canceled task is canceled work too, and a doc nested under a hidden draft
+     * is not promoted into the reader's view.
+     *
+     * The tree is loaded in one query per kind, so the walk itself costs nothing
+     * however wide or deep the subtree is.
+     *
+     * @return list<array{item: Task|Doc, level: int}>
+     */
+    public function subtree(Task|Doc $root, ExportOptions $options): array
+    {
+        $childrenByParent = $root instanceof Task
+            ? $this->taskChildren($root)
+            : $this->docChildren($root);
+
+        $flattened = [];
+
+        $walk = function (Task|Doc $item, int $level) use (&$walk, &$flattened, $childrenByParent, $options): void {
+            foreach ($childrenByParent[$item->getKey()] ?? [] as $child) {
+                if (! $this->includes($child, $options)) {
+                    continue;
+                }
+
+                $flattened[] = ['item' => $child, 'level' => $level];
+
+                if ($options->depth === null || $level < $options->depth) {
+                    $walk($child, $level + 1);
+                }
+            }
+        };
+
+        $walk($root, 1);
+
+        return $flattened;
     }
 
     /**
@@ -94,6 +152,110 @@ class MarkdownExporter
         );
 
         return trim($this->converter()->convert($html));
+    }
+
+    /**
+     * The task's whole subtree in one recursive query, grouped by parent and
+     * ordered the way the subtask lists order it.
+     *
+     * @return array<int, list<Task>>
+     */
+    private function taskChildren(Task $root): array
+    {
+        $descendants = $root->descendants()
+            ->with(['taskType', 'assignees', 'tags', 'project'])
+            ->get()
+            ->sortBy('task_number');
+
+        $grouped = [];
+
+        foreach ($descendants as $task) {
+            $grouped[(int) $task->parent_id][] = $task;
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * The doc's subtree, grouped by parent. Docs nest only a few levels deep, so
+     * the project's docs are loaded in one query and grouped in memory rather
+     * than walked with a recursive one.
+     *
+     * @return array<int, list<Doc>>
+     */
+    private function docChildren(Doc $root): array
+    {
+        $docs = Doc::query()
+            ->with(['tags', 'project'])
+            ->where('project_id', $root->project_id)
+            ->orderBy('position')
+            ->orderBy('doc_number')
+            ->get();
+
+        $grouped = [];
+
+        foreach ($docs as $doc) {
+            if ($doc->parent_id !== null) {
+                $grouped[$doc->parent_id][] = $doc;
+            }
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Whether a descendant belongs in this export. Canceled tasks are noise in a
+     * document unless explicitly asked for; a draft doc is invisible to most
+     * readers, so it needs both the option and the viewer's own right to see it.
+     */
+    private function includes(Task|Doc $item, ExportOptions $options): bool
+    {
+        if ($item instanceof Task) {
+            return $options->canceled || ! $item->isCanceled();
+        }
+
+        return $item->is_public || ($options->drafts && Gate::allows('view', $item));
+    }
+
+    /**
+     * A descendant's heading, its level mirroring its depth in the tree. Markdown
+     * stops at six levels while tasks nest without limit, so anything deeper
+     * stays at `######` — a flattened tail is a better failure than an invalid
+     * heading.
+     */
+    private function headingFor(Task|Doc $item, int $level): string
+    {
+        return str_repeat('#', min($level + 1, 6)).' '.$item->title;
+    }
+
+    /**
+     * The one-line summary under a descendant's heading. YAML front-matter is
+     * only legal at the top of a file, so everything below the root says its
+     * piece inline instead: `*ABC-4 · ToDo · Feature · @ben · #export*`.
+     */
+    private function inlineMetadata(Task|Doc $item): string
+    {
+        $parts = [$item->reference];
+
+        if ($item instanceof Task) {
+            $parts[] = $item->isCanceled() ? __('Canceled') : $item->status->value;
+
+            if ($item->taskType !== null) {
+                $parts[] = (string) $item->taskType->name;
+            }
+        } elseif (! $item->is_public) {
+            $parts[] = __('Draft');
+        }
+
+        foreach ($this->names($item instanceof Task ? $item->assignees : new Collection) as $assignee) {
+            $parts[] = '@'.$assignee;
+        }
+
+        foreach ($this->names($item->tags) as $tag) {
+            $parts[] = '#'.$tag;
+        }
+
+        return '*'.implode(' · ', $parts).'*';
     }
 
     /**

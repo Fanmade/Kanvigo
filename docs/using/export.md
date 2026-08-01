@@ -26,6 +26,26 @@ Fields that are empty are left out, so a small task exports a small header.
 
 Turn it off for a plain document with nothing but the title and the text.
 
+## Descendants
+
+When the item has anything nested below it, **Include descendants** (off by
+default) extends the export to its whole subtree — subtasks of subtasks, subdocs
+of subdocs — still as a single file. The controls that follow appear only when
+they have something to do:
+
+- **Levels** — how deep to go, counting the item's direct children as level 1.
+  Defaults to **All**, which stays "all" as the subtree grows.
+- **Include canceled** — off by default; canceled work reads as noise in a
+  document. A skipped task takes everything below it with it.
+- **Include drafts** — off by default, and only offered when the subtree holds a
+  draft doc you may see. An included draft is marked as such. Exporting a draft
+  directly always works; this option governs descendants only.
+
+Each descendant becomes a heading one level deeper than its parent, in the order
+the board shows it, followed by a one-line summary — reference, status, type,
+assignees, tags. Markdown stops at six heading levels, so anything deeper than
+that stays at the sixth.
+
 ## Links, mentions and variables
 
 - **Cross-references** (`#ABC-42`) become links to the item's full address on
@@ -45,6 +65,7 @@ recorded in the audit trail against the item.
 
 ## Scope
 
-Today the export covers **one item at a time**, as Markdown. Exporting a whole
-subtree, choosing how images travel, including comments, other formats and a
-tabular CSV listing are planned as separate steps.
+Today the export produces **one Markdown file**, covering an item and
+optionally its subtree. Choosing how images travel, including comments, other
+formats, a multi-file bundle and a tabular CSV listing are planned as separate
+steps.
