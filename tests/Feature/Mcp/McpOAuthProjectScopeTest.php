@@ -30,6 +30,20 @@ beforeEach(function () {
 });
 
 /**
+ * Whether the rendered input carrying the given data-test attribute is checked.
+ *
+ * Matched on the whole tag rather than on two attributes sitting next to each
+ * other, so reformatting the template — which reflows attributes onto their own
+ * lines — cannot break the assertion.
+ */
+function inputIsChecked(string $html, string $test): bool
+{
+    preg_match('/<input\\b[^>]*data-test="'.preg_quote($test, '/').'"[^>]*>/s', $html, $matches);
+
+    return isset($matches[0]) && str_contains($matches[0], 'checked');
+}
+
+/**
  * Create a grant for the test client/user pair, restricted to the given
  * projects (unrestricted when none are given).
  *
@@ -153,9 +167,12 @@ it('pre-selects the existing grant on re-consent', function () {
 
     $response->assertOk();
 
-    expect($response->content())
-        ->toMatch('/name="project_scope" value="selected"[^>]*checked/')
-        ->toMatch('/value="'.$this->allowed->id.'"[^>]*checked/');
+    $html = $response->content();
+
+    expect(inputIsChecked($html, 'oauth-scope-selected'))->toBeTrue()
+        ->and(inputIsChecked($html, 'oauth-project-'.$this->allowed->short_name))->toBeTrue()
+        // Only the granted project is pre-ticked; the other membership is not.
+        ->and(inputIsChecked($html, 'oauth-project-'.$this->other->short_name))->toBeFalse();
 });
 
 it('updates the existing grant when re-approving with a different scope', function () {
