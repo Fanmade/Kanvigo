@@ -114,7 +114,7 @@
             "@php artisan test --testsuite=Unit,Feature --parallel"
         ],
         "test:browser": [
-            "@php artisan test --testsuite=Browser --parallel; s=$?; pgrep -f 'mode launchServer' | grep -vx \"$$\" | xargs -r kill 2>/dev/null; exit $s"
+            "@php artisan test --testsuite=Browser --parallel --processes=4; s=$?; pgrep -f 'mode launchServer' | grep -vx \"$$\" | xargs -r kill 2>/dev/null; rm -f vendor/pestphp/pest-plugin-browser/.temp/playwright-server.json; exit $s"
         ],
         "test:coverage": [
             "@putenv XDEBUG_MODE=coverage",

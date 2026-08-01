@@ -91,3 +91,28 @@ If browser tests ever do hang, the cause is almost always orphaned
 `playwright run-server` processes. Clear them with the same self-excluding command:
 `pgrep -f 'mode launchServer' | grep -vx "$$" | xargs -r kill`. Any cleanup command
 must not itself contain the search literal, or it kills its own shell.
+
+The script also deletes `vendor/pestphp/pest-plugin-browser/.temp/playwright-server.json`
+after reaping. That file holds the host and port of the **one** Playwright server the
+whole suite shares: the parent process starts the server and writes the file, and each
+parallel worker reads it and connects. Reaping the server without removing the file
+leaves the next run's workers pointing at a dead port, which fails the run wholesale
+with dozens of `file_get_contents(... playwright-server.json)` errors rather than one
+clear message. Two suite runs back to back reproduce it every time; clearing the file
+between runs is 3-for-3 green.
+
+## Keep the worker count below the core count
+
+`composer test:browser` pins `--processes=4` rather than letting paratest default to one
+worker per core. Every worker drives the *same* Playwright server, so past a handful of
+them the server — not the CPU — is the bottleneck, and individual actions start
+overshooting the 15s ceiling set in `tests/Pest.php`. Measured on an 8-core box: 8
+workers finish in ~26s, 4 workers in ~29s. Three seconds buys back the headroom that
+turns "occasionally red" into "green", so don't raise it to chase the last few seconds.
+
+## Put a barrier after opening a dialog
+
+`click('@new-task')->click('@create-task-add-tag')` races the dialog's own opening.
+Assert the second target is visible first — `->assertVisible('@create-task-add-tag')` —
+so the click waits for a settled dialog instead of retrying against one that is still
+arriving. The same applies after any Livewire round-trip that swaps markup.

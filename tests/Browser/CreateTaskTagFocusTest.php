@@ -17,6 +17,7 @@ it('focuses the tag search input when the picker opens', function () {
 
     $page = visit('/ABC/board');
     $page->click('@new-task')
+        ->assertVisible('@create-task-add-tag') // barrier: the dialog finished opening
         ->click('@create-task-add-tag')
         ->assertScript("document.activeElement?.getAttribute('data-test') === 'create-task-tag-input'")
         ->assertNoJavascriptErrors();
