@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\ActivityDescriber;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -159,6 +160,20 @@ class ActivityFeed extends Component
     }
 
     /**
+     * The entries the feed draws on. A project's stream also carries its
+     * variables' entries, which are recorded on the variable itself so each one
+     * keeps a history of its own.
+     *
+     * @return Builder<Activity>
+     */
+    protected function feedQuery(): Builder
+    {
+        $subject = $this->activityLogSubject();
+
+        return $subject instanceof Project ? $subject->feedActivities() : $subject->activities()->getQuery();
+    }
+
+    /**
      * The subject's recorded activities (newest first) with their author.
      *
      * @return Collection<int, Activity>
@@ -166,7 +181,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function activities(): Collection
     {
-        return $this->activityLogSubject()->activities()->with('user')->limit($this->visible)->get();
+        return $this->feedQuery()->with('user')->limit($this->visible)->get();
     }
 
     /**
@@ -175,7 +190,7 @@ class ActivityFeed extends Component
     #[Computed]
     public function activityCount(): int
     {
-        return $this->activityLogSubject()->activities()->count();
+        return $this->feedQuery()->count();
     }
 
     /**

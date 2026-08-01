@@ -3,6 +3,7 @@
 namespace App\Livewire\Projects;
 
 use App\Jobs\RewriteVariableUsages;
+use App\Models\Activity;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\Variable;
@@ -34,6 +35,7 @@ use Livewire\Component;
  * @property-read array<string, int> $usageCounts
  * @property-read array<string, int> $unknownNames
  * @property-read int $renameUsageCount
+ * @property-read Collection<int, Activity> $history
  */
 class ProjectVariables extends Component
 {
@@ -43,6 +45,11 @@ class ProjectVariables extends Component
     public string $shortName;
 
     public bool $editing = false;
+
+    /** Whether the history dialog is open, and for which variable. */
+    public bool $showingHistory = false;
+
+    public ?int $historyVariableId = null;
 
     /** Whether the rename confirmation is open, awaiting a yes. */
     public bool $confirmingRename = false;
@@ -115,6 +122,41 @@ class ProjectVariables extends Component
         $defined = $this->variables->pluck('name')->all();
 
         return array_diff_key($this->usageCounts, array_flip($defined));
+    }
+
+    /**
+     * Open the history of one of the project's variables: the same audit events
+     * the project feed shows, narrowed to this one — what it has stood for, and
+     * when.
+     */
+    public function showHistory(int $variableId): void
+    {
+        $this->authorize('view-activity-log', $this->project);
+
+        $this->historyVariableId = $this->project->variables()->whereKey($variableId)->firstOrFail()->id;
+        $this->showingHistory = true;
+
+        unset($this->history);
+    }
+
+    /**
+     * The audit entries recorded on the variable whose history is open, newest
+     * first.
+     *
+     * @return Collection<int, Activity>
+     */
+    #[Computed]
+    public function history(): Collection
+    {
+        $variable = $this->historyVariableId === null
+            ? null
+            : $this->project->variables()->whereKey($this->historyVariableId)->first();
+
+        if ($variable === null || ! Auth::user()?->can('view-activity-log', $this->project)) {
+            return new Collection;
+        }
+
+        return $variable->activities()->with('user')->limit(50)->get();
     }
 
     /**

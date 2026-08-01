@@ -15,6 +15,7 @@ use App\Contracts\Subscribable;
 use App\Contracts\UsesVariables;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -216,6 +217,28 @@ class Project extends Model implements Mentionable, Subscribable, UsesVariables
     public function tags(): HasMany
     {
         return $this->hasMany(Tag::class);
+    }
+
+    /**
+     * The activity stream shown on the project page: the project's own entries
+     * plus those of its variables, which are recorded on the variable so each one
+     * also has a history of its own. A deleted variable's entries drop out of the
+     * stream with it — its final "deleted" entry is recorded on the project, so
+     * the removal itself is never lost.
+     *
+     * @return Builder<Activity>
+     */
+    public function feedActivities(): Builder
+    {
+        return Activity::query()
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereMorphedTo('subject', $this)
+                    ->orWhere(fn (Builder $variables) => $variables
+                        ->where('subject_type', (new Variable)->getMorphClass())
+                        ->whereIn('subject_id', $this->variables()->select('variables.id')));
+            })
+            ->latest();
     }
 
     /**

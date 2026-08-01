@@ -20,7 +20,12 @@
     @else
         <div class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10" data-test="variables-list">
             @foreach ($this->variables as $variable)
-                <div class="flex items-center justify-between gap-3 p-3" wire:key="variable-{{ $variable->id }}" data-test="variable-row-{{ $variable->id }}">
+                <div
+                    id="variable-{{ $variable->name }}"
+                    class="flex items-center justify-between gap-3 scroll-mt-24 p-3"
+                    wire:key="variable-{{ $variable->id }}"
+                    data-test="variable-row-{{ $variable->id }}"
+                >
                     <div class="flex min-w-0 flex-col gap-1">
                         <div class="flex min-w-0 flex-wrap items-center gap-2">
                             <flux:text size="sm" class="font-mono text-zinc-500" data-test="variable-name-{{ $variable->id }}">
@@ -48,6 +53,16 @@
                     </div>
 
                     <div class="flex shrink-0 items-center gap-1">
+                        @can('view-activity-log', $this->project)
+                            <flux:button
+                                size="xs"
+                                variant="ghost"
+                                icon="clock"
+                                :aria-label="__('Variable history')"
+                                wire:click="showHistory({{ $variable->id }})"
+                                data-test="variable-history-{{ $variable->id }}"
+                            />
+                        @endcan
                         <flux:button
                             size="xs"
                             variant="ghost"
@@ -142,6 +157,34 @@
                 </flux:button>
             </div>
         </form>
+    </flux:modal>
+
+    {{-- One variable's history: the same audit entries the project feed carries,
+         narrowed to this variable — what it has stood for, and when. --}}
+    <flux:modal wire:model="showingHistory" class="md:w-[32rem]" data-test="variable-history-modal">
+        <div class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('Variable history') }}</flux:heading>
+
+            <ul class="flex flex-col gap-3">
+                @forelse ($this->history as $entry)
+                    <li class="flex items-start gap-2 text-sm" wire:key="history-{{ $entry->id }}" data-test="history-entry">
+                        <div class="min-w-0">
+                            <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $entry->user?->name ?? __('System') }}</span>
+                            {{ \App\Support\ActivityDescriber::describe($entry) }}
+                            <span class="text-zinc-400">· {{ $entry->created_at?->diffForHumans() }}</span>
+                        </div>
+                    </li>
+                @empty
+                    <flux:text class="text-zinc-500" data-test="history-empty">{{ __('Nothing recorded yet.') }}</flux:text>
+                @endforelse
+            </ul>
+
+            <div class="flex justify-end">
+                <flux:modal.close>
+                    <flux:button type="button" variant="ghost">{{ __('Close') }}</flux:button>
+                </flux:modal.close>
+            </div>
+        </div>
     </flux:modal>
 
     {{-- Rename confirmation. A rename is the one operation that rewrites stored

@@ -43,6 +43,10 @@ class ActivityDescriber
             'tag_recolored' => __('changed the color of the tag :name', ['name' => (string) ($newValues['name'] ?? '')]),
             'tag_deleted' => __('deleted the tag :name', ['name' => (string) $activity->old_value]),
             'tag_merged' => __('merged the tag :old into :new', ['old' => (string) $activity->old_value, 'new' => (string) $activity->new_value]),
+            'variable_created' => __('created the variable :name', ['name' => (string) $activity->new_value]),
+            'variable_renamed' => __('renamed the variable :old to :new', ['old' => (string) $activity->old_value, 'new' => (string) $activity->new_value]),
+            'variable_value_changed' => self::variableValueDescription($activity->old_value, $activity->new_value),
+            'variable_deleted' => __('deleted the variable :name', ['name' => (string) $activity->old_value]),
             'parent_changed' => self::parentDescription($activity->old_value, $activity->new_value),
             'canceled' => self::cancellationDescription($newValues),
             'reopened' => __('reopened this'),
@@ -83,6 +87,20 @@ class ActivityDescriber
             $new !== null && $old !== null => __('changed type from :old to :new', ['old' => $old, 'new' => $new]),
             $new !== null => __('set the type to :new', ['new' => $new]),
             default => __('cleared the type'),
+        };
+    }
+
+    /**
+     * A variable's value change. Both sides are shown — "the hero was Robin Hood
+     * until Tuesday" is the entry's whole point — and an unset side is described
+     * rather than rendered as an empty gap.
+     */
+    private static function variableValueDescription(?string $old, ?string $new): string
+    {
+        return match (true) {
+            $new !== null && $old !== null => __('changed the value from :old to :new', ['old' => $old, 'new' => $new]),
+            $new !== null => __('set the value to :new', ['new' => $new]),
+            default => __('cleared the value, leaving it undecided'),
         };
     }
 

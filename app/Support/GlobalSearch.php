@@ -7,6 +7,7 @@ use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Variable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -75,6 +76,7 @@ class GlobalSearch
             ->merge($this->projects($projectIds, $query))
             ->merge($this->tasks($projectIds, $query))
             ->merge($this->docs($user, $projectIds, $query))
+            ->merge($this->variables($user, $projectIds, $query))
             ->unique(static fn (SearchResult $result): string => $result->type.':'.$result->reference)
             ->values();
     }
@@ -231,6 +233,35 @@ class GlobalSearch
     }
 
     /**
+     * The variables of the user's projects matching by name *or* value, so both
+     * "protagonist" and "robin" find `main_protagonist = Robin Hood`. Only shown
+     * to members who may manage a project's variables, since the variables page
+     * a result leads to is gated on that.
+     *
+     * @param  array<int, int>  $projectIds
+     * @return Collection<int, SearchResult>
+     */
+    private function variables(User $user, array $projectIds, string $query): Collection
+    {
+        $like = $this->like($query);
+        $operator = $this->likeOperator();
+
+        return Variable::query()
+            ->with('project')
+            ->whereIn('project_id', $projectIds)
+            ->where(static fn (Builder $builder): Builder => $builder
+                ->where('name', $operator, $like)
+                ->orWhere('value', $operator, $like))
+            ->orderBy('name')
+            ->limit(self::LIMIT * 4)
+            ->get()
+            ->filter(static fn (Variable $variable): bool => $user->can('manage-variables', $variable->project))
+            ->take(self::LIMIT)
+            ->map(fn (Variable $variable): SearchResult => $this->toResult($variable))
+            ->values();
+    }
+
+    /**
      * The stored status values the palette treats as low-priority — terminal
      * states (completed or canceled) that should rank below active tasks.
      *
@@ -247,9 +278,18 @@ class GlobalSearch
     /**
      * Map a resolved model into a palette result.
      */
-    private function toResult(Project|Task|Doc $model, bool $pinned = false): SearchResult
+    private function toResult(Project|Task|Doc|Variable $model, bool $pinned = false): SearchResult
     {
         return match (true) {
+            $model instanceof Variable => new SearchResult(
+                type: 'variable',
+                // What it stands for is the useful line; an undecided variable
+                // shows its own name, exactly as its usages render.
+                title: $model->value ?? $model->name,
+                icon: 'variable',
+                url: route('project.variables', ['short_name' => $model->project->short_name]).'#variable-'.$model->name,
+                reference: '['.$model->name.']',
+            ),
             $model instanceof Doc => new SearchResult(
                 type: 'doc',
                 title: $model->title,

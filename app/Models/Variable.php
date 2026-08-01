@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivity;
+use App\Support\Facades\Audit;
 use Database\Factories\VariableFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,6 +38,62 @@ class Variable extends Model
 {
     /** @use HasFactory<VariableFactory> */
     use HasFactory;
+
+    use LogsActivity;
+
+    /**
+     * Variables record their own audit actions rather than the trait's generic
+     * created/updated/deleted set, so the feed can say what actually happened —
+     * "the hero was Robin Hood until Tuesday" is the whole point of the value
+     * entry. Defining the boot method here replaces the trait's; the rest of
+     * {@see LogsActivity} (the activities relation, the event builder) is used
+     * as-is.
+     *
+     * One event on the thing that changed, never one per affected document:
+     * claiming forty documents were edited when nobody opened them would corrupt
+     * their history and reorder every recently-updated list in the project. And
+     * no notifications — nobody subscribes to a variable, and fanning a typo fix
+     * out to everyone who used it is a mailstorm.
+     */
+    public static function bootLogsActivity(): void
+    {
+        static::created(static function (self $variable): void {
+            Audit::record($variable->contentAuditEvent('variable_created', 'name', null, $variable->name));
+        });
+
+        static::updated(static function (self $variable): void {
+            if ($variable->wasChanged('name')) {
+                Audit::record($variable->contentAuditEvent(
+                    'variable_renamed',
+                    'name',
+                    (string) $variable->getOriginal('name'),
+                    $variable->name,
+                ));
+            }
+
+            if ($variable->wasChanged('value')) {
+                Audit::record($variable->contentAuditEvent(
+                    'variable_value_changed',
+                    'value',
+                    $variable->getOriginal('value'),
+                    $variable->value,
+                ));
+            }
+        });
+
+        // Recorded against the project, not the variable: the variable — and the
+        // history page that would show its own entries — is gone a moment later,
+        // so an entry on it would be unreachable. This mirrors how a deleted tag
+        // is logged.
+        static::deleted(static function (self $variable): void {
+            Audit::record($variable->project->contentAuditEvent(
+                'variable_deleted',
+                'name',
+                $variable->name,
+                null,
+            ));
+        });
+    }
 
     /**
      * Normalize on the way in, whichever entry point wrote the row: names are

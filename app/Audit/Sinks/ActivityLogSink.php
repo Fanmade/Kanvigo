@@ -53,6 +53,10 @@ class ActivityLogSink implements AuditSink
         'tag_recolored',
         'tag_deleted',
         'tag_merged',
+        'variable_created',
+        'variable_renamed',
+        'variable_value_changed',
+        'variable_deleted',
     ];
 
     /**
