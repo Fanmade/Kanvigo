@@ -32,7 +32,7 @@ class ProjectRoleProvisioner
      * @var array<string, list<string>>
      */
     public const array GROUPS = [
-        'Project' => ['view-project', 'manage-settings', 'delete-project', 'view-activity-log'],
+        'Project' => ['view-project', 'manage-settings', 'delete-project', 'view-activity-log', 'export-content'],
         'Members & roles' => ['manage-members', 'invite-members', 'manage-roles'],
         'Tasks' => ['create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies'],
         'Tags' => ['manage-tags', 'tag-tasks'],
@@ -49,7 +49,7 @@ class ProjectRoleProvisioner
      * @var list<string>
      */
     public const array CATALOG = [
-        'view-project', 'manage-settings', 'delete-project', 'view-activity-log',
+        'view-project', 'manage-settings', 'delete-project', 'view-activity-log', 'export-content',
         'manage-members', 'invite-members', 'manage-roles',
         'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
         'manage-tags', 'tag-tasks',
@@ -71,7 +71,7 @@ class ProjectRoleProvisioner
     public const array GRANTS = [
         'viewer' => ['view-project', 'view-activity-log'],
         'member' => [
-            'view-project', 'view-activity-log',
+            'view-project', 'view-activity-log', 'export-content',
             'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
             'manage-tags', 'tag-tasks',
             'manage-attachments', 'delete-attachment',
@@ -80,7 +80,7 @@ class ProjectRoleProvisioner
             'manage-variables',
         ],
         'admin' => [
-            'view-project', 'view-activity-log',
+            'view-project', 'view-activity-log', 'export-content',
             'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
             'manage-tags', 'tag-tasks',
             'manage-attachments', 'delete-attachment',

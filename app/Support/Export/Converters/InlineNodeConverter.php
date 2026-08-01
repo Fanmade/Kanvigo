@@ -1,0 +1,109 @@
+<?php
+
+namespace App\Support\Export\Converters;
+
+use League\HTMLToMarkdown\Converter\ConverterInterface;
+use League\HTMLToMarkdown\ElementInterface;
+
+/**
+ * Converts the inline nodes only Kanvigo knows about — cross-references,
+ * mentions and variable usages — plus the ordinary anchors and images around
+ * them, whose relative URLs have to become absolute to survive leaving the app.
+ *
+ * Everything else is left to the library's own converters; see
+ * docs/adr/0003-html-to-markdown-library.md.
+ */
+final class InlineNodeConverter implements ConverterInterface
+{
+    /**
+     * @param  string  $baseUrl  the instance's absolute root, used to resolve the
+     *                           relative hrefs and image sources stored in content
+     */
+    public function __construct(private readonly string $baseUrl) {}
+
+    public function convert(ElementInterface $element): string
+    {
+        return match ($element->getTagName()) {
+            'a' => $this->convertAnchor($element),
+            'img' => $this->convertImage($element),
+            default => $this->convertSpan($element),
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getSupportedTags(): array
+    {
+        return ['a', 'img', 'span'];
+    }
+
+    /**
+     * A cross-reference links to the item's page on this instance; a mention is
+     * plain `@name`, because a Markdown file taken elsewhere cannot notify
+     * anyone and a link to a profile page nobody can open is noise. Ordinary
+     * links keep their text and get an absolute URL.
+     */
+    private function convertAnchor(ElementInterface $element): string
+    {
+        $text = $element->getValue();
+
+        if ($element->getAttribute('data-type') === 'mention') {
+            return '@'.($element->getAttribute('data-label') ?: ltrim($text, '@'));
+        }
+
+        $href = $element->getAttribute('href');
+
+        if ($href === '') {
+            return $text;
+        }
+
+        if ($element->getAttribute('data-type') === 'reference') {
+            $text = $element->getAttribute('data-label') ?: $text;
+        }
+
+        return '['.$text.']('.$this->absolute($href).')';
+    }
+
+    /**
+     * Inline images are embedded by absolute URL: the file stays where it is and
+     * the export links to it. An image wrapped in a link to its full-size
+     * version keeps that link — the anchor converter runs over it.
+     */
+    private function convertImage(ElementInterface $element): string
+    {
+        $alt = $element->getAttribute('alt') ?: $element->getAttribute('title');
+
+        return '!['.$alt.']('.$this->absolute($element->getAttribute('src')).')';
+    }
+
+    /**
+     * Spans carry mentions (before they are linked) and variable usages, which
+     * the substitutor has already resolved to the value — or, when the variable
+     * has no value yet, to its own name. Both cases are the span's own text, so
+     * an unrecognised span simply contributes its content.
+     */
+    private function convertSpan(ElementInterface $element): string
+    {
+        $text = $element->getValue();
+
+        if ($element->getAttribute('data-type') === 'mention') {
+            return '@'.($element->getAttribute('data-label') ?: ltrim($text, '@'));
+        }
+
+        return $text;
+    }
+
+    /**
+     * Resolve a stored URL against this instance's root. Content written through
+     * the API may already carry an absolute URL, which is left alone.
+     */
+    private function absolute(string $url): string
+    {
+        if ($url === '' || ! str_starts_with($url, '/')) {
+            return $url;
+        }
+
+        return rtrim($this->baseUrl, '/').$url;
+    }
+}

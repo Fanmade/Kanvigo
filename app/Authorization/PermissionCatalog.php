@@ -29,6 +29,7 @@ class PermissionCatalog
         'manage-settings' => 'Manage settings',
         'delete-project' => 'Delete project',
         'view-activity-log' => 'View activity log',
+        'export-content' => 'Export content',
         'manage-members' => 'Manage members',
         'invite-members' => 'Invite members',
         'manage-roles' => 'Manage roles',
@@ -63,6 +64,7 @@ class PermissionCatalog
         'manage-settings' => 'Settings',
         'delete-project' => 'Delete',
         'view-activity-log' => 'Activity log',
+        'export-content' => 'Export',
         'manage-members' => 'Manage members',
         'invite-members' => 'Invite members',
         'manage-roles' => 'Manage roles',
@@ -100,6 +102,7 @@ class PermissionCatalog
         'manage-dependencies' => 'Mark tasks as blocking or blocked by others',
         'moderate-comments' => "Edit or delete other people's comments",
         'manage-variables' => 'Create variables and set what they stand for',
+        'export-content' => 'Download tasks and docs as files, or copy them out',
     ];
 
     /**

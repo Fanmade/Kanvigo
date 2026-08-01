@@ -3,6 +3,8 @@
 namespace App\Audit;
 
 use App\Models\Attachment;
+use App\Models\Doc;
+use App\Models\Task;
 use App\Models\User;
 use Kanvigo\Audit\Contracts\AuditCategory;
 use Kanvigo\Audit\Contracts\AuditEvent;
@@ -56,6 +58,22 @@ final class AccessAudit
     {
         return AuditEvent::make('contact_info_viewed', AuditCategory::Access)
             ->withMetadata(['member_id' => $subject->getKey(), 'member' => $subject->name]);
+    }
+
+    /**
+     * An export of a task or doc to a portable file. Exporting takes content out
+     * of the instance, so it is recorded like any other read of substance: the
+     * exported item is the subject and the options record what left with it.
+     * Copying to the clipboard and downloading are the same event — the content
+     * has left either way.
+     *
+     * @param  array<string, bool>  $options
+     */
+    public static function contentExported(Task|Doc $item, string $format, array $options): AuditEvent
+    {
+        return AuditEvent::make('content_exported', AuditCategory::Access)
+            ->withSubject($item->getMorphClass(), $item->getKey())
+            ->withMetadata(['format' => $format, ...$options]);
     }
 
     /**

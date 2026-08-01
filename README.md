@@ -85,6 +85,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Quick notes** — jot a personal note from anywhere, optionally share it
   read-only with a project, and convert it into a task in one step. See
   [docs/using/quick-notes.md](docs/using/quick-notes.md).
+- **Export** — take a task or doc out as Markdown, copied to the clipboard or
+  downloaded as a file, with an optional YAML header of its metadata. See
+  [docs/using/export.md](docs/using/export.md).
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails; oversized files are rejected with a clear message.
 - **Notifications** — subscribe per project (assignment subscribes you
@@ -249,7 +252,8 @@ Full index: [docs/README.md](docs/README.md).
 
 - **Using Kanvigo** — [inviting users](docs/using/inviting-users.md),
   [quick notes](docs/using/quick-notes.md),
-  [reference docs](docs/using/reference-docs.md).
+  [reference docs](docs/using/reference-docs.md),
+  [export](docs/using/export.md).
 - **Developing & integrating** — [REST API](docs/developing/api.md),
   [audit layer](docs/developing/audit.md),
   [testing & quality](docs/developing/testing.md).

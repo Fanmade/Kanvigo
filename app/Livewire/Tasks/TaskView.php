@@ -4,6 +4,7 @@ namespace App\Livewire\Tasks;
 
 use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
+use App\Concerns\ExportsContent;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\HasLiveUpdates;
 use App\Concerns\ManagesDependencies;
@@ -40,6 +41,7 @@ use Livewire\Component;
  */
 class TaskView extends Component
 {
+    use ExportsContent;
     use HandlesAttachments;
     use HasLiveUpdates;
     use ManagesDependencies;
@@ -140,6 +142,11 @@ class TaskView extends Component
     }
 
     protected function attachable(): Project|Task
+    {
+        return $this->task;
+    }
+
+    protected function exportable(): Task
     {
         return $this->task;
     }

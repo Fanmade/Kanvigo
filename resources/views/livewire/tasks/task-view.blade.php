@@ -125,9 +125,9 @@
             <div class="flex min-w-0 flex-1 flex-col gap-6">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <flux:heading size="xl" class="min-w-0">{{ $this->task->title }}</flux:heading>
-                    @if ($this->canUpdate)
+                    @if ($this->canUpdate || $this->canExport)
                         <div class="flex shrink-0 items-center gap-2">
-                            @unless ($this->task->isCanceled())
+                            @if ($this->canExport || ($this->canUpdate && ! $this->task->isCanceled()))
                                 <flux:dropdown align="end">
                                     <flux:button
                                         size="sm"
@@ -137,23 +137,35 @@
                                         data-test="task-actions"
                                     />
                                     <flux:menu>
-                                        <flux:menu.item
-                                            icon="x-circle"
-                                            variant="danger"
-                                            wire:click="confirmCancel"
-                                            data-test="cancel-task"
-                                        >
-                                            {{ __('Cancel task') }}</flux:menu.item>
+                                        @if ($this->canExport)
+                                            <flux:menu.item
+                                                icon="arrow-down-tray"
+                                                wire:click="startExport"
+                                                data-test="export-task"
+                                            >
+                                                {{ __('Export') }}</flux:menu.item>
+                                        @endif
+                                        @if ($this->canUpdate && ! $this->task->isCanceled())
+                                            <flux:menu.item
+                                                icon="x-circle"
+                                                variant="danger"
+                                                wire:click="confirmCancel"
+                                                data-test="cancel-task"
+                                            >
+                                                {{ __('Cancel task') }}</flux:menu.item>
+                                        @endif
                                     </flux:menu>
                                 </flux:dropdown>
-                            @endunless
-                            <flux:button
-                                size="sm"
-                                icon="pencil-square"
-                                variant="ghost"
-                                wire:click="edit"
-                                data-test="edit-task"
-                            >{{ __('Edit') }}</flux:button>
+                            @endif
+                            @if ($this->canUpdate)
+                                <flux:button
+                                    size="sm"
+                                    icon="pencil-square"
+                                    variant="ghost"
+                                    wire:click="edit"
+                                    data-test="edit-task"
+                                >{{ __('Edit') }}</flux:button>
+                            @endif
                         </div>
                     @endif
                 </div>
@@ -467,6 +479,11 @@
             </div>
         </form>
     </flux:modal>
+
+    @if ($this->canExport)
+        <x-export-modal />
+    @endif
+
     {{-- The editor's "Create variable…" dialog: one per page, wherever a `[`
          picker asks for a name it does not know yet. --}}
     @can('manage-variables', $this->task->project)

@@ -64,9 +64,9 @@
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <flux:heading size="xl" class="min-w-0">{{ $this->doc->title }}</flux:heading>
 
-                    @if ($this->canUpdate)
+                    @if ($this->canUpdate || $this->canExport)
                         <div class="flex shrink-0 items-center gap-2">
-                            @if ($this->canDelete)
+                            @if ($this->canDelete || $this->canExport)
                                 <flux:dropdown align="end">
                                     <flux:button
                                         size="sm"
@@ -76,25 +76,38 @@
                                         data-test="doc-actions"
                                     />
                                     <flux:menu>
-                                        <flux:menu.item
-                                            icon="trash"
-                                            variant="danger"
-                                            wire:click="delete"
-                                            wire:confirm="{{ __('Delete this doc?') }}"
-                                            data-test="delete-doc"
-                                        >
-                                            {{ __('Delete doc') }}
-                                        </flux:menu.item>
+                                        @if ($this->canExport)
+                                            <flux:menu.item
+                                                icon="arrow-down-tray"
+                                                wire:click="startExport"
+                                                data-test="export-doc"
+                                            >
+                                                {{ __('Export') }}
+                                            </flux:menu.item>
+                                        @endif
+                                        @if ($this->canDelete)
+                                            <flux:menu.item
+                                                icon="trash"
+                                                variant="danger"
+                                                wire:click="delete"
+                                                wire:confirm="{{ __('Delete this doc?') }}"
+                                                data-test="delete-doc"
+                                            >
+                                                {{ __('Delete doc') }}
+                                            </flux:menu.item>
+                                        @endif
                                     </flux:menu>
                                 </flux:dropdown>
                             @endif
-                            <flux:button
-                                size="sm"
-                                icon="pencil-square"
-                                variant="ghost"
-                                wire:click="edit"
-                                data-test="edit-doc"
-                            >{{ __('Edit') }}</flux:button>
+                            @if ($this->canUpdate)
+                                <flux:button
+                                    size="sm"
+                                    icon="pencil-square"
+                                    variant="ghost"
+                                    wire:click="edit"
+                                    data-test="edit-doc"
+                                >{{ __('Edit') }}</flux:button>
+                            @endif
                         </div>
                     @endif
                 </div>
@@ -246,6 +259,10 @@
             </form>
         </flux:modal>
     @endif
+    @if ($this->canExport)
+        <x-export-modal />
+    @endif
+
     {{-- The editor's "Create variable…" dialog: one per page, wherever a `[`
          picker asks for a name it does not know yet. --}}
     @can('manage-variables', $this->doc->project)

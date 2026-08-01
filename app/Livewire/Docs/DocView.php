@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Docs;
 
+use App\Concerns\ExportsContent;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ShowsReferences;
 use App\Livewire\Tasks\TaskView;
@@ -36,6 +37,7 @@ use Livewire\Component;
  */
 class DocView extends Component
 {
+    use ExportsContent;
     use HandlesAttachments;
     use ShowsReferences;
 
@@ -92,6 +94,11 @@ class DocView extends Component
     }
 
     protected function attachable(): Doc
+    {
+        return $this->doc;
+    }
+
+    protected function exportable(): Doc
     {
         return $this->doc;
     }
