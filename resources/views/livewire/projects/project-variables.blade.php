@@ -53,16 +53,14 @@
                     </div>
 
                     <div class="flex shrink-0 items-center gap-1">
-                        @can('view-activity-log', $this->project)
-                            <flux:button
-                                size="xs"
-                                variant="ghost"
-                                icon="clock"
-                                :aria-label="__('Variable history')"
-                                wire:click="showHistory({{ $variable->id }})"
-                                data-test="variable-history-{{ $variable->id }}"
-                            />
-                        @endcan
+                        <flux:button
+                            size="xs"
+                            variant="ghost"
+                            icon="magnifying-glass"
+                            :aria-label="__('Where this is used')"
+                            wire:click="inspect('{{ $variable->name }}')"
+                            data-test="inspect-variable-{{ $variable->id }}"
+                        />
                         <flux:button
                             size="xs"
                             variant="ghost"
@@ -104,15 +102,25 @@
                                 {{ trans_choice('{1}:count use|[2,*]:count uses', $uses, ['count' => $uses]) }}
                             </flux:text>
                         </div>
-                        <flux:button
-                            size="xs"
-                            variant="ghost"
-                            icon="plus"
-                            wire:click="startCreate('{{ $name }}')"
-                            data-test="define-{{ $name }}"
-                        >
-                            {{ __('Define') }}
-                        </flux:button>
+                        <div class="flex shrink-0 items-center gap-1">
+                            <flux:button
+                                size="xs"
+                                variant="ghost"
+                                icon="magnifying-glass"
+                                :aria-label="__('Where this is used')"
+                                wire:click="inspect('{{ $name }}')"
+                                data-test="inspect-unknown-{{ $name }}"
+                            />
+                            <flux:button
+                                size="xs"
+                                variant="ghost"
+                                icon="plus"
+                                wire:click="startCreate('{{ $name }}')"
+                                data-test="define-{{ $name }}"
+                            >
+                                {{ __('Define') }}
+                            </flux:button>
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -159,25 +167,52 @@
         </form>
     </flux:modal>
 
-    {{-- One variable's history: the same audit entries the project feed carries,
-         narrowed to this variable — what it has stood for, and when. --}}
-    <flux:modal wire:model="showingHistory" class="md:w-[32rem]" data-test="variable-history-modal">
-        <div class="flex flex-col gap-4">
-            <flux:heading size="lg">{{ __('Variable history') }}</flux:heading>
+    {{-- One name in detail: where the text uses it, and — when it is a variable —
+         what it has stood for over time. --}}
+    <flux:modal wire:model="inspecting" class="md:w-[32rem]" data-test="variable-details-modal">
+        <div class="flex flex-col gap-5">
+            <flux:heading size="lg">
+                <span class="font-mono">[{{ $inspectedName }}]</span>
+            </flux:heading>
 
-            <ul class="flex flex-col gap-3">
-                @forelse ($this->history as $entry)
-                    <li class="flex items-start gap-2 text-sm" wire:key="history-{{ $entry->id }}" data-test="history-entry">
-                        <div class="min-w-0">
-                            <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $entry->user?->name ?? __('System') }}</span>
-                            {{ \App\Support\ActivityDescriber::describe($entry) }}
-                            <span class="text-zinc-400">· {{ $entry->created_at?->diffForHumans() }}</span>
-                        </div>
-                    </li>
-                @empty
-                    <flux:text class="text-zinc-500" data-test="history-empty">{{ __('Nothing recorded yet.') }}</flux:text>
-                @endforelse
-            </ul>
+            <div class="flex flex-col gap-2">
+                <flux:heading>{{ __('Where it is used') }}</flux:heading>
+
+                <ul class="flex flex-col gap-2">
+                    @forelse ($this->usages as $page)
+                        <li wire:key="usage-{{ $loop->index }}" data-test="usage-entry">
+                            <flux:link :href="$this->usageUrl($page)" wire:navigate class="flex items-center gap-2 text-sm">
+                                <span class="font-mono text-xs text-zinc-500">{{ $this->usageLabel($page) }}</span>
+                                <span class="min-w-0 truncate">{{ $page->title }}</span>
+                            </flux:link>
+                        </li>
+                    @empty
+                        <flux:text class="text-zinc-500" data-test="usages-empty">{{ __('No text uses this name.') }}</flux:text>
+                    @endforelse
+                </ul>
+
+                <flux:text size="sm" class="text-zinc-400">
+                    {{ __('Collected shortly after each edit, so a change made moments ago may not be listed yet.') }}
+                </flux:text>
+            </div>
+
+            @can('view-activity-log', $this->project)
+                @if ($this->history->isNotEmpty())
+                    <div class="flex flex-col gap-2">
+                        <flux:heading>{{ __('History') }}</flux:heading>
+
+                        <ul class="flex flex-col gap-2">
+                            @foreach ($this->history as $entry)
+                                <li class="text-sm" wire:key="history-{{ $entry->id }}" data-test="history-entry">
+                                    <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $entry->user?->name ?? __('System') }}</span>
+                                    {{ \App\Support\ActivityDescriber::describe($entry) }}
+                                    <span class="text-zinc-400">· {{ $entry->created_at?->diffForHumans() }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            @endcan
 
             <div class="flex justify-end">
                 <flux:modal.close>

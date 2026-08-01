@@ -119,8 +119,8 @@ it('shows a variable own history on the variables page', function () {
 
     Livewire::actingAs($this->member)
         ->test(ProjectVariables::class, ['short_name' => 'SCI'])
-        ->call('showHistory', $variable->id)
-        ->assertSet('showingHistory', true)
+        ->call('inspect', 'hero')
+        ->assertSet('inspecting', true)
         ->assertSeeText('changed the value from Robin Hood to Robin of Loxley')
         ->assertSeeText('created the variable hero');
 });

@@ -4,14 +4,18 @@ namespace App\Livewire\Projects;
 
 use App\Jobs\RewriteVariableUsages;
 use App\Models\Activity;
+use App\Models\Doc;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use App\Models\Variable;
 use App\Models\VariableUsage;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -36,20 +40,33 @@ use Livewire\Component;
  * @property-read array<string, int> $unknownNames
  * @property-read int $renameUsageCount
  * @property-read Collection<int, Activity> $history
+ * @property-read SupportCollection<int, Project|Task|Doc> $usages
  */
 class ProjectVariables extends Component
 {
     use AuthorizesRequests;
+
+    /**
+     * How many usages and history entries the details dialog shows. A bound, not
+     * a claim of completeness — the dialog says as much.
+     */
+    public const int USAGES_SHOWN = 25;
+
+    public const int HISTORY_SHOWN = 25;
 
     #[Locked]
     public string $shortName;
 
     public bool $editing = false;
 
-    /** Whether the history dialog is open, and for which variable. */
-    public bool $showingHistory = false;
+    /** Whether the details dialog is open, and for which name. */
+    public bool $inspecting = false;
 
-    public ?int $historyVariableId = null;
+    /**
+     * The name being inspected. A name, not an id, so an unknown name — one used
+     * in the text with no variable behind it — can be inspected too.
+     */
+    public ?string $inspectedName = null;
 
     /** Whether the rename confirmation is open, awaiting a yes. */
     public bool $confirmingRename = false;
@@ -125,38 +142,91 @@ class ProjectVariables extends Component
     }
 
     /**
-     * Open the history of one of the project's variables: the same audit events
-     * the project feed shows, narrowed to this one — what it has stood for, and
-     * when.
+     * Open the details of one name: where it is used, and — for a name that is
+     * actually a variable — what it has stood for over time.
      */
-    public function showHistory(int $variableId): void
+    public function inspect(string $name): void
     {
-        $this->authorize('view-activity-log', $this->project);
+        $this->authorize('manage-variables', $this->project);
 
-        $this->historyVariableId = $this->project->variables()->whereKey($variableId)->firstOrFail()->id;
-        $this->showingHistory = true;
+        $this->inspectedName = Variable::normalizeName($name);
+        $this->inspecting = true;
 
-        unset($this->history);
+        unset($this->usages, $this->history);
     }
 
     /**
-     * The audit entries recorded on the variable whose history is open, newest
-     * first.
+     * The pages whose text uses the inspected name, newest first.
+     *
+     * Read from the usage index, which is maintained asynchronously and may lag
+     * a very recent edit — fine for a panel, which is why the dialog says so and
+     * why nothing on a render path reads this table. Pages the viewer may not see
+     * are left out, so the list can never disclose a draft doc.
+     *
+     * @return SupportCollection<int, Project|Task|Doc>
+     */
+    #[Computed]
+    public function usages(): SupportCollection
+    {
+        if ($this->inspectedName === null) {
+            return new SupportCollection;
+        }
+
+        $user = Auth::user();
+
+        return VariableUsage::query()
+            ->where('project_id', $this->project->getKey())
+            ->where('name', $this->inspectedName)
+            ->with('usable')
+            ->latest('id')
+            ->limit(self::USAGES_SHOWN)
+            ->get()
+            ->map(static fn (VariableUsage $usage): Project|Task|Doc|null => $usage->page())
+            ->filter(static fn (?Model $page): bool => $page !== null && (bool) $user?->can('view', $page))
+            ->unique(static fn (Model $page): string => $page::class.':'.$page->getKey())
+            ->values();
+    }
+
+    /**
+     * The audit entries recorded on the inspected variable, newest first — the
+     * same events the project feed carries, narrowed to this one. Empty for an
+     * unknown name: nothing has ever happened to a variable that does not exist.
      *
      * @return Collection<int, Activity>
      */
     #[Computed]
     public function history(): Collection
     {
-        $variable = $this->historyVariableId === null
+        $variable = $this->inspectedName === null
             ? null
-            : $this->project->variables()->whereKey($this->historyVariableId)->first();
+            : $this->project->variables()->where('name', $this->inspectedName)->first();
 
         if ($variable === null || ! Auth::user()?->can('view-activity-log', $this->project)) {
             return new Collection;
         }
 
-        return $variable->activities()->with('user')->limit(50)->get();
+        return $variable->activities()->with('user')->limit(self::HISTORY_SHOWN)->get();
+    }
+
+    /**
+     * How a usage is labelled in the list: its reference for a task or doc, the
+     * short name for the project itself.
+     */
+    public function usageLabel(Project|Task|Doc $page): string
+    {
+        return $page instanceof Project ? $page->short_name : $page->reference;
+    }
+
+    /**
+     * Where a usage links to.
+     */
+    public function usageUrl(Project|Task|Doc $page): string
+    {
+        return match (true) {
+            $page instanceof Task => route('task.show', ['short_name' => $page->project->short_name, 'task_number' => $page->task_number]),
+            $page instanceof Doc => route('doc.show', ['short_name' => $page->project->short_name, 'doc_number' => $page->doc_number]),
+            $page instanceof Project => route('project.show', ['short_name' => $page->short_name]),
+        };
     }
 
     /**

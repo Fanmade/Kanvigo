@@ -45,6 +45,23 @@ class VariableUsage extends Model
     }
 
     /**
+     * The page this usage leads to: the item itself for a task, doc or project,
+     * and the commented-on item for a comment — a comment has no page of its own.
+     * Null when the item has since been deleted, or is of a kind with nowhere to
+     * link (the index is derived state and may lag behind either).
+     */
+    public function page(): Project|Task|Doc|null
+    {
+        $item = $this->usable;
+
+        if ($item instanceof Comment) {
+            $item = $item->commentable;
+        }
+
+        return $item instanceof Task || $item instanceof Doc || $item instanceof Project ? $item : null;
+    }
+
+    /**
      * The project whose namespace the name belongs to.
      *
      * @return BelongsTo<Project, $this>

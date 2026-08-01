@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Enums\Status;
-use App\Models\Comment;
 use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
@@ -299,25 +298,12 @@ class GlobalSearch
             ->latest('id')
             ->limit(self::LIMIT * 4)
             ->get()
-            ->map(fn (VariableUsage $usage): Project|Task|Doc|null => $this->usagePage($usage->usable))
+            ->map(static fn (VariableUsage $usage): Project|Task|Doc|null => $usage->page())
             ->filter(static fn (?Model $item): bool => $item !== null && $user->can('view', $item))
             ->unique(static fn (Model $item): string => $item::class.':'.$item->getKey())
             ->take(self::LIMIT)
             ->map(fn (Model $item): SearchResult => $this->toResult($item))
             ->values();
-    }
-
-    /**
-     * The page a usage leads to: the item itself for a task, doc or project, and
-     * the commented-on item for a comment — a comment has no page of its own.
-     */
-    private function usagePage(?Model $item): Project|Task|Doc|null
-    {
-        return match (true) {
-            $item instanceof Task, $item instanceof Doc, $item instanceof Project => $item,
-            $item instanceof Comment => $this->usagePage($item->commentable),
-            default => null,
-        };
     }
 
     /**
