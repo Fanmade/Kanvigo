@@ -3,12 +3,15 @@
 namespace App\Support;
 
 use App\Enums\Status;
+use App\Models\Comment;
 use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Variable;
+use App\Models\VariableUsage;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
@@ -72,11 +75,17 @@ class GlobalSearch
             $results = $results->merge($this->tasksByNumber($projectIds, (int) $query, $contextProjectId));
         }
 
+        // A variable match also drags in the pages that use it: the text says
+        // "[hero]", never "Robin Hood", so searching the value could never reach
+        // them by matching content.
+        $variables = $this->matchingVariables($user, $projectIds, $query);
+
         return $results
             ->merge($this->projects($projectIds, $query))
             ->merge($this->tasks($projectIds, $query))
             ->merge($this->docs($user, $projectIds, $query))
-            ->merge($this->variables($user, $projectIds, $query))
+            ->merge($variables->map(fn (Variable $variable): SearchResult => $this->toResult($variable)))
+            ->merge($this->variableUsages($user, $variables))
             ->unique(static fn (SearchResult $result): string => $result->type.':'.$result->reference)
             ->values();
     }
@@ -234,14 +243,14 @@ class GlobalSearch
 
     /**
      * The variables of the user's projects matching by name *or* value, so both
-     * "protagonist" and "robin" find `main_protagonist = Robin Hood`. Only shown
+     * "protagonist" and "robin" find `main_protagonist = Robin Hood`. Only offered
      * to members who may manage a project's variables, since the variables page
      * a result leads to is gated on that.
      *
      * @param  array<int, int>  $projectIds
-     * @return Collection<int, SearchResult>
+     * @return Collection<int, Variable>
      */
-    private function variables(User $user, array $projectIds, string $query): Collection
+    private function matchingVariables(User $user, array $projectIds, string $query): Collection
     {
         $like = $this->like($query);
         $operator = $this->likeOperator();
@@ -257,8 +266,58 @@ class GlobalSearch
             ->get()
             ->filter(static fn (Variable $variable): bool => $user->can('manage-variables', $variable->project))
             ->take(self::LIMIT)
-            ->map(fn (Variable $variable): SearchResult => $this->toResult($variable))
             ->values();
+    }
+
+    /**
+     * The items whose text uses one of the matched variables, as ordinary task,
+     * doc and project results.
+     *
+     * Resolved through the usage index rather than by scanning content: the index
+     * is keyed on the name, so this is a join, not a search. It is allowed to lag
+     * (KAN-460), so a usage written moments ago may be missing — acceptable in a
+     * search result, which is why nothing on a render path reads this table.
+     *
+     * @param  Collection<int, Variable>  $variables
+     * @return Collection<int, SearchResult>
+     */
+    private function variableUsages(User $user, Collection $variables): Collection
+    {
+        if ($variables->isEmpty()) {
+            return collect();
+        }
+
+        return VariableUsage::query()
+            ->where(static function (Builder $builder) use ($variables): void {
+                foreach ($variables as $variable) {
+                    $builder->orWhere(static fn (Builder $one): Builder => $one
+                        ->where('project_id', $variable->project_id)
+                        ->where('name', $variable->name));
+                }
+            })
+            ->with('usable')
+            ->latest('id')
+            ->limit(self::LIMIT * 4)
+            ->get()
+            ->map(fn (VariableUsage $usage): Project|Task|Doc|null => $this->usagePage($usage->usable))
+            ->filter(static fn (?Model $item): bool => $item !== null && $user->can('view', $item))
+            ->unique(static fn (Model $item): string => $item::class.':'.$item->getKey())
+            ->take(self::LIMIT)
+            ->map(fn (Model $item): SearchResult => $this->toResult($item))
+            ->values();
+    }
+
+    /**
+     * The page a usage leads to: the item itself for a task, doc or project, and
+     * the commented-on item for a comment — a comment has no page of its own.
+     */
+    private function usagePage(?Model $item): Project|Task|Doc|null
+    {
+        return match (true) {
+            $item instanceof Task, $item instanceof Doc, $item instanceof Project => $item,
+            $item instanceof Comment => $this->usagePage($item->commentable),
+            default => null,
+        };
     }
 
     /**

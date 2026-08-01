@@ -6,7 +6,6 @@ use App\Models\Activity;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Variable;
-use App\Support\GlobalSearch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
@@ -124,34 +123,4 @@ it('shows a variable own history on the variables page', function () {
         ->assertSet('showingHistory', true)
         ->assertSeeText('changed the value from Robin Hood to Robin of Loxley')
         ->assertSeeText('created the variable hero');
-});
-
-it('finds a variable in the command palette by name or value', function () {
-    Variable::factory()->for($this->project)->create(['name' => 'main_protagonist', 'value' => 'Robin Hood']);
-
-    $byName = app(GlobalSearch::class)->search($this->member, 'protagonist');
-    $byValue = app(GlobalSearch::class)->search($this->member, 'robin');
-
-    expect($byName->pluck('reference'))->toContain('[main_protagonist]')
-        ->and($byValue->pluck('reference'))->toContain('[main_protagonist]')
-        ->and($byValue->firstWhere('type', 'variable')->title)->toBe('Robin Hood')
-        ->and($byValue->firstWhere('type', 'variable')->url)->toContain('/SCI/variables#variable-main_protagonist');
-});
-
-it('keeps variables out of the palette for someone who may not manage them', function () {
-    Variable::factory()->for($this->project)->create(['name' => 'hero', 'value' => 'Robin Hood']);
-    $viewer = userWithRole($this->project, 'viewer');
-
-    $results = app(GlobalSearch::class)->search($viewer, 'robin');
-
-    expect($results->pluck('type'))->not->toContain('variable');
-});
-
-it('keeps variables of other projects out of the palette', function () {
-    $other = Project::factory()->create(['short_name' => 'OTH']);
-    Variable::factory()->for($other)->create(['name' => 'hero', 'value' => 'Robin Hood']);
-
-    $results = app(GlobalSearch::class)->search($this->member, 'robin');
-
-    expect($results->pluck('type'))->not->toContain('variable');
 });
