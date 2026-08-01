@@ -77,6 +77,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   (`PROJ-D3`): specs, decisions and background, nested into a tree, drafts until
   published, each listing what it links to and everything that cites it. See
   [docs/using/reference-docs.md](docs/using/reference-docs.md).
+- **Variables** — project-scoped stand-ins for facts that recur or are not
+  decided yet: write `[main_protagonist]` in a description, doc or comment and it
+  shows the current value, with an unset one rendering as a visible hole. Values
+  change in one place, renaming rewrites the usages, deleting leaves the text
+  untouched. See [docs/using/variables.md](docs/using/variables.md).
 - **Quick notes** — jot a personal note from anywhere, optionally share it
   read-only with a project, and convert it into a task in one step. See
   [docs/using/quick-notes.md](docs/using/quick-notes.md).
@@ -95,9 +100,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Readable scoped URLs** — `/ABC` for a project, `/ABC/board` for its board,
   `/ABC-42` for a task and `/ABC-D3` for a doc. The browser tab title carries the
   same context, so many open tabs stay distinguishable.
-- **Command palette** (`⌘K` / `Ctrl+K`) — search projects, tasks and docs, jump
-  straight to a typed reference (`PROJ-42`, `PROJ42`, `PROJ-D3`), find tasks by a
-  bare number, and run quick actions such as creating a task or a doc.
+- **Command palette** (`⌘K` / `Ctrl+K`) — search projects, tasks, docs and
+  variables (by name or value, surfacing the pages that use them), jump straight
+  to a typed reference (`PROJ-42`, `PROJ42`, `PROJ-D3`), find tasks by a bare
+  number, and run quick actions such as creating a task or a doc.
 - **Appearance** — English and German following the browser language, light and
   dark, and an optional full-width layout for large displays.
 

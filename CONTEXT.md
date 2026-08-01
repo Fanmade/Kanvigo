@@ -101,11 +101,11 @@ The durable record of something that happened, categorised (content, authz, acce
 …) and never rewritten. Activity is one view over these; other sinks may consume the
 same stream.
 
-## Variables *(designed, not yet built — KAN-454)*
+## Variables
 
-The terms below are settled vocabulary for work that does not exist yet. They are
-here so the language is fixed before the code is written; see
-`docs/adr/0001-project-variables.md`.
+The vocabulary of the variables feature; see `docs/adr/0001-project-variables.md`
+for why substitution happens when the text is read, and
+`docs/using/variables.md` for how the feature is used.
 
 **Variable**:
 A named, project-scoped value standing in for a fact that appears in many places or

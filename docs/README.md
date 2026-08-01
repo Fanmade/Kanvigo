@@ -12,6 +12,8 @@ front door — what Kanvigo is, the feature list, and how to get it running.
   project, converting one into a task.
 - [Reference docs](using/reference-docs.md) — a project's knowledge pages,
   drafts, nesting and backlinks.
+- [Variables](using/variables.md) — named stand-ins for facts that recur or are
+  not decided yet, written as `[name]` and resolved when the text is read.
 
 ## Developing & integrating
 

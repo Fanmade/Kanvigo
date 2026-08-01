@@ -10,6 +10,17 @@ Kanvigo is under active development and does not yet follow semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
+- **Project variables** — named stand-ins for facts that recur or are not decided
+  yet. Write `[main_protagonist]` in a description, doc body or comment and it
+  shows the project's current value for it; an unset variable renders as a visible
+  hole. Values resolve when the text is read, so changing one changes every place
+  at once and rewrites nothing. Includes a per-project management page with usage
+  lists and history, a `[` picker in the editor with create-on-demand, renaming
+  that rewrites usages, command-palette search by name or value, MCP tools, and a
+  REST endpoint. See [docs/using/variables.md](docs/using/variables.md).
+
 ### Changed
 
 - Documentation is split into usage (`docs/using/`) and developer

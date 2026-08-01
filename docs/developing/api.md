@@ -61,6 +61,7 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `GET`    | `/projects/{short_name}/tasks`                        | read    | A project's tasks (paginated). Filters: `status`, `parent`. |
 | `GET`    | `/projects/{short_name}/task-types`                   | read    | A project's configured task types. |
 | `GET`    | `/projects/{short_name}/tags`                         | read    | A project's tags (with usage counts). |
+| `GET`    | `/projects/{short_name}/variables`                    | read    | A project's variables with their current values. |
 | `POST`   | `/projects/{short_name}/tasks`                        | write   | Create a task. |
 | `GET`    | `/tasks/{reference}`                                  | read    | A single task. |
 | `PATCH`  | `/tasks/{reference}`                                  | write   | Update a task's fields, status, type or tags. |
@@ -109,6 +110,14 @@ reference (the project short name, `-D` and a per-project doc number) and are
 always addressed by it. A doc is a draft until it
 is published (`is_public`): a draft is only visible to members who may edit the
 project's docs, and 404s for everyone else.
+
+[Variables](../using/variables.md) are project-scoped stand-ins written in prose as
+`[name]`. Content is returned **exactly as stored**, with the markers intact, and
+the task and doc detail responses carry a `variables` array naming the variables
+that content uses and their current values. Resolve the markers against that array
+when reading, and send the body back unchanged: substituting the values into the
+text would delete every usage on the next write. Writing `[name]` in a body never
+creates a variable — a mistyped name must not become permanent project vocabulary.
 
 Cross-references link a task or doc to another task or doc; both `references`
 paths above are the same endpoint, resolving whichever item the reference names.
