@@ -1,3 +1,4 @@
+@php use App\Models\Doc; @endphp
 @props(['item'])
 
 {{--
@@ -7,7 +8,8 @@
     reader's way back to wherever the doc was cited.
 --}}
 @php
-    $isDoc = $item instanceof \App\Models\Doc;
+    /* @var \App\Models\Doc|\App\Models\Task $item */
+    $isDoc = $item instanceof Doc;
 
     $url = $isDoc
         ? route('doc.show', ['short_name' => $item->project->short_name, 'doc_number' => $item->doc_number])
