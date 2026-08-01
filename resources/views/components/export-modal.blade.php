@@ -55,6 +55,14 @@
                         />
                     @endif
 
+                    @if ($this->exportHasArchived)
+                        <flux:checkbox
+                            wire:model="exportArchived"
+                            :label="__('Include archived')"
+                            data-test="export-archived"
+                        />
+                    @endif
+
                     @if ($this->exportHasDrafts)
                         <flux:checkbox
                             wire:model="exportDrafts"

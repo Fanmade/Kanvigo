@@ -21,6 +21,8 @@ final readonly class ExportOptions
      *                           deeper later still exports in full
      * @param  bool  $canceled  include canceled tasks, which are otherwise skipped
      *                          along with everything below them
+     * @param  bool  $archived  include archived tasks, which are otherwise skipped
+     *                          along with everything below them
      * @param  bool  $drafts  include draft docs found among the descendants; a
      *                        directly-exported draft always exports
      */
@@ -29,6 +31,7 @@ final readonly class ExportOptions
         public bool $descendants = false,
         public ?int $depth = null,
         public bool $canceled = false,
+        public bool $archived = false,
         public bool $drafts = false,
     ) {}
 
@@ -44,6 +47,7 @@ final readonly class ExportOptions
             'descendants' => $this->descendants,
             'depth' => $this->depth === null ? 'all' : (string) $this->depth,
             'canceled' => $this->canceled,
+            'archived' => $this->archived,
             'drafts' => $this->drafts,
         ];
     }

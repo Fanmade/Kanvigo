@@ -30,6 +30,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * @property-read list<array{item: Task|Doc, level: int}> $exportableSubtree
  * @property-read int $exportSubtreeDepth
  * @property-read bool $exportHasCanceled
+ * @property-read bool $exportHasArchived
  * @property-read bool $exportHasDrafts
  */
 trait ExportsContent
@@ -53,6 +54,8 @@ trait ExportsContent
 
     public bool $exportCanceled = false;
 
+    public bool $exportArchived = false;
+
     public bool $exportDrafts = false;
 
     /**
@@ -73,7 +76,7 @@ trait ExportsContent
     {
         return app(MarkdownExporter::class)->subtree(
             $this->exportable(),
-            new ExportOptions(descendants: true, canceled: true, drafts: true),
+            new ExportOptions(descendants: true, canceled: true, archived: true, drafts: true),
         );
     }
 
@@ -96,6 +99,23 @@ trait ExportsContent
     {
         foreach ($this->exportableSubtree as $entry) {
             if ($entry['item'] instanceof Task && $entry['item']->isCanceled()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the subtree holds an archived task — the same condition as the
+     * canceled toggle, for work that aged off the board rather than being
+     * abandoned.
+     */
+    #[Computed]
+    public function exportHasArchived(): bool
+    {
+        foreach ($this->exportableSubtree as $entry) {
+            if ($entry['item'] instanceof Task && $entry['item']->isArchived()) {
                 return true;
             }
         }
@@ -137,7 +157,13 @@ trait ExportsContent
 
         // The subtree may have changed since the page loaded, so the conditional
         // controls are decided fresh each time the dialog opens.
-        unset($this->exportableSubtree, $this->exportSubtreeDepth, $this->exportHasCanceled, $this->exportHasDrafts);
+        unset(
+            $this->exportableSubtree,
+            $this->exportSubtreeDepth,
+            $this->exportHasCanceled,
+            $this->exportHasArchived,
+            $this->exportHasDrafts,
+        );
 
         $this->exporting = true;
     }
@@ -191,6 +217,7 @@ trait ExportsContent
             descendants: $this->exportDescendants && $this->exportSubtreeDepth > 0,
             depth: $this->exportDepth === 'all' ? null : (int) $this->exportDepth,
             canceled: $this->exportCanceled,
+            archived: $this->exportArchived,
             drafts: $this->exportDrafts,
         );
 

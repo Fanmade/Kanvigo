@@ -27,13 +27,14 @@ function headingLines(string $markdown): array
 }
 
 /** The rendered Markdown for an item, with descendants on and metadata off. */
-function exportedSubtree(Task|Doc $item, ?int $depth = null, bool $canceled = false, bool $drafts = false): string
+function exportedSubtree(Task|Doc $item, ?int $depth = null, bool $canceled = false, bool $archived = false, bool $drafts = false): string
 {
     return app(MarkdownExporter::class)->render($item, new ExportOptions(
         metadata: false,
         descendants: true,
         depth: $depth,
         canceled: $canceled,
+        archived: $archived,
         drafts: $drafts,
     ));
 }
@@ -143,6 +144,31 @@ describe('canceled tasks', function () {
 
         expect($markdown)->toContain('## Abandoned')
             ->and($markdown)->toContain('· Canceled');
+    });
+});
+
+describe('archived tasks', function () {
+    it('leaves an archived subtask out by default, with everything below it', function () {
+        $root = Task::factory()->for($this->project)->create();
+        $archived = Task::factory()->for($this->project)->childOf($root)->archived()->create(['title' => 'Aged out']);
+        Task::factory()->for($this->project)->childOf($archived)->create(['title' => 'Below the archived one']);
+        Task::factory()->for($this->project)->childOf($root)->create(['title' => 'Live work']);
+
+        $markdown = exportedSubtree($root);
+
+        expect($markdown)->toContain('Live work')
+            ->and($markdown)->not->toContain('Aged out')
+            ->and($markdown)->not->toContain('Below the archived one');
+    });
+
+    it('includes archived subtasks when asked, marked as archived', function () {
+        $root = Task::factory()->for($this->project)->create();
+        Task::factory()->for($this->project)->childOf($root)->archived()->create(['title' => 'Aged out']);
+
+        $markdown = exportedSubtree($root, archived: true);
+
+        expect($markdown)->toContain('## Aged out')
+            ->and($markdown)->toContain('· Archived');
     });
 });
 

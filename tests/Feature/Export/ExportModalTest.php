@@ -112,6 +112,23 @@ describe('the subtree controls', function () {
             ->assertSet('exportCanceled', false);
     });
 
+    it('offers the archived toggle only when the subtree holds an archived task', function () {
+        Task::factory()->for($this->project)->childOf($this->task)->create();
+
+        exportTaskView()
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->assertDontSeeHtml('data-test="export-archived"');
+
+        Task::factory()->for($this->project)->childOf($this->task)->archived()->create();
+
+        exportTaskView()
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->assertSeeHtml('data-test="export-archived"')
+            ->assertSet('exportArchived', false);
+    });
+
     it('offers the drafts toggle only when a nested draft is there to include', function () {
         $doc = Doc::factory()->for($this->project)->create(['is_public' => true]);
         $published = Doc::factory()->for($this->project)->create(['is_public' => true, 'parent_id' => $doc->id]);
@@ -157,6 +174,7 @@ describe('the subtree controls', function () {
         expect($event['metadata']['descendants'])->toBeTrue()
             ->and($event['metadata']['depth'])->toBe('all')
             ->and($event['metadata']['canceled'])->toBeTrue()
+            ->and($event['metadata']['archived'])->toBeFalse()
             ->and($event['metadata']['drafts'])->toBeFalse();
     });
 });

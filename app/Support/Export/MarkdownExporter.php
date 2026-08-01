@@ -204,14 +204,16 @@ class MarkdownExporter
     }
 
     /**
-     * Whether a descendant belongs in this export. Canceled tasks are noise in a
-     * document unless explicitly asked for; a draft doc is invisible to most
-     * readers, so it needs both the option and the viewer's own right to see it.
+     * Whether a descendant belongs in this export. Canceled and archived tasks
+     * are noise in a document unless explicitly asked for; a draft doc is
+     * invisible to most readers, so it needs both the option and the viewer's own
+     * right to see it.
      */
     private function includes(Task|Doc $item, ExportOptions $options): bool
     {
         if ($item instanceof Task) {
-            return $options->canceled || ! $item->isCanceled();
+            return (! $item->isCanceled() || $options->canceled)
+                && (! $item->isArchived() || $options->archived);
         }
 
         return $item->is_public || ($options->drafts && Gate::allows('view', $item));
@@ -239,6 +241,10 @@ class MarkdownExporter
 
         if ($item instanceof Task) {
             $parts[] = $item->isCanceled() ? __('Canceled') : $item->status->value;
+
+            if ($item->isArchived()) {
+                $parts[] = __('Archived');
+            }
 
             if ($item->taskType !== null) {
                 $parts[] = (string) $item->taskType->name;

@@ -37,6 +37,9 @@ they have something to do:
   Defaults to **All**, which stays "all" as the subtree grows.
 - **Include canceled** — off by default; canceled work reads as noise in a
   document. A skipped task takes everything below it with it.
+- **Include archived** — off by default, and only offered when the subtree holds
+  an archived task. Archived work aged off the board rather than being
+  abandoned, and is marked as archived when included.
 - **Include drafts** — off by default, and only offered when the subtree holds a
   draft doc you may see. An included draft is marked as such. Exporting a draft
   directly always works; this option governs descendants only.
