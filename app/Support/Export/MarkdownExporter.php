@@ -2,6 +2,7 @@
 
 namespace App\Support\Export;
 
+use App\Models\Comment;
 use App\Models\Doc;
 use App\Models\Tag;
 use App\Models\Task;
@@ -50,10 +51,13 @@ class MarkdownExporter
 
         // The images are resolved for the document as a whole: one query for the
         // attachments it references, and one budget spent across all of them.
+        $items = [$item, ...array_map(static fn (array $entry): Task|Doc => $entry['item'], $descendants)];
+        $comments = $options->comments ? $this->commentsFor($items) : [];
+
         $images = new ExportImages($options->images);
         $images->prepare([
-            $this->rawHtml($item),
-            ...array_map(fn (array $entry): string => $this->rawHtml($entry['item']), $descendants),
+            ...array_map(fn (Task|Doc $each): string => $this->rawHtml($each), $items),
+            ...array_map(static fn (Comment $comment): string => $comment->body, array_merge(...array_values($comments) ?: [[]])),
         ]);
 
         $converter = $this->converter($images);
@@ -71,6 +75,8 @@ class MarkdownExporter
             $sections[] = $body;
         }
 
+        $sections = [...$sections, ...$this->commentSections($item, 1, $comments, $converter)];
+
         foreach ($descendants as $descendant) {
             $sections[] = $this->headingFor($descendant['item'], $descendant['level']);
 
@@ -85,6 +91,11 @@ class MarkdownExporter
             if ($body !== '') {
                 $sections[] = $body;
             }
+
+            $sections = [
+                ...$sections,
+                ...$this->commentSections($descendant['item'], $descendant['level'] + 1, $comments, $converter),
+            ];
         }
 
         return implode("\n\n", $sections)."\n";
@@ -163,6 +174,114 @@ class MarkdownExporter
         );
 
         return trim($converter->convert($html));
+    }
+
+    /**
+     * The comments on every item in the export, keyed by "type:id" and ordered
+     * oldest first. Loaded in one query per kind of item, so a subtree export
+     * with a discussion on every task still costs a single round trip.
+     *
+     * @param  list<Task|Doc>  $items
+     * @return array<string, list<Comment>>
+     */
+    private function commentsFor(array $items): array
+    {
+        $idsByType = [];
+
+        foreach ($items as $item) {
+            $idsByType[$item->getMorphClass()][] = $item->getKey();
+        }
+
+        $comments = [];
+
+        foreach ($idsByType as $type => $ids) {
+            $loaded = Comment::query()
+                ->with('user')
+                ->where('commentable_type', $type)
+                ->whereIn('commentable_id', $ids)
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->get();
+
+            foreach ($loaded as $comment) {
+                $comments[$type.':'.$comment->commentable_id][] = $comment;
+            }
+        }
+
+        return $comments;
+    }
+
+    /**
+     * One item's discussion: a heading a level below the item's own, then each
+     * thread oldest first. Replies are quoted under the comment they answer, so
+     * the shape of the conversation survives in plain text.
+     *
+     * A deleted comment that still holds replies keeps its place as a tombstone —
+     * dropping it would leave its answers hanging in mid-air.
+     *
+     * @param  array<string, list<Comment>>  $comments
+     * @return list<string>
+     */
+    private function commentSections(Task|Doc $item, int $level, array $comments, HtmlConverter $converter): array
+    {
+        $own = $comments[$item->getMorphClass().':'.$item->getKey()] ?? [];
+
+        if ($own === []) {
+            return [];
+        }
+
+        $replies = [];
+
+        foreach ($own as $comment) {
+            if ($comment->parent_id !== null) {
+                $replies[$comment->parent_id][] = $comment;
+            }
+        }
+
+        $sections = [str_repeat('#', min($level + 1, 6)).' '.__('Comments')];
+
+        foreach ($own as $comment) {
+            if ($comment->parent_id !== null) {
+                continue;
+            }
+
+            $shortName = $item->project->short_name;
+
+            $sections = [...$sections, ...$this->commentBlock($comment, $shortName, $converter, quoted: false)];
+
+            foreach ($replies[$comment->getKey()] ?? [] as $reply) {
+                $sections = [...$sections, ...$this->commentBlock($reply, $shortName, $converter, quoted: true)];
+            }
+        }
+
+        return $sections;
+    }
+
+    /**
+     * A single comment: who said it and when, then what they said. A reply is
+     * quoted whole, indentation being the only nesting Markdown offers inline.
+     *
+     * @param  string  $shortName  the surrounding project, so the comment's variable
+     *                             usages resolve to what the page shows
+     * @return list<string>
+     */
+    private function commentBlock(Comment $comment, string $shortName, HtmlConverter $converter, bool $quoted): array
+    {
+        $heading = '**'.$comment->authorName().'** · '.$comment->created_at?->format('Y-m-d H:i');
+
+        if ($comment->is_deleted) {
+            $body = '*'.__('deleted').'*';
+        } else {
+            $body = trim($converter->convert(
+                $this->variables->substitute($this->sanitizer->sanitize($comment->body), $shortName),
+            ));
+        }
+
+        $block = $body === '' ? [$heading] : [$heading, $body];
+
+        return $quoted
+            ? array_map(static fn (string $part): string => '> '.str_replace("\n", "\n> ", $part), $block)
+            : $block;
     }
 
     /**

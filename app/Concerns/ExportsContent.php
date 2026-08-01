@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Audit\AccessAudit;
 use App\Enums\ExportImageMode;
+use App\Models\Comment;
 use App\Models\Doc;
 use App\Models\Task;
 use App\Support\Export\ExportOptions;
@@ -35,6 +36,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * @property-read bool $exportHasArchived
  * @property-read bool $exportHasDrafts
  * @property-read bool $exportHasImages
+ * @property-read bool $exportHasComments
  */
 trait ExportsContent
 {
@@ -60,6 +62,12 @@ trait ExportsContent
     public bool $exportArchived = false;
 
     public bool $exportDrafts = false;
+
+    /**
+     * Whether the discussion travels with the content. Off by default: a comment
+     * thread is the conversation about the work, not the work itself.
+     */
+    public bool $exportComments = false;
 
     /**
      * How images inside the exported content travel — an {@see ExportImageMode}
@@ -179,6 +187,38 @@ trait ExportsContent
     }
 
     /**
+     * Whether anything in the export has been commented on — the condition for
+     * offering to include the discussion.
+     */
+    #[Computed]
+    public function exportHasComments(): bool
+    {
+        $items = [$this->exportable()];
+
+        if ($this->exportDescendants) {
+            foreach ($this->exportableSubtree as $entry) {
+                $items[] = $entry['item'];
+            }
+        }
+
+        // One existence check per kind of item, rather than one per item: a wide
+        // subtree must not turn opening the dialog into a query storm.
+        $idsByType = [];
+
+        foreach ($items as $item) {
+            $idsByType[$item->getMorphClass()][] = $item->getKey();
+        }
+
+        foreach ($idsByType as $type => $ids) {
+            if (Comment::query()->where('commentable_type', $type)->whereIn('commentable_id', $ids)->exists()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether the viewer may export at all. Deliberately not granted to viewers —
      * taking content out of the instance is more than reading it in place.
      */
@@ -200,6 +240,8 @@ trait ExportsContent
             $this->exportHasCanceled,
             $this->exportHasArchived,
             $this->exportHasDrafts,
+            $this->exportHasComments,
+            $this->exportHasImages,
         );
 
         $this->exporting = true;
@@ -256,6 +298,7 @@ trait ExportsContent
             canceled: $this->exportCanceled,
             archived: $this->exportArchived,
             drafts: $this->exportDrafts,
+            comments: $this->exportComments,
             images: ExportImageMode::tryFrom($this->exportImages) ?? ExportImageMode::Embed,
         );
 

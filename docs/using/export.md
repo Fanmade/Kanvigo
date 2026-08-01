@@ -58,6 +58,16 @@ that stays at the sixth.
   yet exports as its own name.
 - **Inline images** follow the **Images** setting below.
 
+## Comments
+
+When anything in the export has been commented on, **Include comments** (off by
+default) adds each item's discussion after its body, under a **Comments**
+heading: every comment with its author and the time it was written, oldest
+first, with replies quoted under the comment they answer. A comment that was
+deleted but still has replies keeps its place as *deleted*, so the thread still
+reads. Comments go through the same renderer as any other content, so their
+links, mentions and variables behave the same way.
+
 ## Images
 
 When the export contains an image, an **Images** select decides how it travels:

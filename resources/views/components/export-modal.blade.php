@@ -74,6 +74,15 @@
             @endif
         @endif
 
+        @if ($this->exportHasComments)
+            <flux:checkbox
+                wire:model="exportComments"
+                :label="__('Include comments')"
+                :description="__('The discussion under each exported item.')"
+                data-test="export-comments"
+            />
+        @endif
+
         {{-- How images travel is only a question when the export has one. --}}
         @if ($this->exportHasImages)
             <flux:select wire:model.live="exportImages" :label="__('Images')" data-test="export-images">

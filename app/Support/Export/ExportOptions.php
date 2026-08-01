@@ -27,6 +27,7 @@ final readonly class ExportOptions
      *                          along with everything below them
      * @param  bool  $drafts  include draft docs found among the descendants; a
      *                        directly-exported draft always exports
+     * @param  bool  $comments  include the discussion under each exported item
      * @param  ExportImageMode  $images  how the images inside the content leave
      *                                   the app: by URL, as links, or embedded
      */
@@ -37,6 +38,7 @@ final readonly class ExportOptions
         public bool $canceled = false,
         public bool $archived = false,
         public bool $drafts = false,
+        public bool $comments = false,
         public ExportImageMode $images = ExportImageMode::Embed,
     ) {}
 
@@ -54,6 +56,7 @@ final readonly class ExportOptions
             'canceled' => $this->canceled,
             'archived' => $this->archived,
             'drafts' => $this->drafts,
+            'comments' => $this->comments,
             'images' => $this->images->value,
         ];
     }
