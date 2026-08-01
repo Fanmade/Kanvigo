@@ -56,8 +56,24 @@ that stays at the sixth.
 - **Mentions** become plain `@name` — a Markdown file cannot notify anyone.
 - **Variables** are resolved to what they currently stand for; one with no value
   yet exports as its own name.
-- **Inline images** are embedded by their absolute URL, so viewing them needs
-  access to this instance.
+- **Inline images** follow the **Images** setting below.
+
+## Images
+
+When the export contains an image, an **Images** select decides how it travels:
+
+- **Show images by URL** (default) — the file points at the image here. It
+  renders for a signed-in member of the project and for nobody else.
+- **List images as links** — a plain link with the file's name. Never renders
+  inline, and so is honest wherever the file ends up.
+- **Embed images in the file** — the picture itself, as a `data:` URI, so the
+  file needs no access to this instance at all. Images are downscaled first, and
+  once the embedded images pass a size budget the remaining ones fall back to
+  links marked *image not embedded*. Copying such an export to the clipboard
+  still works — you are warned about the size, not stopped.
+
+Both limits live in `config/kanvigo.php` (`export.image_max_edge`,
+`export.inline_budget`), not in a settings screen.
 
 ## Who can export
 

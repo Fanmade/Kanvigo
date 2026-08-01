@@ -39,43 +39,9 @@ class Thumbnail
      */
     public static function fromImage(string $contents): ?string
     {
-        $info = @getimagesizefromstring($contents);
-
-        if ($info === false) {
-            return null;
-        }
-
-        [$width, $height] = $info;
-
-        // Guard against absurd dimensions (e.g. decompression bombs).
-        if ($width < 1 || $height < 1 || ($width * $height) > 40_000_000) {
-            return null;
-        }
-
-        $source = @imagecreatefromstring($contents);
-
-        if ($source === false) {
-            return null;
-        }
-
-        $source = ImageProcessing::applyExifOrientation($source, $contents, $info[2]);
-        $width = imagesx($source);
-        $height = imagesy($source);
-
-        $scale = min(self::MAX_DIMENSION / $width, self::MAX_DIMENSION / $height, 1);
-        $targetWidth = max(1, (int) round($width * $scale));
-        $targetHeight = max(1, (int) round($height * $scale));
-
-        $thumbnail = imagecreatetruecolor($targetWidth, $targetHeight);
-        imagealphablending($thumbnail, false);
-        imagesavealpha($thumbnail, true);
-        imagecopyresampled($thumbnail, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
-
-        ob_start();
-        imagepng($thumbnail);
-        $data = (string) ob_get_clean();
-
-        return $data === '' ? null : $data;
+        // Decompression bombs and undecodable bytes are refused by the shared
+        // downscaler, which is also what the export's inline images go through.
+        return ImageProcessing::downscale($contents, self::MAX_DIMENSION);
     }
 
     /**

@@ -3,11 +3,13 @@
 namespace App\Concerns;
 
 use App\Audit\AccessAudit;
+use App\Enums\ExportImageMode;
 use App\Models\Doc;
 use App\Models\Task;
 use App\Support\Export\ExportOptions;
 use App\Support\Export\MarkdownExporter;
 use App\Support\Facades\Audit;
+use App\Support\InlineAttachments;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
@@ -32,6 +34,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * @property-read bool $exportHasCanceled
  * @property-read bool $exportHasArchived
  * @property-read bool $exportHasDrafts
+ * @property-read bool $exportHasImages
  */
 trait ExportsContent
 {
@@ -57,6 +60,12 @@ trait ExportsContent
     public bool $exportArchived = false;
 
     public bool $exportDrafts = false;
+
+    /**
+     * How images inside the exported content travel — an {@see ExportImageMode}
+     * value. Held as a string because it is bound to a select.
+     */
+    public string $exportImages = 'embed';
 
     /**
      * The item this component exports.
@@ -142,6 +151,34 @@ trait ExportsContent
     }
 
     /**
+     * Whether what is about to be exported contains any image at all — without
+     * one, how images travel is not a question worth asking. Checked against the
+     * export as currently configured, so turning descendants on can bring the
+     * control into view.
+     */
+    #[Computed]
+    public function exportHasImages(): bool
+    {
+        $documents = [$this->exportable()];
+
+        if ($this->exportDescendants) {
+            foreach ($this->exportableSubtree as $entry) {
+                $documents[] = $entry['item'];
+            }
+        }
+
+        foreach ($documents as $item) {
+            $html = $item instanceof Task ? $item->description : $item->body;
+
+            if (InlineAttachments::referencedIds($html) !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether the viewer may export at all. Deliberately not granted to viewers —
      * taking content out of the instance is more than reading it in place.
      */
@@ -219,6 +256,7 @@ trait ExportsContent
             canceled: $this->exportCanceled,
             archived: $this->exportArchived,
             drafts: $this->exportDrafts,
+            images: ExportImageMode::tryFrom($this->exportImages) ?? ExportImageMode::Embed,
         );
 
         Audit::record(AccessAudit::contentExported($item, 'markdown', $options->toArray()));

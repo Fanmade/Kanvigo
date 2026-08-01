@@ -2,6 +2,7 @@
 
 namespace App\Support\Export\Converters;
 
+use App\Support\Export\ExportImages;
 use League\HTMLToMarkdown\Converter\ConverterInterface;
 use League\HTMLToMarkdown\ElementInterface;
 
@@ -18,8 +19,12 @@ final class InlineNodeConverter implements ConverterInterface
     /**
      * @param  string  $baseUrl  the instance's absolute root, used to resolve the
      *                           relative hrefs and image sources stored in content
+     * @param  ExportImages  $images  decides what each inline image becomes
      */
-    public function __construct(private readonly string $baseUrl) {}
+    public function __construct(
+        private readonly string $baseUrl,
+        private readonly ExportImages $images,
+    ) {}
 
     public function convert(ElementInterface $element): string
     {
@@ -66,15 +71,19 @@ final class InlineNodeConverter implements ConverterInterface
     }
 
     /**
-     * Inline images are embedded by absolute URL: the file stays where it is and
-     * the export links to it. An image wrapped in a link to its full-size
-     * version keeps that link — the anchor converter runs over it.
+     * What an inline image becomes is the export's choice — an embedded URL, a
+     * link, or the picture itself as a data URI — so the decision lives in
+     * {@see ExportImages} and this converter only supplies what it needs.
      */
     private function convertImage(ElementInterface $element): string
     {
-        $alt = $element->getAttribute('alt') ?: $element->getAttribute('title');
+        $src = $element->getAttribute('src');
 
-        return '!['.$alt.']('.$this->absolute($element->getAttribute('src')).')';
+        return $this->images->markdownFor(
+            $src,
+            $element->getAttribute('alt') ?: $element->getAttribute('title'),
+            $this->absolute($src),
+        );
     }
 
     /**

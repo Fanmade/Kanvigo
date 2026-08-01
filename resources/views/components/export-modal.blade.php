@@ -74,6 +74,23 @@
             @endif
         @endif
 
+        {{-- How images travel is only a question when the export has one. --}}
+        @if ($this->exportHasImages)
+            <flux:select wire:model.live="exportImages" :label="__('Images')" data-test="export-images">
+                @foreach (\App\Enums\ExportImageMode::cases() as $mode)
+                    <flux:select.option :value="$mode->value">{{ $mode->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
+            @if ($this->exportImages === \App\Enums\ExportImageMode::Inline->value)
+                <flux:callout variant="warning" icon="exclamation-triangle" data-test="export-inline-warning">
+                    <flux:callout.text>
+                        {{ __('Embedded images make the export much larger — copying it can put megabytes on your clipboard.') }}
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+        @endif
+
         <div class="flex flex-wrap justify-end gap-2">
             <flux:modal.close>
                 <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>

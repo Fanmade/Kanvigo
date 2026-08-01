@@ -2,6 +2,8 @@
 
 namespace App\Support\Export;
 
+use App\Enums\ExportImageMode;
+
 /**
  * What an export was asked to include.
  *
@@ -25,6 +27,8 @@ final readonly class ExportOptions
      *                          along with everything below them
      * @param  bool  $drafts  include draft docs found among the descendants; a
      *                        directly-exported draft always exports
+     * @param  ExportImageMode  $images  how the images inside the content leave
+     *                                   the app: by URL, as links, or embedded
      */
     public function __construct(
         public bool $metadata = true,
@@ -33,6 +37,7 @@ final readonly class ExportOptions
         public bool $canceled = false,
         public bool $archived = false,
         public bool $drafts = false,
+        public ExportImageMode $images = ExportImageMode::Embed,
     ) {}
 
     /**
@@ -49,6 +54,7 @@ final readonly class ExportOptions
             'canceled' => $this->canceled,
             'archived' => $this->archived,
             'drafts' => $this->drafts,
+            'images' => $this->images->value,
         ];
     }
 }

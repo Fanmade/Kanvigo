@@ -41,6 +41,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Export
+    |--------------------------------------------------------------------------
+    |
+    | An export that inlines its images as Base64 data URIs downscales them
+    | first: "image_max_edge" caps the longest edge in pixels — large enough to
+    | read a screenshot or a diagram, which is the point of inlining. Once the
+    | encoded images together exceed "inline_budget" bytes, the rest of them
+    | degrade to plain links, so a picture-heavy export gets big rather than
+    | failing.
+    |
+    */
+
+    'export' => [
+        'image_max_edge' => (int) env('KANVIGO_EXPORT_IMAGE_MAX_EDGE', 1024),
+        'inline_budget' => (int) env('KANVIGO_EXPORT_INLINE_BUDGET', 5 * 1024 * 1024),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Icon picker
     |--------------------------------------------------------------------------
     |

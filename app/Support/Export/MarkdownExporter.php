@@ -46,6 +46,17 @@ class MarkdownExporter
      */
     public function render(Task|Doc $item, ExportOptions $options): string
     {
+        $descendants = $options->descendants ? $this->subtree($item, $options) : [];
+
+        // The images are resolved for the document as a whole: one query for the
+        // attachments it references, and one budget spent across all of them.
+        $images = new ExportImages($options->images);
+        $images->prepare([
+            $this->rawHtml($item),
+            ...array_map(fn (array $entry): string => $this->rawHtml($entry['item']), $descendants),
+        ]);
+
+        $converter = $this->converter($images);
         $sections = [];
 
         if ($options->metadata) {
@@ -54,13 +65,13 @@ class MarkdownExporter
 
         $sections[] = '# '.$item->title;
 
-        $body = $this->body($item);
+        $body = $this->body($item, $converter);
 
         if ($body !== '') {
             $sections[] = $body;
         }
 
-        foreach ($options->descendants ? $this->subtree($item, $options) : [] as $descendant) {
+        foreach ($descendants as $descendant) {
             $sections[] = $this->headingFor($descendant['item'], $descendant['level']);
 
             $metadata = $this->inlineMetadata($descendant['item']);
@@ -69,7 +80,7 @@ class MarkdownExporter
                 $sections[] = $metadata;
             }
 
-            $body = $this->body($descendant['item']);
+            $body = $this->body($descendant['item'], $converter);
 
             if ($body !== '') {
                 $sections[] = $body;
@@ -138,9 +149,9 @@ class MarkdownExporter
      * pipeline the page uses — sanitised, then variable usages resolved to what
      * they currently stand for — so the export says what the reader sees.
      */
-    private function body(Task|Doc $item): string
+    private function body(Task|Doc $item, HtmlConverter $converter): string
     {
-        $html = $item instanceof Task ? (string) $item->description : (string) $item->body;
+        $html = $this->rawHtml($item);
 
         if (trim($html) === '') {
             return '';
@@ -151,7 +162,15 @@ class MarkdownExporter
             $item->project->short_name,
         );
 
-        return trim($this->converter()->convert($html));
+        return trim($converter->convert($html));
+    }
+
+    /**
+     * The item's stored rich text, exactly as saved.
+     */
+    private function rawHtml(Task|Doc $item): string
+    {
+        return $item instanceof Task ? (string) $item->description : (string) $item->body;
     }
 
     /**
@@ -265,10 +284,11 @@ class MarkdownExporter
     }
 
     /**
-     * The configured HTML-to-Markdown converter. Built per export because the
-     * converters carry the instance's base URL, and cheap enough not to cache.
+     * The configured HTML-to-Markdown converter. Built once per export, because
+     * its converters carry both the instance's base URL and the image decisions
+     * for this particular export.
      */
-    private function converter(): HtmlConverter
+    private function converter(ExportImages $images): HtmlConverter
     {
         // Options must go through the HtmlConverter constructor: building from a
         // bare Environment skips the library's defaults, and its own converters
@@ -282,7 +302,7 @@ class MarkdownExporter
         ]);
 
         $environment = $converter->getEnvironment();
-        $environment->addConverter(new InlineNodeConverter(url('/')));
+        $environment->addConverter(new InlineNodeConverter(url('/'), $images));
         $environment->addConverter(new StrikethroughConverter);
         // Tables are opt-in in this library.
         $environment->addConverter(new TableConverter);
