@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Lists the reference docs of a project, identified by its short_name (e.g. "PROJ"), optionally restricted to the docs nested directly under a "parent" doc (e.g. "PROJ-D3"). Each doc reports its own parent, so the nesting can be reconstructed. Drafts are listed only for members who may edit docs. The body is omitted here; use get-doc for a single doc\'s body.')]
+#[Description('Lists the reference docs of a project, identified by its short_name (e.g. "PROJ"), optionally restricted to the docs nested directly under a "parent" doc (e.g. "PROJ-D3"). Each doc reports its own parent, so the nesting can be reconstructed, and the absolute URL of its page, so it can be linked without another call. Drafts are listed only for members who may edit docs. The body is omitted here; use get-doc for a single doc\'s body.')]
 #[IsReadOnly]
 class ListDocsTool extends Tool
 {

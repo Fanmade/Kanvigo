@@ -21,6 +21,13 @@ Kanvigo is under active development and does not yet follow semantic versioning.
   that rewrites usages, command-palette search by name or value, MCP tools, and a
   REST endpoint. See [docs/using/variables.md](docs/using/variables.md).
 
+### Changed
+
+- The MCP list tools (`list-tasks`, `list-projects`, `list-docs`) and the tasks
+  listed by `get-project` now return each item's absolute `url`, so an agent can
+  link what it lists without a second call. The get and create/update tools
+  already did.
+
 ### Fixed
 
 - The REST task detail response (`GET /api/v1/tasks/{reference}`) now returns the

@@ -64,8 +64,9 @@ class GetProjectTool extends Tool
 
         [$rows, $hasMore] = $this->sliceFetchedPage($fetched, $limit);
 
-        $tasks = $rows->map(static fn (Task $task): array => [
+        $tasks = $rows->map(fn (Task $task): array => [
             'reference' => $task->reference,
+            'url' => $this->itemUrl($task),
             'title' => $task->title,
             'status' => $task->status->value,
         ])->values();
@@ -117,6 +118,7 @@ class GetProjectTool extends Tool
             'description' => $schema->string()->nullable()->description('The project description as HTML; may be null.'),
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
+                'url' => $this->urlSchema($schema, 'task'),
                 'title' => $schema->string()->description('The task title.')->required(),
                 'status' => $schema->string()->description('The task status.')->required(),
             ]))->description('The top-level tasks in the project.')->required(),

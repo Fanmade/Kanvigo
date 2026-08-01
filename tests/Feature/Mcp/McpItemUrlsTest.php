@@ -7,6 +7,9 @@ use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\GetDocTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetTaskTool;
+use App\Mcp\Tools\ListDocsTool;
+use App\Mcp\Tools\ListProjectsTool;
+use App\Mcp\Tools\ListTasksTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\Doc;
@@ -104,5 +107,57 @@ it('returns the url of a project it creates and updates', function () {
         ->assertOk()
         ->assertStructuredContent(fn ($json) => $json
             ->where('url', 'https://board.example.test/NEW')
+            ->etc());
+});
+
+it('returns a url for every task the list tool reports', function () {
+    $task = Task::factory()->for($this->project)->create();
+
+    // Listing is where an agent usually meets a task; without a url here it
+    // would have to call get-task again just to link it.
+    KanvigoServer::actingAs($this->member)
+        ->tool(ListTasksTool::class, ['reference' => 'ABC'])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->has('tasks.0', fn ($row) => $row
+                ->where('url', 'https://board.example.test/ABC-'.$task->task_number)
+                ->etc())
+            ->etc());
+});
+
+it('returns a url for every doc the list tool reports', function () {
+    $doc = Doc::factory()->for($this->project)->published()->create();
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(ListDocsTool::class, ['reference' => 'ABC'])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->has('docs.0', fn ($row) => $row
+                ->where('url', 'https://board.example.test/ABC-D'.$doc->doc_number)
+                ->etc())
+            ->etc());
+});
+
+it('returns a url for every project the list tool reports', function () {
+    KanvigoServer::actingAs($this->member)
+        ->tool(ListProjectsTool::class, [])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->has('projects.0', fn ($row) => $row
+                ->where('url', 'https://board.example.test/ABC')
+                ->etc())
+            ->etc());
+});
+
+it('returns a url for the tasks listed inside a project', function () {
+    $task = Task::factory()->for($this->project)->create();
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetProjectTool::class, ['short_name' => 'ABC'])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->has('tasks.0', fn ($row) => $row
+                ->where('url', 'https://board.example.test/ABC-'.$task->task_number)
+                ->etc())
             ->etc());
 });

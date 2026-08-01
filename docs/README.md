@@ -28,6 +28,8 @@ front door — what Kanvigo is, the feature list, and how to get it running.
 
 - [0001 — Project variables substitute at read time](adr/0001-project-variables.md)
   — why `[name]` stays in the stored content and resolves on read.
+- [0002 — Export ships one concrete Markdown renderer](adr/0002-export-has-no-format-abstraction.md)
+  — why the format seam waits for the second real format.
 
 ## Elsewhere
 

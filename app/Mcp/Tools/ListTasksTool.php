@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Enums\Status;
+use App\Mcp\Concerns\ExposesUrls;
 use App\Mcp\Concerns\PagesResults;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
@@ -16,10 +17,11 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Lists the tasks of a project, identified by its short_name (e.g. "PROJ"), optionally filtered by status and/or restricted to the direct subtasks of a "parent" task (e.g. "PROJ-42"). Each task reports its own parent, so the nesting can be reconstructed. Only projects the authenticated user is a member of are accessible.')]
+#[Description('Lists the tasks of a project, identified by its short_name (e.g. "PROJ"), optionally filtered by status and/or restricted to the direct subtasks of a "parent" task (e.g. "PROJ-42"). Each task reports its own parent, so the nesting can be reconstructed, and the absolute URL of its page, so it can be linked without another call. Only projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class ListTasksTool extends Tool
 {
+    use ExposesUrls;
     use PagesResults;
 
     /**
@@ -81,8 +83,9 @@ class ListTasksTool extends Tool
         [$rows, $hasMore] = $this->sliceFetchedPage($fetched, $limit);
 
         $tasks = $rows
-            ->map(static fn (Task $task): array => [
+            ->map(fn (Task $task): array => [
                 'reference' => $task->reference,
+                'url' => $this->itemUrl($task),
                 'parent' => $task->parent_id !== null && $numbersById->has($task->parent_id)
                     ? $shortName.'-'.$numbersById[$task->parent_id]
                     : null,
@@ -136,6 +139,7 @@ class ListTasksTool extends Tool
         return [
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
+                'url' => $this->urlSchema($schema, 'task'),
                 'parent' => $schema->string()->nullable()->description('The parent task reference (e.g. "PROJ-42"), or null when this is a top-level task.'),
                 'title' => $schema->string()->description('The task title.')->required(),
                 'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),

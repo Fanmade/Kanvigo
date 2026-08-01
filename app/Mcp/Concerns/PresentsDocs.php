@@ -31,7 +31,6 @@ trait PresentsDocs
 
         return [
             ...$this->docListPayload($doc),
-            'url' => $this->itemUrl($doc),
             'body' => $doc->body,
             'tags' => $doc->tags->pluck('name')->all(),
             'children' => $doc->children
@@ -61,6 +60,7 @@ trait PresentsDocs
     {
         return [
             'reference' => $doc->reference,
+            'url' => $this->itemUrl($doc),
             'title' => $doc->title,
             'project' => $doc->project->short_name,
             'parent' => $doc->parent?->reference,
@@ -77,7 +77,6 @@ trait PresentsDocs
     {
         return [
             ...$this->docListSchema($schema),
-            'url' => $this->urlSchema($schema, 'doc'),
             'body' => $schema->string()->nullable()->description('The doc body as HTML; may be null while the doc is empty.'),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the doc.')->required(),
             'children' => $schema->array()->items($schema->object([
@@ -105,6 +104,7 @@ trait PresentsDocs
     {
         return [
             'reference' => $schema->string()->description('The doc reference, e.g. "PROJ-D3".')->required(),
+            'url' => $this->urlSchema($schema, 'doc'),
             'title' => $schema->string()->description('The doc title.')->required(),
             'project' => $schema->string()->description('The short name of the project the doc belongs to.')->required(),
             'parent' => $schema->string()->nullable()->description('The reference of the doc this one is nested under, or null when it is top-level.'),
