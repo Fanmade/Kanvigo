@@ -12,6 +12,7 @@ use App\Support\Export\MarkdownExporter;
 use App\Support\Facades\Audit;
 use App\Support\InlineAttachments;
 use Flux\Flux;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -74,6 +75,12 @@ trait ExportsContent
      * value. Held as a string because it is bound to a select.
      */
     public string $exportImages = 'embed';
+
+    /**
+     * Whether the download filename carries the date it was taken. Affects the
+     * file only, so it is offered beside Download and means nothing for Copy.
+     */
+    public bool $exportDatePrefix = false;
 
     /**
      * The item this component exports.
@@ -244,7 +251,50 @@ trait ExportsContent
             $this->exportHasImages,
         );
 
+        $this->restoreExportOptions();
+
         $this->exporting = true;
+    }
+
+    /**
+     * Fill the dialog with what this user chose last time. A remembered choice
+     * is only restored where it still applies: a depth deeper than this subtree
+     * clamps to what is there, and "All" stays "All" — which is the whole reason
+     * it is a named option rather than a stored number. Nothing is exported
+     * until the user acts, so the restored state is always visible first.
+     */
+    private function restoreExportOptions(): void
+    {
+        $remembered = Auth::user()?->preference(ExportOptions::PREFERENCE_KEY);
+
+        if (! is_array($remembered)) {
+            return;
+        }
+
+        $this->exportMetadata = (bool) ($remembered['metadata'] ?? $this->exportMetadata);
+        $this->exportDescendants = (bool) ($remembered['descendants'] ?? false) && $this->exportSubtreeDepth > 0;
+        $this->exportCanceled = (bool) ($remembered['canceled'] ?? false);
+        $this->exportArchived = (bool) ($remembered['archived'] ?? false);
+        $this->exportDrafts = (bool) ($remembered['drafts'] ?? false);
+        $this->exportComments = (bool) ($remembered['comments'] ?? false);
+        $this->exportDatePrefix = (bool) ($remembered['date_prefix'] ?? false);
+
+        $images = ExportImageMode::tryFrom((string) ($remembered['images'] ?? ''));
+        $this->exportImages = ($images ?? ExportImageMode::Embed)->value;
+
+        $depth = $remembered['depth'] ?? 'all';
+        $this->exportDepth = $depth === 'all' || (int) $depth > $this->exportSubtreeDepth
+            ? 'all'
+            : (string) (int) $depth;
+    }
+
+    /**
+     * Remember the options this export was taken with, so the next one starts
+     * where this one left off.
+     */
+    private function rememberExportOptions(ExportOptions $options): void
+    {
+        Auth::user()?->setPreference(ExportOptions::PREFERENCE_KEY, $options->toArray());
     }
 
     /**
@@ -269,7 +319,7 @@ trait ExportsContent
     public function downloadExport(): StreamedResponse
     {
         $markdown = $this->renderExport();
-        $filename = app(MarkdownExporter::class)->filename($this->exportable());
+        $filename = app(MarkdownExporter::class)->filename($this->exportable(), $this->exportDatePrefix);
 
         $this->exporting = false;
 
@@ -299,8 +349,11 @@ trait ExportsContent
             archived: $this->exportArchived,
             drafts: $this->exportDrafts,
             comments: $this->exportComments,
+            datePrefix: $this->exportDatePrefix,
             images: ExportImageMode::tryFrom($this->exportImages) ?? ExportImageMode::Embed,
         );
+
+        $this->rememberExportOptions($options);
 
         Audit::record(AccessAudit::contentExported($item, 'markdown', $options->toArray()));
 

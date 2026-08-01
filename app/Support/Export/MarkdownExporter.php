@@ -145,14 +145,19 @@ class MarkdownExporter
     /**
      * The download filename: the reference first so exports of different items
      * sort together and never collide, then a transliterated slug of the title.
+     *
+     * The optional date prefix sorts a folder of exports by when they were taken
+     * rather than by which item they came from, and sits outside the length cap
+     * so a long title can never eat the date.
      */
-    public function filename(Task|Doc $item): string
+    public function filename(Task|Doc $item, bool $datePrefix = false): string
     {
         $slug = Str::slug(Str::ascii($item->title));
 
         $stem = $slug === '' ? $item->reference : $item->reference.'-'.$slug;
+        $stem = Str::lower(rtrim(Str::limit($stem, self::FILENAME_LENGTH, ''), '-'));
 
-        return Str::lower(rtrim(Str::limit($stem, self::FILENAME_LENGTH, ''), '-')).'.md';
+        return ($datePrefix ? now()->format('Y-m-d').'_' : '').$stem.'.md';
     }
 
     /**

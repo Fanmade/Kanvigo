@@ -85,6 +85,19 @@ When the export contains an image, an **Images** select decides how it travels:
 Both limits live in `config/kanvigo.php` (`export.image_max_edge`,
 `export.inline_budget`), not in a settings screen.
 
+## Your settings are remembered
+
+The dialog opens with the options you chose last time — per user and across every
+project, because how you like your exports shaped is a habit rather than a
+property of one board. Choices that no longer apply are quietly dropped: a
+remembered depth clamps to a shallower subtree, "All" stays "All", and
+descendants switch off for an item that has none. Nothing is exported until you
+press a button, so the restored settings are always in front of you first.
+
+**Prefix the filename with the date** (off by default) names the download
+`2026-08-02_abc-42-export-functionality.md`, which sorts a folder of exports by
+when they were taken. It affects the file only, not the copied text.
+
 ## Who can export
 
 Exporting needs the **Export content** permission, held by the owner, admins and

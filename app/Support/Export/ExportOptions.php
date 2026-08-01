@@ -15,6 +15,13 @@ use App\Enums\ExportImageMode;
 final readonly class ExportOptions
 {
     /**
+     * Where a user's export habits are remembered, as a preference key. Global
+     * rather than per project: how someone likes their exports shaped is a habit,
+     * not a property of the board they happen to be on.
+     */
+    public const string PREFERENCE_KEY = 'export.options';
+
+    /**
      * @param  bool  $metadata  include the YAML front-matter block
      * @param  bool  $descendants  include the exported item's whole subtree
      * @param  int|null  $depth  how many levels of descendants to include, or null
@@ -28,6 +35,7 @@ final readonly class ExportOptions
      * @param  bool  $drafts  include draft docs found among the descendants; a
      *                        directly-exported draft always exports
      * @param  bool  $comments  include the discussion under each exported item
+     * @param  bool  $datePrefix  prepend the date to the download filename
      * @param  ExportImageMode  $images  how the images inside the content leave
      *                                   the app: by URL, as links, or embedded
      */
@@ -39,6 +47,7 @@ final readonly class ExportOptions
         public bool $archived = false,
         public bool $drafts = false,
         public bool $comments = false,
+        public bool $datePrefix = false,
         public ExportImageMode $images = ExportImageMode::Embed,
     ) {}
 
@@ -57,6 +66,7 @@ final readonly class ExportOptions
             'archived' => $this->archived,
             'drafts' => $this->drafts,
             'comments' => $this->comments,
+            'date_prefix' => $this->datePrefix,
             'images' => $this->images->value,
         ];
     }

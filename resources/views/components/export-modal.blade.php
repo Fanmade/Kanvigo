@@ -100,6 +100,15 @@
             @endif
         @endif
 
+        {{-- A filename choice, so it belongs with Download and says nothing
+             about a copy to the clipboard. --}}
+        <flux:checkbox
+            wire:model="exportDatePrefix"
+            :label="__('Prefix the filename with the date')"
+            :description="__('Download only, e.g. 2026-08-02_abc-42-export-functionality.md')"
+            data-test="export-date-prefix"
+        />
+
         <div class="flex flex-wrap justify-end gap-2">
             <flux:modal.close>
                 <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
