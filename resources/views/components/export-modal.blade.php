@@ -63,6 +63,21 @@
                         />
                     @endif
 
+                    <flux:checkbox
+                        wire:model.live="exportBundle"
+                        :label="__('One file per item')"
+                        :description="__('Delivered as a ZIP archive, instead of a single document.')"
+                        data-test="export-bundle"
+                    />
+
+                    @if ($this->exportBundle)
+                        <flux:select wire:model="exportLayout" :label="__('Files')" data-test="export-layout">
+                            @foreach (\App\Enums\ExportFileLayout::cases() as $layout)
+                                <flux:select.option :value="$layout->value">{{ $layout->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    @endif
+
                     @if ($this->exportHasDrafts)
                         <flux:checkbox
                             wire:model="exportDrafts"
@@ -113,11 +128,15 @@
             <flux:modal.close>
                 <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
             </flux:modal.close>
-            <flux:button
-                icon="document-duplicate"
-                wire:click="copyExport"
-                data-test="export-copy"
-            >{{ __('Copy to clipboard') }}</flux:button>
+            {{-- An archive has nowhere to go on the clipboard, so the offer is
+                 withdrawn rather than left to fail. --}}
+            @unless ($this->exportBundle && $this->exportDescendants)
+                <flux:button
+                    icon="document-duplicate"
+                    wire:click="copyExport"
+                    data-test="export-copy"
+                >{{ __('Copy to clipboard') }}</flux:button>
+            @endunless
             <flux:button
                 variant="primary"
                 icon="arrow-down-tray"

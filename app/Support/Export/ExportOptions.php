@@ -2,6 +2,7 @@
 
 namespace App\Support\Export;
 
+use App\Enums\ExportFileLayout;
 use App\Enums\ExportImageMode;
 
 /**
@@ -35,6 +36,9 @@ final readonly class ExportOptions
      * @param  bool  $drafts  include draft docs found among the descendants; a
      *                        directly-exported draft always exports
      * @param  bool  $comments  include the discussion under each exported item
+     * @param  bool  $bundle  write one file per item and deliver them as an
+     *                        archive, instead of one concatenated document
+     * @param  ExportFileLayout  $layout  how that archive arranges its files
      * @param  bool  $datePrefix  prepend the date to the download filename
      * @param  ExportImageMode  $images  how the images inside the content leave
      *                                   the app: by URL, as links, or embedded
@@ -47,9 +51,33 @@ final readonly class ExportOptions
         public bool $archived = false,
         public bool $drafts = false,
         public bool $comments = false,
+        public bool $bundle = false,
+        public ExportFileLayout $layout = ExportFileLayout::Flat,
         public bool $datePrefix = false,
         public ExportImageMode $images = ExportImageMode::Embed,
     ) {}
+
+    /**
+     * The same options, but for one item on its own — what each file of a bundle
+     * is rendered with, since a bundle expresses the tree through its files
+     * rather than by concatenating it into one document.
+     */
+    public function forSingleItem(): self
+    {
+        return new self(
+            metadata: $this->metadata,
+            descendants: false,
+            depth: $this->depth,
+            canceled: $this->canceled,
+            archived: $this->archived,
+            drafts: $this->drafts,
+            comments: $this->comments,
+            bundle: false,
+            layout: $this->layout,
+            datePrefix: $this->datePrefix,
+            images: $this->images,
+        );
+    }
 
     /**
      * The options as recorded in the audit event's metadata.
@@ -66,6 +94,8 @@ final readonly class ExportOptions
             'archived' => $this->archived,
             'drafts' => $this->drafts,
             'comments' => $this->comments,
+            'bundle' => $this->bundle,
+            'layout' => $this->layout->value,
             'date_prefix' => $this->datePrefix,
             'images' => $this->images->value,
         ];

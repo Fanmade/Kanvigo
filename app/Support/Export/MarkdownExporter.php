@@ -44,8 +44,11 @@ class MarkdownExporter
 
     /**
      * The full Markdown document for one item.
+     *
+     * @param  array<string, string>  $localLinks  in-bundle link targets keyed
+     *                                             "task:12" (see MarkdownBundle)
      */
-    public function render(Task|Doc $item, ExportOptions $options): string
+    public function render(Task|Doc $item, ExportOptions $options, array $localLinks = []): string
     {
         $descendants = $options->descendants ? $this->subtree($item, $options) : [];
 
@@ -60,7 +63,7 @@ class MarkdownExporter
             ...array_map(static fn (Comment $comment): string => $comment->body, array_merge(...array_values($comments) ?: [[]])),
         ]);
 
-        $converter = $this->converter($images);
+        $converter = $this->converter($images, $localLinks);
         $sections = [];
 
         if ($options->metadata) {
@@ -412,7 +415,10 @@ class MarkdownExporter
      * its converters carry both the instance's base URL and the image decisions
      * for this particular export.
      */
-    private function converter(ExportImages $images): HtmlConverter
+    /**
+     * @param  array<string, string>  $localLinks
+     */
+    private function converter(ExportImages $images, array $localLinks = []): HtmlConverter
     {
         // Options must go through the HtmlConverter constructor: building from a
         // bare Environment skips the library's defaults, and its own converters
@@ -426,7 +432,7 @@ class MarkdownExporter
         ]);
 
         $environment = $converter->getEnvironment();
-        $environment->addConverter(new InlineNodeConverter(url('/'), $images));
+        $environment->addConverter(new InlineNodeConverter(url('/'), $images, $localLinks));
         $environment->addConverter(new StrikethroughConverter);
         // Tables are opt-in in this library.
         $environment->addConverter(new TableConverter);

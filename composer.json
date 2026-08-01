@@ -30,6 +30,7 @@
         "ext-imagick": "*",
         "ext-libxml": "*",
         "ext-mbstring": "*",
+        "ext-zip": "*",
         "fanmade/laravel-delegated-permissions": "^0.1.7",
         "kanvigo/audit-contracts": "^0.2.1",
         "laravel/chisel": "^0.1.0",

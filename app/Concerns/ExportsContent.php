@@ -3,11 +3,13 @@
 namespace App\Concerns;
 
 use App\Audit\AccessAudit;
+use App\Enums\ExportFileLayout;
 use App\Enums\ExportImageMode;
 use App\Models\Comment;
 use App\Models\Doc;
 use App\Models\Task;
 use App\Support\Export\ExportOptions;
+use App\Support\Export\MarkdownBundle;
 use App\Support\Export\MarkdownExporter;
 use App\Support\Facades\Audit;
 use App\Support\InlineAttachments;
@@ -75,6 +77,15 @@ trait ExportsContent
      * value. Held as a string because it is bound to a select.
      */
     public string $exportImages = 'embed';
+
+    /**
+     * Whether the export is one file per item, delivered as an archive, and how
+     * that archive arranges them. Only meaningful with descendants included —
+     * a bundle of one file is just a file.
+     */
+    public bool $exportBundle = false;
+
+    public string $exportLayout = 'flat';
 
     /**
      * Whether the download filename carries the date it was taken. Affects the
@@ -278,6 +289,10 @@ trait ExportsContent
         $this->exportDrafts = (bool) ($remembered['drafts'] ?? false);
         $this->exportComments = (bool) ($remembered['comments'] ?? false);
         $this->exportDatePrefix = (bool) ($remembered['date_prefix'] ?? false);
+        $this->exportBundle = (bool) ($remembered['bundle'] ?? false) && $this->exportDescendants;
+
+        $layout = ExportFileLayout::tryFrom((string) ($remembered['layout'] ?? ''));
+        $this->exportLayout = ($layout ?? ExportFileLayout::Flat)->value;
 
         $images = ExportImageMode::tryFrom((string) ($remembered['images'] ?? ''));
         $this->exportImages = ($images ?? ExportImageMode::Embed)->value;
@@ -304,7 +319,19 @@ trait ExportsContent
      */
     public function copyExport(): void
     {
-        $markdown = $this->renderExport();
+        $options = $this->exportOptions();
+
+        // The clipboard holds text, so a bundle has nowhere to go. The button is
+        // hidden in that mode; this guards the action being called anyway.
+        if ($options->bundle) {
+            Flux::toast(text: __('An archive cannot go on the clipboard — download it instead.'), variant: 'warning');
+
+            return;
+        }
+
+        $markdown = app(MarkdownExporter::class)->render($this->exportable(), $options);
+
+        $this->recordExport($options);
 
         $this->dispatch('export-copied', markdown: $markdown);
 
@@ -314,34 +341,47 @@ trait ExportsContent
     }
 
     /**
-     * Download the rendered Markdown as a file named after the item.
+     * Download the export: one Markdown file, or a ZIP holding one file per item
+     * when the bundle option is on.
      */
     public function downloadExport(): StreamedResponse
     {
-        $markdown = $this->renderExport();
-        $filename = app(MarkdownExporter::class)->filename($this->exportable(), $this->exportDatePrefix);
+        $item = $this->exportable();
+        $options = $this->exportOptions();
+
+        if ($options->bundle) {
+            $bundle = app(MarkdownBundle::class);
+            $contents = $bundle->zip($item, $options);
+            $filename = $bundle->filename($item, $options);
+            $type = 'application/zip';
+        } else {
+            $contents = app(MarkdownExporter::class)->render($item, $options);
+            $filename = app(MarkdownExporter::class)->filename($item, $options->datePrefix);
+            $type = 'text/markdown; charset=UTF-8';
+        }
+
+        $this->recordExport($options);
 
         $this->exporting = false;
 
         return response()->streamDownload(
-            static function () use ($markdown): void {
-                echo $markdown;
+            static function () use ($contents): void {
+                echo $contents;
             },
             $filename,
-            ['Content-Type' => 'text/markdown; charset=UTF-8'],
+            ['Content-Type' => $type],
         );
     }
 
     /**
-     * Authorize, render and record one export. Both entry points go through
-     * here, so neither can skip the permission check or the audit event.
+     * The options the dialog currently describes, after authorizing the export.
+     * Both entry points start here, so neither can skip the permission check.
      */
-    private function renderExport(): string
+    private function exportOptions(): ExportOptions
     {
-        $item = $this->exportable();
-        $this->authorize('export-content', $item->project);
+        $this->authorize('export-content', $this->exportable()->project);
 
-        $options = new ExportOptions(
+        return new ExportOptions(
             metadata: $this->exportMetadata,
             descendants: $this->exportDescendants && $this->exportSubtreeDepth > 0,
             depth: $this->exportDepth === 'all' ? null : (int) $this->exportDepth,
@@ -349,14 +389,21 @@ trait ExportsContent
             archived: $this->exportArchived,
             drafts: $this->exportDrafts,
             comments: $this->exportComments,
+            bundle: $this->exportBundle && $this->exportDescendants && $this->exportSubtreeDepth > 0,
+            layout: ExportFileLayout::tryFrom($this->exportLayout) ?? ExportFileLayout::Flat,
             datePrefix: $this->exportDatePrefix,
             images: ExportImageMode::tryFrom($this->exportImages) ?? ExportImageMode::Embed,
         );
+    }
 
+    /**
+     * Record that an export left the instance, and remember how it was shaped.
+     * Copying and downloading are the same event: the content is gone either way.
+     */
+    private function recordExport(ExportOptions $options): void
+    {
         $this->rememberExportOptions($options);
 
-        Audit::record(AccessAudit::contentExported($item, 'markdown', $options->toArray()));
-
-        return app(MarkdownExporter::class)->render($item, $options);
+        Audit::record(AccessAudit::contentExported($this->exportable(), 'markdown', $options->toArray()));
     }
 }

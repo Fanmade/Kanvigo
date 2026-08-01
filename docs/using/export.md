@@ -58,6 +58,19 @@ that stays at the sixth.
   yet exports as its own name.
 - **Inline images** follow the **Images** setting below.
 
+## One file per item
+
+With descendants included, **One file per item** swaps the single document for a
+ZIP archive holding one Markdown file per item. **Files** then decides the shape:
+all files side by side, or a folder per item that has subtasks (its own text in
+`index.md` beside them). A cross-reference to an item that travels in the same
+archive points at that file, so the bundle reads on its own; a reference to
+anything else keeps its absolute URL.
+
+An archive cannot go on the clipboard, so **Copy to clipboard** steps aside while
+this is on. Attachments are not yet bundled — images still follow the **Images**
+setting.
+
 ## Comments
 
 When anything in the export has been commented on, **Include comments** (off by
@@ -107,7 +120,6 @@ recorded in the audit trail against the item.
 
 ## Scope
 
-Today the export produces **one Markdown file**, covering an item and
-optionally its subtree. Choosing how images travel, including comments, other
-formats, a multi-file bundle and a tabular CSV listing are planned as separate
-steps.
+Today the export produces Markdown — one document, or one file per item in a ZIP.
+Other formats, bundling the attachment files themselves and a tabular CSV listing
+are planned as separate steps.

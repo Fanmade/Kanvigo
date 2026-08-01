@@ -1,0 +1,204 @@
+<?php
+
+use App\Enums\ExportFileLayout;
+use App\Livewire\Tasks\TaskView;
+use App\Models\Project;
+use App\Models\Task;
+use App\Support\Export\ExportOptions;
+use App\Support\Export\MarkdownBundle;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $this->project = Project::factory()->create(['short_name' => 'ABC']);
+    $this->member = userWithRole($this->project, 'member');
+    $this->actingAs($this->member);
+
+    $this->root = Task::factory()->for($this->project)->create(['title' => 'Export functionality']);
+    $this->child = Task::factory()->for($this->project)->childOf($this->root)->create(['title' => 'The MVP']);
+    $this->grandchild = Task::factory()->for($this->project)->childOf($this->child)->create(['title' => 'Image handling']);
+});
+
+/** The bundle's files for the root task, in the given layout. */
+function bundleFiles(ExportFileLayout $layout = ExportFileLayout::Flat, bool $metadata = false): array
+{
+    return app(MarkdownBundle::class)->files(test()->root->fresh(), new ExportOptions(
+        metadata: $metadata,
+        descendants: true,
+        bundle: true,
+        layout: $layout,
+    ));
+}
+
+describe('the files', function () {
+    it('writes one file per item instead of one document', function () {
+        $files = bundleFiles();
+
+        expect(array_keys($files))->toBe([
+            strtolower($this->root->reference).'-export-functionality.md',
+            strtolower($this->child->reference).'-the-mvp.md',
+            strtolower($this->grandchild->reference).'-image-handling.md',
+        ]);
+    });
+
+    it('gives each file its own item and nothing of the others', function () {
+        $files = bundleFiles();
+        $childFile = $files[strtolower($this->child->reference).'-the-mvp.md'];
+
+        expect($childFile)->toStartWith('# The MVP')
+            ->and($childFile)->not->toContain('Image handling')
+            ->and($childFile)->not->toContain('Export functionality');
+    });
+
+    it('keeps the front matter in every file when metadata is on', function () {
+        $files = bundleFiles(metadata: true);
+
+        foreach ($files as $contents) {
+            expect($contents)->toStartWith("---\n");
+        }
+    });
+
+    it('nests a folder per item that has children when asked to', function () {
+        expect(array_keys(bundleFiles(ExportFileLayout::Nested)))->toBe([
+            strtolower($this->root->reference).'-export-functionality/index.md',
+            strtolower($this->root->reference).'-export-functionality/'.strtolower($this->child->reference).'-the-mvp/index.md',
+            strtolower($this->root->reference).'-export-functionality/'.strtolower($this->child->reference).'-the-mvp/'
+                .strtolower($this->grandchild->reference).'-image-handling.md',
+        ]);
+    });
+
+    it('respects the subtree filters, so a canceled branch is absent', function () {
+        $canceled = Task::factory()->for($this->project)->childOf($this->root)->canceled()->create(['title' => 'Abandoned']);
+
+        expect(array_keys(bundleFiles()))->not->toContain(strtolower($canceled->reference).'-abandoned.md');
+    });
+});
+
+describe('cross-references inside the bundle', function () {
+    it('links to the file when the target travels along', function () {
+        $this->root->update(['description' => '<p>See '.inlineReference($this->grandchild).'.</p>']);
+
+        $files = bundleFiles();
+        $rootFile = $files[strtolower($this->root->reference).'-export-functionality.md'];
+
+        expect($rootFile)->toContain('['.$this->grandchild->reference.']('.strtolower($this->grandchild->reference).'-image-handling.md)');
+    });
+
+    it('keeps the absolute URL for a target that stays behind', function () {
+        $outsider = Task::factory()->for($this->project)->create(['title' => 'Elsewhere']);
+        $this->root->update(['description' => '<p>See '.inlineReference($outsider).'.</p>']);
+
+        $url = route('task.show', ['short_name' => 'ABC', 'task_number' => $outsider->task_number]);
+
+        expect(bundleFiles()[strtolower($this->root->reference).'-export-functionality.md'])
+            ->toContain('['.$outsider->reference.']('.$url.')');
+    });
+
+    it('walks up out of a folder in the nested layout', function () {
+        $this->grandchild->update(['description' => '<p>Back to '.inlineReference($this->root).'.</p>']);
+
+        $files = bundleFiles(ExportFileLayout::Nested);
+        $deepest = $files[array_key_last($files)];
+
+        expect($deepest)->toContain('](../index.md)');
+    });
+});
+
+describe('the archive', function () {
+    it('packs the files into a readable zip', function () {
+        $bytes = app(MarkdownBundle::class)->zip($this->root, new ExportOptions(
+            metadata: false,
+            descendants: true,
+            bundle: true,
+        ));
+
+        $path = tempnam(sys_get_temp_dir(), 'export-test');
+        file_put_contents($path, $bytes);
+
+        $archive = new ZipArchive;
+        $archive->open($path);
+
+        $names = [];
+        for ($index = 0; $index < $archive->numFiles; $index++) {
+            $names[] = $archive->getNameIndex($index);
+        }
+
+        $first = (string) $archive->getFromName(strtolower($this->child->reference).'-the-mvp.md');
+        $archive->close();
+        @unlink($path);
+
+        expect($names)->toHaveCount(3)
+            ->and($first)->toStartWith('# The MVP');
+    });
+
+    it('names the archive after the item, with the same stem as the single file', function () {
+        $filename = app(MarkdownBundle::class)->filename($this->root, new ExportOptions(bundle: true));
+
+        expect($filename)->toBe(strtolower($this->root->reference).'-export-functionality.zip');
+    });
+});
+
+describe('the controls', function () {
+    it('offers the bundle only once descendants are included', function () {
+        $component = Livewire::actingAs($this->member)
+            ->test(TaskView::class, ['short_name' => 'ABC', 'task_number' => $this->root->task_number])
+            ->call('startExport');
+
+        $component->assertDontSeeHtml('data-test="export-bundle"')
+            ->set('exportDescendants', true)
+            ->assertSeeHtml('data-test="export-bundle"')
+            ->assertSet('exportBundle', false)
+            // The layout only matters once there are several files.
+            ->assertDontSeeHtml('data-test="export-layout"')
+            ->set('exportBundle', true)
+            ->assertSeeHtml('data-test="export-layout"');
+    });
+
+    it('withdraws Copy to clipboard for a bundle', function () {
+        Livewire::actingAs($this->member)
+            ->test(TaskView::class, ['short_name' => 'ABC', 'task_number' => $this->root->task_number])
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->assertSeeHtml('data-test="export-copy"')
+            ->set('exportBundle', true)
+            ->assertDontSeeHtml('data-test="export-copy"')
+            ->assertSeeHtml('data-test="export-download"');
+    });
+
+    it('refuses to copy a bundle even when the action is called directly', function () {
+        Livewire::actingAs($this->member)
+            ->test(TaskView::class, ['short_name' => 'ABC', 'task_number' => $this->root->task_number])
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->set('exportBundle', true)
+            ->call('copyExport')
+            ->assertNotDispatched('export-copied');
+    });
+
+    it('downloads a zip named after the item', function () {
+        Livewire::actingAs($this->member)
+            ->test(TaskView::class, ['short_name' => 'ABC', 'task_number' => $this->root->task_number])
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->set('exportBundle', true)
+            ->call('downloadExport')
+            ->assertFileDownloaded(strtolower($this->root->reference).'-export-functionality.zip');
+    });
+
+    it('records the bundle and its layout in the audit event', function () {
+        Livewire::actingAs($this->member)
+            ->test(TaskView::class, ['short_name' => 'ABC', 'task_number' => $this->root->task_number])
+            ->call('startExport')
+            ->set('exportDescendants', true)
+            ->set('exportBundle', true)
+            ->set('exportLayout', 'nested')
+            ->call('downloadExport');
+
+        $event = json_decode((string) DB::table('audit_outbox')->orderByDesc('id')->value('event'), true);
+
+        expect($event['metadata']['bundle'])->toBeTrue()
+            ->and($event['metadata']['layout'])->toBe('nested');
+    });
+});

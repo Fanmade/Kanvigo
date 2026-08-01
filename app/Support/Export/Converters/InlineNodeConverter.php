@@ -20,10 +20,15 @@ final class InlineNodeConverter implements ConverterInterface
      * @param  string  $baseUrl  the instance's absolute root, used to resolve the
      *                           relative hrefs and image sources stored in content
      * @param  ExportImages  $images  decides what each inline image becomes
+     * @param  array<string, string>  $localLinks  "task:12" => the path to use
+     *                                             instead of the absolute URL,
+     *                                             for items that travel in the
+     *                                             same bundle as this file
      */
     public function __construct(
         private readonly string $baseUrl,
         private readonly ExportImages $images,
+        private readonly array $localLinks = [],
     ) {}
 
     public function convert(ElementInterface $element): string
@@ -65,6 +70,15 @@ final class InlineNodeConverter implements ConverterInterface
 
         if ($element->getAttribute('data-type') === 'reference') {
             $text = $element->getAttribute('data-label') ?: $text;
+
+            $local = $this->localLinks[$element->getAttribute('data-item-type').':'.$element->getAttribute('data-id')] ?? null;
+
+            // A reference to something that travels in the same archive points at
+            // the file, so the bundle reads as a corpus rather than as a pile of
+            // links back to an instance the reader may not be able to reach.
+            if ($local !== null) {
+                return '['.$text.']('.$local.')';
+            }
         }
 
         return '['.$text.']('.$this->absolute($href).')';
