@@ -30,6 +30,8 @@ front door — what Kanvigo is, the feature list, and how to get it running.
   — why `[name]` stays in the stored content and resolves on read.
 - [0002 — Export ships one concrete Markdown renderer](adr/0002-export-has-no-format-abstraction.md)
   — why the format seam waits for the second real format.
+- [0003 — Export converts HTML with league/html-to-markdown](adr/0003-html-to-markdown-library.md)
+  — why we take a library and register our own converters for Kanvigo's nodes.
 
 ## Elsewhere
 
