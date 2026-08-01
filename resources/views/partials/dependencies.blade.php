@@ -1,15 +1,30 @@
 @php($canManage = $this->canManageDependencies)
 
-<div class="flex flex-col gap-3" data-test="dependencies" @if ($canManage) x-data="{ adding: @js($errors->has('dependencyReference')) }" @endif>
+<div
+    class="flex flex-col gap-3"
+    data-test="dependencies"
+    @if ($canManage) x-data="{ adding: @js($errors->has('dependencyReference')) }" @endif
+>
     <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex flex-wrap items-center gap-2">
             <flux:heading size="sm" data-test="relationships-heading">{{ __('Relationships') }}</flux:heading>
             @if ($this->isBlocked)
-                <flux:badge size="sm" color="red" icon="lock-closed" data-test="blocked-badge">{{ __('Blocked') }}</flux:badge>
+                <flux:badge
+                    size="sm"
+                    color="red"
+                    icon="lock-closed"
+                    data-test="blocked-badge"
+                >{{ __('Blocked') }}</flux:badge>
             @endif
         </div>
         @if ($canManage)
-            <flux:button size="xs" variant="subtle" icon="plus" x-on:click="adding = ! adding" data-test="toggle-add-dependency">
+            <flux:button
+                size="xs"
+                variant="subtle"
+                icon="plus"
+                x-on:click="adding = ! adding"
+                data-test="toggle-add-dependency"
+            >
                 {{ __('Add') }}
             </flux:button>
         @endif
@@ -42,7 +57,10 @@
             />
 
             @if ($this->dependencyCandidates->isNotEmpty())
-                <div class="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-lg border border-zinc-200 p-1 dark:border-white/10" data-test="dependency-candidates">
+                <div
+                    class="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-lg border border-zinc-200 p-1 dark:border-white/10"
+                    data-test="dependency-candidates"
+                >
                     @foreach ($this->dependencyCandidates as $candidate)
                         <flux:button
                             type="button"
@@ -60,8 +78,19 @@
             @endif
             <flux:error name="dependencyReference" />
             <div class="flex justify-end gap-2">
-                <flux:button type="button" size="sm" variant="ghost" x-on:click="adding = false">{{ __('Cancel') }}</flux:button>
-                <flux:button type="submit" size="sm" variant="primary" icon="plus" data-test="add-dependency">{{ __('Add') }}</flux:button>
+                <flux:button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    x-on:click="adding = false"
+                >{{ __('Cancel') }}</flux:button>
+                <flux:button
+                    type="submit"
+                    size="sm"
+                    variant="primary"
+                    icon="plus"
+                    data-test="add-dependency"
+                >{{ __('Add') }}</flux:button>
             </div>
         </form>
     @endif

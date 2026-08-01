@@ -36,11 +36,20 @@
                         class="flex flex-col gap-1.5 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                     >
                         <div class="flex items-center gap-2">
-                            <flux:badge size="sm" color="indigo" variant="pill">{{ $task->project->short_name }}</flux:badge>
+                            <flux:badge
+                                size="sm"
+                                color="indigo"
+                                variant="pill"
+                            >{{ $task->project->short_name }}</flux:badge>
                             <flux:text size="xs" class="font-mono text-zinc-400">{{ $task->reference }}</flux:text>
                         </div>
                         <span class="text-sm">{{ $task->title }}</span>
-                        <flux:badge size="sm" :color="$task->status->color()" :icon="$task->status->icon()" class="self-start">
+                        <flux:badge
+                            size="sm"
+                            :color="$task->status->color()"
+                            :icon="$task->status->icon()"
+                            class="self-start"
+                        >
                             {{ $task->status->label() }}
                         </flux:badge>
                     </a>
@@ -80,14 +89,22 @@
     <div>
         <div class="mb-2 flex items-center justify-between gap-2">
             <flux:heading size="lg">{{ __('Notes') }}</flux:heading>
-            <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-note')" data-test="dashboard-new-note">{{ __('New note') }}</flux:button>
+            <flux:button
+                size="sm"
+                icon="plus"
+                wire:click="$dispatch('open-create-note')"
+                data-test="dashboard-new-note"
+            >{{ __('New note') }}</flux:button>
         </div>
 
         <x-list-card>
             @forelse ($this->notes as $note)
                 <x-note-row :note="$note" wire:key="note-{{ $note->id }}" />
             @empty
-                <flux:text size="sm" class="px-4 py-6 text-center text-zinc-400">{{ __('No notes yet. Capture an idea to get started.') }}</flux:text>
+                <flux:text
+                    size="sm"
+                    class="px-4 py-6 text-center text-zinc-400"
+                >{{ __('No notes yet. Capture an idea to get started.') }}</flux:text>
             @endforelse
         </x-list-card>
     </div>

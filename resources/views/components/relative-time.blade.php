@@ -13,5 +13,8 @@
 --}}
 @if ($date)
     @php($carbon = $date instanceof \Carbon\CarbonInterface ? $date : \Illuminate\Support\Carbon::parse($date))
-    <span {{ $attributes->class('cursor-help') }} title="{{ $carbon->isoFormat('LLL') }}">{{ $carbon->diffForHumans() }}</span>
+    <span
+        {{ $attributes->class('cursor-help') }}
+        title="{{ $carbon->isoFormat('LLL') }}"
+    >{{ $carbon->diffForHumans() }}</span>
 @endif

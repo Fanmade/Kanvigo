@@ -1,10 +1,15 @@
-<div class="max-sm:flex-1 max-sm:me-3">
+<div class="max-sm:me-3 max-sm:flex-1">
     {{-- Custom shortcut: Flux's shortcut="cmd.k" maps to the Meta key only (Alpine's
          .cmd alias), so Ctrl+K never fires on Windows/Linux. Handle both modifiers. --}}
     <flux:modal.trigger
         name="command-palette"
         class="max-sm:block max-sm:w-full"
-        x-on:keydown.window="if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'k') { $event.preventDefault(); $dispatch('modal-show', { name: 'command-palette' }) }"
+        x-on:keydown.window="
+            if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'k') {
+                $event.preventDefault();
+                $dispatch('modal-show', { name: 'command-palette' });
+            }
+        "
     >
         {{-- Full width on mobile (fills the header between the sidebar toggle and
              account avatar); a fixed, comfortable width from `sm` up. --}}
@@ -26,16 +31,25 @@
                 <span
                     data-test="command-palette-shortcut"
                     class="hidden sm:inline"
-                    x-text="(navigator.userAgentData?.platform || navigator.platform || '').toLowerCase().includes('mac') ? '⌘K' : 'Ctrl K'"
+                    x-text="
+                        (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase().includes('mac')
+                            ? '⌘K'
+                            : 'Ctrl K'
+                    "
                 >⌘K</span>
             </x-slot:kbd>
         </flux:input>
     </flux:modal.trigger>
 
-    <flux:modal name="command-palette" variant="bare" wire:close="close" class="mx-auto w-full max-w-2xl my-[12vh] max-h-screen overflow-y-hidden">
+    <flux:modal
+        name="command-palette"
+        variant="bare"
+        wire:close="close"
+        class="mx-auto my-[12vh] max-h-screen w-full max-w-2xl overflow-y-hidden"
+    >
         {{-- filter="manual" disables Flux's client-side text filtering so server-side
              matches (tags, reference jumps) are never hidden by the typed query. --}}
-        <flux:command filter="manual" class="flex w-full flex-col border-none shadow-lg max-h-[76vh]">
+        <flux:command filter="manual" class="flex max-h-[76vh] w-full flex-col border-none shadow-lg">
             <flux:command.input
                 wire:model.live.debounce.200ms="query"
                 :placeholder="__('Search projects, tasks and docs…')"
@@ -51,17 +65,30 @@
                      <flux:command.items>; we override that view (resources/views/
                      flux/command/items.blade.php) so the string is translatable. --}}
                 @foreach ($items as $item)
-                    <flux:command.item wire:click="{{ $item->event ? 'runAction' : 'go' }}('{{ $item->event ?? $item->url }}')" :icon="$item->icon" wire:key="{{ $item->type }}-{{ $loop->index }}" data-test="palette-item-{{ Str::slug($item->title) }}">
+                    <flux:command.item
+                        wire:click="{{ $item->event ? 'runAction' : 'go' }}('{{ $item->event ?? $item->url }}')"
+                        :icon="$item->icon"
+                        wire:key="{{ $item->type }}-{{ $loop->index }}"
+                        data-test="palette-item-{{ Str::slug($item->title) }}"
+                    >
                         <span class="flex w-full items-center gap-2">
                             <span class="flex-1 truncate">{{ $item->title }}</span>
                             @if ($item->progress)
                                 <x-task-progress :progress="$item->progress" bar-class="w-10" class="shrink-0" />
                             @endif
                             @if ($item->badge === 'draft')
-                                <flux:badge size="sm" color="zinc" variant="pill" class="shrink-0">{{ __('Draft') }}</flux:badge>
+                                <flux:badge
+                                    size="sm"
+                                    color="zinc"
+                                    variant="pill"
+                                    class="shrink-0"
+                                >{{ __('Draft') }}</flux:badge>
                             @endif
                             @if ($item->reference)
-                                <flux:badge size="sm" color="{{ $item->pinned ? 'blue' : 'zinc' }}">{{ $item->reference }}</flux:badge>
+                                <flux:badge
+                                    size="sm"
+                                    color="{{ $item->pinned ? 'blue' : 'zinc' }}"
+                                >{{ $item->reference }}</flux:badge>
                             @endif
                         </span>
                     </flux:command.item>

@@ -31,10 +31,17 @@
 
             @forelse ($this->activities as $activity)
                 @php($url = $this->subjectUrl($activity))
-                <div class="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300" wire:key="activity-{{ $activity->id }}">
+                <div
+                    class="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300"
+                    wire:key="activity-{{ $activity->id }}"
+                >
                     <div class="flex-1">
                         @if ($url)
-                            <a href="{{ $url }}" wire:navigate class="font-medium text-zinc-800 hover:underline dark:text-zinc-100">
+                            <a
+                                href="{{ $url }}"
+                                wire:navigate
+                                class="font-medium text-zinc-800 hover:underline dark:text-zinc-100"
+                            >
                                 {{ $activity->subject instanceof \App\Models\Task ? $activity->subject->reference : $activity->subject->short_name }}
                             </a>
                         @endif

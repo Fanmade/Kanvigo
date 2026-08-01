@@ -12,7 +12,8 @@
                 <flux:label>{{ __('Grant access to projects') }}</flux:label>
                 <flux:select variant="listbox" multiple wire:model="projectIds" :placeholder="__('Select projects')">
                     @foreach ($this->inviterProjects as $project)
-                        <flux:select.option :value="$project->id">{{ $project->short_name }} · {{ $project->title }}</flux:select.option>
+                        <flux:select.option :value="$project->id">
+                            {{ $project->short_name }} · {{ $project->title }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 <flux:error name="projectIds" />

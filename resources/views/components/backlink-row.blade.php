@@ -22,7 +22,11 @@
     data-test="backlink-{{ $item->reference }}"
 >
     <div class="flex min-w-0 items-center gap-2">
-        <flux:icon :name="$isDoc ? 'document-text' : 'rectangle-stack'" variant="micro" class="shrink-0 text-zinc-400" />
+        <flux:icon
+            :name="$isDoc ? 'document-text' : 'rectangle-stack'"
+            variant="micro"
+            class="shrink-0 text-zinc-400"
+        />
         <flux:text size="xs" class="font-mono text-zinc-400">{{ $item->reference }}</flux:text>
         <span class="truncate text-sm">{{ $item->title }}</span>
     </div>
@@ -32,6 +36,10 @@
             <flux:badge size="sm" color="zinc">{{ __('Draft') }}</flux:badge>
         @endunless
     @else
-        <flux:badge size="sm" :color="$item->status->color()" :icon="$item->status->icon()">{{ $item->status->label() }}</flux:badge>
+        <flux:badge
+            size="sm"
+            :color="$item->status->color()"
+            :icon="$item->status->icon()"
+        >{{ $item->status->label() }}</flux:badge>
     @endif
 </a>

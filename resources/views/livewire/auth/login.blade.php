@@ -1,6 +1,9 @@
 <x-layouts::auth :title="__('Log in')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+        <x-auth-header
+            :title="__('Log in to your account')"
+            :description="__('Enter your email and password below to log in')"
+        />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -24,9 +27,8 @@
 
             <!-- Password -->
             <div class="relative">
-
                 @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
+                    <flux:link class="absolute end-0 top-0 text-sm" :href="route('password.request')" wire:navigate>
                         {{ __('Forgot your password?') }}
                     </flux:link>
                 @endif
@@ -51,6 +53,5 @@
                 </flux:button>
             </div>
         </form>
-
     </div>
 </x-layouts::auth>

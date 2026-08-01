@@ -15,10 +15,7 @@
         },
     }"
 >
-    <div
-        x-ref="body"
-        :class="expanded ? 'max-h-none' : 'max-h-96 overflow-y-auto'"
-    >
+    <div x-ref="body" :class="expanded ? 'max-h-none' : 'max-h-96 overflow-y-auto'">
         <x-rich-text :content="$content" :short-name="$shortName" :variables="$variables" />
     </div>
 
@@ -27,7 +24,7 @@
         x-show="overflowing"
         x-cloak
         x-on:click="expanded = ! expanded"
-        class="mt-1 text-sm font-medium text-accent hover:underline"
+        class="text-accent mt-1 text-sm font-medium hover:underline"
         data-test="toggle-description"
         x-text="expanded ? @js(__('Show less')) : @js(__('Show more'))"
     ></button>

@@ -1,24 +1,13 @@
 @props(['property' => 'newFiles', 'test' => 'attach-files'])
 
 <div x-data class="flex items-center gap-3">
-    <input
-        type="file"
-        multiple
-        wire:model="{{ $property }}"
-        x-ref="fileInput"
-        class="hidden"
-    />
+    <input type="file" multiple wire:model="{{ $property }}" x-ref="fileInput" class="hidden" />
 
     <flux:button size="xs" variant="ghost" icon="paper-clip" x-on:click="$refs.fileInput.click()" :data-test="$test">
         {{ __('Attach files') }}
     </flux:button>
 
-    <flux:text
-        size="sm"
-        class="text-zinc-400"
-        wire:loading
-        wire:target="updatedNewFiles, {{ $property }}"
-    >
+    <flux:text size="sm" class="text-zinc-400" wire:loading wire:target="updatedNewFiles, {{ $property }}">
         {{ __('Uploading…') }}
     </flux:text>
 

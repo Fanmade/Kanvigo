@@ -1,5 +1,10 @@
 <div class="flex flex-col gap-3">
-    <x-collapsible-section :title="__('Comments')" :count="$this->commentCount" :collapsed="$collapsed" body-id="comments-body-{{ $morphSubjectId }}">
+    <x-collapsible-section
+        :title="__('Comments')"
+        :count="$this->commentCount"
+        :collapsed="$collapsed"
+        body-id="comments-body-{{ $morphSubjectId }}"
+    >
         <div id="comments-body-{{ $morphSubjectId }}" class="flex flex-col gap-3">
             {{-- The full editor is heavy (toolbar, min-height, helper text) and pushes
                  existing comments below the fold, so it stays collapsed behind an
@@ -8,26 +13,29 @@
             <div
                 x-data="{ expanded: false }"
                 x-on:comment-added.window="expanded = false"
-                x-on:open-composer.window="expanded = true; $nextTick(() => { $refs.composer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); $refs.composer?.querySelector('[contenteditable]')?.focus(); })"
+                x-on:open-composer.window="
+                    expanded = true;
+                    $nextTick(() => {
+                        $refs.composer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        $refs.composer?.querySelector('[contenteditable]')?.focus();
+                    });
+                "
                 class="flex flex-col gap-2"
             >
                 <flux:input
                     as="button"
-                    x-show="!expanded"
-                    x-on:click="expanded = true; $nextTick(() => $refs.composer?.querySelector('[contenteditable]')?.focus())"
+                    x-show="! expanded"
+                    x-on:click="
+                        expanded = true;
+                        $nextTick(() => $refs.composer?.querySelector('[contenteditable]')?.focus());
+                    "
                     icon="chat-bubble-left-right"
                     :placeholder="__('Write a comment…')"
                     :aria-label="__('Write a comment…')"
                     data-test="comment-composer-trigger"
                 />
 
-                <form
-                    x-ref="composer"
-                    x-show="expanded"
-                    x-cloak
-                    wire:submit="addComment"
-                    class="flex flex-col gap-2"
-                >
+                <form x-ref="composer" x-show="expanded" x-cloak wire:submit="addComment" class="flex flex-col gap-2">
                     @if ($this->referencedActivityEntries->isNotEmpty())
                         <div class="flex flex-col gap-1.5" data-test="comment-references">
                             <flux:text size="xs" class="text-zinc-500">{{ __('Referencing') }}</flux:text>
@@ -56,12 +64,23 @@
                         </div>
                     @endif
 
-                    <x-attachments.rich-editor property="body" preset="compact" :placeholder="__('Write a comment…')" :mentionables-url="$this->mentionablesUrl" />
+                    <x-attachments.rich-editor
+                        property="body"
+                        preset="compact"
+                        :placeholder="__('Write a comment…')"
+                        :mentionables-url="$this->mentionablesUrl"
+                    />
                     <div class="flex justify-end gap-2">
                         <flux:button type="button" size="sm" variant="ghost" x-on:click="expanded = false">
                             {{ __('Cancel') }}
                         </flux:button>
-                        <flux:button type="submit" size="sm" variant="primary" icon="chat-bubble-left-right" data-test="add-comment">
+                        <flux:button
+                            type="submit"
+                            size="sm"
+                            variant="primary"
+                            icon="chat-bubble-left-right"
+                            data-test="add-comment"
+                        >
                             {{ __('Comment') }}
                         </flux:button>
                     </div>
@@ -72,20 +91,49 @@
                 @forelse ($this->comments as $comment)
                     @php($threadIds = $comment->replies->pluck('id')->push($comment->id))
                     <flux:card class="flex flex-col gap-3" wire:key="comment-{{ $comment->id }}">
-                        <x-comment :comment="$comment" :editing-id="$editingId" :confirming-delete="$confirmingDelete" :mentionables-url="$this->mentionablesUrl" :short-name="$this->project->short_name" />
+                        <x-comment
+                            :comment="$comment"
+                            :editing-id="$editingId"
+                            :confirming-delete="$confirmingDelete"
+                            :mentionables-url="$this->mentionablesUrl"
+                            :short-name="$this->project->short_name"
+                        />
 
                         @foreach ($comment->replies as $reply)
-                            <div class="ms-6 border-s-2 border-zinc-100 ps-3 dark:border-zinc-700" wire:key="reply-{{ $reply->id }}">
-                                <x-comment :comment="$reply" :editing-id="$editingId" :confirming-delete="$confirmingDelete" :mentionables-url="$this->mentionablesUrl" :short-name="$this->project->short_name" />
+                            <div
+                                class="ms-6 border-s-2 border-zinc-100 ps-3 dark:border-zinc-700"
+                                wire:key="reply-{{ $reply->id }}"
+                            >
+                                <x-comment
+                                    :comment="$reply"
+                                    :editing-id="$editingId"
+                                    :confirming-delete="$confirmingDelete"
+                                    :mentionables-url="$this->mentionablesUrl"
+                                    :short-name="$this->project->short_name"
+                                />
                             </div>
                         @endforeach
 
                         @if ($threadIds->contains($replyingTo))
                             <form wire:submit="addReply" class="ms-6 flex flex-col gap-2">
-                                <x-attachments.rich-editor property="replyBody" preset="compact" :placeholder="__('Write a reply…')" :mentionables-url="$this->mentionablesUrl" />
+                                <x-attachments.rich-editor
+                                    property="replyBody"
+                                    preset="compact"
+                                    :placeholder="__('Write a reply…')"
+                                    :mentionables-url="$this->mentionablesUrl"
+                                />
                                 <div class="flex justify-end gap-2">
-                                    <flux:button type="button" size="sm" variant="ghost" wire:click="cancelReply">{{ __('Cancel') }}</flux:button>
-                                    <flux:button type="submit" size="sm" variant="primary">{{ __('Reply') }}</flux:button>
+                                    <flux:button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        wire:click="cancelReply"
+                                    >{{ __('Cancel') }}</flux:button>
+                                    <flux:button
+                                        type="submit"
+                                        size="sm"
+                                        variant="primary"
+                                    >{{ __('Reply') }}</flux:button>
                                 </div>
                             </form>
                         @endif

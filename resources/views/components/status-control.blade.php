@@ -5,7 +5,7 @@
     'size' => 'sm',
 ])
 @php
-/** @var \App\Enums\Status $status */
+    /** @var \App\Enums\Status $status */
 @endphp
 
 @if ($canEdit)
@@ -25,7 +25,11 @@
         </x-slot:trigger>
 
         @foreach (\App\Enums\Status::columns() as $option)
-            <flux:menu.radio :value="$option->value" :icon="$option->icon()" data-test="status-option-{{ $option->value }}">
+            <flux:menu.radio
+                :value="$option->value"
+                :icon="$option->icon()"
+                data-test="status-option-{{ $option->value }}"
+            >
                 {{ $option->label() }}
             </flux:menu.radio>
         @endforeach

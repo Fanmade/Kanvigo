@@ -4,11 +4,20 @@
     {{-- Breadcrumb: the project, the doc's ancestors, then this doc. --}}
     <div class="flex items-center justify-between gap-2">
         <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-            <a href="{{ route('project.show', $this->doc->project) }}" wire:navigate class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
+            <a
+                href="{{ route('project.show', $this->doc->project) }}"
+                wire:navigate
+                class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+            >
                 {{ $shortName }}
             </a>
             <span class="text-zinc-300">/</span>
-            <a href="{{ route('project.docs', $this->doc->project) }}" wire:navigate class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200" data-test="docs-index-link">
+            <a
+                href="{{ route('project.docs', $this->doc->project) }}"
+                wire:navigate
+                class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                data-test="docs-index-link"
+            >
                 {{ __('Docs') }}
             </a>
             @foreach ($this->ancestors as $ancestor)
@@ -32,11 +41,7 @@
             <flux:input wire:model="title" :label="__('Title')" data-test="doc-title-input" />
             <flux:error name="title" />
 
-            <x-attachments.rich-editor
-                property="body"
-                :label="__('Body')"
-                :mentionables-url="$this->mentionablesUrl"
-            />
+            <x-attachments.rich-editor property="body" :label="__('Body')" :mentionables-url="$this->mentionablesUrl" />
             <x-attachments.upload-button />
 
             <flux:select wire:model="parentId" :label="__('Nested under')" data-test="doc-parent-select">
@@ -63,7 +68,13 @@
                         <div class="flex shrink-0 items-center gap-2">
                             @if ($this->canDelete)
                                 <flux:dropdown align="end">
-                                    <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')" data-test="doc-actions" />
+                                    <flux:button
+                                        size="sm"
+                                        variant="ghost"
+                                        icon="ellipsis-horizontal"
+                                        :aria-label="__('Actions')"
+                                        data-test="doc-actions"
+                                    />
                                     <flux:menu>
                                         <flux:menu.item
                                             icon="trash"
@@ -77,7 +88,13 @@
                                     </flux:menu>
                                 </flux:dropdown>
                             @endif
-                            <flux:button size="sm" icon="pencil-square" variant="ghost" wire:click="edit" data-test="edit-doc">{{ __('Edit') }}</flux:button>
+                            <flux:button
+                                size="sm"
+                                icon="pencil-square"
+                                variant="ghost"
+                                wire:click="edit"
+                                data-test="edit-doc"
+                            >{{ __('Edit') }}</flux:button>
                         </div>
                     @endif
                 </div>
@@ -87,7 +104,7 @@
                         @if ($this->doc->body)
                             <x-expandable-description :content="$this->doc->body" :short-name="$shortName" />
                         @else
-                            <flux:text class="italic text-zinc-400">{{ __('This doc is still empty.') }}</flux:text>
+                            <flux:text class="text-zinc-400 italic">{{ __('This doc is still empty.') }}</flux:text>
                         @endif
                     </flux:card>
                 </x-attachments.dropzone>
@@ -101,7 +118,12 @@
                             <flux:heading size="sm">{{ __('Nested docs') }}</flux:heading>
 
                             @if ($this->canCreate)
-                                <flux:button size="sm" icon="plus" wire:click="startCreatingChild" data-test="new-nested-doc">
+                                <flux:button
+                                    size="sm"
+                                    icon="plus"
+                                    wire:click="startCreatingChild"
+                                    data-test="new-nested-doc"
+                                >
                                     {{ __('New nested doc') }}
                                 </flux:button>
                             @endif
@@ -111,7 +133,10 @@
                             @forelse ($this->childDocs as $child)
                                 <x-doc-row :doc="$child" :short-name="$shortName" />
                             @empty
-                                <flux:text size="sm" class="px-4 py-3 text-zinc-400">{{ __('No nested docs yet.') }}</flux:text>
+                                <flux:text
+                                    size="sm"
+                                    class="px-4 py-3 text-zinc-400"
+                                >{{ __('No nested docs yet.') }}</flux:text>
                             @endforelse
                         </x-list-card>
                     </div>
@@ -180,11 +205,17 @@
 
                     <div class="flex flex-col gap-1.5 text-sm">
                         <div class="flex items-center justify-between gap-2">
-                            <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">{{ __('Created') }}</flux:text>
+                            <flux:text
+                                size="sm"
+                                class="text-zinc-500 dark:text-zinc-400"
+                            >{{ __('Created') }}</flux:text>
                             <flux:text size="sm">{{ $this->doc->created_at->format('M j, Y') }}</flux:text>
                         </div>
                         <div class="flex items-center justify-between gap-2">
-                            <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">{{ __('Updated') }}</flux:text>
+                            <flux:text
+                                size="sm"
+                                class="text-zinc-500 dark:text-zinc-400"
+                            >{{ __('Updated') }}</flux:text>
                             <flux:text size="sm"><x-relative-time :date="$this->doc->updated_at" /></flux:text>
                         </div>
                     </div>
@@ -206,7 +237,11 @@
                     <flux:modal.close>
                         <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
                     </flux:modal.close>
-                    <flux:button type="submit" variant="primary" data-test="create-nested-doc">{{ __('Create doc') }}</flux:button>
+                    <flux:button
+                        type="submit"
+                        variant="primary"
+                        data-test="create-nested-doc"
+                    >{{ __('Create doc') }}</flux:button>
                 </div>
             </form>
         </flux:modal>
@@ -217,4 +252,3 @@
         <livewire:variables.create-variable :short-name="$this->doc->project->short_name" />
     @endcan
 </div>
-

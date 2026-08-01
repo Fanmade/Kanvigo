@@ -4,7 +4,11 @@
     <div class="flex items-center justify-between gap-2">
         @php($shortName = $this->task->project->short_name)
         <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-            <a href="{{ route('project.show', $this->task->project) }}" wire:navigate class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
+            <a
+                href="{{ route('project.show', $this->task->project) }}"
+                wire:navigate
+                class="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+            >
                 {{ $shortName }}
             </a>
             {{-- The task's place in the tree: each open ancestor, root first. --}}
@@ -35,7 +39,10 @@
                 />
             </flux:tooltip>
             <x-live-updates-toggle />
-            <livewire:subscriptions.subscription-toggle :subscribable="$this->task" :wire:key="'sub-task-'.$this->task->id" />
+            <livewire:subscriptions.subscription-toggle
+                :subscribable="$this->task"
+                :wire:key="'sub-task-'.$this->task->id"
+            />
         </div>
     </div>
 
@@ -46,8 +53,19 @@
         >
             <flux:text size="sm">{{ __('The parent task was moved to In progress.') }}</flux:text>
             <div class="flex items-center gap-2">
-                <flux:button size="xs" variant="ghost" wire:click="undoParentBump" data-test="undo-parent-bump">{{ __('Undo') }}</flux:button>
-                <flux:button size="xs" variant="subtle" icon="x-mark" :aria-label="__('Dismiss')" wire:click="dismissParentBump" />
+                <flux:button
+                    size="xs"
+                    variant="ghost"
+                    wire:click="undoParentBump"
+                    data-test="undo-parent-bump"
+                >{{ __('Undo') }}</flux:button>
+                <flux:button
+                    size="xs"
+                    variant="subtle"
+                    icon="x-mark"
+                    :aria-label="__('Dismiss')"
+                    wire:click="dismissParentBump"
+                />
             </div>
         </div>
     @endif
@@ -70,11 +88,20 @@
                     <flux:text size="sm" class="font-medium">{{ __('This task was canceled.') }}</flux:text>
                 </div>
                 @if ($this->task->cancel_message)
-                    <flux:text size="sm" class="text-zinc-600 dark:text-zinc-300">{{ $this->task->cancel_message }}</flux:text>
+                    <flux:text
+                        size="sm"
+                        class="text-zinc-600 dark:text-zinc-300"
+                    >{{ $this->task->cancel_message }}</flux:text>
                 @endif
             </div>
             @if ($this->canUpdate)
-                <flux:button size="xs" variant="ghost" icon="arrow-uturn-left" wire:click="reopenTask" data-test="reopen-task">
+                <flux:button
+                    size="xs"
+                    variant="ghost"
+                    icon="arrow-uturn-left"
+                    wire:click="reopenTask"
+                    data-test="reopen-task"
+                >
                     {{ __('Reopen') }}
                 </flux:button>
             @endif
@@ -102,13 +129,31 @@
                         <div class="flex shrink-0 items-center gap-2">
                             @unless ($this->task->isCanceled())
                                 <flux:dropdown align="end">
-                                    <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')" data-test="task-actions" />
+                                    <flux:button
+                                        size="sm"
+                                        variant="ghost"
+                                        icon="ellipsis-horizontal"
+                                        :aria-label="__('Actions')"
+                                        data-test="task-actions"
+                                    />
                                     <flux:menu>
-                                        <flux:menu.item icon="x-circle" variant="danger" wire:click="confirmCancel" data-test="cancel-task">{{ __('Cancel task') }}</flux:menu.item>
+                                        <flux:menu.item
+                                            icon="x-circle"
+                                            variant="danger"
+                                            wire:click="confirmCancel"
+                                            data-test="cancel-task"
+                                        >
+                                            {{ __('Cancel task') }}</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             @endunless
-                            <flux:button size="sm" icon="pencil-square" variant="ghost" wire:click="edit" data-test="edit-task">{{ __('Edit') }}</flux:button>
+                            <flux:button
+                                size="sm"
+                                icon="pencil-square"
+                                variant="ghost"
+                                wire:click="edit"
+                                data-test="edit-task"
+                            >{{ __('Edit') }}</flux:button>
                         </div>
                     @endif
                 </div>
@@ -120,9 +165,12 @@
                 <x-attachments.dropzone :enabled="$this->canUpdate">
                     <flux:card>
                         @if ($this->task->description)
-                            <x-expandable-description :content="$this->task->description" :short-name="$this->task->project->short_name" />
+                            <x-expandable-description
+                                :content="$this->task->description"
+                                :short-name="$this->task->project->short_name"
+                            />
                         @else
-                            <flux:text class="italic text-zinc-400">{{ __('No description yet.') }}</flux:text>
+                            <flux:text class="text-zinc-400 italic">{{ __('No description yet.') }}</flux:text>
                         @endif
                     </flux:card>
                 </x-attachments.dropzone>
@@ -139,7 +187,12 @@
                             <div class="flex items-center gap-3">
                                 <x-task-progress :progress="$this->task->progress()" data-test="subtask-progress" />
                                 @if ($this->canUpdate && $this->canAddSubtask)
-                                    <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-task', { projectId: {{ $this->task->project_id }}, parentId: {{ $this->task->id }} })" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
+                                    <flux:button
+                                        size="sm"
+                                        icon="plus"
+                                        wire:click="$dispatch('open-create-task', { projectId: {{ $this->task->project_id }}, parentId: {{ $this->task->id }} })"
+                                        data-test="new-subtask"
+                                    >{{ __('New subtask') }}</flux:button>
                                 @endif
                             </div>
                         </div>
@@ -148,13 +201,19 @@
                             @forelse ($this->task->children as $child)
                                 <x-subtask-row :task="$child" :short-name="$shortName" test="subtask" />
                             @empty
-                                <flux:text size="sm" class="px-4 py-3 text-zinc-400">{{ __('No subtasks yet.') }}</flux:text>
+                                <flux:text
+                                    size="sm"
+                                    class="px-4 py-3 text-zinc-400"
+                                >{{ __('No subtasks yet.') }}</flux:text>
                             @endforelse
                         </x-list-card>
                     </div>
                 @endif
 
-                <livewire:comments.comment-list :commentable="$this->task" :wire:key="'comments-task-'.$this->task->id" />
+                <livewire:comments.comment-list
+                    :commentable="$this->task"
+                    :wire:key="'comments-task-'.$this->task->id"
+                />
 
                 @if ($this->canViewActivityLog)
                     {{-- A "?log=N" deep link to a specific entry renders the feed eagerly:
@@ -186,10 +245,7 @@
                             </flux:tooltip>
                         @endif
 
-                        <x-status-control
-                            :status="$this->task->status"
-                            :can-edit="$this->canUpdateStatus"
-                        />
+                        <x-status-control :status="$this->task->status" :can-edit="$this->canUpdateStatus" />
 
                         @if ($this->nextStatus)
                             <flux:tooltip :content="__('Move to :status', ['status' => $this->nextStatus->label()])">
@@ -261,11 +317,17 @@
 
                     <div class="flex flex-col gap-1.5 text-sm">
                         <div class="flex items-center justify-between gap-2">
-                            <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">{{ __('Created') }}</flux:text>
+                            <flux:text
+                                size="sm"
+                                class="text-zinc-500 dark:text-zinc-400"
+                            >{{ __('Created') }}</flux:text>
                             <flux:text size="sm">{{ $this->task->created_at->format('M j, Y') }}</flux:text>
                         </div>
                         <div class="flex items-center justify-between gap-2">
-                            <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">{{ __('Updated') }}</flux:text>
+                            <flux:text
+                                size="sm"
+                                class="text-zinc-500 dark:text-zinc-400"
+                            >{{ __('Updated') }}</flux:text>
                             <flux:text size="sm"><x-relative-time :date="$this->task->updated_at" /></flux:text>
                         </div>
                     </div>
@@ -281,22 +343,43 @@
                 {{ $canceling ? __('Cancel the subtasks too?') : __('Mark the subtasks done too?') }}
             </flux:heading>
             <flux:text>
-                {{ $canceling
+                {{
+                    $canceling
                     ? __('This task has :count open subtask(s). Cancel them as well, or cancel only this task?', ['count' => $this->openSubtaskCount])
-                    : __('This task has :count open subtask(s). Mark them done as well, or complete only this task?', ['count' => $this->openSubtaskCount]) }}
+                    : __('This task has :count open subtask(s). Mark them done as well, or complete only this task?', ['count' => $this->openSubtaskCount])
+                }}
             </flux:text>
 
-            <flux:checkbox wire:model="rememberCascadeChoice" :label="__('Remember my choice')" data-test="cascade-remember" />
+            <flux:checkbox
+                wire:model="rememberCascadeChoice"
+                :label="__('Remember my choice')"
+                data-test="cascade-remember"
+            />
 
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="ghost" wire:click="abortCascade">
                     {{ $canceling ? __('Keep open') : __('Cancel') }}
                 </flux:button>
-                <flux:button type="button" variant="filled" wire:click="declineCascade" data-test="cascade-decline">{{ __('Only this task') }}</flux:button>
+                <flux:button
+                    type="button"
+                    variant="filled"
+                    wire:click="declineCascade"
+                    data-test="cascade-decline"
+                >{{ __('Only this task') }}</flux:button>
                 @if ($canceling)
-                    <flux:button type="button" variant="danger" wire:click="confirmCascade" data-test="cascade-confirm">{{ __('Cancel all') }}</flux:button>
+                    <flux:button
+                        type="button"
+                        variant="danger"
+                        wire:click="confirmCascade"
+                        data-test="cascade-confirm"
+                    >{{ __('Cancel all') }}</flux:button>
                 @else
-                    <flux:button type="button" variant="primary" wire:click="confirmCascade" data-test="cascade-confirm">{{ __('Mark all done') }}</flux:button>
+                    <flux:button
+                        type="button"
+                        variant="primary"
+                        wire:click="confirmCascade"
+                        data-test="cascade-confirm"
+                    >{{ __('Mark all done') }}</flux:button>
                 @endif
             </div>
         </div>
@@ -304,7 +387,12 @@
 
     @include('partials.tasks.parent-close-modal')
 
-    <flux:modal wire:model.self="movingParent" wire:close="cancelMoveParent" class="md:w-96" data-test="move-task-modal">
+    <flux:modal
+        wire:model.self="movingParent"
+        wire:close="cancelMoveParent"
+        class="md:w-96"
+        data-test="move-task-modal"
+    >
         <div class="flex flex-col gap-4">
             <flux:heading size="lg">{{ __('Move task') }}</flux:heading>
             <flux:text>{{ __('Choose a new parent task, or move it to the top level.') }}</flux:text>
@@ -318,8 +406,17 @@
             <flux:error name="newParentId" />
 
             <div class="flex justify-end gap-2">
-                <flux:button type="button" variant="ghost" wire:click="cancelMoveParent">{{ __('Cancel') }}</flux:button>
-                <flux:button type="button" variant="primary" wire:click="moveParent" data-test="move-parent-confirm">{{ __('Move') }}</flux:button>
+                <flux:button
+                    type="button"
+                    variant="ghost"
+                    wire:click="cancelMoveParent"
+                >{{ __('Cancel') }}</flux:button>
+                <flux:button
+                    type="button"
+                    variant="primary"
+                    wire:click="moveParent"
+                    data-test="move-parent-confirm"
+                >{{ __('Move') }}</flux:button>
             </div>
         </div>
     </flux:modal>
@@ -339,18 +436,34 @@
                 </div>
             @endif
 
-            <flux:select wire:model="cancelReason" :label="__('Reason')" :placeholder="__('Choose a reason')" data-test="cancel-reason">
+            <flux:select
+                wire:model="cancelReason"
+                :label="__('Reason')"
+                :placeholder="__('Choose a reason')"
+                data-test="cancel-reason"
+            >
                 @foreach (\App\Enums\CancelReason::cases() as $reason)
                     <flux:select.option :value="$reason->value">{{ $reason->label() }}</flux:select.option>
                 @endforeach
             </flux:select>
             <flux:error name="cancelReason" />
 
-            <flux:textarea wire:model="cancelMessage" :label="__('Message')" :description="__('Optional')" rows="3" data-test="cancel-message" />
+            <flux:textarea
+                wire:model="cancelMessage"
+                :label="__('Message')"
+                :description="__('Optional')"
+                rows="3"
+                data-test="cancel-message"
+            />
 
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="ghost" wire:click="abortCancel">{{ __('Keep task') }}</flux:button>
-                <flux:button type="submit" variant="danger" icon="x-circle" data-test="confirm-cancel">{{ __('Cancel task') }}</flux:button>
+                <flux:button
+                    type="submit"
+                    variant="danger"
+                    icon="x-circle"
+                    data-test="confirm-cancel"
+                >{{ __('Cancel task') }}</flux:button>
             </div>
         </form>
     </flux:modal>
@@ -360,4 +473,3 @@
         <livewire:variables.create-variable :short-name="$this->task->project->short_name" />
     @endcan
 </div>
-

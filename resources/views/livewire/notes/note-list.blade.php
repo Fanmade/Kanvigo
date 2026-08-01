@@ -1,7 +1,12 @@
 <div class="flex flex-col gap-6" data-test="notes-page">
     <div class="flex items-center justify-between gap-2">
         <flux:heading size="xl">{{ __('Notes') }}</flux:heading>
-        <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-note')" data-test="new-note">{{ __('New note') }}</flux:button>
+        <flux:button
+            size="sm"
+            icon="plus"
+            wire:click="$dispatch('open-create-note')"
+            data-test="new-note"
+        >{{ __('New note') }}</flux:button>
     </div>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -18,7 +23,8 @@
             <flux:select.option value="">{{ __('All projects') }}</flux:select.option>
             <flux:select.option value="none">{{ __('Without a project') }}</flux:select.option>
             @foreach ($this->filterProjects as $project)
-                <flux:select.option value="{{ $project->id }}">{{ $project->short_name }} · {{ $project->title }}</flux:select.option>
+                <flux:select.option value="{{ $project->id }}">
+                    {{ $project->short_name }} · {{ $project->title }}</flux:select.option>
             @endforeach
         </flux:select>
     </div>
@@ -28,9 +34,17 @@
             <x-note-row :note="$note" :reorderable="! $this->isFiltering" wire:key="note-{{ $note->id }}" />
         @empty
             @if ($this->isFiltering)
-                <flux:text size="sm" class="px-4 py-10 text-center text-zinc-400" data-test="notes-empty">{{ __('No notes match your search.') }}</flux:text>
+                <flux:text
+                    size="sm"
+                    class="px-4 py-10 text-center text-zinc-400"
+                    data-test="notes-empty"
+                >{{ __('No notes match your search.') }}</flux:text>
             @else
-                <flux:text size="sm" class="px-4 py-10 text-center text-zinc-400" data-test="notes-empty">{{ __('No notes yet. Capture an idea to get started.') }}</flux:text>
+                <flux:text
+                    size="sm"
+                    class="px-4 py-10 text-center text-zinc-400"
+                    data-test="notes-empty"
+                >{{ __('No notes yet. Capture an idea to get started.') }}</flux:text>
             @endif
         @endforelse
     </x-list-card>

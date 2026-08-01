@@ -1,9 +1,7 @@
 <div>
     <flux:modal wire:model.self="show" wire:close="close" class="w-full max-w-2xl" data-test="create-note-modal">
         <form wire:submit="save" class="flex flex-col gap-4">
-            <flux:heading size="lg">
-                {{ $noteId && ! $draft ? __('Edit note') : __('New note') }}
-            </flux:heading>
+            <flux:heading size="lg"> {{ $noteId && ! $draft ? __('Edit note') : __('New note') }} </flux:heading>
 
             <flux:input wire:model="title" :label="__('Title')" data-test="create-note-title" />
 
@@ -17,14 +15,11 @@
             {{-- Optional project attachment + visibility. Public is only available
                  once a project is chosen and resets when it is cleared. --}}
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <flux:select
-                    wire:model.live="projectId"
-                    :label="__('Project')"
-                    data-test="create-note-project"
-                >
+                <flux:select wire:model.live="projectId" :label="__('Project')" data-test="create-note-project">
                     <flux:select.option value="">{{ __('None (private note)') }}</flux:select.option>
                     @foreach ($this->projects as $project)
-                        <flux:select.option :value="$project->id">{{ $project->short_name }} · {{ $project->title }}</flux:select.option>
+                        <flux:select.option :value="$project->id">
+                            {{ $project->short_name }} · {{ $project->title }}</flux:select.option>
                     @endforeach
                 </flux:select>
 
@@ -37,7 +32,10 @@
                         data-test="create-note-public"
                     />
                     @if ($projectId === null)
-                        <flux:text size="sm" class="text-zinc-400">{{ __('Attach a project to share this note.') }}</flux:text>
+                        <flux:text
+                            size="sm"
+                            class="text-zinc-400"
+                        >{{ __('Attach a project to share this note.') }}</flux:text>
                     @endif
                 </div>
             </div>
@@ -46,7 +44,11 @@
                 <flux:modal.close>
                     <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
-                <flux:button type="submit" variant="primary" data-test="create-note-submit">{{ __('Save note') }}</flux:button>
+                <flux:button
+                    type="submit"
+                    variant="primary"
+                    data-test="create-note-submit"
+                >{{ __('Save note') }}</flux:button>
             </div>
         </form>
     </flux:modal>

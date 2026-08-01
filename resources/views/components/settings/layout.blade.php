@@ -5,7 +5,8 @@
             <flux:navlist.item :href="route('security.edit')" wire:navigate>{{ __('Security') }}</flux:navlist.item>
             <flux:navlist.item :href="route('appearance.edit')" wire:navigate>{{ __('Appearance') }}</flux:navlist.item>
             @can('create-api-tokens')
-                <flux:navlist.item :href="route('api-tokens.edit')" wire:navigate>{{ __('API tokens') }}</flux:navlist.item>
+                <flux:navlist.item :href="route('api-tokens.edit')" wire:navigate>
+                    {{ __('API tokens') }}</flux:navlist.item>
             @endcan
         </flux:navlist>
     </div>
@@ -16,8 +17,6 @@
         <flux:heading>{{ $heading ?? '' }}</flux:heading>
         <flux:subheading>{{ $subheading ?? '' }}</flux:subheading>
 
-        <div class="mt-5 w-full max-w-lg">
-            {{ $slot }}
-        </div>
+        <div class="mt-5 w-full max-w-lg">{{ $slot }}</div>
     </div>
 </div>

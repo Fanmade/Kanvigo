@@ -38,7 +38,10 @@
     @if ($canManageTags)
         <div
             x-data="tagInput({ suggestions: @js($this->tagSuggestions->all()), createPrefix: @js(__('Create')) })"
-            x-on:tags-updated.window="suggestions = $event.detail.suggestions; reset()"
+            x-on:tags-updated.window="
+                suggestions = $event.detail.suggestions;
+                reset();
+            "
             x-on:open-tag-input.window="open()"
             x-show="adding"
             x-cloak
@@ -92,16 +95,17 @@
             <form wire:submit="createTag" class="flex flex-col gap-4">
                 <flux:heading size="lg">{{ __('New tag') }}</flux:heading>
 
-                <flux:input
-                    wire:model.live.debounce.300ms="newTagName"
-                    :label="__('Name')"
-                    data-test="new-tag-name"
-                />
+                <flux:input wire:model.live.debounce.300ms="newTagName" :label="__('Name')" data-test="new-tag-name" />
                 <flux:error name="newTagName" />
 
                 <div class="flex flex-col gap-1.5">
                     <flux:label>{{ __('Color') }}</flux:label>
-                    <x-color-picker :palette="\App\Models\Tag::PALETTE" :selected="$newTagColor" name="newTagColor" test="tag" />
+                    <x-color-picker
+                        :palette="\App\Models\Tag::PALETTE"
+                        :selected="$newTagColor"
+                        name="newTagColor"
+                        test="tag"
+                    />
                     <flux:error name="newTagColor" />
                 </div>
 
@@ -111,7 +115,11 @@
                 <div class="flex items-center gap-2">
                     <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
                     <flux:badge size="sm" color="zinc" variant="pill">
-                        <x-tag-dot :color="$newTagColor" :icon="$previewIcon" class="me-1.5" />{{ $newTagName !== '' ? $newTagName : __('tag') }}
+                        <x-tag-dot
+                            :color="$newTagColor"
+                            :icon="$previewIcon"
+                            class="me-1.5"
+                        />{{ $newTagName !== '' ? $newTagName : __('tag') }}
                     </flux:badge>
                 </div>
 
@@ -119,7 +127,11 @@
                     <flux:modal.close>
                         <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
                     </flux:modal.close>
-                    <flux:button type="submit" variant="primary" data-test="create-tag">{{ __('Create tag') }}</flux:button>
+                    <flux:button
+                        type="submit"
+                        variant="primary"
+                        data-test="create-tag"
+                    >{{ __('Create tag') }}</flux:button>
                 </div>
             </form>
         </flux:modal>

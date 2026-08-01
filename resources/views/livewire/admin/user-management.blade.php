@@ -39,28 +39,55 @@
                         @endif
 
                         @if ($user->isDeactivated())
-                            <flux:badge color="amber" data-test="status-{{ $user->id }}">{{ __('Deactivated') }}</flux:badge>
+                            <flux:badge
+                                color="amber"
+                                data-test="status-{{ $user->id }}"
+                            >{{ __('Deactivated') }}</flux:badge>
                         @else
                             <flux:badge color="green" data-test="status-{{ $user->id }}">{{ __('Active') }}</flux:badge>
                         @endif
 
-                        <flux:button size="sm" variant="ghost" icon="folder" wire:click="manageProjects({{ $user->id }})" data-test="manage-projects-{{ $user->id }}">
+                        <flux:button
+                            size="sm"
+                            variant="ghost"
+                            icon="folder"
+                            wire:click="manageProjects({{ $user->id }})"
+                            data-test="manage-projects-{{ $user->id }}"
+                        >
                             {{ __('Projects') }}
                         </flux:button>
 
                         @unless ($user->is(auth()->user()))
                             @if ($user->isDeactivated())
-                                <flux:button size="sm" variant="ghost" icon="lock-open" wire:click="reactivate({{ $user->id }})" data-test="reactivate-{{ $user->id }}">
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="lock-open"
+                                    wire:click="reactivate({{ $user->id }})"
+                                    data-test="reactivate-{{ $user->id }}"
+                                >
                                     {{ __('Reactivate') }}
                                 </flux:button>
                             @else
-                                <flux:button size="sm" variant="ghost" icon="lock-closed" wire:click="deactivate({{ $user->id }})" data-test="deactivate-{{ $user->id }}">
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="lock-closed"
+                                    wire:click="deactivate({{ $user->id }})"
+                                    data-test="deactivate-{{ $user->id }}"
+                                >
                                     {{ __('Deactivate') }}
                                 </flux:button>
                             @endif
 
                             <flux:tooltip :content="__('Remove account')">
-                                <flux:button size="sm" variant="danger" icon="trash" wire:click="confirmRemoval({{ $user->id }})" data-test="remove-{{ $user->id }}" />
+                                <flux:button
+                                    size="sm"
+                                    variant="danger"
+                                    icon="trash"
+                                    wire:click="confirmRemoval({{ $user->id }})"
+                                    data-test="remove-{{ $user->id }}"
+                                />
                             </flux:tooltip>
                         @endunless
                     </div>
@@ -109,7 +136,11 @@
             </flux:card>
         @else
             @foreach ($this->pendingInvitations as $invitation)
-                <flux:card class="flex flex-wrap items-center justify-between gap-3" wire:key="invitation-{{ $invitation->id }}" data-test="invitation-row-{{ $invitation->id }}">
+                <flux:card
+                    class="flex flex-wrap items-center justify-between gap-3"
+                    wire:key="invitation-{{ $invitation->id }}"
+                    data-test="invitation-row-{{ $invitation->id }}"
+                >
                     <div class="flex flex-col">
                         <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $invitation->email }}</span>
                         <flux:text size="sm" class="text-zinc-500">
@@ -118,10 +149,22 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <flux:button size="sm" variant="ghost" icon="paper-airplane" wire:click="resendInvitation({{ $invitation->id }})" data-test="resend-invitation-{{ $invitation->id }}">
+                        <flux:button
+                            size="sm"
+                            variant="ghost"
+                            icon="paper-airplane"
+                            wire:click="resendInvitation({{ $invitation->id }})"
+                            data-test="resend-invitation-{{ $invitation->id }}"
+                        >
                             {{ __('Resend') }}
                         </flux:button>
-                        <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="revokeInvitation({{ $invitation->id }})" data-test="revoke-invitation-{{ $invitation->id }}">
+                        <flux:button
+                            size="sm"
+                            variant="ghost"
+                            icon="x-mark"
+                            wire:click="revokeInvitation({{ $invitation->id }})"
+                            data-test="revoke-invitation-{{ $invitation->id }}"
+                        >
                             {{ __('Revoke') }}
                         </flux:button>
                     </div>
@@ -141,7 +184,12 @@
 
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="ghost" wire:click="cancelRemoval">{{ __('Cancel') }}</flux:button>
-                <flux:button type="button" variant="danger" wire:click="removeUser" data-test="confirm-remove">{{ __('Remove account') }}</flux:button>
+                <flux:button
+                    type="button"
+                    variant="danger"
+                    wire:click="removeUser"
+                    data-test="confirm-remove"
+                >{{ __('Remove account') }}</flux:button>
             </div>
         </div>
     </flux:modal>
@@ -156,13 +204,29 @@
             <div class="flex max-h-96 flex-col gap-2 overflow-y-auto" data-test="manage-projects-list">
                 @foreach ($this->manageableProjects as $project)
                     @php($row = $this->projectRow($project))
-                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-lg px-2 py-1.5 hover:bg-zinc-50 dark:hover:bg-white/5" wire:key="mp-{{ $project->id }}" data-test="manage-project-row-{{ $project->id }}">
-                        <flux:text class="min-w-0 flex-1 truncate">{{ $project->title }} <span class="text-zinc-400">{{ $project->short_name }}</span></flux:text>
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-lg px-2 py-1.5 hover:bg-zinc-50 dark:hover:bg-white/5"
+                        wire:key="mp-{{ $project->id }}"
+                        data-test="manage-project-row-{{ $project->id }}"
+                    >
+                        <flux:text class="min-w-0 flex-1 truncate"
+                            >{{ $project->title }}
+                            <span class="text-zinc-400">{{ $project->short_name }}</span></flux:text>
 
                         @if ($row['heldNames']->isEmpty())
-                            <flux:button type="button" size="xs" variant="ghost" icon="plus" wire:click="addUserToProject({{ $project->id }})" data-test="mp-add-{{ $project->id }}">{{ __('Add') }}</flux:button>
+                            <flux:button
+                                type="button"
+                                size="xs"
+                                variant="ghost"
+                                icon="plus"
+                                wire:click="addUserToProject({{ $project->id }})"
+                                data-test="mp-add-{{ $project->id }}"
+                            >{{ __('Add') }}</flux:button>
                         @else
-                            <div class="flex flex-wrap items-center justify-end gap-1.5" data-test="mp-roles-{{ $project->id }}">
+                            <div
+                                class="flex flex-wrap items-center justify-end gap-1.5"
+                                data-test="mp-roles-{{ $project->id }}"
+                            >
                                 @foreach ($row['heldNames'] as $name)
                                     <x-role-badge :name="$name" data-test="mp-role-{{ $project->id }}-{{ $name }}">
                                         @unless ($row['readonly'])
@@ -191,13 +255,22 @@
                                                     <flux:menu.item
                                                         wire:click="addUserProjectRole({{ $project->id }}, '{{ $role }}')"
                                                         data-test="mp-add-role-{{ $project->id }}-{{ $role }}"
-                                                    >{{ \Illuminate\Support\Str::headline($role) }}</flux:menu.item>
+                                                    >
+                                                        {{ \Illuminate\Support\Str::headline($role) }}</flux:menu.item>
                                                 @endforeach
                                             </flux:menu>
                                         </flux:dropdown>
                                     @endif
 
-                                    <flux:button type="button" size="xs" variant="ghost" icon="x-mark" :aria-label="__('Remove member')" wire:click="removeUserFromProject({{ $project->id }})" data-test="mp-remove-{{ $project->id }}" />
+                                    <flux:button
+                                        type="button"
+                                        size="xs"
+                                        variant="ghost"
+                                        icon="x-mark"
+                                        :aria-label="__('Remove member')"
+                                        wire:click="removeUserFromProject({{ $project->id }})"
+                                        data-test="mp-remove-{{ $project->id }}"
+                                    />
                                 @endunless
                             </div>
                         @endif

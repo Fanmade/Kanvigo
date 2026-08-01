@@ -12,8 +12,10 @@
     project's namespace (a personal note shown on a project page).
 --}}
 <div {{ $attributes->merge(['class' => 'prose prose-zinc max-w-none dark:prose-invert']) }}>
-    {!! app(\App\Support\VariableSubstitutor::class)->substitute(
-        app(\App\Support\RichTextSanitizer::class)->sanitize(\App\Support\MentionLinker::link($content, $shortName)),
-        $variables ? $shortName : null,
-    ) !!}
+    {!!
+        app(\App\Support\VariableSubstitutor::class)->substitute(
+            app(\App\Support\RichTextSanitizer::class)->sanitize(\App\Support\MentionLinker::link($content, $shortName)),
+            $variables ? $shortName : null,
+        )
+    !!}
 </div>

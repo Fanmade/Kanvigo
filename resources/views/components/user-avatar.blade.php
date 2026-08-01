@@ -10,9 +10,4 @@
     used for the initials fallback (e.g. for deleted or system authors with no
     user record).
 --}}
-<flux:avatar
-    :size="$size"
-    :src="$user?->avatarUrl()"
-    :name="$name ?? $user?->name"
-    {{ $attributes }}
-/>
+<flux:avatar :size="$size" :src="$user?->avatarUrl()" :name="$name ?? $user?->name" {{ $attributes }} />

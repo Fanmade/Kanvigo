@@ -1,5 +1,10 @@
 <flux:card>
-    <x-collapsible-section :title="__('Activity')" :count="$this->activityCount" :collapsed="$collapsed" body-id="activity-body-{{ $morphSubjectId }}">
+    <x-collapsible-section
+        :title="__('Activity')"
+        :count="$this->activityCount"
+        :collapsed="$collapsed"
+        body-id="activity-body-{{ $morphSubjectId }}"
+    >
         @if ($focusSequence)
             <div
                 wire:key="focus-{{ $focusSequence }}"
@@ -22,7 +27,10 @@
                         <x-user-avatar :user="$activity->user" :name="$activity->user?->name ?? __('System')" />
                     </x-user-link>
                     <div class="group/entry flex-1 text-zinc-600 dark:text-zinc-300">
-                        <x-user-link :user="$activity->user" class="font-medium text-zinc-800 dark:text-zinc-100">{{ $activity->user?->name ?? __('System') }}</x-user-link>
+                        <x-user-link
+                            :user="$activity->user"
+                            class="font-medium text-zinc-800 dark:text-zinc-100"
+                        >{{ $activity->user?->name ?? __('System') }}</x-user-link>
                         {{ $this->descriptions[$activity->id] }}
                         <span class="text-zinc-400">· <x-relative-time :date="$activity->created_at" /></span>
                         {{-- A token-driven action is flagged generically: the token's name is

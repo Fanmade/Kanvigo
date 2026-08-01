@@ -11,8 +11,16 @@
             <flux:heading size="lg">{{ $group }}</flux:heading>
 
             @foreach ($items as $row)
-                <flux:card class="flex items-center justify-between gap-3" wire:key="sub-{{ $row['type'] }}-{{ $row['id'] }}" data-test="subscription-{{ $row['type'] }}-{{ $row['id'] }}">
-                    <a href="{{ $row['url'] }}" wire:navigate class="min-w-0 truncate text-sm font-medium hover:underline">
+                <flux:card
+                    class="flex items-center justify-between gap-3"
+                    wire:key="sub-{{ $row['type'] }}-{{ $row['id'] }}"
+                    data-test="subscription-{{ $row['type'] }}-{{ $row['id'] }}"
+                >
+                    <a
+                        href="{{ $row['url'] }}"
+                        wire:navigate
+                        class="min-w-0 truncate text-sm font-medium hover:underline"
+                    >
                         {{ $row['label'] }}
                     </a>
 

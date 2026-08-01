@@ -21,7 +21,11 @@
         </x-slot:trigger>
 
         @foreach (\App\Enums\Priority::descending() as $option)
-            <flux:menu.radio :value="$option->value" :icon="$option->icon()" data-test="priority-option-{{ $option->value }}">
+            <flux:menu.radio
+                :value="$option->value"
+                :icon="$option->icon()"
+                data-test="priority-option-{{ $option->value }}"
+            >
                 {{ $option->label() }}
             </flux:menu.radio>
         @endforeach

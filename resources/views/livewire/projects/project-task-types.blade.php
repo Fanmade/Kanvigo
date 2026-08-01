@@ -12,12 +12,22 @@
 
     @if ($this->taskTypes->isEmpty())
         <x-empty-state :heading="__('No task types yet')" test="task-types-empty">
-            <flux:text size="sm" class="text-zinc-400">{{ __('Add a type to classify this project\'s tasks.') }}</flux:text>
+            <flux:text
+                size="sm"
+                class="text-zinc-400"
+            >{{ __('Add a type to classify this project\'s tasks.') }}</flux:text>
         </x-empty-state>
     @else
-        <div class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10" data-test="task-types-list">
+        <div
+            class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10"
+            data-test="task-types-list"
+        >
             @foreach ($this->taskTypes as $type)
-                <div class="flex items-center justify-between gap-3 p-3" wire:key="task-type-{{ $type->id }}" data-test="task-type-row-{{ $type->id }}">
+                <div
+                    class="flex items-center justify-between gap-3 p-3"
+                    wire:key="task-type-{{ $type->id }}"
+                    data-test="task-type-row-{{ $type->id }}"
+                >
                     <div class="flex min-w-0 items-center gap-3">
                         <div class="flex flex-col">
                             <flux:button
@@ -111,7 +121,11 @@
                 <flux:modal.close>
                     <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
-                <flux:button type="submit" variant="primary" data-test="save-task-type">{{ __('Save changes') }}</flux:button>
+                <flux:button
+                    type="submit"
+                    variant="primary"
+                    data-test="save-task-type"
+                >{{ __('Save changes') }}</flux:button>
             </div>
         </form>
     </flux:modal>

@@ -18,7 +18,8 @@
     <div class="flex items-center justify-between gap-3">
         <div class="flex min-w-0 flex-1 flex-col gap-1.5">
             <div class="flex min-w-0 items-center gap-2">
-                <flux:text size="xs" class="font-mono text-zinc-400">{{ $shortName }}-{{ $task->task_number }}</flux:text>
+                <flux:text size="xs" class="font-mono text-zinc-400"
+                    >{{ $shortName }}-{{ $task->task_number }}</flux:text>
                 <a
                     href="{{ route('task.show', ['short_name' => $shortName, 'task_number' => $task->task_number]) }}"
                     wire:navigate
@@ -43,18 +44,36 @@
                 </flux:avatar.group>
             @endif
 
-            <flux:badge size="sm" :color="$task->status->color()" :icon="$task->status->icon()">{{ $task->status->label() }}</flux:badge>
+            <flux:badge
+                size="sm"
+                :color="$task->status->color()"
+                :icon="$task->status->icon()"
+            >{{ $task->status->label() }}</flux:badge>
 
             @if ($canArchive)
                 <flux:dropdown align="end">
-                    <flux:button size="xs" variant="subtle" icon="ellipsis-horizontal" :aria-label="__('Actions')" :data-test="'root-task-actions-'.$task->id" />
+                    <flux:button
+                        size="xs"
+                        variant="subtle"
+                        icon="ellipsis-horizontal"
+                        :aria-label="__('Actions')"
+                        :data-test="'root-task-actions-'.$task->id"
+                    />
                     <flux:menu>
                         @if ($task->isArchived())
-                            <flux:menu.item icon="arrow-up-tray" wire:click="unarchiveTask({{ $task->id }})" :data-test="'unarchive-'.$task->id">
+                            <flux:menu.item
+                                icon="arrow-up-tray"
+                                wire:click="unarchiveTask({{ $task->id }})"
+                                :data-test="'unarchive-'.$task->id"
+                            >
                                 {{ __('Unarchive') }}
                             </flux:menu.item>
                         @else
-                            <flux:menu.item icon="archive-box" wire:click="archiveTask({{ $task->id }})" :data-test="'archive-'.$task->id">
+                            <flux:menu.item
+                                icon="archive-box"
+                                wire:click="archiveTask({{ $task->id }})"
+                                :data-test="'archive-'.$task->id"
+                            >
                                 {{ __('Archive') }}
                             </flux:menu.item>
                         @endif
@@ -65,7 +84,10 @@
     </div>
 
     @if ($subtasks->isNotEmpty())
-        <div class="flex flex-col divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-700 dark:border-zinc-700" data-test="root-task-subtasks-{{ $task->id }}">
+        <div
+            class="flex flex-col divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-700 dark:border-zinc-700"
+            data-test="root-task-subtasks-{{ $task->id }}"
+        >
             @foreach ($subtasks as $subtask)
                 <x-subtask-row :task="$subtask" :short-name="$shortName" test="root-task-subtask" padding="py-2" />
             @endforeach

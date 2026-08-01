@@ -2,7 +2,7 @@
     'sidebar' => false,
 ])
 
-@if($sidebar)
+@if ($sidebar)
     <flux:sidebar.brand name="Kanvigo" {{ $attributes }}>
         <x-slot name="logo">
             <x-app-logo-icon class="size-8" />

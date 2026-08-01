@@ -25,10 +25,7 @@
                     </div>
                 </a>
 
-                <div
-                    class="mt-1.5 truncate text-xs text-zinc-600 dark:text-zinc-300"
-                    title="{{ $attachment->name }}"
-                >
+                <div class="mt-1.5 truncate text-xs text-zinc-600 dark:text-zinc-300" title="{{ $attachment->name }}">
                     {{ $attachment->name }}
                 </div>
 
@@ -37,7 +34,7 @@
                         type="button"
                         wire:click="deleteAttachment({{ $attachment->id }})"
                         wire:confirm="{{ __('Remove this attachment?') }}"
-                        class="absolute right-1.5 top-1.5 rounded-md bg-white/90 p-1 text-zinc-500 opacity-0 shadow-sm transition hover:text-red-500 focus:opacity-100 group-hover:opacity-100 dark:bg-zinc-900/90 dark:text-zinc-400"
+                        class="absolute top-1.5 right-1.5 rounded-md bg-white/90 p-1 text-zinc-500 opacity-0 shadow-sm transition group-hover:opacity-100 hover:text-red-500 focus:opacity-100 dark:bg-zinc-900/90 dark:text-zinc-400"
                         aria-label="{{ __('Remove :name', ['name' => $attachment->name]) }}"
                     >
                         <flux:icon name="x-mark" variant="micro" />

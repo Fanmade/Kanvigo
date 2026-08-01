@@ -12,23 +12,40 @@
 
     @if ($this->variables->isEmpty())
         <x-empty-state :heading="__('No variables yet')" test="variables-empty">
-            <flux:text size="sm" class="text-zinc-400">{{ __('Create one, then use it as [name] anywhere in this project.') }}</flux:text>
-            <flux:button size="sm" variant="primary" icon="plus" wire:click="startCreate" data-test="new-variable-empty" class="mt-1">
+            <flux:text
+                size="sm"
+                class="text-zinc-400"
+            >{{ __('Create one, then use it as [name] anywhere in this project.') }}</flux:text>
+            <flux:button
+                size="sm"
+                variant="primary"
+                icon="plus"
+                wire:click="startCreate"
+                data-test="new-variable-empty"
+                class="mt-1"
+            >
                 {{ __('New variable') }}
             </flux:button>
         </x-empty-state>
     @else
-        <div class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10" data-test="variables-list">
+        <div
+            class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10"
+            data-test="variables-list"
+        >
             @foreach ($this->variables as $variable)
                 <div
                     id="variable-{{ $variable->name }}"
-                    class="flex items-center justify-between gap-3 scroll-mt-24 p-3"
+                    class="flex scroll-mt-24 items-center justify-between gap-3 p-3"
                     wire:key="variable-{{ $variable->id }}"
                     data-test="variable-row-{{ $variable->id }}"
                 >
                     <div class="flex min-w-0 flex-col gap-1">
                         <div class="flex min-w-0 flex-wrap items-center gap-2">
-                            <flux:text size="sm" class="font-mono text-zinc-500" data-test="variable-name-{{ $variable->id }}">
+                            <flux:text
+                                size="sm"
+                                class="font-mono text-zinc-500"
+                                data-test="variable-name-{{ $variable->id }}"
+                            >
                                 [{{ $variable->name }}]
                             </flux:text>
                             @if ($variable->isUnset())
@@ -46,7 +63,11 @@
                             </flux:text>
                         </div>
                         @if ($variable->description !== null)
-                            <flux:text size="sm" class="text-zinc-400" data-test="variable-description-{{ $variable->id }}">
+                            <flux:text
+                                size="sm"
+                                class="text-zinc-400"
+                                data-test="variable-description-{{ $variable->id }}"
+                            >
                                 {{ $variable->description }}
                             </flux:text>
                         @endif
@@ -95,7 +116,11 @@
 
             <div class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10">
                 @foreach ($this->unknownNames as $name => $uses)
-                    <div class="flex items-center justify-between gap-3 p-3" wire:key="unknown-{{ $name }}" data-test="unknown-name-{{ $name }}">
+                    <div
+                        class="flex items-center justify-between gap-3 p-3"
+                        wire:key="unknown-{{ $name }}"
+                        data-test="unknown-name-{{ $name }}"
+                    >
                         <div class="flex min-w-0 items-center gap-2">
                             <flux:text size="sm" class="font-mono text-zinc-500">[{{ $name }}]</flux:text>
                             <flux:text size="sm" class="text-zinc-400">
@@ -181,13 +206,20 @@
                 <ul class="flex flex-col gap-2">
                     @forelse ($this->usages as $page)
                         <li wire:key="usage-{{ $loop->index }}" data-test="usage-entry">
-                            <flux:link :href="$this->usageUrl($page)" wire:navigate class="flex items-center gap-2 text-sm">
+                            <flux:link
+                                :href="$this->usageUrl($page)"
+                                wire:navigate
+                                class="flex items-center gap-2 text-sm"
+                            >
                                 <span class="font-mono text-xs text-zinc-500">{{ $this->usageLabel($page) }}</span>
                                 <span class="min-w-0 truncate">{{ $page->title }}</span>
                             </flux:link>
                         </li>
                     @empty
-                        <flux:text class="text-zinc-500" data-test="usages-empty">{{ __('No text uses this name.') }}</flux:text>
+                        <flux:text
+                            class="text-zinc-500"
+                            data-test="usages-empty"
+                        >{{ __('No text uses this name.') }}</flux:text>
                     @endforelse
                 </ul>
 
@@ -228,11 +260,13 @@
         <div class="flex flex-col gap-4">
             <flux:heading size="lg">{{ __('Rename this variable?') }}</flux:heading>
             <flux:text class="text-zinc-500">
-                {{ trans_choice(
-                    '{0}No text uses it yet, so nothing else changes.|{1}Its :count usage will be rewritten to the new name.|[2,*]Its :count usages will be rewritten to the new name.',
-                    $this->renameUsageCount,
-                    ['count' => $this->renameUsageCount],
-                ) }}
+                {{
+                    trans_choice(
+                        '{0}No text uses it yet, so nothing else changes.|{1}Its :count usage will be rewritten to the new name.|[2,*]Its :count usages will be rewritten to the new name.',
+                        $this->renameUsageCount,
+                        ['count' => $this->renameUsageCount],
+                    )
+                }}
             </flux:text>
             <flux:text size="sm" class="text-zinc-400">
                 {{ __('The text keeps saying the same thing — only the name it points at changes. Each edit shows up in the item’s history.') }}

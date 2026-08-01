@@ -10,8 +10,6 @@
     {{ $trigger }}
 
     <flux:menu>
-        <flux:menu.radio.group wire:model.live="{{ $model }}">
-            {{ $slot }}
-        </flux:menu.radio.group>
+        <flux:menu.radio.group wire:model.live="{{ $model }}"> {{ $slot }} </flux:menu.radio.group>
     </flux:menu>
 </flux:dropdown>

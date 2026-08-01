@@ -12,8 +12,18 @@
 
     @if ($this->tags->isEmpty())
         <x-empty-state :heading="__('No tags yet')" test="tags-empty">
-            <flux:text size="sm" class="text-zinc-400">{{ __('Tags appear here once they are added to tasks, or create one now.') }}</flux:text>
-            <flux:button size="sm" variant="primary" icon="plus" wire:click="startCreate" data-test="new-tag-empty" class="mt-1">
+            <flux:text
+                size="sm"
+                class="text-zinc-400"
+            >{{ __('Tags appear here once they are added to tasks, or create one now.') }}</flux:text>
+            <flux:button
+                size="sm"
+                variant="primary"
+                icon="plus"
+                wire:click="startCreate"
+                data-test="new-tag-empty"
+                class="mt-1"
+            >
                 {{ __('New tag') }}
             </flux:button>
         </x-empty-state>
@@ -44,7 +54,12 @@
                         <flux:text size="sm">
                             <span x-text="$wire.selected.length"></span> {{ __('selected') }}
                         </flux:text>
-                        <flux:button size="sm" variant="ghost" x-on:click="$wire.selected = []" data-test="clear-tag-selection">
+                        <flux:button
+                            size="sm"
+                            variant="ghost"
+                            x-on:click="$wire.selected = []"
+                            data-test="clear-tag-selection"
+                        >
                             {{ __('Clear') }}
                         </flux:button>
                         <flux:button
@@ -61,49 +76,56 @@
                 </div>
             @endcan
 
-            <div class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10" data-test="tags-list">
-            @foreach ($this->tags as $tag)
-                <div class="flex items-center justify-between gap-3 p-3" wire:key="tag-{{ $tag->id }}" data-test="tag-row-{{ $tag->id }}">
-                    <div class="flex min-w-0 items-center gap-3">
-                        @can('manageSettings', $this->project)
-                            <flux:checkbox
-                                wire:model="selected"
-                                value="{{ $tag->id }}"
-                                :aria-label="__('Select :name', ['name' => $tag->name])"
-                                data-test="select-tag-{{ $tag->id }}"
-                            />
-                        @endcan
-                        <flux:badge size="sm" color="zinc" variant="pill">
-                            <x-tag-dot :color="$tag->color" :icon="$tag->icon" class="me-1.5" />{{ $tag->name }}
-                        </flux:badge>
-                        <flux:text size="sm" class="text-zinc-400" data-test="tag-usage-{{ $tag->id }}">
-                            {{ trans_choice('{0}Unused|{1}:count task|[2,*]:count tasks', $tag->tasks_count, ['count' => $tag->tasks_count]) }}
-                        </flux:text>
-                    </div>
+            <div
+                class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10"
+                data-test="tags-list"
+            >
+                @foreach ($this->tags as $tag)
+                    <div
+                        class="flex items-center justify-between gap-3 p-3"
+                        wire:key="tag-{{ $tag->id }}"
+                        data-test="tag-row-{{ $tag->id }}"
+                    >
+                        <div class="flex min-w-0 items-center gap-3">
+                            @can('manageSettings', $this->project)
+                                <flux:checkbox
+                                    wire:model="selected"
+                                    value="{{ $tag->id }}"
+                                    :aria-label="__('Select :name', ['name' => $tag->name])"
+                                    data-test="select-tag-{{ $tag->id }}"
+                                />
+                            @endcan
+                            <flux:badge size="sm" color="zinc" variant="pill">
+                                <x-tag-dot :color="$tag->color" :icon="$tag->icon" class="me-1.5" />{{ $tag->name }}
+                            </flux:badge>
+                            <flux:text size="sm" class="text-zinc-400" data-test="tag-usage-{{ $tag->id }}">
+                                {{ trans_choice('{0}Unused|{1}:count task|[2,*]:count tasks', $tag->tasks_count, ['count' => $tag->tasks_count]) }}
+                            </flux:text>
+                        </div>
 
-                    <div class="flex shrink-0 items-center gap-1">
-                        <flux:button
-                            size="xs"
-                            variant="ghost"
-                            icon="pencil-square"
-                            :aria-label="__('Edit tag')"
-                            wire:click="startEdit({{ $tag->id }})"
-                            data-test="edit-tag-{{ $tag->id }}"
-                        />
-                        @can('manageSettings', $this->project)
+                        <div class="flex shrink-0 items-center gap-1">
                             <flux:button
                                 size="xs"
                                 variant="ghost"
-                                icon="trash"
-                                :aria-label="__('Delete tag')"
-                                wire:click="deleteTag({{ $tag->id }})"
-                                wire:confirm="{{ __('Delete this tag? It will be removed from every task.') }}"
-                                data-test="delete-tag-{{ $tag->id }}"
+                                icon="pencil-square"
+                                :aria-label="__('Edit tag')"
+                                wire:click="startEdit({{ $tag->id }})"
+                                data-test="edit-tag-{{ $tag->id }}"
                             />
-                        @endcan
+                            @can('manageSettings', $this->project)
+                                <flux:button
+                                    size="xs"
+                                    variant="ghost"
+                                    icon="trash"
+                                    :aria-label="__('Delete tag')"
+                                    wire:click="deleteTag({{ $tag->id }})"
+                                    wire:confirm="{{ __('Delete this tag? It will be removed from every task.') }}"
+                                    data-test="delete-tag-{{ $tag->id }}"
+                                />
+                            @endcan
+                        </div>
                     </div>
-                </div>
-            @endforeach
+                @endforeach
             </div>
         </div>
     @endif
@@ -113,11 +135,7 @@
         <form wire:submit="saveEdit" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ $editingTagId === null ? __('New tag') : __('Edit tag') }}</flux:heading>
 
-            <flux:input
-                wire:model.live.debounce.300ms="editName"
-                :label="__('Name')"
-                data-test="edit-tag-name"
-            />
+            <flux:input wire:model.live.debounce.300ms="editName" :label="__('Name')" data-test="edit-tag-name" />
             <flux:error name="editName" />
 
             <div class="flex flex-col gap-1.5">
@@ -132,7 +150,11 @@
             <div class="flex items-center gap-2">
                 <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
                 <flux:badge size="sm" color="zinc" variant="pill">
-                    <x-tag-dot :color="$editColor" :icon="$previewIcon" class="me-1.5" />{{ $editName !== '' ? $editName : __('tag') }}
+                    <x-tag-dot
+                        :color="$editColor"
+                        :icon="$previewIcon"
+                        class="me-1.5"
+                    />{{ $editName !== '' ? $editName : __('tag') }}
                 </flux:badge>
             </div>
 
@@ -168,7 +190,11 @@
                 <flux:modal.close>
                     <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
-                <flux:button type="submit" variant="primary" data-test="save-tag">{{ $editingTagId === null ? __('Create') : __('Save changes') }}</flux:button>
+                <flux:button
+                    type="submit"
+                    variant="primary"
+                    data-test="save-tag"
+                >{{ $editingTagId === null ? __('Create') : __('Save changes') }}</flux:button>
             </div>
         </form>
     </flux:modal>
@@ -181,7 +207,12 @@
                 {{ __('Pick the tag to keep. Tasks tagged with the others are re-tagged with it, then the others are deleted.') }}
             </flux:text>
 
-            <flux:radio.group wire:model="mergeTargetId" variant="cards" class="flex flex-col gap-2" data-test="merge-target-group">
+            <flux:radio.group
+                wire:model="mergeTargetId"
+                variant="cards"
+                class="flex flex-col gap-2"
+                data-test="merge-target-group"
+            >
                 @foreach ($this->selectedTags as $tag)
                     <flux:radio value="{{ $tag->id }}" :label="$tag->name" data-test="merge-target-{{ $tag->id }}">
                         <span class="flex items-center gap-2">
@@ -206,7 +237,11 @@
                 <flux:modal.close>
                     <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
-                <flux:button variant="primary" wire:click="mergeTags" data-test="confirm-merge">{{ __('Merge tags') }}</flux:button>
+                <flux:button
+                    variant="primary"
+                    wire:click="mergeTags"
+                    data-test="confirm-merge"
+                >{{ __('Merge tags') }}</flux:button>
             </div>
         </div>
     </flux:modal>

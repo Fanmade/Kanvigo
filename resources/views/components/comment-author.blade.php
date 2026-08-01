@@ -1,6 +1,6 @@
 @props(['comment'])
 @php
-/** @var \App\Models\Comment $comment */
+    /** @var \App\Models\Comment $comment */
 @endphp
 @php($authorName = $comment->authorName())
 

@@ -5,22 +5,9 @@
     />
 
     <form wire:submit="accept" class="flex flex-col gap-6">
-        <flux:input
-            :label="__('Email address')"
-            type="email"
-            :value="$invitation->email"
-            readonly
-            disabled
-        />
+        <flux:input :label="__('Email address')" type="email" :value="$invitation->email" readonly disabled />
 
-        <flux:input
-            wire:model="name"
-            :label="__('Username')"
-            type="text"
-            required
-            autofocus
-            autocomplete="username"
-        />
+        <flux:input wire:model="name" :label="__('Username')" type="text" required autofocus autocomplete="username" />
 
         <flux:input
             wire:model="password"
@@ -40,8 +27,6 @@
             autocomplete="new-password"
         />
 
-        <flux:button type="submit" variant="primary" class="w-full">
-            {{ __('Create account') }}
-        </flux:button>
+        <flux:button type="submit" variant="primary" class="w-full"> {{ __('Create account') }} </flux:button>
     </form>
 </div>

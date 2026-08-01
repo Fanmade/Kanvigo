@@ -16,5 +16,9 @@
         <flux:text size="xs" class="font-mono text-zinc-400">{{ $shortName }}-{{ $task->task_number }}</flux:text>
         <span @class(['truncate text-sm', 'text-zinc-400' => $task->isArchived()])>{{ $task->title }}</span>
     </div>
-    <flux:badge size="sm" :color="$task->status->color()" :icon="$task->status->icon()">{{ $task->status->label() }}</flux:badge>
+    <flux:badge
+        size="sm"
+        :color="$task->status->color()"
+        :icon="$task->status->icon()"
+    >{{ $task->status->label() }}</flux:badge>
 </a>

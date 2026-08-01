@@ -24,13 +24,14 @@
                             size="xs"
                             variant="subtle"
                             icon="magnifying-glass"
-                            x-on:click="expanded = true; $nextTick(() => $refs.columnSearch.querySelector('input')?.focus())"
+                            x-on:click="
+                                expanded = true;
+                                $nextTick(() => $refs.columnSearch.querySelector('input')?.focus());
+                            "
                             :aria-label="__('Search the :status column', ['status' => $column['status']->label()])"
                             data-test="column-search-toggle-{{ $statusValue }}"
                         />
-                        <flux:text size="sm" class="text-zinc-400">
-                            {{ $column['tasks']->count() }}
-                        </flux:text>
+                        <flux:text size="sm" class="text-zinc-400"> {{ $column['tasks']->count() }} </flux:text>
                     </div>
                 </div>
                 <div x-show="expanded" x-cloak x-ref="columnSearch">
@@ -42,7 +43,7 @@
                         :placeholder="__('Search…')"
                         :aria-label="__('Search the :status column', ['status' => $column['status']->label()])"
                         data-test="column-search-{{ $statusValue }}"
-                        x-on:blur="if (! $event.target.value) expanded = false"
+                        x-on:blur="if (! $event.target.value) expanded = false;"
                     />
                 </div>
             </div>
@@ -74,7 +75,7 @@
                                     position="bottom"
                                     align="end"
                                     data-no-drag
-                                    class="opacity-0 transition focus-within:opacity-100 group-hover:opacity-100"
+                                    class="opacity-0 transition group-hover:opacity-100 focus-within:opacity-100"
                                 >
                                     <flux:button
                                         size="xs"
@@ -131,13 +132,23 @@
 
                         <div class="mt-2 flex flex-wrap items-center gap-1">
                             @if ($task->isArchived())
-                                <flux:badge size="sm" color="zinc" icon="archive-box" :data-test="'archived-badge-'.$task->id">
+                                <flux:badge
+                                    size="sm"
+                                    color="zinc"
+                                    icon="archive-box"
+                                    :data-test="'archived-badge-'.$task->id"
+                                >
                                     {{ __('Archived') }}
                                 </flux:badge>
                             @endif
                             @if (in_array($task->id, $blockedIds, true))
                                 <flux:tooltip :content="__('Blocked by an unfinished dependency')">
-                                    <flux:badge size="sm" color="red" icon="lock-closed" :data-test="'blocked-'.$task->id">
+                                    <flux:badge
+                                        size="sm"
+                                        color="red"
+                                        icon="lock-closed"
+                                        :data-test="'blocked-'.$task->id"
+                                    >
                                         {{ __('Blocked') }}
                                     </flux:badge>
                                 </flux:tooltip>

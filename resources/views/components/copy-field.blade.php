@@ -21,9 +21,9 @@
         }
     }"
 >
-    <div class="flex items-stretch w-full border rounded-xl dark:border-zinc-700">
+    <div class="flex w-full items-stretch rounded-xl border dark:border-zinc-700">
         @empty($value)
-            <div class="flex items-center justify-center w-full p-3 bg-zinc-100 dark:bg-zinc-700">
+            <div class="flex w-full items-center justify-center bg-zinc-100 p-3 dark:bg-zinc-700">
                 <flux:icon.loading variant="mini" />
             </div>
         @else
@@ -41,9 +41,9 @@
                 type="button"
                 @click="copy()"
                 aria-label="{{ __('Copy to clipboard') }}"
-                class="px-3 transition-colors border-l cursor-pointer border-zinc-200 dark:border-zinc-600"
+                class="cursor-pointer border-l border-zinc-200 px-3 transition-colors dark:border-zinc-600"
             >
-                <flux:icon.document-duplicate x-show="!copied" variant="outline" />
+                <flux:icon.document-duplicate x-show="! copied" variant="outline" />
                 <flux:icon.check x-show="copied" variant="solid" class="text-green-500" />
             </button>
         @endempty

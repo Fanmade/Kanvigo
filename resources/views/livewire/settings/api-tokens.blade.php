@@ -3,7 +3,10 @@
 
     <flux:heading class="sr-only">{{ __('API tokens') }}</flux:heading>
 
-    <x-settings.layout :heading="__('API tokens')" :subheading="__('Manage your personal API tokens used for MCP and API access')">
+    <x-settings.layout
+        :heading="__('API tokens')"
+        :subheading="__('Manage your personal API tokens used for MCP and API access')"
+    >
         <form method="POST" wire:submit="createToken" class="mt-6 space-y-6">
             <flux:input
                 wire:model="name"
@@ -14,18 +17,53 @@
                 :placeholder="__('e.g. My laptop')"
             />
 
-            <flux:radio.group wire:model.live="accessLevel" :label="__('Access level')" variant="cards" class="max-sm:flex-col">
-                <flux:radio value="read" :label="__('Read-only')" :description="__('Can read data')" data-test="token-access-read" />
-                <flux:radio value="write" :label="__('Read and write')" :description="__('Can read and modify data')" data-test="token-access-write" />
+            <flux:radio.group
+                wire:model.live="accessLevel"
+                :label="__('Access level')"
+                variant="cards"
+                class="max-sm:flex-col"
+            >
+                <flux:radio
+                    value="read"
+                    :label="__('Read-only')"
+                    :description="__('Can read data')"
+                    data-test="token-access-read"
+                />
+                <flux:radio
+                    value="write"
+                    :label="__('Read and write')"
+                    :description="__('Can read and modify data')"
+                    data-test="token-access-write"
+                />
                 @if ($this->canMintAuditTokens)
-                    <flux:radio value="audit" :label="__('Audit event stream')" :description="__('Read the instance-wide audit log')" data-test="token-access-audit" />
+                    <flux:radio
+                        value="audit"
+                        :label="__('Audit event stream')"
+                        :description="__('Read the instance-wide audit log')"
+                        data-test="token-access-audit"
+                    />
                 @endif
             </flux:radio.group>
 
             @if ($accessLevel !== 'audit')
-                <flux:radio.group wire:model.live="projectScope" :label="__('Project access')" variant="cards" class="max-sm:flex-col">
-                    <flux:radio value="all" :label="__('All projects')" :description="__('Can access every project you are a member of')" data-test="token-scope-all" />
-                    <flux:radio value="selected" :label="__('Selected projects')" :description="__('Can only access the projects picked below')" data-test="token-scope-selected" />
+                <flux:radio.group
+                    wire:model.live="projectScope"
+                    :label="__('Project access')"
+                    variant="cards"
+                    class="max-sm:flex-col"
+                >
+                    <flux:radio
+                        value="all"
+                        :label="__('All projects')"
+                        :description="__('Can access every project you are a member of')"
+                        data-test="token-scope-all"
+                    />
+                    <flux:radio
+                        value="selected"
+                        :label="__('Selected projects')"
+                        :description="__('Can only access the projects picked below')"
+                        data-test="token-scope-selected"
+                    />
                 </flux:radio.group>
             @endif
 
@@ -44,7 +82,11 @@
             @endif
 
             <div class="flex items-center gap-4">
-                <flux:button variant="primary" type="submit" data-test="create-token-button">{{ __('Create token') }}</flux:button>
+                <flux:button
+                    variant="primary"
+                    type="submit"
+                    data-test="create-token-button"
+                >{{ __('Create token') }}</flux:button>
             </div>
         </form>
 
@@ -66,8 +108,8 @@
             <flux:heading>{{ __('Active tokens') }}</flux:heading>
             <flux:subheading>{{ __('Tokens that can be used to access the API on your behalf') }}</flux:subheading>
 
-            <div class="mt-6 flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
-                <div class="border rounded-lg border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <div class="mx-auto mt-6 flex w-full flex-col space-y-6 text-sm" wire:cloak>
+                <div class="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
                     @forelse ($this->tokens as $token)
                         <div class="flex items-center justify-between p-4 {{ ! $loop->last ? 'border-b border-zinc-200 dark:border-zinc-700' : '' }}">
                             <div class="flex items-center gap-4">
@@ -78,12 +120,16 @@
                                     <div class="flex items-center gap-2.5">
                                         <p class="font-medium tracking-tight">{{ $token['name'] }}</p>
                                         <flux:badge size="sm">{{ $token['abilities_label'] }}</flux:badge>
-                                        <flux:badge size="sm" color="indigo" data-test="token-projects-badge">{{ $token['projects_label'] }}</flux:badge>
+                                        <flux:badge
+                                            size="sm"
+                                            color="indigo"
+                                            data-test="token-projects-badge"
+                                        >{{ $token['projects_label'] }}</flux:badge>
                                     </div>
-                                    <p class="text-zinc-500 dark:text-zinc-400 text-xs">
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">
                                         {{ __('Created :time', ['time' => $token['created_at_diff']]) }}
                                         @if ($token['last_used_at_diff'])
-                                            <span class="opacity-50 mx-1">/</span>
+                                            <span class="mx-1 opacity-50">/</span>
                                             {{ __('Last used :time', ['time' => $token['last_used_at_diff']]) }}
                                         @endif
                                     </p>
@@ -96,7 +142,7 @@
                                 icon="trash"
                                 icon:variant="outline"
                                 wire:click="revoke({{ $token['id'] }})"
-                                class="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                class="text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
                             />
                         </div>
                     @empty
@@ -117,10 +163,13 @@
                 <flux:heading>{{ __('Connected applications') }}</flux:heading>
                 <flux:subheading>{{ __('Applications you authorized via OAuth (e.g. Claude Desktop)') }}</flux:subheading>
 
-                <div class="mt-6 flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
-                    <div class="border rounded-lg border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                <div class="mx-auto mt-6 flex w-full flex-col space-y-6 text-sm" wire:cloak>
+                    <div class="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
                         @foreach ($this->connections as $connection)
-                            <div class="flex items-center justify-between p-4 {{ ! $loop->last ? 'border-b border-zinc-200 dark:border-zinc-700' : '' }}" data-test="oauth-connection-{{ $connection['id'] }}">
+                            <div
+                                class="flex items-center justify-between p-4 {{ ! $loop->last ? 'border-b border-zinc-200 dark:border-zinc-700' : '' }}"
+                                data-test="oauth-connection-{{ $connection['id'] }}"
+                            >
                                 <div class="flex items-center gap-4">
                                     <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
                                         <flux:icon.link class="size-5 text-zinc-500 dark:text-zinc-400" />
@@ -128,9 +177,13 @@
                                     <div class="space-y-1">
                                         <div class="flex items-center gap-2.5">
                                             <p class="font-medium tracking-tight">{{ $connection['client_name'] }}</p>
-                                            <flux:badge size="sm" color="indigo" data-test="connection-projects-badge">{{ $connection['projects_label'] }}</flux:badge>
+                                            <flux:badge
+                                                size="sm"
+                                                color="indigo"
+                                                data-test="connection-projects-badge"
+                                            >{{ $connection['projects_label'] }}</flux:badge>
                                         </div>
-                                        <p class="text-zinc-500 dark:text-zinc-400 text-xs">
+                                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
                                             {{ __('Created :time', ['time' => $connection['created_at_diff']]) }}
                                         </p>
                                     </div>
@@ -143,7 +196,7 @@
                                     icon:variant="outline"
                                     wire:click="revokeConnection({{ $connection['id'] }})"
                                     data-test="revoke-connection-{{ $connection['id'] }}"
-                                    class="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                    class="text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
                                 />
                             </div>
                         @endforeach

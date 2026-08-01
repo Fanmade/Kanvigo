@@ -3,7 +3,7 @@
 
     <flux:heading class="sr-only">{{ __('Appearance settings') }}</flux:heading>
 
-    <x-settings.layout :heading="__('Appearance')" :subheading=" __('Update the appearance settings for your account')">
+    <x-settings.layout :heading="__('Appearance')" :subheading="__('Update the appearance settings for your account')">
         <div class="flex flex-col gap-6">
             <flux:field>
                 <flux:label>{{ __('Theme') }}</flux:label>

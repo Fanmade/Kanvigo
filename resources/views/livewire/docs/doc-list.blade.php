@@ -1,7 +1,12 @@
 <div class="app-content mx-auto flex w-full max-w-4xl flex-col gap-6" data-test="docs-page">
     <x-project-settings-header :project="$this->project" :title="__('Docs')">
         @if ($this->canCreate)
-            <flux:button size="sm" icon="plus" wire:click="startCreating" data-test="new-doc">{{ __('New doc') }}</flux:button>
+            <flux:button
+                size="sm"
+                icon="plus"
+                wire:click="startCreating"
+                data-test="new-doc"
+            >{{ __('New doc') }}</flux:button>
         @endif
     </x-project-settings-header>
 
@@ -57,7 +62,8 @@
                 <flux:select wire:model="newParentId" :label="__('Nested under')" data-test="new-doc-parent">
                     <flux:select.option value="">{{ __('Top-level doc') }}</flux:select.option>
                     @foreach ($this->docs as $doc)
-                        <flux:select.option :value="$doc->id">{{ $this->project->short_name }}-D{{ $doc->doc_number }} · {{ $doc->title }}</flux:select.option>
+                        <flux:select.option :value="$doc->id">
+                            {{ $this->project->short_name }}-D{{ $doc->doc_number }} · {{ $doc->title }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 <flux:error name="newParentId" />
@@ -70,7 +76,11 @@
                     <flux:modal.close>
                         <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
                     </flux:modal.close>
-                    <flux:button type="submit" variant="primary" data-test="create-doc">{{ __('Create doc') }}</flux:button>
+                    <flux:button
+                        type="submit"
+                        variant="primary"
+                        data-test="create-doc"
+                    >{{ __('Create doc') }}</flux:button>
                 </div>
             </form>
         </flux:modal>

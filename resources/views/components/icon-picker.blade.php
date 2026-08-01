@@ -12,7 +12,10 @@
 --}}
 <div class="flex flex-col gap-1.5">
     <flux:label>{{ __('Icon') }}</flux:label>
-    <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto rounded-lg border border-zinc-200 p-2 dark:border-white/10" data-test="{{ $test }}-icon-picker">
+    <div
+        class="flex max-h-44 flex-wrap gap-2 overflow-y-auto rounded-lg border border-zinc-200 p-2 dark:border-white/10"
+        data-test="{{ $test }}-icon-picker"
+    >
         <button
             type="button"
             @if ($clear) wire:click="{{ $clear }}" @else wire:click="$set('{{ $name }}', null)" @endif

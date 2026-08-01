@@ -15,6 +15,4 @@
     );
 @endphp
 
-<div {{ $attributes->merge(['class' => 'prose prose-zinc max-w-none dark:prose-invert']) }}>
-    {!! $html !!}
-</div>
+<div {{ $attributes->merge(['class' => 'prose prose-zinc max-w-none dark:prose-invert']) }}>{!! $html !!}</div>

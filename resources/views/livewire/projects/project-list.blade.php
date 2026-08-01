@@ -4,7 +4,12 @@
             <flux:heading size="xl">{{ __('Projects') }}</flux:heading>
 
             @can('create-projects')
-                <flux:button variant="primary" icon="plus" wire:click="$set('showCreate', true)" data-test="create-project">
+                <flux:button
+                    variant="primary"
+                    icon="plus"
+                    wire:click="$set('showCreate', true)"
+                    data-test="create-project"
+                >
                     {{ __('New project') }}
                 </flux:button>
             @endcan
@@ -29,7 +34,7 @@
                                 <x-rich-text
                                     :content="$project->description"
                                     :short-name="$project->short_name"
-                                    class="mt-2 line-clamp-3 text-sm break-words text-zinc-500 [&_*]:my-0 dark:text-zinc-400"
+                                    class="[&_*]:my-0 mt-2 line-clamp-3 text-sm break-words text-zinc-500 dark:text-zinc-400"
                                     data-test="project-card-description"
                                 />
                             @endif
@@ -41,30 +46,30 @@
     </div>
 
     @can('create-projects')
-    <flux:modal wire:model="showCreate" class="md:w-96">
-        <form wire:submit="createProject" class="flex flex-col gap-4">
-            <flux:heading size="lg">{{ __('New project') }}</flux:heading>
+        <flux:modal wire:model="showCreate" class="md:w-96">
+            <form wire:submit="createProject" class="flex flex-col gap-4">
+                <flux:heading size="lg">{{ __('New project') }}</flux:heading>
 
-            <flux:input wire:model.blur.live="title" :label="__('Title')" data-test="project-title" />
+                <flux:input wire:model.blur.live="title" :label="__('Title')" data-test="project-title" />
 
-            <flux:input
-                wire:model="short_name"
-                :label="__('Short name')"
-                :description="__('2-4 letters, e.g. ABC')"
-                maxlength="4"
-                class="uppercase"
-                data-test="project-short-name"
-            />
+                <flux:input
+                    wire:model="short_name"
+                    :label="__('Short name')"
+                    :description="__('2-4 letters, e.g. ABC')"
+                    maxlength="4"
+                    class="uppercase"
+                    data-test="project-short-name"
+                />
 
-            <flux:textarea wire:model="description" :label="__('Description')" rows="3" />
+                <flux:textarea wire:model="description" :label="__('Description')" rows="3" />
 
-            <div class="flex justify-end gap-2">
-                <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
-                </flux:modal.close>
-                <flux:button type="submit" variant="primary">{{ __('Create') }}</flux:button>
-            </div>
-        </form>
-    </flux:modal>
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                    </flux:modal.close>
+                    <flux:button type="submit" variant="primary">{{ __('Create') }}</flux:button>
+                </div>
+            </form>
+        </flux:modal>
     @endcan
 </div>

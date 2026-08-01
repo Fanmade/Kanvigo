@@ -3,7 +3,7 @@
         <flux:heading>{{ __('Two-factor authentication') }}</flux:heading>
         <flux:subheading>{{ __('Manage your two-factor authentication settings') }}</flux:subheading>
 
-        <div class="flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
+        <div class="mx-auto flex w-full flex-col space-y-6 text-sm" wire:cloak>
             @if ($twoFactorEnabled)
                 <div class="space-y-4">
                     <flux:text>
@@ -11,12 +11,7 @@
                     </flux:text>
 
                     <div class="flex justify-start">
-                        <flux:button
-                            variant="danger"
-                            wire:click="disable"
-                        >
-                            {{ __('Disable 2FA') }}
-                        </flux:button>
+                        <flux:button variant="danger" wire:click="disable"> {{ __('Disable 2FA') }} </flux:button>
                     </div>
 
                     <livewire:settings.two-factor.recovery-codes :$requiresConfirmation />
@@ -27,40 +22,30 @@
                         {{ __('When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.') }}
                     </flux:text>
 
-                    <flux:button
-                        variant="primary"
-                        wire:click="enable"
-                    >
-                        {{ __('Enable 2FA') }}
-                    </flux:button>
+                    <flux:button variant="primary" wire:click="enable"> {{ __('Enable 2FA') }} </flux:button>
                 </div>
             @endif
         </div>
     </section>
 
-    <flux:modal
-        name="two-factor-setup-modal"
-        class="max-w-md md:min-w-md"
-        @close="closeModal"
-        wire:model="showModal"
-    >
+    <flux:modal name="two-factor-setup-modal" class="max-w-md md:min-w-md" @close="closeModal" wire:model="showModal">
         <div class="space-y-6">
             <div class="flex flex-col items-center space-y-4">
-                <div class="p-0.5 w-auto rounded-full border border-zinc-100 dark:border-zinc-600 bg-white dark:bg-zinc-800 shadow-sm">
-                    <div class="p-2.5 rounded-full border border-zinc-200 dark:border-zinc-600 overflow-hidden bg-zinc-100 dark:bg-zinc-200 relative">
-                        <div class="flex items-stretch absolute inset-0 w-full h-full divide-x [&>div]:flex-1 divide-zinc-200 dark:divide-zinc-300 justify-around opacity-50">
+                <div class="w-auto rounded-full border border-zinc-100 bg-white p-0.5 shadow-sm dark:border-zinc-600 dark:bg-zinc-800">
+                    <div class="relative overflow-hidden rounded-full border border-zinc-200 bg-zinc-100 p-2.5 dark:border-zinc-600 dark:bg-zinc-200">
+                        <div class="[&>div]:flex-1 absolute inset-0 flex h-full w-full items-stretch justify-around divide-x divide-zinc-200 opacity-50 dark:divide-zinc-300">
                             @for ($i = 1; $i <= 5; $i++)
                                 <div></div>
                             @endfor
                         </div>
 
-                        <div class="flex flex-col items-stretch absolute w-full h-full divide-y [&>div]:flex-1 inset-0 divide-zinc-200 dark:divide-zinc-300 justify-around opacity-50">
+                        <div class="[&>div]:flex-1 absolute inset-0 flex h-full w-full flex-col items-stretch justify-around divide-y divide-zinc-200 opacity-50 dark:divide-zinc-300">
                             @for ($i = 1; $i <= 5; $i++)
                                 <div></div>
                             @endfor
                         </div>
 
-                        <flux:icon.qr-code class="relative z-20 dark:text-accent-foreground"/>
+                        <flux:icon.qr-code class="dark:text-accent-foreground relative z-20" />
                     </div>
                 </div>
 
@@ -73,7 +58,7 @@
             @if ($showVerificationStep)
                 <div class="space-y-6">
                     <div
-                        class="flex flex-col items-center space-y-3 justify-center"
+                        class="flex flex-col items-center justify-center space-y-3"
                         x-data
                         x-init="$nextTick(() => $el.querySelector('input')?.focus())"
                     >
@@ -88,11 +73,7 @@
                     </div>
 
                     <div class="flex items-center space-x-3">
-                        <flux:button
-                            variant="outline"
-                            class="flex-1"
-                            wire:click="resetVerification"
-                        >
+                        <flux:button variant="outline" class="flex-1" wire:click="resetVerification">
                             {{ __('Back') }}
                         </flux:button>
 
@@ -108,21 +89,23 @@
                 </div>
             @else
                 @error('setupData')
-                    <flux:callout variant="danger" icon="x-circle" heading="{{ $message }}"/>
+                    <flux:callout variant="danger" icon="x-circle" heading="{{ $message }}" />
                 @enderror
 
                 <div class="flex justify-center">
-                    <div class="relative w-64 overflow-hidden border rounded-lg border-zinc-200 dark:border-zinc-700 aspect-square">
+                    <div class="relative aspect-square w-64 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
                         @empty($qrCodeSvg)
-                            <div class="absolute inset-0 flex items-center justify-center bg-white dark:bg-zinc-700 animate-pulse">
-                                <flux:icon.loading/>
+                            <div class="absolute inset-0 flex animate-pulse items-center justify-center bg-white dark:bg-zinc-700">
+                                <flux:icon.loading />
                             </div>
                         @else
-                        <div x-data class="flex items-center justify-center h-full p-4">
-                            <div
-                                class="bg-white p-3 rounded"
-                                :style="($flux.appearance === 'dark' || ($flux.appearance === 'system' && $flux.dark)) ? 'filter: invert(1) brightness(1.5)' : ''"
-                            >
+                            <div x-data class="flex h-full items-center justify-center p-4">
+                                <div
+                                    class="rounded bg-white p-3"
+                                    :style="$flux.appearance === 'dark' || ($flux.appearance === 'system' && $flux.dark)
+                                        ? 'filter: invert(1) brightness(1.5)'
+                                        : ''"
+                                >
                                     {!! $qrCodeSvg !!}
                                 </div>
                             </div>
@@ -142,9 +125,9 @@
                 </div>
 
                 <div class="space-y-4">
-                    <div class="relative flex items-center justify-center w-full">
-                        <div class="absolute inset-0 w-full h-px top-1/2 bg-zinc-200 dark:bg-zinc-600"></div>
-                        <span class="relative px-2 text-sm bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                    <div class="relative flex w-full items-center justify-center">
+                        <div class="absolute inset-0 top-1/2 h-px w-full bg-zinc-200 dark:bg-zinc-600"></div>
+                        <span class="relative bg-white px-2 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                             {{ __('or, enter the code manually') }}
                         </span>
                     </div>

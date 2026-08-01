@@ -6,12 +6,11 @@
             {{-- Project + parent task --}}
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 @if (count($this->projects) > 1)
-                    <flux:select wire:model.live="projectId" :label="__('Project')"
-                                 data-test="create-task-project">
+                    <flux:select wire:model.live="projectId" :label="__('Project')" data-test="create-task-project">
                         <flux:select.option value="">{{ __('Select a project') }}</flux:select.option>
                         @foreach ($this->projects as $project)
-                            <flux:select.option :value="$project->id">{{ $project->short_name }}
-                                · {{ $project->title }}</flux:select.option>
+                            <flux:select.option :value="$project->id">
+                                {{ $project->short_name }} · {{ $project->title }}</flux:select.option>
                         @endforeach
                     </flux:select>
                 @endif
@@ -38,15 +37,22 @@
                 wire:model="title"
                 :label="__('Title')"
                 data-test="create-task-title"
-                x-on:create-task-focus-title.window="$nextTick(() => (($el.matches('input') ? $el : $el.querySelector('input'))?.focus()))"
+                x-on:create-task-focus-title.window="
+                    $nextTick(() => ($el.matches('input') ? $el : $el.querySelector('input'))?.focus())
+                "
             />
 
-            <flux:editor wire:model="description" :label="__('Description')" data-test="create-task-description"/>
+            <flux:editor wire:model="description" :label="__('Description')" data-test="create-task-description" />
 
             {{-- Priority, status and (when the project has any) type --}}
             @php($hasTaskTypes = ($this->projectId && count($this->taskTypes) > 0))
             <div @class(['grid grid-cols-1 gap-4', 'sm:grid-cols-3' => $hasTaskTypes, 'sm:grid-cols-2' => ! $hasTaskTypes])>
-                <flux:select variant="listbox" wire:model="priority" :label="__('Priority')" data-test="create-task-priority">
+                <flux:select
+                    variant="listbox"
+                    wire:model="priority"
+                    :label="__('Priority')"
+                    data-test="create-task-priority"
+                >
                     @foreach (\App\Enums\Priority::descending() as $priority)
                         <flux:select.option :value="$priority->value">
                             <x-priority-badge :priority="$priority" />
@@ -78,16 +84,28 @@
                     <div class="flex min-h-8 flex-wrap items-center gap-1" data-test="create-task-tags">
                         @foreach ($tagNames as $index => $name)
                             <flux:badge size="sm" color="zinc" variant="pill" wire:key="draft-tag-{{ $index }}">
-                                <x-tag-dot :color="$tagColors[$name] ?? 'zinc'" :icon="$tagIcons[$name] ?? null" class="me-1.5"/>{{ $name }}
-                                <flux:badge.close wire:click="removeDraftTag({{ $index }})"
-                                                  :aria-label="__('Remove tag')"
-                                                  data-test="create-task-remove-tag-{{ $index }}"/>
+                                <x-tag-dot
+                                    :color="$tagColors[$name] ?? 'zinc'"
+                                    :icon="$tagIcons[$name] ?? null"
+                                    class="me-1.5"
+                                />{{ $name }}
+                                <flux:badge.close
+                                    wire:click="removeDraftTag({{ $index }})"
+                                    :aria-label="__('Remove tag')"
+                                    data-test="create-task-remove-tag-{{ $index }}"
+                                />
                             </flux:badge>
                         @endforeach
 
                         <flux:dropdown align="start">
-                            <flux:button type="button" size="xs" variant="subtle" icon="plus"
-                                         :aria-label="__('Add tag')" data-test="create-task-add-tag"/>
+                            <flux:button
+                                type="button"
+                                size="xs"
+                                variant="subtle"
+                                icon="plus"
+                                :aria-label="__('Add tag')"
+                                data-test="create-task-add-tag"
+                            />
 
                             <flux:popover class="flex w-64 flex-col gap-1">
                                 <flux:input
@@ -95,7 +113,11 @@
                                     wire:model.live.debounce.200ms="tagQuery"
                                     :placeholder="__('Find or create a tag')"
                                     x-on:keydown.enter.prevent="$wire.tagEnter($event.target.value)"
-                                    x-init="$el.closest('[popover]')?.addEventListener('toggle', (e) => { if (e.newState === 'open') requestAnimationFrame(() => $el.focus()); })"
+                                    x-init="
+                                        $el.closest('[popover]')?.addEventListener('toggle', (e) => {
+                                            if (e.newState === 'open') requestAnimationFrame(() => $el.focus());
+                                        })
+                                    "
                                     data-test="create-task-tag-input"
                                 />
 
@@ -110,8 +132,10 @@
                                                 wire:click="addSuggestedTag({{ $index }})"
                                                 data-test="create-task-tag-suggestion-{{ \Illuminate\Support\Str::slug($suggestion['name']) }}"
                                             >
-                                                <x-tag-dot :color="$suggestion['color']"
-                                                           class="me-1.5 size-2"/>{{ $suggestion['name'] }}
+                                                <x-tag-dot
+                                                    :color="$suggestion['color']"
+                                                    class="me-1.5 size-2"
+                                                />{{ $suggestion['name'] }}
                                             </flux:button>
                                         @endforeach
 
@@ -142,19 +166,33 @@
                         @if ($dueDate)
                             <flux:badge size="sm" color="zinc" variant="pill" data-test="create-task-due-date-badge">
                                 {{ \Illuminate\Support\Carbon::parse($dueDate)->format('M j, Y') }}
-                                <flux:badge.close wire:click="$set('dueDate', '')" :aria-label="__('Clear due date')"
-                                                  data-test="create-task-clear-due-date"/>
+                                <flux:badge.close
+                                    wire:click="$set('dueDate', '')"
+                                    :aria-label="__('Clear due date')"
+                                    data-test="create-task-clear-due-date"
+                                />
                             </flux:badge>
                         @else
                             <flux:text size="sm" class="text-zinc-400">{{ __('None') }}</flux:text>
                         @endif
 
                         <flux:dropdown align="start">
-                            <flux:button type="button" size="xs" variant="subtle" :icon="$dueDate ? 'pencil' : 'plus'"
-                                         :aria-label="__('Set due date')" data-test="create-task-due-date-control"/>
+                            <flux:button
+                                type="button"
+                                size="xs"
+                                variant="subtle"
+                                :icon="$dueDate ? 'pencil' : 'plus'"
+                                :aria-label="__('Set due date')"
+                                data-test="create-task-due-date-control"
+                            />
                             <flux:popover class="w-60">
-                                <flux:input type="date" wire:model.live="dueDate" :label="__('Due date')"
-                                            x-on:keydown.enter.prevent data-test="create-task-due-date"/>
+                                <flux:input
+                                    type="date"
+                                    wire:model.live="dueDate"
+                                    :label="__('Due date')"
+                                    x-on:keydown.enter.prevent
+                                    data-test="create-task-due-date"
+                                />
                             </flux:popover>
                         </flux:dropdown>
                     </div>
@@ -192,12 +230,18 @@
 
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-1.5">
-                    <flux:checkbox wire:model="createAnother" :label="__('Create another')"
-                                   data-test="create-task-another"/>
-                    <flux:tooltip
-                        :content="__('Keeps the dialog open after saving so you can add more tasks in a row. The project, parent, priority and status carry over.')">
-                        <flux:icon.question-mark-circle variant="micro" class="cursor-help text-zinc-400" tabindex="0"
-                                                        data-test="create-task-another-hint"/>
+                    <flux:checkbox
+                        wire:model="createAnother"
+                        :label="__('Create another')"
+                        data-test="create-task-another"
+                    />
+                    <flux:tooltip :content="__('Keeps the dialog open after saving so you can add more tasks in a row. The project, parent, priority and status carry over.')">
+                        <flux:icon.question-mark-circle
+                            variant="micro"
+                            class="cursor-help text-zinc-400"
+                            tabindex="0"
+                            data-test="create-task-another-hint"
+                        />
                     </flux:tooltip>
                 </div>
 
@@ -205,8 +249,11 @@
                     <flux:modal.close>
                         <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
                     </flux:modal.close>
-                    <flux:button type="submit" variant="primary"
-                                 data-test="create-task-submit">{{ __('Create') }}</flux:button>
+                    <flux:button
+                        type="submit"
+                        variant="primary"
+                        data-test="create-task-submit"
+                    >{{ __('Create') }}</flux:button>
                 </div>
             </div>
         </form>
@@ -217,12 +264,17 @@
         <form wire:submit.prevent="confirmNewTag" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ __('New tag') }}</flux:heading>
 
-            <flux:input wire:model="newTagName" :label="__('Name')" data-test="create-task-new-tag-name"/>
-            <flux:error name="newTagName"/>
+            <flux:input wire:model="newTagName" :label="__('Name')" data-test="create-task-new-tag-name" />
+            <flux:error name="newTagName" />
 
             <div class="flex flex-col gap-1.5">
                 <flux:label>{{ __('Color') }}</flux:label>
-                <x-color-picker :palette="\App\Models\Tag::PALETTE" :selected="$newTagColor" name="newTagColor" test="create-task-tag" />
+                <x-color-picker
+                    :palette="\App\Models\Tag::PALETTE"
+                    :selected="$newTagColor"
+                    name="newTagColor"
+                    test="create-task-tag"
+                />
             </div>
 
             <x-icon-picker name="newTagIcon" :selected="$newTagIcon" test="create-task-tag" clear="clearNewTagIcon" />
@@ -231,8 +283,11 @@
             <div class="flex items-center gap-2">
                 <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
                 <flux:badge size="sm" color="zinc" variant="pill">
-                    <x-tag-dot :color="$newTagColor" :icon="$previewIcon"
-                               class="me-1.5"/>{{ $newTagName !== '' ? $newTagName : __('tag') }}
+                    <x-tag-dot
+                        :color="$newTagColor"
+                        :icon="$previewIcon"
+                        class="me-1.5"
+                    />{{ $newTagName !== '' ? $newTagName : __('tag') }}
                 </flux:badge>
             </div>
 
@@ -240,8 +295,11 @@
                 <flux:modal.close>
                     <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
-                <flux:button type="submit" variant="primary"
-                             data-test="create-task-confirm-tag">{{ __('Add tag') }}</flux:button>
+                <flux:button
+                    type="submit"
+                    variant="primary"
+                    data-test="create-task-confirm-tag"
+                >{{ __('Add tag') }}</flux:button>
             </div>
         </form>
     </flux:modal>
