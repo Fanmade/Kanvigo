@@ -141,6 +141,18 @@ JS);
 Give the poll its own deadline and reject with a message: "the element never
 initialised" is a diagnosis, while a bare assertion timeout is a mystery.
 
+## Don't make a test heavy to satisfy a production limit
+
+`AttachmentUploadTest` used to allocate a 13 MB `Uint8Array` in the browser so the
+dropped file would exceed the 12 MB upload limit. That allocation, under a parallel
+suite, can stall the page long enough that the Flux toast it is waiting for is raised
+*and auto-dismissed* (5s default) before the assertion sees it — a failure that reads
+as "the warning never appeared" when the warning appeared and left.
+
+Move the limit instead of the file: `config()->set('attachments.max_size', 16)` and
+drop 32 KB. The branch under test is the size *check*, not the bytes. The same applies
+to any test tempted to build megabytes to trip a threshold — lower the threshold.
+
 ## Put a barrier after opening a dialog
 
 `click('@new-task')->click('@create-task-add-tag')` races the dialog's own opening.

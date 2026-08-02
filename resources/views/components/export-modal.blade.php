@@ -44,13 +44,57 @@
 
             @if ($this->exportDescendants)
                 <div class="flex flex-col gap-4 border-l border-zinc-200 pl-4 dark:border-zinc-700">
-                    @if ($this->exportSubtreeDepth > 1)
-                        <flux:select wire:model="exportDepth" :label="__('Levels')" data-test="export-depth">
-                            <flux:select.option value="all">{{ __('All') }}</flux:select.option>
-                            @for ($level = 1; $level <= $this->exportSubtreeDepth; $level++)
-                                <flux:select.option :value="(string) $level">{{ $level }}</flux:select.option>
-                            @endfor
-                        </flux:select>
+                    {{-- Two ways to choose: a depth, or the items themselves.
+                         The tree starts from whatever the depth covers, so the
+                         quick path is where the precise one begins. --}}
+                    @if ($this->exportOnly === null)
+                        @if ($this->exportSubtreeDepth > 1)
+                            <flux:select wire:model.live="exportDepth" :label="__('Levels')" data-test="export-depth">
+                                <flux:select.option value="all">{{ __('All') }}</flux:select.option>
+                                @for ($level = 1; $level <= $this->exportSubtreeDepth; $level++)
+                                    <flux:select.option :value="(string) $level">{{ $level }}</flux:select.option>
+                                @endfor
+                            </flux:select>
+                        @endif
+
+                        <flux:button
+                            size="xs"
+                            variant="subtle"
+                            icon="list-bullet"
+                            wire:click="startPickingExportItems"
+                            data-test="export-pick-items"
+                        >{{ __('Pick items…') }}</flux:button>
+                    @else
+                        <div class="flex items-center justify-between gap-2">
+                            <flux:text size="sm" class="font-medium">{{ __('Items') }}</flux:text>
+                            <flux:button
+                                size="xs"
+                                variant="subtle"
+                                wire:click="stopPickingExportItems"
+                                data-test="export-pick-by-depth"
+                            >{{ __('Choose by level instead') }}</flux:button>
+                        </div>
+
+                        <div class="flex max-h-64 flex-col gap-1 overflow-y-auto" data-test="export-tree">
+                            @foreach ($this->exportableSubtree as $entry)
+                                @php($key = app(\App\Support\Export\MarkdownExporter::class)->selectionKey($entry['item']))
+                                <label
+                                    class="flex items-center gap-2 text-sm"
+                                    style="padding-inline-start: {{ ($entry['level'] - 1) * 1.25 }}rem"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        wire:click="toggleExportItem('{{ $key }}')"
+                                        @checked(in_array($key, $this->exportOnly, true))
+                                        data-test="export-item-{{ $key }}"
+                                    />
+                                    <span class="truncate">{{ $entry['item']->title }}</span>
+                                    <span class="shrink-0 font-mono text-xs text-zinc-400">
+                                        {{ $entry['item']->reference }}
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
                     @endif
 
                     @if ($this->exportHasCanceled)

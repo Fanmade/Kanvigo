@@ -156,6 +156,13 @@ class MarkdownExporter
      * canceled task is canceled work too, and a doc nested under a hidden draft
      * is not promoted into the reader's view.
      *
+     * A hand-picked selection ({@see ExportOptions::$only}) works differently on
+     * purpose: an item left out does *not* take its subtree with it, because
+     * unticking a middle item while keeping what hangs below it is a thing
+     * someone can deliberately do. What survives is promoted to sit one level
+     * below its nearest kept ancestor, so the document never skips a heading
+     * level even where the tree has a hole in it.
+     *
      * The tree is loaded in one query per kind, so the walk itself costs nothing
      * however wide or deep the subtree is.
      *
@@ -168,17 +175,24 @@ class MarkdownExporter
             : $this->docChildren($root);
 
         $flattened = [];
+        $selected = $options->only === null ? null : array_flip($options->only);
 
-        $walk = function (Task|Doc $item, int $level) use (&$walk, &$flattened, $childrenByParent, $options): void {
+        $walk = function (Task|Doc $item, int $level) use (&$walk, &$flattened, $childrenByParent, $options, $selected): void {
             foreach ($childrenByParent[$item->getKey()] ?? [] as $child) {
                 if (! $this->includes($child, $options)) {
                     continue;
                 }
 
-                $flattened[] = ['item' => $child, 'level' => $level];
+                $kept = $selected === null || isset($selected[$this->selectionKey($child)]);
+
+                if ($kept) {
+                    $flattened[] = ['item' => $child, 'level' => $level];
+                }
 
                 if ($options->depth === null || $level < $options->depth) {
-                    $walk($child, $level + 1);
+                    // An unticked item does not disinherit its own subtree; what
+                    // is kept below it simply moves up to where the gap was.
+                    $walk($child, $kept ? $level + 1 : $level);
                 }
             }
         };
@@ -352,6 +366,15 @@ class MarkdownExporter
     private function rawHtml(Task|Doc $item): string
     {
         return $item instanceof Task ? (string) $item->description : (string) $item->body;
+    }
+
+    /**
+     * How an item is named in a hand-picked selection — the same shape the
+     * reference markup and the bundle's link map use.
+     */
+    public function selectionKey(Task|Doc $item): string
+    {
+        return ($item instanceof Task ? 'task' : 'doc').':'.$item->getKey();
     }
 
     /**

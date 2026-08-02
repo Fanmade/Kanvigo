@@ -4,6 +4,12 @@ use App\Models\Project;
 use App\Models\User;
 
 it('warns when a dropped file is larger than the upload limit', function () {
+    // The test is about the size *check*, not about moving megabytes: with the
+    // real 12 MB limit it has to allocate 13 MB in the browser, and under a
+    // parallel suite that stall alone can outlive the toast it is waiting for.
+    // A small limit exercises the same branch for a few kilobytes.
+    config()->set('attachments.max_size', 16);
+
     $user = User::factory()->create();
     $project = Project::factory()->create();
     joinProject($project, $user);
@@ -12,7 +18,7 @@ it('warns when a dropped file is larger than the upload limit', function () {
 
     $page = visit('/'.$project->short_name);
 
-    // Synthesize a drop of a file that exceeds the 12 MB default limit. The
+    // Synthesize a drop of a file that exceeds the configured limit. The
     // browser can't pick an oversized file through a real file dialog, so we
     // build the File and DataTransfer by hand and fire the drop event that the
     // dropzone's Alpine handler listens for.
@@ -41,7 +47,7 @@ it('warns when a dropped file is larger than the upload limit', function () {
                     return;
                 }
 
-                const file = new File([new Uint8Array(13 * 1024 * 1024)], 'huge.pdf', { type: 'application/pdf' });
+                const file = new File([new Uint8Array(32 * 1024)], 'huge.pdf', { type: 'application/pdf' });
                 const transfer = new DataTransfer();
                 transfer.items.add(file);
 
@@ -57,6 +63,6 @@ it('warns when a dropped file is larger than the upload limit', function () {
     JS);
 
     $page->waitForText('huge.pdf is too large')
-        ->assertSee('The maximum file size is 12 MB')
+        ->assertSee('The maximum file size is 16 KB')
         ->assertNoJavascriptErrors();
 });

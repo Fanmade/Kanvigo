@@ -66,6 +66,15 @@ trait ExportsContent
 
     public string $exportDepth = 'all';
 
+    /**
+     * The hand-picked selection, as "task:12" keys, or null while the depth
+     * select is doing the choosing. Ticking a parent ticks its subtree; unticking
+     * one leaves what is below it alone, and the renderer promotes the survivors.
+     *
+     * @var list<string>|null
+     */
+    public ?array $exportOnly = null;
+
     public bool $exportCanceled = false;
 
     public bool $exportArchived = false;
@@ -312,6 +321,76 @@ trait ExportsContent
         return Gate::allows('export-content', $this->exportable()->project);
     }
 
+    /**
+     * Switch to picking items by hand, starting from whatever the depth select
+     * currently covers — the quick path is where the precise one begins.
+     */
+    public function startPickingExportItems(): void
+    {
+        $this->exportOnly = array_map(
+            fn (array $entry): string => app(MarkdownExporter::class)->selectionKey($entry['item']),
+            app(MarkdownExporter::class)->subtree($this->exportable(), $this->exportOptions()),
+        );
+    }
+
+    /**
+     * Back to the depth select, forgetting the hand-picked set.
+     */
+    public function stopPickingExportItems(): void
+    {
+        $this->exportOnly = null;
+    }
+
+    /**
+     * Tick or untick one item — and, when ticking, everything below it, which is
+     * how people prune a tree.
+     */
+    public function toggleExportItem(string $key): void
+    {
+        $selected = array_flip($this->exportOnly ?? []);
+        $subtree = $this->exportableSubtree;
+        $exporter = app(MarkdownExporter::class);
+
+        $keys = [$key, ...$this->descendantKeysOf($key, $subtree, $exporter)];
+
+        if (isset($selected[$key])) {
+            foreach ($keys as $each) {
+                unset($selected[$each]);
+            }
+        } else {
+            foreach ($keys as $each) {
+                $selected[$each] = true;
+            }
+        }
+
+        $this->exportOnly = array_keys($selected);
+    }
+
+    /**
+     * The keys of everything nested under one item of the subtree.
+     *
+     * @param  list<array{item: Task|Doc, level: int}>  $subtree
+     * @return list<string>
+     */
+    private function descendantKeysOf(string $key, array $subtree, MarkdownExporter $exporter): array
+    {
+        $children = [];
+
+        foreach ($subtree as $entry) {
+            $item = $entry['item'];
+            $parentKey = $item->parent_id === null
+                ? null
+                : ($item instanceof Task ? 'task' : 'doc').':'.$item->parent_id;
+
+            if ($parentKey === $key) {
+                $childKey = $exporter->selectionKey($item);
+                $children = [$childKey, ...$children, ...$this->descendantKeysOf($childKey, $subtree, $exporter)];
+            }
+        }
+
+        return $children;
+    }
+
     public function startExport(): void
     {
         $this->authorize('export-content', $this->exportable()->project);
@@ -351,6 +430,9 @@ trait ExportsContent
 
         $this->exportMetadata = (bool) ($remembered['metadata'] ?? $this->exportMetadata);
         $this->exportDescendants = (bool) ($remembered['descendants'] ?? false) && $this->exportSubtreeDepth > 0;
+        // A hand-picked set belongs to the item it was picked on, so it is never
+        // restored: the dialog reopens on the quick path.
+        $this->exportOnly = null;
         $this->exportCanceled = (bool) ($remembered['canceled'] ?? false);
         $this->exportArchived = (bool) ($remembered['archived'] ?? false);
         $this->exportDrafts = (bool) ($remembered['drafts'] ?? false);
@@ -459,6 +541,7 @@ trait ExportsContent
             metadata: $this->exportMetadata,
             descendants: $this->exportDescendants && $this->exportSubtreeDepth > 0,
             depth: $this->exportDepth === 'all' ? null : (int) $this->exportDepth,
+            only: $this->exportDescendants ? $this->exportOnly : null,
             canceled: $this->exportCanceled,
             archived: $this->exportArchived,
             drafts: $this->exportDrafts,

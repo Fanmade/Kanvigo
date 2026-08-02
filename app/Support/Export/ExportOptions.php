@@ -43,6 +43,10 @@ final readonly class ExportOptions
      * @param  ExportFileLayout  $layout  how that archive arranges its files
      * @param  bool  $datePrefix  prepend the date to the download filename
      * @param  ExportFormat  $format  what the export is written as
+     * @param  list<string>|null  $only  the exact items to include, keyed
+     *                                   "task:12" — null means "whatever depth
+     *                                   and the filters say", which is the quick
+     *                                   path the depth select drives
      * @param  ExportAttachmentMode  $attachments  whether the attached files travel
      * @param  ExportImageMode  $images  how the images inside the content leave
      *                                   the app: by URL, as links, or embedded
@@ -59,6 +63,7 @@ final readonly class ExportOptions
         public ExportFileLayout $layout = ExportFileLayout::Flat,
         public bool $datePrefix = false,
         public ExportFormat $format = ExportFormat::Markdown,
+        public ?array $only = null,
         public ExportAttachmentMode $attachments = ExportAttachmentMode::None,
         public ExportImageMode $images = ExportImageMode::Embed,
     ) {}
@@ -94,6 +99,7 @@ final readonly class ExportOptions
             layout: $this->layout,
             datePrefix: $this->datePrefix,
             format: $this->format,
+            only: $this->only,
             attachments: $this->attachments,
             images: $this->images,
         );
@@ -118,6 +124,7 @@ final readonly class ExportOptions
             'layout' => $this->layout->value,
             'date_prefix' => $this->datePrefix,
             'format' => $this->format->value,
+            'selection' => $this->only === null ? 'all' : (string) count($this->only),
             'attachments' => $this->attachments->value,
             'images' => $this->images->value,
         ];

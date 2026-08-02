@@ -41,6 +41,12 @@ they have something to do:
 
 - **Levels** — how deep to go, counting the item's direct children as level 1.
   Defaults to **All**, which stays "all" as the subtree grows.
+- **Pick items…** — swap the level for the tree itself and tick exactly what you
+  want. Ticking an item ticks everything below it; unticking one leaves its own
+  subtree alone, and anything still ticked below a gap moves up a level so the
+  document never skips a heading. The tree starts from whatever the level
+  covered, and *Choose by level instead* goes back. A hand-picked set applies to
+  that one export — reopening the dialog starts again from the level.
 - **Include canceled** — off by default; canceled work reads as noise in a
   document. A skipped task takes everything below it with it.
 - **Include archived** — off by default, and only offered when the subtree holds
