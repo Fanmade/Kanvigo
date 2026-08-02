@@ -91,8 +91,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   subtree, its comments and a header of its metadata — or as a ZIP holding one
   file per item — or a whole project at once, for admins. See
   [docs/using/export.md](docs/using/export.md).
-- **Attachments** — drag files onto a description to upload them, with inline
-  image and PDF thumbnails; oversized files are rejected with a clear message.
+- **Attachments** — drag files onto a description to upload them, many at once
+  if you like, with inline image and PDF thumbnails; oversized files are
+  rejected with a clear message.
   Image attachments open in a lightbox gallery with keyboard navigation instead
   of a new tab.
 - **Notifications** — subscribe per project (assignment subscribes you

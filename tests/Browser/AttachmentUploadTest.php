@@ -80,3 +80,64 @@ it('warns when a dropped file is larger than the upload limit', function () {
         ->assertSee('The maximum file size is 16 KB')
         ->assertNoJavascriptErrors();
 });
+
+it('splits a multi-file drop into upload batches no larger than the per-file limit', function () {
+    config()->set('attachments.max_size', 16);
+
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    joinProject($project, $user);
+
+    $this->actingAs($user);
+
+    $page = visit('/'.$project->short_name);
+
+    // The batching itself is pure client-side logic on the dropzone's Alpine
+    // component, so it is exercised directly: hand-built Files go in, the
+    // resulting batches come out as name/size shapes to assert on. The same
+    // retry loop as above waits for Alpine to bind the dropzone first.
+    $result = $page->script(<<<'JS'
+        (() => new Promise((resolve, reject) => {
+            const deadline = Date.now() + 10000;
+
+            const file = (name, kb) => new File([new Uint8Array(kb * 1024)], name, { type: 'application/pdf' });
+
+            const attempt = () => {
+                const dropzone = document.querySelector('[data-test="description-dropzone"]');
+                const component = dropzone?._x_dataStack?.[0];
+
+                if (component?.batches) {
+                    resolve(component.batches([
+                        file('a.pdf', 10),
+                        file('b.pdf', 10),
+                        file('c.pdf', 10),
+                        file('d.pdf', 4),
+                    ]).map((batch) => batch.map((f) => f.name)));
+
+                    return;
+                }
+
+                if (Date.now() > deadline) {
+                    reject(new Error(JSON.stringify({
+                        reason: 'the dropzone never exposed a batches() method',
+                        dropzoneFound: dropzone !== null,
+                        alpineReady: Boolean(component),
+                    })));
+
+                    return;
+                }
+
+                setTimeout(attempt, 250);
+            };
+
+            attempt();
+        }))()
+    JS);
+
+    // Greedy packing against the 16 KB cap: 10+10 exceeds it, so each 10 KB
+    // file opens its own batch and the 4 KB file joins the last one. Order is
+    // preserved and no file is dropped.
+    expect($result)->toBe([['a.pdf'], ['b.pdf'], ['c.pdf', 'd.pdf']]);
+
+    $page->assertNoJavascriptErrors();
+});

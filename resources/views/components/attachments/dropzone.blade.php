@@ -13,7 +13,35 @@
         x-data="{
             depth: 0,
             maxBytes: {{ $maxSizeKb * 1024 }},
-            handleDrop(files) {
+            // Greedily pack files into batches whose combined size stays within
+            // the per-file limit: uploadMultiple() sends a whole batch as one
+            // POST, so an unchunked multi-file drop can exceed the web server's
+            // request body limit even when every file is individually fine.
+            // Capping each request at the single-file limit guarantees that any
+            // batch fits wherever a single maximum-size file already does.
+            batches(files) {
+                const result = [];
+                let batch = [];
+                let bytes = 0;
+
+                files.forEach(file => {
+                    if (batch.length > 0 && bytes + file.size > this.maxBytes) {
+                        result.push(batch);
+                        batch = [];
+                        bytes = 0;
+                    }
+
+                    batch.push(file);
+                    bytes += file.size;
+                });
+
+                if (batch.length > 0) {
+                    result.push(batch);
+                }
+
+                return result;
+            },
+            async handleDrop(files) {
                 this.depth = 0;
 
                 const dropped = Array.from(files || []);
@@ -32,19 +60,25 @@
                     variant: 'danger',
                 }));
 
-                if (accepted.length === 0) {
-                    return;
-                }
+                for (const batch of this.batches(accepted)) {
+                    const uploaded = await new Promise(resolve => this.$wire.uploadMultiple(
+                        '{{ $property }}',
+                        batch,
+                        () => resolve(true),
+                        () => resolve(false),
+                    ));
 
-                this.$wire.uploadMultiple(
-                    '{{ $property }}',
-                    accepted,
-                    () => {},
-                    () => this.$flux.toast({
-                        text: @js(__('Upload failed. Please try again.')),
-                        variant: 'danger',
-                    }),
-                );
+                    // One toast and stop — the remaining batches would most
+                    // likely fail the same way.
+                    if (!uploaded) {
+                        this.$flux.toast({
+                            text: @js(__('Upload failed. Please try again.')),
+                            variant: 'danger',
+                        });
+
+                        return;
+                    }
+                }
             },
         }"
         x-on:dragenter.prevent="depth++"
