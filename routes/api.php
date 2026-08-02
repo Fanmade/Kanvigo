@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AuditEventController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\DependencyController;
 use App\Http\Controllers\Api\V1\DocController;
+use App\Http\Controllers\Api\V1\ExportController;
 use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ReferenceController;
@@ -53,9 +54,11 @@ Route::middleware(['auth:sanctum', 'throttle:api', SetAuditSource::class.':api']
         Route::get('projects/{short_name}/variables', [VariableController::class, 'index'])->name('projects.variables.index');
 
         Route::get('tasks/{reference}', [TaskController::class, 'show'])->name('tasks.show');
+        Route::get('tasks/{reference}/export', [ExportController::class, 'task'])->name('tasks.export');
 
         Route::get('projects/{short_name}/docs', [DocController::class, 'index'])->name('projects.docs.index');
         Route::get('docs/{reference}', [DocController::class, 'show'])->name('docs.show');
+        Route::get('docs/{reference}/export', [ExportController::class, 'doc'])->name('docs.export');
 
         Route::get('notes', [NoteController::class, 'index'])->name('notes.index');
         Route::get('notes/{note}', [NoteController::class, 'show'])->whereNumber('note')->name('notes.show');

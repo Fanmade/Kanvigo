@@ -64,6 +64,7 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `GET`    | `/projects/{short_name}/variables`                    | read    | A project's variables with their current values. |
 | `POST`   | `/projects/{short_name}/tasks`                        | write   | Create a task. |
 | `GET`    | `/tasks/{reference}`                                  | read    | A single task with its description, assignees, dependencies, links, subtasks and attachments. |
+| `GET`    | `/tasks/{reference}/export`                           | read    | The task as a document — Markdown, an HTML page, or a ZIP. Needs `export-content`. |
 | `PATCH`  | `/tasks/{reference}`                                  | write   | Update a task's fields, status, type or tags. |
 | `POST`   | `/tasks/{reference}/cancel`                           | write   | Cancel a task (`cancel_reason` + optional `cancel_message`). |
 | `POST`   | `/tasks/{reference}/reopen`                           | write   | Reopen a canceled task. |
@@ -73,6 +74,7 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `GET`    | `/projects/{short_name}/docs`                         | read    | A project's reference docs (paginated, tree order). Filter: `parent`. Drafts only for doc editors. |
 | `POST`   | `/projects/{short_name}/docs`                         | write   | Create a doc (`title`, optional `body`, `parent`, `is_public`). |
 | `GET`    | `/docs/{reference}`                                   | read    | A single doc (`PROJ-D3`) with body, nested docs, links and attachments. |
+| `GET`    | `/docs/{reference}/export`                            | read    | The doc as a document, same options as the task export. |
 | `PATCH`  | `/docs/{reference}`                                   | write   | Update a doc's title, body, parent (`null` for top level) or `is_public`. |
 | `DELETE` | `/docs/{reference}`                                   | write   | Delete a doc. Nested docs are kept and read as top-level. |
 | `POST`   | `/tasks/{reference}/references`                       | write   | Cross-link the task to another task or doc (`related`). |
@@ -126,6 +128,50 @@ The task and doc detail responses carry `references` (what the item links to) an
 made through the API are curated and survive edits; the ones written inline in a
 body as a reference to another item follow that text instead, so they come back
 when the text is saved again.
+
+## Exporting an item
+
+`GET /tasks/{reference}/export` renders the item with the same renderer the web
+dialog uses, and answers with the document itself rather than JSON — `text/markdown`,
+`text/html`, or `application/zip` when the options need files to travel. The
+`Content-Disposition` names the file, so `curl -OJ` saves something sensible.
+
+It is a sub-resource rather than a format negotiated on `/tasks/{reference}`: one
+URL answering with two unrelated bodies caches badly, and a browser's `Accept`
+header should never turn the JSON API into something else.
+
+| Parameter     | Default    | Meaning |
+| ------------- | ---------- | ------- |
+| `format`      | `markdown` | `markdown` or `html`. |
+| `metadata`    | `true`     | The YAML front matter (a metadata table, in HTML). |
+| `descendants` | `false`    | Include the item's subtree. |
+| `depth`       | all        | How many levels of descendants, when they are included. |
+| `canceled`    | `false`    | Include canceled tasks. |
+| `archived`    | `false`    | Include archived tasks. |
+| `drafts`      | `false`    | Include draft docs you may see. |
+| `comments`    | `false`    | Include each item's discussion. |
+| `bundle`      | `false`    | One file per item, as a ZIP. Needs `descendants`. |
+| `layout`      | `flat`     | `flat` or `nested`, for a bundle. |
+| `images`      | `embed`    | `embed`, `link`, `files` or `inline`. `files` returns a ZIP. |
+| `attachments` | `none`     | `none` or `files`. `files` returns a ZIP. |
+
+Every default matches the web dialog's, and none of them follow the caller's
+remembered preferences: an API response that depends on what its owner last
+clicked in a browser is not reproducible.
+
+```bash
+# The task and its subtree, as one Markdown document
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://kanvigo.example/api/v1/tasks/ABC-42/export?descendants=1"
+
+# The same tree as a ZIP, one HTML file per task, images alongside
+curl -OJ -H "Authorization: Bearer $TOKEN" \
+  "https://kanvigo.example/api/v1/tasks/ABC-42/export?descendants=1&bundle=1&format=html&images=files"
+```
+
+Exporting is gated on the `export-content` permission, so a project viewer gets
+`403` where they would get `200` from `/tasks/{reference}`. Each call records the
+same `content_exported` audit event the dialog does, marked as coming from the API.
 
 ## Example
 

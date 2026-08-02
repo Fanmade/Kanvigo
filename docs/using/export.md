@@ -174,6 +174,13 @@ The archive is built while you wait, so it is bounded: past
 `kanvigo.export.max_project_items` (2000 by default, in `config/kanvigo.php`) the
 export is refused with the actual count rather than timing out.
 
+## From the API
+
+Machines fetch the same documents over the REST API:
+`GET /api/v1/tasks/{reference}/export` and `/api/v1/docs/{reference}/export`, with
+the options as query parameters. See
+[docs/developing/api.md](../developing/api.md#exporting-an-item).
+
 ## Who can export
 
 Exporting an item needs the **Export content** permission, held by the owner,
