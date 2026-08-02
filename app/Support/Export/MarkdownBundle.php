@@ -35,7 +35,7 @@ class MarkdownBundle
             ...($options->descendants ? $this->exporter->subtree($root, $options) : []),
         ];
 
-        $paths = $this->paths($entries, $options->layout);
+        $paths = $this->paths($entries, $options);
         $single = $options->forSingleItem();
         $files = [];
 
@@ -87,18 +87,23 @@ class MarkdownBundle
      * nested one gives any item with children a directory of its own, with its
      * own text in `index.md` beside them.
      *
+     * The date prefix names the archive and, in the nested layout, the single
+     * folder at its top. Everything below that stays plain: once the thing you
+     * open is dated, repeating the date on every file inside it is noise.
+     *
      * @param  list<array{item: Task|Doc, level: int}>  $entries
      * @return array<string, string>
      */
-    private function paths(array $entries, ExportFileLayout $layout): array
+    private function paths(array $entries, ExportOptions $options): array
     {
+        $root = $entries[0]['item'] ?? null;
         $names = [];
 
         foreach ($entries as $entry) {
             $names[$this->key($entry['item'])] = $this->exporter->filename($entry['item']);
         }
 
-        if ($layout === ExportFileLayout::Flat) {
+        if ($options->layout === ExportFileLayout::Flat) {
             return $names;
         }
 
@@ -121,7 +126,13 @@ class MarkdownBundle
             $prefix = $directories[$item->parent_id] ?? '';
 
             if (isset($hasChildren[$item->getKey()])) {
-                $directory = $prefix.Str::replaceLast('.md', '', $names[$key]).'/';
+                $folder = Str::replaceLast('.md', '', $names[$key]);
+
+                if ($options->datePrefix && $item === $root) {
+                    $folder = now()->format('Y-m-d').'_'.$folder;
+                }
+
+                $directory = $prefix.$folder.'/';
                 $directories[$item->getKey()] = $directory;
                 $paths[$key] = $directory.'index.md';
 

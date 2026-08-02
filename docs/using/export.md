@@ -109,7 +109,10 @@ press a button, so the restored settings are always in front of you first.
 
 **Prefix the filename with the date** (off by default) names the download
 `2026-08-02_abc-42-export-functionality.md`, which sorts a folder of exports by
-when they were taken. It affects the file only, not the copied text.
+when they were taken. In a bundle it names the archive, and the single top
+folder in the nested layout — the files inside are already under something
+dated, so they stay plain. It affects file names only, not the copied text or
+the content.
 
 ## Who can export
 

@@ -7,6 +7,7 @@ use App\Models\Task;
 use App\Support\Export\ExportOptions;
 use App\Support\Export\MarkdownBundle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -73,6 +74,54 @@ describe('the files', function () {
         $canceled = Task::factory()->for($this->project)->childOf($this->root)->canceled()->create(['title' => 'Abandoned']);
 
         expect(array_keys(bundleFiles()))->not->toContain(strtolower($canceled->reference).'-abandoned.md');
+    });
+});
+
+describe('the date prefix', function () {
+    it('dates the archive but leaves the files inside a flat bundle plain', function () {
+        Carbon::setTestNow('2026-08-02 13:00');
+
+        $options = new ExportOptions(
+            metadata: false,
+            descendants: true,
+            bundle: true,
+            datePrefix: true,
+        );
+
+        // The archive is already dated, so repeating it on every file is noise.
+        expect(app(MarkdownBundle::class)->filename($this->root, $options))
+            ->toBe('2026-08-02_'.strtolower($this->root->reference).'-export-functionality.zip')
+            ->and(array_keys(app(MarkdownBundle::class)->files($this->root, $options)))->toBe([
+                strtolower($this->root->reference).'-export-functionality.md',
+                strtolower($this->child->reference).'-the-mvp.md',
+                strtolower($this->grandchild->reference).'-image-handling.md',
+            ]);
+    });
+
+    it('dates only the top folder in a nested bundle', function () {
+        Carbon::setTestNow('2026-08-02 13:00');
+
+        $files = app(MarkdownBundle::class)->files($this->root, new ExportOptions(
+            metadata: false,
+            descendants: true,
+            bundle: true,
+            layout: ExportFileLayout::Nested,
+            datePrefix: true,
+        ));
+
+        $top = '2026-08-02_'.strtolower($this->root->reference).'-export-functionality/';
+
+        expect(array_keys($files))->toBe([
+            $top.'index.md',
+            $top.strtolower($this->child->reference).'-the-mvp/index.md',
+            $top.strtolower($this->child->reference).'-the-mvp/'.strtolower($this->grandchild->reference).'-image-handling.md',
+        ]);
+    });
+
+    it('leaves the names alone when the option is off', function () {
+        Carbon::setTestNow('2026-08-02 13:00');
+
+        expect(array_key_first(bundleFiles()))->toBe(strtolower($this->root->reference).'-export-functionality.md');
     });
 });
 
