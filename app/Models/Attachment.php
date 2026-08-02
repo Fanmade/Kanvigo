@@ -134,6 +134,14 @@ class Attachment extends Model
     }
 
     /**
+     * Whether this attachment is an image that can be shown in the gallery.
+     */
+    public function isImage(): bool
+    {
+        return str_starts_with((string) $this->mime_type, 'image/');
+    }
+
+    /**
      * The Heroicon name that best represents this attachment's type.
      */
     public function iconName(): string

@@ -305,3 +305,10 @@ it('forbids downloads from non-members', function () {
         ->get($attachment->downloadUrl())
         ->assertForbidden();
 });
+
+it('identifies image attachments for the lightbox gallery', function () {
+    expect(Attachment::factory()->make(['mime_type' => 'image/png'])->isImage())->toBeTrue()
+        ->and(Attachment::factory()->make(['mime_type' => 'image/webp'])->isImage())->toBeTrue()
+        ->and(Attachment::factory()->make(['mime_type' => 'application/pdf'])->isImage())->toBeFalse()
+        ->and(Attachment::factory()->make(['mime_type' => null])->isImage())->toBeFalse();
+});

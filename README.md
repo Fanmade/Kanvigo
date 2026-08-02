@@ -93,6 +93,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   [docs/using/export.md](docs/using/export.md).
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails; oversized files are rejected with a clear message.
+  Image attachments open in a lightbox gallery with keyboard navigation instead
+  of a new tab.
 - **Notifications** — subscribe per project (assignment subscribes you
   automatically), with an unread badge in the header and a management page.
 - **Profiles & avatars** — upload a profile picture (initials as the fallback);
