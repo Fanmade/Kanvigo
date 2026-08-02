@@ -42,6 +42,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Signed Download Link Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | How long, in minutes, a signed attachment download link stays valid. These
+    | links carry their own authorization (the signature names the user they
+    | were issued for), so an API client such as an MCP agent can fetch the raw
+    | file with a plain HTTP request. Keep the window short.
+    |
+    */
+
+    'signed_url_ttl' => (int) env('ATTACHMENTS_SIGNED_URL_TTL', 30),
+
+    /*
+    |--------------------------------------------------------------------------
     | Ghostscript Binary
     |--------------------------------------------------------------------------
     |

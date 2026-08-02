@@ -3,7 +3,9 @@
 namespace App\Mcp\Tools;
 
 use App\Audit\AccessAudit;
+use App\Mcp\Concerns\ResolvesAuthenticatedUser;
 use App\Models\Attachment;
+use App\Models\User;
 use App\Support\Facades\Audit;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -15,10 +17,12 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets the content of an attachment by its id, including inline images embedded in a project or task description. Image and audio attachments are returned as viewable content, and text-based attachments (logs, JSON, XML, CSV, …) are returned as text — up to 256 KiB per call, with an optional "offset" to page through larger files. Other file types return their metadata with a download link. Attachment ids are listed by the get-project and get-task tools. Only attachments in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets the content of an attachment by its id, including inline images embedded in a project or task description. Image and audio attachments are returned as viewable content, and text-based attachments (logs, JSON, XML, CSV, …) are returned as text — up to 256 KiB per call, with an optional "offset" to page through larger files. Other file types return their metadata only. Every response also carries a short-lived signed URL the raw file can be downloaded from with a plain HTTP request (no credentials), so an agent can write the original bytes to disk. Attachment ids are listed by the get-project and get-task tools. Only attachments in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetAttachmentTool extends Tool
 {
+    use ResolvesAuthenticatedUser;
+
     /**
      * The largest amount of decoded text returned inline. Larger files are
      * truncated to this many bytes (at a UTF-8 character boundary) with a notice
@@ -56,9 +60,10 @@ class GetAttachmentTool extends Tool
             'id.required' => 'You must provide the attachment id. Attachment ids are listed by the get-project and get-task tools.',
         ]);
 
+        $user = $this->authenticatedUser($request);
         $attachment = Attachment::query()->whereKey($validated['id'])->first();
 
-        if ($attachment === null || ! $request->user()->can('view', $attachment)) {
+        if ($attachment === null || ! $user->can('view', $attachment)) {
             return Response::error('No attachment with id "'.$validated['id'].'" exists, or you do not have access to it.');
         }
 
@@ -80,24 +85,50 @@ class GetAttachmentTool extends Tool
 
         // Serving the bytes (image, audio or inline text) is a content read of the
         // attachment over MCP — audit it like a REST/web download. The metadata-only
-        // fallthrough below discloses no content, so it is not audited.
+        // fallthrough below discloses no content, so it is not audited; the signed
+        // link every response carries audits itself when it is actually followed.
         if ($isImage || $isAudio || $isInlineText) {
             Audit::record(AccessAudit::attachmentDownloaded($attachment));
         }
 
+        $downloadLink = Response::text($this->downloadLink($attachment, $user));
+
         if ($isImage) {
-            return Response::image($contents, $mimeType);
+            return Response::make([Response::image($contents, $mimeType), $downloadLink]);
         }
 
         if ($isAudio) {
-            return Response::audio($contents, $mimeType);
+            return Response::make([Response::audio($contents, $mimeType), $downloadLink]);
         }
 
         if ($isInlineText) {
-            return Response::text($this->inlineText($attachment, $contents, $validated['offset'] ?? 0));
+            return Response::make([
+                Response::text($this->inlineText($attachment, $contents, $validated['offset'] ?? 0)),
+                $downloadLink,
+            ]);
         }
 
-        return Response::text('Attachment "'.$attachment->name.'" ('.($mimeType !== '' ? $mimeType : 'unknown type').', '.$attachment->size.' bytes) cannot be displayed inline. Only image, audio and text-based attachments are viewable; download it from '.$attachment->downloadUrl().' instead.');
+        return Response::make([
+            Response::text('Attachment "'.$attachment->name.'" ('.($mimeType !== '' ? $mimeType : 'unknown type').', '.$attachment->size.' bytes) cannot be displayed inline. Only image, audio and text-based attachments are viewable.'),
+            $downloadLink,
+        ]);
+    }
+
+    /**
+     * The block naming the signed URL the raw file can be fetched from. It is
+     * returned alongside every accessible attachment — viewable or not — because
+     * seeing a photo is not the same as having the file: writing it to disk,
+     * processing it or passing it to another tool all need the bytes themselves.
+     *
+     * The link authorizes itself for the calling user and expires, so it works
+     * with a plain HTTP client that holds no session cookie.
+     */
+    private function downloadLink(Attachment $attachment, User $user): string
+    {
+        $minutes = (int) config('attachments.signed_url_ttl');
+
+        return 'Download the raw file ("'.$attachment->name.'", '.$attachment->size.' bytes) from this signed URL, '
+            .'which needs no credentials and expires in '.$minutes.' minutes: '.$attachment->signedDownloadUrl($user);
     }
 
     /**

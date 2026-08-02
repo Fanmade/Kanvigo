@@ -8,6 +8,7 @@ use App\Http\Controllers\DocPreviewController;
 use App\Http\Controllers\MentionSuggestionsController;
 use App\Http\Controllers\NoteAttachmentController;
 use App\Http\Controllers\OAuth\ApproveMcpAuthorizationController;
+use App\Http\Controllers\SignedAttachmentDownloadController;
 use App\Http\Controllers\TaskPreviewController;
 use App\Http\Controllers\UserPreviewController;
 use App\Livewire\Admin\UserManagement;
@@ -47,6 +48,17 @@ Route::livewire('/invitation/{invitation}/accept', AcceptInvitation::class)
 Route::post('/oauth/authorize', [ApproveMcpAuthorizationController::class, 'approve'])
     ->middleware('auth')
     ->name('passport.authorizations.approve');
+
+/*
+ * Raw attachment delivery over a short-lived signed link, for clients that hold
+ * no session cookie (an MCP agent fetching a file to disk). The signature names
+ * the user the link was issued for and that user's access is re-checked when the
+ * link is followed, so it grants nothing they could not download in the app.
+ */
+Route::get('attachments/{attachment}/download/{user}', SignedAttachmentDownloadController::class)
+    ->middleware('signed')
+    ->whereNumber('attachment')
+    ->name('attachments.signed-download');
 
 Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('dashboard', Dashboard::class)->name('dashboard');

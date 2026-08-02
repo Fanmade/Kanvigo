@@ -171,7 +171,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   docs live at `/docs/api` (local only). See [docs/developing/api.md](docs/developing/api.md).
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a
   bearer token or OAuth 2.1, that lets AI agents work with the projects, tasks,
-  docs, notes and attachments the authenticated user can access. Read tools work
+  docs, notes and attachments the authenticated user can access. Attachments come
+  back both as viewable content and as a short-lived signed download link, so an
+  agent can fetch the original file. Read tools work
   with any token; write tools need a write token. Clients that require the OAuth
   flow (e.g. Claude Desktop) register dynamically and consent in the browser,
   optionally limited to selected projects, and are revocable under Settings → API

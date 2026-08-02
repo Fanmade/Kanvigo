@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Audit\AccessAudit;
 use App\Models\Attachment;
+use App\Models\User;
 use App\Support\Facades\Audit;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -39,15 +40,20 @@ trait ServesScopedAttachments
     }
 
     /**
-     * Stream the attachment as a download.
+     * Stream the attachment as a download. The actor is normally the
+     * authenticated user, stamped onto the audit event automatically; a signed
+     * download link has no authenticated user, so it names the user it was
+     * issued for instead.
      */
-    protected function downloadAttachment(Attachment $attachment): StreamedResponse
+    protected function downloadAttachment(Attachment $attachment, ?User $actor = null): StreamedResponse
     {
         $disk = Storage::disk($attachment->disk);
 
         abort_unless($disk->exists($attachment->path), 404);
 
-        Audit::record(AccessAudit::attachmentDownloaded($attachment));
+        $event = AccessAudit::attachmentDownloaded($attachment);
+
+        Audit::record($actor === null ? $event : $event->withActor($actor->getKey()));
 
         return $disk->download($attachment->path, $attachment->name);
     }

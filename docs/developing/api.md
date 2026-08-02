@@ -100,6 +100,13 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `GET`    | `/attachments/{id}`                                   | read    | Download an attachment's file. |
 | `DELETE` | `/attachments/{id}`                                   | write   | Delete an attachment. |
 
+The MCP `get-attachment` tool returns, alongside the viewable content, a signed
+download link for the attachment's raw file. The link carries its own
+authorization — it names the user it was issued for, whose access is re-checked
+when it is followed — so it can be fetched with a plain HTTP request and no
+credentials. It expires after 30 minutes (`ATTACHMENTS_SIGNED_URL_TTL`), and the
+download is audited like any other.
+
 Enum-valued fields follow the MCP conventions: `priority` and `cancel_reason` are
 sent and returned **by name** (`High`, `WontFix`), `status` by its value
 (`In progress`). Task `type` is set by its name. Users are referenced by a stable

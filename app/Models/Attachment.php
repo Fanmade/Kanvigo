@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 /**
  * @property int $id
@@ -86,6 +87,22 @@ class Attachment extends Model
     public function downloadUrl(bool $absolute = true): string
     {
         return $this->urlFor('download', $absolute);
+    }
+
+    /**
+     * A short-lived, self-authorizing download URL for this attachment, issued
+     * for one specific user. The signature covers the user, so the link carries
+     * its own authorization and can be fetched with a plain HTTP request — the
+     * way an API or MCP client obtains the raw file bytes. Access is re-checked
+     * against that user when the link is followed.
+     */
+    public function signedDownloadUrl(User $user, ?int $minutes = null): string
+    {
+        return URL::temporarySignedRoute(
+            'attachments.signed-download',
+            Carbon::now()->addMinutes($minutes ?? (int) config('attachments.signed_url_ttl')),
+            ['attachment' => $this, 'user' => $user],
+        );
     }
 
     public function thumbnailUrl(bool $absolute = true): string

@@ -187,6 +187,93 @@ it('falls back to metadata when a text-typed file is not valid UTF-8', function 
         ->assertSee('cannot be displayed inline');
 });
 
+it('returns a working signed download URL alongside viewable image content', function () {
+    $this->freezeTime();
+    Storage::disk('attachments')->put('attachments/photo.jpg', 'jpg-bytes');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/photo.jpg',
+        'name' => 'photo.jpg',
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    $url = $attachment->signedDownloadUrl($this->member);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee(base64_encode('jpg-bytes'))
+        ->assertSee($url);
+
+    expect($this->get($url)->assertOk()->streamedContent())->toBe('jpg-bytes');
+});
+
+it('offers a signed download URL for a type that cannot be displayed inline', function () {
+    $this->freezeTime();
+    Storage::disk('attachments')->put('attachments/spec.pdf', 'pdf-bytes');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/spec.pdf',
+        'name' => 'spec.pdf',
+        'mime_type' => 'application/pdf',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('cannot be displayed inline')
+        ->assertSee($attachment->signedDownloadUrl($this->member));
+});
+
+it('offers a signed download URL alongside inline text content', function () {
+    $this->freezeTime();
+    Storage::disk('attachments')->put('attachments/error.log', 'boom');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/error.log',
+        'name' => 'error.log',
+        'mime_type' => 'text/plain',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('boom')
+        ->assertSee($attachment->signedDownloadUrl($this->member));
+});
+
+it('issues the signed download URL for the calling user, not another member', function () {
+    $this->freezeTime();
+    Storage::disk('attachments')->put('attachments/photo.jpg', 'jpg-bytes');
+
+    $other = User::factory()->create();
+    $this->project->members()->attach($other);
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/photo.jpg',
+        'name' => 'photo.jpg',
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee($attachment->signedDownloadUrl($this->member))
+        ->assertDontSee($attachment->signedDownloadUrl($other));
+});
+
 it('denies access to an attachment in a project the user is not a member of', function () {
     $project = Project::factory()->create(['short_name' => 'XYZ']);
     $task = Task::factory()->for($project)->create();
