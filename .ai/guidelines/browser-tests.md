@@ -141,6 +141,29 @@ JS);
 Give the poll its own deadline and reject with a message: "the element never
 initialised" is a diagnosis, while a bare assertion timeout is a mystery.
 
+## Retry a synthetic event until it takes
+
+A dispatched event gets none of the auto-waiting a real `click()` has, and it can be
+lost to more than one not-ready condition: Alpine may not have bound the element yet,
+or a magic the handler uses (Flux's `$flux`, which raises toasts) may not be
+registered. Waiting for any single one of those leaves the others.
+
+So dispatch in a loop until the *outcome* appears, and fail with a diagnosis if it
+never does — see `AttachmentUploadTest`. A repeated drop is harmless; a lost one costs
+a full timeout and tells you nothing:
+
+```js
+const attempt = () => {
+    if (document.body.innerText.includes('is too large')) { resolve('warned'); return; }
+    if (Date.now() > deadline) { reject(new Error(JSON.stringify({ /* what you found */ }))); return; }
+    if (dropzone?._x_dataStack) { drop(dropzone); }
+    setTimeout(attempt, 250);
+};
+```
+
+This does not hide a regression: if the behaviour is broken, the outcome never appears
+and the test fails with the state it observed.
+
 ## Don't make a test heavy to satisfy a production limit
 
 `AttachmentUploadTest` used to allocate a 13 MB `Uint8Array` in the browser so the
