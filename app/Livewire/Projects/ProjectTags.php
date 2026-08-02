@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Projects;
 
+use App\Concerns\InteractsWithIconPicker;
 use App\Models\Project;
 use App\Models\Tag;
-use App\Support\IconCatalog;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,6 +27,7 @@ use Livewire\Component;
 class ProjectTags extends Component
 {
     use AuthorizesRequests;
+    use InteractsWithIconPicker;
 
     #[Locked]
     public string $shortName;
@@ -144,17 +145,6 @@ class ProjectTags extends Component
     }
 
     /**
-     * The curated Heroicons a tag may carry — the same set as task types.
-     *
-     * @return list<string>
-     */
-    #[Computed]
-    public function icons(): array
-    {
-        return IconCatalog::available();
-    }
-
-    /**
      * Open the dialog to create a brand-new tag, with empty fields. The same
      * dialog handles edits; a null editingTagId marks create mode.
      */
@@ -168,6 +158,7 @@ class ProjectTags extends Component
         $this->editIcon = null;
         $this->editSynonyms = [];
         $this->synonymQuery = '';
+        $this->resetIconQuery();
         $this->resetValidation();
         $this->editing = true;
     }
@@ -192,6 +183,7 @@ class ProjectTags extends Component
         }
         $this->editSynonyms = $synonyms;
         $this->synonymQuery = '';
+        $this->resetIconQuery();
         $this->resetValidation();
         $this->editing = true;
     }

@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\In;
 
 /**
  * @property int $id
@@ -99,13 +101,14 @@ class Tag extends Model
     }
 
     /**
-     * Validation rules for an optional tag/task-type icon from the curated set.
+     * Validation rules for an optional tag/task-type icon: any icon Flux can
+     * render {@see IconCatalog::available()}.
      *
-     * @return list<string>
+     * @return array{0: string, 1: string, 2: In}
      */
     public static function iconRule(): array
     {
-        return ['nullable', 'string', 'in:'.implode(',', IconCatalog::available())];
+        return ['nullable', 'string', Rule::in(IconCatalog::available())];
     }
 
     /**

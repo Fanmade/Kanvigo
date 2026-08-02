@@ -51,7 +51,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   editable by admins), and due dates highlighted on the board when overdue.
 - **Tags** — color-coded per-project labels with optional icons and synonyms
   they are also found by. A management page handles renaming, recoloring,
-  merging and deleting.
+  merging and deleting. Tags and task types pick from the full icon set through
+  a searchable picker.
 - **Relationships** — typed links between tasks: blocks / blocked by, relates
   to, duplicates, clones and causes. Only blocking affects scheduling (a card is
   flagged "Blocked" while a blocker is open); cycles are rejected.

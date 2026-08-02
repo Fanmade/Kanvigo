@@ -66,35 +66,4 @@ return [
         'max_project_items' => (int) env('KANVIGO_EXPORT_MAX_PROJECT_ITEMS', 2000),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Icon picker
-    |--------------------------------------------------------------------------
-    |
-    | The curated set of Heroicons offered when picking an icon for a task type
-    | or a tag — relevant to classifying work, rather than the full Heroicon
-    | catalog. Read through App\Support\IconCatalog::available(). Extend the list
-    | here to offer more choices in the pickers.
-    |
-    */
-
-    'icons' => [
-        'tag', 'sparkles', 'bug-ant', 'wrench-screwdriver', 'wrench', 'bolt',
-        'beaker', 'book-open', 'shield-check', 'rocket-launch', 'paint-brush',
-        'cog-6-tooth', 'flag', 'star', 'exclamation-triangle',
-        'arrows-right-left', 'arrow-path-rounded-square', 'cube', 'cube-transparent',
-        'magnifying-glass', 'light-bulb', 'circle-stack', 'cpu-chip',
-        'chat-bubble-left-right', 'server-stack', 'fire', 'link', 'document-text',
-        'arrow-trending-up', 'bell', 'command-line', 'credit-card', 'computer-desktop',
-        'device-phone-mobile', 'device-tablet', 'finger-print', 'information-circle',
-        'question-mark-circle', 'chart-pie', 'cake', 'clipboard-document-list',
-        'key', 'language', 'lifebuoy', 'lock-closed', 'map-pin', 'moon',
-        'paper-airplane', 'scale', 'scissors', 'share', 'shopping-bag', 'shopping-cart',
-        'signal', 'speaker-wave', 'truck', 'user-group', 'user-circle', 'view-columns',
-        'x-mark', 'arrows-up-down', 'hand-raised', 'home', 'envelope-open', 'envelope',
-        'at-symbol', 'phone', 'building-office', 'building-library', 'viewfinder-circle',
-        'ticket', 'sun', 'identification', 'hand-thumb-up', 'globe-alt', 'face-smile',
-        'eye-slash', 'eye', 'cursor-arrow-rays', 'cursor-arrow-ripple',
-    ],
-
 ];

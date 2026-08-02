@@ -322,6 +322,40 @@ it('sets and clears a tag icon through the edit modal', function () {
     expect($tag->refresh()->icon)->toBeNull();
 });
 
+it('accepts any icon Flux can render, not just a curated few', function () {
+    [$user, $project, $tag] = memberProjectTag();
+
+    Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startEdit', $tag->id)
+        ->set('editIcon', 'trophy')
+        ->call('saveEdit')
+        ->assertHasNoErrors();
+
+    expect($tag->refresh()->icon)->toBe('trophy');
+});
+
+it('filters the icon picker by the typed query and resets it when reopening', function () {
+    [$user, $project, $tag] = memberProjectTag();
+
+    $component = Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startEdit', $tag->id)
+        ->set('iconQuery', 'trophy');
+
+    expect($component->instance()->iconOptions())->toBe(['trophy']);
+
+    $component->assertSeeHtml('data-test="edit-tag-icon-trophy"')
+        ->assertDontSeeHtml('data-test="edit-tag-icon-beaker"')
+        // The chosen icon stays in the list even while the query excludes it.
+        ->set('editIcon', 'beaker')
+        ->assertSeeHtml('data-test="edit-tag-icon-beaker"')
+        ->set('iconQuery', 'surely-not-an-icon')
+        ->assertSeeHtml('data-test="edit-tag-icon-empty"')
+        ->call('startEdit', $tag->id)
+        ->assertSet('iconQuery', '');
+});
+
 it('rejects a tag icon outside the allowed set', function () {
     [$user, $project, $tag] = memberProjectTag();
 

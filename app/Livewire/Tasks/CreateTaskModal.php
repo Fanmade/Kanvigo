@@ -4,6 +4,7 @@ namespace App\Livewire\Tasks;
 
 use App\Actions\ConvertNote;
 use App\Actions\CreateTask;
+use App\Concerns\InteractsWithIconPicker;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Note;
@@ -36,6 +37,8 @@ use Livewire\Component;
  */
 class CreateTaskModal extends Component
 {
+    use InteractsWithIconPicker;
+
     public bool $show = false;
 
     /**
@@ -374,6 +377,7 @@ class CreateTaskModal extends Component
         $this->newTagName = $name;
         $this->newTagColor = Tag::colorForName($name);
         $this->newTagIcon = null;
+        $this->resetIconQuery();
         $this->showTagColorModal = true;
     }
 

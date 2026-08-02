@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Projects;
 
+use App\Concerns\InteractsWithIconPicker;
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\TaskType;
-use App\Support\IconCatalog;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,6 +27,7 @@ use Livewire\Component;
 class ProjectTaskTypes extends Component
 {
     use AuthorizesRequests;
+    use InteractsWithIconPicker;
 
     #[Locked]
     public string $shortName;
@@ -92,17 +93,6 @@ class ProjectTaskTypes extends Component
     }
 
     /**
-     * The icons a type may be given.
-     *
-     * @return list<string>
-     */
-    #[Computed]
-    public function icons(): array
-    {
-        return IconCatalog::available();
-    }
-
-    /**
      * Open the dialog to create a new type.
      */
     public function startCreate(): void
@@ -114,6 +104,7 @@ class ProjectTaskTypes extends Component
         $this->editColor = 'sky';
         $this->editIcon = 'tag';
         $this->editBranchPrefix = '';
+        $this->resetIconQuery();
         $this->resetValidation();
         $this->editing = true;
     }
@@ -132,6 +123,7 @@ class ProjectTaskTypes extends Component
         $this->editColor = $type->color;
         $this->editIcon = $type->icon;
         $this->editBranchPrefix = (string) $type->branch_prefix;
+        $this->resetIconQuery();
         $this->resetValidation();
         $this->editing = true;
     }

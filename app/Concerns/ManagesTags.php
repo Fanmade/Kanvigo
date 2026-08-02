@@ -18,6 +18,8 @@ use Livewire\Attributes\Computed;
  */
 trait ManagesTags
 {
+    use InteractsWithIconPicker;
+
     // Create-tag modal state.
     public bool $showTagModal = false;
 
@@ -136,6 +138,7 @@ trait ManagesTags
         $this->newTagName = trim($name);
         $this->newTagColor = Tag::colorForName($this->newTagName !== '' ? $this->newTagName : 'tag');
         $this->newTagIcon = null;
+        $this->resetIconQuery();
         $this->showTagModal = true;
     }
 
