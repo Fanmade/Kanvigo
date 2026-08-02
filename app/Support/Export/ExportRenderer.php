@@ -26,16 +26,25 @@ class ExportRenderer
     /**
      * The exported document for one item.
      *
-     * @param  array<string, string>  $localLinks  in-bundle link targets
-     * @param  ExportImages|null  $images  shared image decisions, when an archive
-     *                                     renders several documents
+     * @param  ExportContext|null  $context  the archive around this document, if any
      */
-    public function render(Task|Doc $item, ExportOptions $options, array $localLinks = [], ?ExportImages $images = null): string
+    public function render(Task|Doc $item, ExportOptions $options, ?ExportContext $context = null): string
     {
         return match ($options->format) {
-            ExportFormat::Html => $this->html->render($item, $options, $localLinks, $images),
-            ExportFormat::Markdown => $this->markdown->render($item, $options, $localLinks, $images),
+            ExportFormat::Html => $this->html->render($item, $options, $context),
+            ExportFormat::Markdown => $this->markdown->render($item, $options, $context),
         };
+    }
+
+    /**
+     * One set of attachment decisions for a whole archive, so a file attached to
+     * two items is written once.
+     *
+     * @param  list<Task|Doc>  $items
+     */
+    public function attachmentsFor(array $items, ExportOptions $options): ExportAttachments
+    {
+        return $this->markdown->attachmentsFor($items, $options);
     }
 
     /**

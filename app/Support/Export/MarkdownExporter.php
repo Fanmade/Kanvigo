@@ -2,6 +2,7 @@
 
 namespace App\Support\Export;
 
+use App\Enums\ExportAttachmentMode;
 use App\Enums\ExportFormat;
 use App\Models\Comment;
 use App\Models\Doc;
@@ -46,14 +47,13 @@ class MarkdownExporter
     /**
      * The full Markdown document for one item.
      *
-     * @param  array<string, string>  $localLinks  in-bundle link targets keyed
-     *                                             "task:12" (see ExportBundle)
-     * @param  ExportImages|null  $images  the image decisions to use, when an
-     *                                     archive owns one across several files;
-     *                                     otherwise this document gets its own
+     * @param  ExportContext|null  $context  what this document needs to know
+     *                                       about the archive around it, when
+     *                                       there is one
      */
-    public function render(Task|Doc $item, ExportOptions $options, array $localLinks = [], ?ExportImages $images = null): string
+    public function render(Task|Doc $item, ExportOptions $options, ?ExportContext $context = null): string
     {
+        $context ??= new ExportContext;
         $descendants = $options->descendants ? $this->subtree($item, $options) : [];
 
         // The images are resolved for the document as a whole: one query for the
@@ -61,9 +61,10 @@ class MarkdownExporter
         $items = [$item, ...array_map(static fn (array $entry): Task|Doc => $entry['item'], $descendants)];
         $comments = $options->comments ? $this->commentsFor($items) : [];
 
-        $images ??= $this->imagesFor($items, $comments, $options);
+        $images = $context->images ?? $this->imagesFor($items, $comments, $options);
+        $attachments = $context->attachments ?? $this->attachmentsFor($items, $options);
 
-        $converter = $this->converter($images, $localLinks);
+        $converter = $this->converter($images, $context->localLinks);
         $sections = [];
 
         if ($options->metadata) {
@@ -71,6 +72,7 @@ class MarkdownExporter
         }
 
         $sections[] = '# '.$item->title;
+        $sections = [...$sections, ...($context->navigation?->lines() ?? [])];
 
         $body = $this->body($item, $converter);
 
@@ -78,7 +80,11 @@ class MarkdownExporter
             $sections[] = $body;
         }
 
-        $sections = [...$sections, ...$this->commentSections($item, 1, $comments, $converter)];
+        $sections = [
+            ...$sections,
+            ...$attachments->sectionFor($item, 1),
+            ...$this->commentSections($item, 1, $comments, $converter),
+        ];
 
         foreach ($descendants as $descendant) {
             $sections[] = $this->headingFor($descendant['item'], $descendant['level']);
@@ -97,6 +103,7 @@ class MarkdownExporter
 
             $sections = [
                 ...$sections,
+                ...$attachments->sectionFor($descendant['item'], $descendant['level'] + 1),
                 ...$this->commentSections($descendant['item'], $descendant['level'] + 1, $comments, $converter),
             ];
         }
@@ -121,6 +128,23 @@ class MarkdownExporter
         ]);
 
         return $images;
+    }
+
+    /**
+     * The attachment decisions for a document — loaded only when the export
+     * actually carries the files, so the common export queries nothing.
+     *
+     * @param  list<Task|Doc>  $items
+     */
+    public function attachmentsFor(array $items, ExportOptions $options): ExportAttachments
+    {
+        $attachments = new ExportAttachments;
+
+        if ($options->attachments === ExportAttachmentMode::Files) {
+            $attachments->prepare($items);
+        }
+
+        return $attachments;
     }
 
     /**

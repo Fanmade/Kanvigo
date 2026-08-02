@@ -35,25 +35,94 @@ class ExportBundle
             ...($options->descendants ? $this->renderer->subtree($root, $options) : []),
         ];
 
-        $paths = $this->paths($entries, $options);
-        $single = $options->forSingleItem();
         $items = array_map(static fn (array $entry): Task|Doc => $entry['item'], $entries);
 
         // One set of image decisions for the whole archive: a picture shown by
         // two items is stored once, and its budget is spent once.
         $images = $this->renderer->imagesFor($items, $options);
+        $attachments = $this->renderer->attachmentsFor($items, $options);
+
+        // An archive is not always a bundle: images or attachments travelling as
+        // files need one even when the content is still a single document. Then
+        // the archive holds that one document and the files it points at.
+        if (! $options->bundle) {
+            $images->relativeTo('');
+            $attachments->relativeTo('');
+
+            $document = $this->renderer->render($root, $options, new ExportContext(
+                images: $images,
+                attachments: $attachments,
+            ));
+
+            return [
+                $this->renderer->filename($root, new ExportOptions(format: $options->format)) => $document,
+                ...$images->files(),
+                ...$attachments->files(),
+            ];
+        }
+
+        $paths = $this->paths($entries, $options);
+        $single = $options->forSingleItem();
         $files = [];
 
         foreach ($entries as $entry) {
             $item = $entry['item'];
             $path = $paths[$this->key($item)];
 
-            $images->relativeTo($this->pathToRoot($path));
+            $toRoot = $this->pathToRoot($path);
+            $images->relativeTo($toRoot);
+            $attachments->relativeTo($toRoot);
 
-            $files[$path] = $this->renderer->render($item, $single, $this->linksFrom($path, $paths), $images);
+            $files[$path] = $this->renderer->render($item, $single, new ExportContext(
+                localLinks: $this->linksFrom($path, $paths),
+                images: $images,
+                attachments: $attachments,
+                navigation: $this->navigationFor($entry, $entries, $paths, $path),
+            ));
         }
 
-        return [...$files, ...$images->files()];
+        return [...$files, ...$images->files(), ...$attachments->files()];
+    }
+
+    /**
+     * The way up and down the tree from one file: its parent and the items
+     * directly below it, as relative links, and only those that travel in this
+     * archive — a link to a file the reader does not have is worse than none.
+     *
+     * @param  array{item: Task|Doc, level: int}  $entry
+     * @param  list<array{item: Task|Doc, level: int}>  $entries
+     * @param  array<string, string>  $paths
+     */
+    private function navigationFor(array $entry, array $entries, array $paths, string $from): ExportNavigation
+    {
+        $item = $entry['item'];
+        $parent = null;
+
+        foreach ($entries as $candidate) {
+            $other = $candidate['item'];
+
+            if ($other->getKey() === $item->parent_id && $other::class === $item::class) {
+                $parent = [
+                    'title' => $other->title,
+                    'path' => $this->relative($from, $paths[$this->key($other)]),
+                ];
+            }
+        }
+
+        $children = [];
+
+        foreach ($entries as $candidate) {
+            $other = $candidate['item'];
+
+            if ($other->parent_id === $item->getKey() && $other::class === $item::class) {
+                $children[] = [
+                    'title' => $other->title,
+                    'path' => $this->relative($from, $paths[$this->key($other)]),
+                ];
+            }
+        }
+
+        return new ExportNavigation($parent, $children);
     }
 
     /**

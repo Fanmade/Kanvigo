@@ -2,6 +2,7 @@
 
 namespace App\Support\Export;
 
+use App\Enums\ExportAttachmentMode;
 use App\Enums\ExportFileLayout;
 use App\Enums\ExportFormat;
 use App\Enums\ExportImageMode;
@@ -42,6 +43,7 @@ final readonly class ExportOptions
      * @param  ExportFileLayout  $layout  how that archive arranges its files
      * @param  bool  $datePrefix  prepend the date to the download filename
      * @param  ExportFormat  $format  what the export is written as
+     * @param  ExportAttachmentMode  $attachments  whether the attached files travel
      * @param  ExportImageMode  $images  how the images inside the content leave
      *                                   the app: by URL, as links, or embedded
      */
@@ -57,6 +59,7 @@ final readonly class ExportOptions
         public ExportFileLayout $layout = ExportFileLayout::Flat,
         public bool $datePrefix = false,
         public ExportFormat $format = ExportFormat::Markdown,
+        public ExportAttachmentMode $attachments = ExportAttachmentMode::None,
         public ExportImageMode $images = ExportImageMode::Embed,
     ) {}
 
@@ -67,7 +70,9 @@ final readonly class ExportOptions
      */
     public function needsArchive(): bool
     {
-        return $this->bundle || $this->images === ExportImageMode::Files;
+        return $this->bundle
+            || $this->images === ExportImageMode::Files
+            || $this->attachments === ExportAttachmentMode::Files;
     }
 
     /**
@@ -89,6 +94,7 @@ final readonly class ExportOptions
             layout: $this->layout,
             datePrefix: $this->datePrefix,
             format: $this->format,
+            attachments: $this->attachments,
             images: $this->images,
         );
     }
@@ -112,6 +118,7 @@ final readonly class ExportOptions
             'layout' => $this->layout->value,
             'date_prefix' => $this->datePrefix,
             'format' => $this->format->value,
+            'attachments' => $this->attachments->value,
             'images' => $this->images->value,
         ];
     }

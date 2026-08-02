@@ -48,9 +48,11 @@ describe('the files', function () {
         $files = bundleFiles();
         $childFile = $files[strtolower($this->child->reference).'-the-mvp.md'];
 
+        // Its own content only — the other items appear as navigation links, not
+        // as text.
         expect($childFile)->toStartWith('# The MVP')
-            ->and($childFile)->not->toContain('Image handling')
-            ->and($childFile)->not->toContain('Export functionality');
+            ->and($childFile)->not->toContain('## Image handling')
+            ->and($childFile)->not->toContain('# Export functionality');
     });
 
     it('keeps the front matter in every file when metadata is on', function () {
@@ -249,5 +251,52 @@ describe('the controls', function () {
 
         expect($event['metadata']['bundle'])->toBeTrue()
             ->and($event['metadata']['layout'])->toBe('nested');
+    });
+});
+
+describe('navigating between the files', function () {
+    it('links a file up to its parent and down to what is nested under it', function () {
+        $files = bundleFiles();
+
+        $rootFile = $files[strtolower($this->root->reference).'-export-functionality.md'];
+        $childFile = $files[strtolower($this->child->reference).'-the-mvp.md'];
+        $leafFile = $files[strtolower($this->grandchild->reference).'-image-handling.md'];
+
+        expect($rootFile)->toContain('*Below: [The MVP]('.strtolower($this->child->reference).'-the-mvp.md)*')
+            ->and($rootFile)->not->toContain('*Up:')
+            ->and($childFile)->toContain('*Up: [Export functionality]('.strtolower($this->root->reference).'-export-functionality.md)*')
+            ->and($childFile)->toContain('*Below: [Image handling](')
+            // A leaf has somewhere to go up to and nowhere to go down.
+            ->and($leafFile)->toContain('*Up: [The MVP](')
+            ->and($leafFile)->not->toContain('*Below:');
+    });
+
+    it('walks the directories in the nested layout', function () {
+        $files = bundleFiles(ExportFileLayout::Nested);
+        $root = strtolower($this->root->reference).'-export-functionality/';
+        $childDirectory = $root.strtolower($this->child->reference).'-the-mvp/';
+
+        expect($files[$childDirectory.'index.md'])
+            ->toContain('*Up: [Export functionality](../index.md)*')
+            ->toContain('*Below: [Image handling](')
+            ->and($files[$root.'index.md'])
+            ->toContain('*Below: [The MVP]('.strtolower($this->child->reference).'-the-mvp/index.md)*');
+    });
+
+    it('never links to an item the archive left out', function () {
+        Task::factory()->for($this->project)->childOf($this->root)->canceled()->create(['title' => 'Abandoned']);
+
+        $files = bundleFiles();
+
+        expect($files[strtolower($this->root->reference).'-export-functionality.md'])->not->toContain('Abandoned');
+    });
+
+    it('says nothing at all for a single-file export', function () {
+        $solo = Task::factory()->for($this->project)->create(['title' => 'On its own']);
+
+        $files = app(ExportBundle::class)->files($solo, new ExportOptions(metadata: false, bundle: true));
+
+        expect($files[array_key_first($files)])->not->toContain('*Up:')
+            ->and($files[array_key_first($files)])->not->toContain('*Below:');
     });
 });

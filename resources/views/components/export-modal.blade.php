@@ -129,6 +129,24 @@
             @endif
         @endif
 
+        {{-- Attachments are a separate question from images: an inline image is
+             already in the text, an attached file is not. --}}
+        @if ($this->exportHasAttachments)
+            <flux:select wire:model.live="exportAttachments" :label="__('Attachments')" data-test="export-attachments">
+                @foreach (\App\Enums\ExportAttachmentMode::cases() as $mode)
+                    <flux:select.option :value="$mode->value">{{ $mode->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
+            @if ($this->exportAttachments === \App\Enums\ExportAttachmentMode::Files->value)
+                <flux:callout icon="archive-box" data-test="export-attachments-notice">
+                    <flux:callout.text>
+                        {{ __('The export is delivered as a ZIP archive, with the files listed under the item they belong to.') }}
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+        @endif
+
         {{-- A filename choice, so it belongs with Download and says nothing
              about a copy to the clipboard. --}}
         <flux:checkbox

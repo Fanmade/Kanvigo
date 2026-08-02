@@ -73,8 +73,27 @@ all files side by side, or a folder per item that has subtasks (its own text in
 archive points at that file, so the bundle reads on its own; a reference to
 anything else keeps its absolute URL.
 
+Each file also carries its own way around the tree: a link **Up** to the item it
+sits under, and **Below** to the items nested directly beneath it — both
+relative, and only ever to files the archive actually contains.
+
 An archive cannot go on the clipboard, so **Copy to clipboard** steps aside while
-this is on. Attachments other than inline images are not bundled yet.
+this is on.
+
+An archive is not always a bundle: choosing to carry images or attachments as
+files produces one too, holding a single document and the files beside it.
+
+## Attachments
+
+When something in the export has a file attached to it, an **Attachments**
+select decides whether those files travel. **Include the files in the archive**
+writes each one into an `attachments/` folder and lists it under the item it
+belongs to, with its size — an attached file is nowhere in the text, so without
+that listing the archive would hold files nobody finds. Like the image files
+mode, it makes the export a ZIP and steps **Copy to clipboard** aside.
+
+Inline images are not part of this: they are already in the text and follow the
+**Images** setting instead.
 
 ## Comments
 

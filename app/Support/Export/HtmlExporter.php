@@ -26,14 +26,11 @@ class HtmlExporter
     /**
      * The full HTML document for one item.
      *
-     * @param  array<string, string>  $localLinks  in-bundle link targets, as for
-     *                                             {@see MarkdownExporter::render()}
-     * @param  ExportImages|null  $images  shared image decisions, when an archive
-     *                                     renders several documents
+     * @param  ExportContext|null  $context  the archive around this document, if any
      */
-    public function render(Task|Doc $item, ExportOptions $options, array $localLinks = [], ?ExportImages $images = null): string
+    public function render(Task|Doc $item, ExportOptions $options, ?ExportContext $context = null): string
     {
-        $markdown = $this->markdown->render($item, $options, $localLinks, $images);
+        $markdown = $this->markdown->render($item, $options, $context);
 
         // Front matter is a Markdown convention; in a page it belongs in the
         // document as a definition list rather than as three stray dashes.

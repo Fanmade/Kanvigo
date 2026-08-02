@@ -3,9 +3,11 @@
 namespace App\Concerns;
 
 use App\Audit\AccessAudit;
+use App\Enums\ExportAttachmentMode;
 use App\Enums\ExportFileLayout;
 use App\Enums\ExportFormat;
 use App\Enums\ExportImageMode;
+use App\Models\Attachment;
 use App\Models\Comment;
 use App\Models\Doc;
 use App\Models\Task;
@@ -42,6 +44,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * @property-read bool $exportHasDrafts
  * @property-read bool $exportHasImages
  * @property-read bool $exportHasComments
+ * @property-read bool $exportHasAttachments
  * @property-read bool $exportNeedsArchive
  */
 trait ExportsContent
@@ -80,6 +83,12 @@ trait ExportsContent
      * value. Held as a string because it is bound to a select.
      */
     public string $exportImages = 'embed';
+
+    /**
+     * Whether the attached files travel with the content — an
+     * {@see ExportAttachmentMode} value.
+     */
+    public string $exportAttachments = 'none';
 
     /**
      * What the export is written as — an {@see ExportFormat} value.
@@ -213,6 +222,42 @@ trait ExportsContent
     }
 
     /**
+     * Whether anything in the export has a file attached to it — without one,
+     * offering to carry the files is offering nothing.
+     */
+    #[Computed]
+    public function exportHasAttachments(): bool
+    {
+        $items = [$this->exportable()];
+
+        if ($this->exportDescendants) {
+            foreach ($this->exportableSubtree as $entry) {
+                $items[] = $entry['item'];
+            }
+        }
+
+        $idsByType = [];
+
+        foreach ($items as $item) {
+            $idsByType[$item->getMorphClass()][] = $item->getKey();
+        }
+
+        foreach ($idsByType as $type => $ids) {
+            $exists = Attachment::query()
+                ->where('attachable_type', $type)
+                ->whereIn('attachable_id', $ids)
+                ->where('is_inline', false)
+                ->exists();
+
+            if ($exists) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether anything in the export has been commented on — the condition for
      * offering to include the discussion.
      */
@@ -253,7 +298,8 @@ trait ExportsContent
     public function exportNeedsArchive(): bool
     {
         return ($this->exportBundle && $this->exportDescendants)
-            || $this->exportImages === ExportImageMode::Files->value;
+            || $this->exportImages === ExportImageMode::Files->value
+            || $this->exportAttachments === ExportAttachmentMode::Files->value;
     }
 
     /**
@@ -280,6 +326,7 @@ trait ExportsContent
             $this->exportHasDrafts,
             $this->exportHasComments,
             $this->exportHasImages,
+            $this->exportHasAttachments,
         );
 
         $this->restoreExportOptions();
@@ -312,6 +359,9 @@ trait ExportsContent
 
         $format = ExportFormat::tryFrom((string) ($remembered['format'] ?? ''));
         $this->exportFormat = ($format ?? ExportFormat::Markdown)->value;
+
+        $attachments = ExportAttachmentMode::tryFrom((string) ($remembered['attachments'] ?? ''));
+        $this->exportAttachments = ($attachments ?? ExportAttachmentMode::None)->value;
         $this->exportBundle = (bool) ($remembered['bundle'] ?? false) && $this->exportDescendants;
 
         $layout = ExportFileLayout::tryFrom((string) ($remembered['layout'] ?? ''));
@@ -417,6 +467,7 @@ trait ExportsContent
             layout: ExportFileLayout::tryFrom($this->exportLayout) ?? ExportFileLayout::Flat,
             datePrefix: $this->exportDatePrefix,
             format: ExportFormat::tryFrom($this->exportFormat) ?? ExportFormat::Markdown,
+            attachments: ExportAttachmentMode::tryFrom($this->exportAttachments) ?? ExportAttachmentMode::None,
             images: ExportImageMode::tryFrom($this->exportImages) ?? ExportImageMode::Embed,
         );
     }
