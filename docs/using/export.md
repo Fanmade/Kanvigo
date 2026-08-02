@@ -5,16 +5,22 @@ an AI assistant, or keep alongside a repository.
 
 ## What it does
 
-Open a task or doc, choose **Export** from the actions menu (⋯), and the dialog
-offers two ways out:
+Open a task or doc, choose **Export** from the actions menu (⋯), pick a
+**Format** — Markdown, or a standalone HTML page — and the dialog offers two ways
+out:
 
-- **Copy to clipboard** — the Markdown, ready to paste.
-- **Download** — the same Markdown as a `.md` file, named after the item, e.g.
+- **Copy to clipboard** — the document, ready to paste.
+- **Download** — the same document as a file, named after the item, e.g.
   `abc-42-export-functionality.md`.
 
 The document is the item's title as the top-level heading, followed by its
-description or body converted to Markdown: headings, lists, quotes, tables,
-code blocks and emphasis all carry over.
+description or body: headings, lists, quotes, tables, code blocks and emphasis
+all carry over.
+
+The **HTML page** says exactly the same things as the Markdown, wrapped in a
+complete, plainly styled document you can open in a browser — no stylesheets or
+scripts are fetched, so it reads offline. Its metadata sits in a small table at
+the top instead of in a YAML header.
 
 ## Metadata
 
@@ -123,6 +129,7 @@ recorded in the audit trail against the item.
 
 ## Scope
 
-Today the export produces Markdown — one document, or one file per item in a ZIP.
-Other formats, bundling the attachment files themselves and a tabular CSV listing
-are planned as separate steps.
+Today the export produces Markdown or an HTML page — one document, or one file
+per item in a ZIP. PDF and Word, and bundling the attachment files themselves,
+are planned separately; a tabular CSV listing of many tasks is a different
+feature altogether.

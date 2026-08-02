@@ -4,12 +4,14 @@ namespace App\Concerns;
 
 use App\Audit\AccessAudit;
 use App\Enums\ExportFileLayout;
+use App\Enums\ExportFormat;
 use App\Enums\ExportImageMode;
 use App\Models\Comment;
 use App\Models\Doc;
 use App\Models\Task;
+use App\Support\Export\ExportBundle;
 use App\Support\Export\ExportOptions;
-use App\Support\Export\MarkdownBundle;
+use App\Support\Export\ExportRenderer;
 use App\Support\Export\MarkdownExporter;
 use App\Support\Facades\Audit;
 use App\Support\InlineAttachments;
@@ -77,6 +79,11 @@ trait ExportsContent
      * value. Held as a string because it is bound to a select.
      */
     public string $exportImages = 'embed';
+
+    /**
+     * What the export is written as — an {@see ExportFormat} value.
+     */
+    public string $exportFormat = 'markdown';
 
     /**
      * Whether the export is one file per item, delivered as an archive, and how
@@ -289,6 +296,9 @@ trait ExportsContent
         $this->exportDrafts = (bool) ($remembered['drafts'] ?? false);
         $this->exportComments = (bool) ($remembered['comments'] ?? false);
         $this->exportDatePrefix = (bool) ($remembered['date_prefix'] ?? false);
+
+        $format = ExportFormat::tryFrom((string) ($remembered['format'] ?? ''));
+        $this->exportFormat = ($format ?? ExportFormat::Markdown)->value;
         $this->exportBundle = (bool) ($remembered['bundle'] ?? false) && $this->exportDescendants;
 
         $layout = ExportFileLayout::tryFrom((string) ($remembered['layout'] ?? ''));
@@ -329,11 +339,11 @@ trait ExportsContent
             return;
         }
 
-        $markdown = app(MarkdownExporter::class)->render($this->exportable(), $options);
+        $document = app(ExportRenderer::class)->render($this->exportable(), $options);
 
         $this->recordExport($options);
 
-        $this->dispatch('export-copied', markdown: $markdown);
+        $this->dispatch('export-copied', markdown: $document);
 
         Flux::toast(text: __('Copied to clipboard.'), variant: 'success');
 
@@ -350,14 +360,15 @@ trait ExportsContent
         $options = $this->exportOptions();
 
         if ($options->bundle) {
-            $bundle = app(MarkdownBundle::class);
+            $bundle = app(ExportBundle::class);
             $contents = $bundle->zip($item, $options);
             $filename = $bundle->filename($item, $options);
             $type = 'application/zip';
         } else {
-            $contents = app(MarkdownExporter::class)->render($item, $options);
-            $filename = app(MarkdownExporter::class)->filename($item, $options->datePrefix);
-            $type = 'text/markdown; charset=UTF-8';
+            $renderer = app(ExportRenderer::class);
+            $contents = $renderer->render($item, $options);
+            $filename = $renderer->filename($item, $options);
+            $type = $options->format->mimeType();
         }
 
         $this->recordExport($options);
@@ -392,6 +403,7 @@ trait ExportsContent
             bundle: $this->exportBundle && $this->exportDescendants && $this->exportSubtreeDepth > 0,
             layout: ExportFileLayout::tryFrom($this->exportLayout) ?? ExportFileLayout::Flat,
             datePrefix: $this->exportDatePrefix,
+            format: ExportFormat::tryFrom($this->exportFormat) ?? ExportFormat::Markdown,
             images: ExportImageMode::tryFrom($this->exportImages) ?? ExportImageMode::Embed,
         );
     }
@@ -404,6 +416,6 @@ trait ExportsContent
     {
         $this->rememberExportOptions($options);
 
-        Audit::record(AccessAudit::contentExported($this->exportable(), 'markdown', $options->toArray()));
+        Audit::record(AccessAudit::contentExported($this->exportable(), $options->format->value, $options->toArray()));
     }
 }

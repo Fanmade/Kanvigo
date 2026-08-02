@@ -85,10 +85,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Quick notes** — jot a personal note from anywhere, optionally share it
   read-only with a project, and convert it into a task in one step. See
   [docs/using/quick-notes.md](docs/using/quick-notes.md).
-- **Export** — take a task or doc out as Markdown, copied to the clipboard or
-  downloaded as a file, optionally with its whole subtree, its comments and a
-  YAML header of its metadata — or as a ZIP holding one file per item. See
-  [docs/using/export.md](docs/using/export.md).
+- **Export** — take a task or doc out as Markdown or a standalone HTML page,
+  copied to the clipboard or downloaded as a file, optionally with its whole
+  subtree, its comments and a header of its metadata — or as a ZIP holding one
+  file per item. See [docs/using/export.md](docs/using/export.md).
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails; oversized files are rejected with a clear message.
 - **Notifications** — subscribe per project (assignment subscribes you

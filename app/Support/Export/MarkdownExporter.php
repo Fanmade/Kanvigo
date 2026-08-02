@@ -2,6 +2,7 @@
 
 namespace App\Support\Export;
 
+use App\Enums\ExportFormat;
 use App\Models\Comment;
 use App\Models\Doc;
 use App\Models\Tag;
@@ -46,7 +47,7 @@ class MarkdownExporter
      * The full Markdown document for one item.
      *
      * @param  array<string, string>  $localLinks  in-bundle link targets keyed
-     *                                             "task:12" (see MarkdownBundle)
+     *                                             "task:12" (see ExportBundle)
      */
     public function render(Task|Doc $item, ExportOptions $options, array $localLinks = []): string
     {
@@ -153,14 +154,14 @@ class MarkdownExporter
      * rather than by which item they came from, and sits outside the length cap
      * so a long title can never eat the date.
      */
-    public function filename(Task|Doc $item, bool $datePrefix = false): string
+    public function filename(Task|Doc $item, bool $datePrefix = false, ExportFormat $format = ExportFormat::Markdown): string
     {
         $slug = Str::slug(Str::ascii($item->title));
 
         $stem = $slug === '' ? $item->reference : $item->reference.'-'.$slug;
         $stem = Str::lower(rtrim(Str::limit($stem, self::FILENAME_LENGTH, ''), '-'));
 
-        return ($datePrefix ? now()->format('Y-m-d').'_' : '').$stem.'.md';
+        return ($datePrefix ? now()->format('Y-m-d').'_' : '').$stem.'.'.$format->extension();
     }
 
     /**

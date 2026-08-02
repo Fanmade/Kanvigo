@@ -4,8 +4,8 @@ use App\Enums\ExportFileLayout;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Export\ExportBundle;
 use App\Support\Export\ExportOptions;
-use App\Support\Export\MarkdownBundle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
@@ -25,7 +25,7 @@ beforeEach(function () {
 /** The bundle's files for the root task, in the given layout. */
 function bundleFiles(ExportFileLayout $layout = ExportFileLayout::Flat, bool $metadata = false): array
 {
-    return app(MarkdownBundle::class)->files(test()->root->fresh(), new ExportOptions(
+    return app(ExportBundle::class)->files(test()->root->fresh(), new ExportOptions(
         metadata: $metadata,
         descendants: true,
         bundle: true,
@@ -89,9 +89,9 @@ describe('the date prefix', function () {
         );
 
         // The archive is already dated, so repeating it on every file is noise.
-        expect(app(MarkdownBundle::class)->filename($this->root, $options))
+        expect(app(ExportBundle::class)->filename($this->root, $options))
             ->toBe('2026-08-02_'.strtolower($this->root->reference).'-export-functionality.zip')
-            ->and(array_keys(app(MarkdownBundle::class)->files($this->root, $options)))->toBe([
+            ->and(array_keys(app(ExportBundle::class)->files($this->root, $options)))->toBe([
                 strtolower($this->root->reference).'-export-functionality.md',
                 strtolower($this->child->reference).'-the-mvp.md',
                 strtolower($this->grandchild->reference).'-image-handling.md',
@@ -101,7 +101,7 @@ describe('the date prefix', function () {
     it('dates only the top folder in a nested bundle', function () {
         Carbon::setTestNow('2026-08-02 13:00');
 
-        $files = app(MarkdownBundle::class)->files($this->root, new ExportOptions(
+        $files = app(ExportBundle::class)->files($this->root, new ExportOptions(
             metadata: false,
             descendants: true,
             bundle: true,
@@ -157,7 +157,7 @@ describe('cross-references inside the bundle', function () {
 
 describe('the archive', function () {
     it('packs the files into a readable zip', function () {
-        $bytes = app(MarkdownBundle::class)->zip($this->root, new ExportOptions(
+        $bytes = app(ExportBundle::class)->zip($this->root, new ExportOptions(
             metadata: false,
             descendants: true,
             bundle: true,
@@ -183,7 +183,7 @@ describe('the archive', function () {
     });
 
     it('names the archive after the item, with the same stem as the single file', function () {
-        $filename = app(MarkdownBundle::class)->filename($this->root, new ExportOptions(bundle: true));
+        $filename = app(ExportBundle::class)->filename($this->root, new ExportOptions(bundle: true));
 
         expect($filename)->toBe(strtolower($this->root->reference).'-export-functionality.zip');
     });

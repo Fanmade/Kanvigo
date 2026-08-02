@@ -54,8 +54,8 @@ describe('the modal', function () {
             ->assertSeeHtml('data-test="export-download"')
             ->assertDontSeeHtml('data-test="export-descendants"')
             ->assertDontSeeHtml('data-test="export-depth"')
-            // Formats are still a later task, so no dropdown for them yet.
-            ->assertDontSeeHtml('data-test="export-format"');
+            // The format choice is not about the subtree, so it is always there.
+            ->assertSeeHtml('data-test="export-format"');
     });
 
     it('offers export on a doc as well', function () {

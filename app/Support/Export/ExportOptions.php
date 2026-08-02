@@ -3,6 +3,7 @@
 namespace App\Support\Export;
 
 use App\Enums\ExportFileLayout;
+use App\Enums\ExportFormat;
 use App\Enums\ExportImageMode;
 
 /**
@@ -40,6 +41,7 @@ final readonly class ExportOptions
      *                        archive, instead of one concatenated document
      * @param  ExportFileLayout  $layout  how that archive arranges its files
      * @param  bool  $datePrefix  prepend the date to the download filename
+     * @param  ExportFormat  $format  what the export is written as
      * @param  ExportImageMode  $images  how the images inside the content leave
      *                                   the app: by URL, as links, or embedded
      */
@@ -54,6 +56,7 @@ final readonly class ExportOptions
         public bool $bundle = false,
         public ExportFileLayout $layout = ExportFileLayout::Flat,
         public bool $datePrefix = false,
+        public ExportFormat $format = ExportFormat::Markdown,
         public ExportImageMode $images = ExportImageMode::Embed,
     ) {}
 
@@ -75,6 +78,7 @@ final readonly class ExportOptions
             bundle: false,
             layout: $this->layout,
             datePrefix: $this->datePrefix,
+            format: $this->format,
             images: $this->images,
         );
     }
@@ -97,6 +101,7 @@ final readonly class ExportOptions
             'bundle' => $this->bundle,
             'layout' => $this->layout->value,
             'date_prefix' => $this->datePrefix,
+            'format' => $this->format->value,
             'images' => $this->images->value,
         ];
     }

@@ -110,6 +110,37 @@ overshooting the 15s ceiling set in `tests/Pest.php`. Measured on an 8-core box:
 workers finish in ~26s, 4 workers in ~29s. Three seconds buys back the headroom that
 turns "occasionally red" into "green", so don't raise it to chase the last few seconds.
 
+## Wait for Alpine before dispatching a synthetic event
+
+A test that fires an event itself — `script()` with `dispatchEvent`, rather than a
+real `click()` — has no auto-waiting behind it. Dispatched straight after `visit()`,
+the event can land on an element whose Alpine listeners are not bound yet, and it is
+simply lost: nothing happens and the following assertion waits out its timeout for a
+result that was never produced. Alpine stamps `_x_dataStack` on a root it owns, so
+poll for that before dispatching (see `AttachmentUploadTest`):
+
+```php
+$page->script(<<<'JS'
+    (() => new Promise((resolve, reject) => {
+        const deadline = Date.now() + 10000;
+        const attempt = () => {
+            const el = document.querySelector('[data-test="description-dropzone"]');
+            if (! el?._x_dataStack) {
+                if (Date.now() > deadline) { reject(new Error('never initialised')); return; }
+                setTimeout(attempt, 50);
+                return;
+            }
+            el.dispatchEvent(/* ... */);
+            resolve('dropped');
+        };
+        attempt();
+    }))()
+JS);
+```
+
+Give the poll its own deadline and reject with a message: "the element never
+initialised" is a diagnosis, while a bare assertion timeout is a mystery.
+
 ## Put a barrier after opening a dialog
 
 `click('@new-task')->click('@create-task-add-tag')` races the dialog's own opening.

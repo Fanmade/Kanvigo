@@ -24,6 +24,19 @@ alone would encode Markdown's assumptions into the thing meant to be format-neut
 persisted user preference and the audit payload all speak, so it is shared by every
 format regardless of how rendering is eventually structured.
 
+## What the second format actually cost (2026-08-02)
+
+HTML arrived (KAN-478) and did **not** force an interface. It renders the Markdown
+document and wraps it in a styled standalone page, so the two formats differ only in
+a final conversion step, a filename extension and a MIME type. The seam is therefore
+a `match` in `App\Support\Export\ExportRenderer` — nothing more — because that is the
+whole extent to which the formats disagree.
+
+The interface question is still open, and still deferred to the format that will
+genuinely disagree: PDF, which produces bytes, needs a page design, and cannot go on
+a clipboard at all. That now lives in its own epic, along with Word; CSV was moved
+out entirely, being a tabular listing of many tasks rather than a rendering of one.
+
 ## Consequences
 
 - **A reader will see planned formats next to a single concrete class** and may assume

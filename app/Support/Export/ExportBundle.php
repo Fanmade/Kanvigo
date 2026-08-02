@@ -10,7 +10,7 @@ use RuntimeException;
 use ZipArchive;
 
 /**
- * Writes an item and its subtree as one Markdown file each, packed into a ZIP.
+ * Writes an item and its subtree as one file each, packed into a ZIP.
  *
  * The single-file export flattens a tree into one document; a bundle keeps the
  * tree, expressing it through file names or directories (the reader chooses via
@@ -19,9 +19,9 @@ use ZipArchive;
  * instance, so the bundle is readable by someone who cannot reach the server —
  * which is the only reason to prefer it over a single document.
  */
-class MarkdownBundle
+class ExportBundle
 {
-    public function __construct(private readonly MarkdownExporter $exporter) {}
+    public function __construct(private readonly ExportRenderer $renderer) {}
 
     /**
      * The bundle's files as path => Markdown, in the order the tree reads.
@@ -32,7 +32,7 @@ class MarkdownBundle
     {
         $entries = [
             ['item' => $root, 'level' => 0],
-            ...($options->descendants ? $this->exporter->subtree($root, $options) : []),
+            ...($options->descendants ? $this->renderer->subtree($root, $options) : []),
         ];
 
         $paths = $this->paths($entries, $options);
@@ -43,7 +43,7 @@ class MarkdownBundle
             $item = $entry['item'];
             $path = $paths[$this->key($item)];
 
-            $files[$path] = $this->exporter->render($item, $single, $this->linksFrom($path, $paths));
+            $files[$path] = $this->renderer->render($item, $single, $this->linksFrom($path, $paths));
         }
 
         return $files;
@@ -79,7 +79,7 @@ class MarkdownBundle
      */
     public function filename(Task|Doc $root, ExportOptions $options): string
     {
-        return Str::replaceLast('.md', '.zip', $this->exporter->filename($root, $options->datePrefix));
+        return Str::replaceLast('.'.$options->format->extension(), '.zip', $this->renderer->filename($root, $options));
     }
 
     /**
@@ -97,10 +97,14 @@ class MarkdownBundle
     private function paths(array $entries, ExportOptions $options): array
     {
         $root = $entries[0]['item'] ?? null;
+
+        // Inside the archive the names carry no date: the archive (and, nested,
+        // its one top folder) already says when the export was taken.
+        $plain = new ExportOptions(format: $options->format);
         $names = [];
 
         foreach ($entries as $entry) {
-            $names[$this->key($entry['item'])] = $this->exporter->filename($entry['item']);
+            $names[$this->key($entry['item'])] = $this->renderer->filename($entry['item'], $plain);
         }
 
         if ($options->layout === ExportFileLayout::Flat) {
@@ -126,7 +130,7 @@ class MarkdownBundle
             $prefix = $directories[$item->parent_id] ?? '';
 
             if (isset($hasChildren[$item->getKey()])) {
-                $folder = Str::replaceLast('.md', '', $names[$key]);
+                $folder = Str::replaceLast('.'.$options->format->extension(), '', $names[$key]);
 
                 if ($options->datePrefix && $item === $root) {
                     $folder = now()->format('Y-m-d').'_'.$folder;
@@ -134,7 +138,7 @@ class MarkdownBundle
 
                 $directory = $prefix.$folder.'/';
                 $directories[$item->getKey()] = $directory;
-                $paths[$key] = $directory.'index.md';
+                $paths[$key] = $directory.'index.'.$options->format->extension();
 
                 continue;
             }

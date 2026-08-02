@@ -15,9 +15,15 @@
 >
     <div class="space-y-6">
         <div>
-            <flux:heading size="lg">{{ __('Export as Markdown') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Take this item with you as a Markdown file.') }}</flux:text>
+            <flux:heading size="lg">{{ __('Export') }}</flux:heading>
+            <flux:text class="mt-2">{{ __('Take this item with you as a file.') }}</flux:text>
         </div>
+
+        <flux:select wire:model.live="exportFormat" :label="__('Format')" data-test="export-format">
+            @foreach (\App\Enums\ExportFormat::cases() as $format)
+                <flux:select.option :value="$format->value">{{ $format->label() }}</flux:select.option>
+            @endforeach
+        </flux:select>
 
         <flux:checkbox
             wire:model="exportMetadata"
