@@ -5,6 +5,7 @@ namespace App\Livewire\Projects;
 use App\Actions\AddProjectMember;
 use App\Actions\RemoveProjectMember;
 use App\Authorization\ProjectRoleProvisioner;
+use App\Concerns\ExportsProject;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\HasLiveUpdates;
 use App\Concerns\ManagesNotes;
@@ -39,6 +40,7 @@ use Livewire\Component;
  */
 class ProjectShow extends Component
 {
+    use ExportsProject;
     use HandlesAttachments;
     use HasLiveUpdates;
     use ManagesNotes;
@@ -142,6 +144,11 @@ class ProjectShow extends Component
         $this->authorize('view', $project);
 
         return $project;
+    }
+
+    protected function exportableProject(): Project
+    {
+        return $this->project;
     }
 
     /**

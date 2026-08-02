@@ -143,12 +143,35 @@ folder in the nested layout — the files inside are already under something
 dated, so they stay plain. It affects file names only, not the copied text or
 the content.
 
+## Exporting a whole project
+
+A project's action menu (⋯) offers **Export project**: every top-level task with
+its subtree and every doc you may see, each as its own file, in one archive.
+Tasks and docs sit in their own folders, mirroring the two reference namespaces
+on the board, and cross-references between them resolve inside the archive.
+
+The same choices apply — format, layout, metadata, comments, canceled, archived,
+drafts, images, attachments, date prefix — minus the ones that make no sense at
+this scale: it is always every level, always one file per item, and never a copy
+to the clipboard. The dialog shows how many items the archive will hold before
+you commit to it.
+
+The archive is built while you wait, so it is bounded: past
+`kanvigo.export.max_project_items` (2000 by default, in `config/kanvigo.php`) the
+export is refused with the actual count rather than timing out.
+
 ## Who can export
 
-Exporting needs the **Export content** permission, held by the owner, admins and
-members of a project. Viewers cannot export: reading content in place is not the
-same as taking a copy of it away. Every export — copied or downloaded — is
-recorded in the audit trail against the item.
+Exporting an item needs the **Export content** permission, held by the owner,
+admins and members of a project. Viewers cannot export: reading content in place
+is not the same as taking a copy of it away.
+
+Exporting a **whole project** needs the separate **Export the whole project**
+permission, which stops at admins and the owner — taking a board out in one
+archive is a different act from exporting the task you are reading.
+
+Every export is recorded in the audit trail: against the item for a content
+export, against the project for a project one.
 
 ## Scope
 

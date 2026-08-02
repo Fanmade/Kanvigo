@@ -4,6 +4,7 @@ namespace App\Audit;
 
 use App\Models\Attachment;
 use App\Models\Doc;
+use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Kanvigo\Audit\Contracts\AuditCategory;
@@ -74,6 +75,21 @@ final class AccessAudit
         return AuditEvent::make('content_exported', AuditCategory::Access)
             ->withSubject($item->getMorphClass(), $item->getKey())
             ->withMetadata(['format' => $format, ...$options]);
+    }
+
+    /**
+     * An export of an entire project. Distinct from a content export because it
+     * is a different act at a different scale — one archive holding a whole
+     * board, rather than the item someone was reading — and an auditor looking
+     * for bulk extraction should not have to infer it from an options payload.
+     *
+     * @param  array<string, bool|string>  $options
+     */
+    public static function projectExported(Project $project, array $options): AuditEvent
+    {
+        return AuditEvent::make('project_exported', AuditCategory::Access)
+            ->withSubject($project->getMorphClass(), $project->getKey())
+            ->withMetadata($options);
     }
 
     /**

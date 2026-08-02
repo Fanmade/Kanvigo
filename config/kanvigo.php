@@ -56,6 +56,14 @@ return [
     'export' => [
         'image_max_edge' => (int) env('KANVIGO_EXPORT_IMAGE_MAX_EDGE', 1024),
         'inline_budget' => (int) env('KANVIGO_EXPORT_INLINE_BUDGET', 5 * 1024 * 1024),
+
+        /*
+         * How many items (tasks plus docs) a whole-project export may cover.
+         * The archive is built in the request, so this is the line past which
+         * that stops being reasonable: above it the export is refused with a
+         * clear message rather than tying up a web worker.
+         */
+        'max_project_items' => (int) env('KANVIGO_EXPORT_MAX_PROJECT_ITEMS', 2000),
     ],
 
     /*

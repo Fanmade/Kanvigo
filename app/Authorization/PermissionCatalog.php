@@ -30,6 +30,7 @@ class PermissionCatalog
         'delete-project' => 'Delete project',
         'view-activity-log' => 'View activity log',
         'export-content' => 'Export content',
+        'export-project' => 'Export the whole project',
         'manage-members' => 'Manage members',
         'invite-members' => 'Invite members',
         'manage-roles' => 'Manage roles',
@@ -65,6 +66,7 @@ class PermissionCatalog
         'delete-project' => 'Delete',
         'view-activity-log' => 'Activity log',
         'export-content' => 'Export',
+        'export-project' => 'Export project',
         'manage-members' => 'Manage members',
         'invite-members' => 'Invite members',
         'manage-roles' => 'Manage roles',
@@ -103,6 +105,7 @@ class PermissionCatalog
         'moderate-comments' => "Edit or delete other people's comments",
         'manage-variables' => 'Create variables and set what they stand for',
         'export-content' => 'Download tasks and docs as files, or copy them out',
+        'export-project' => 'Take the entire project out in one archive',
     ];
 
     /**

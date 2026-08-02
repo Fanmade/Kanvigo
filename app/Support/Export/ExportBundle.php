@@ -61,19 +61,74 @@ class ExportBundle
             ];
         }
 
-        $paths = $this->paths($entries, $options);
+        return $this->write($entries, $this->paths($entries, $options), $options, $images, $attachments);
+    }
+
+    /**
+     * Every item of a project as its own file: each top-level task with its
+     * subtree under `tasks/`, each doc tree under `docs/`.
+     *
+     * The two live in separate directories because they are separate namespaces
+     * on the board too (`ABC-42` and `ABC-D3`), and a reader opening the archive
+     * should meet the same distinction. Cross-references between them still
+     * resolve — the link map spans the whole archive.
+     *
+     * @param  list<Task|Doc>  $roots  the trees to write, in the order they read
+     * @return array<string, string>
+     */
+    public function projectFiles(array $roots, ExportOptions $options): array
+    {
+        $entries = [];
+        $paths = [];
+
+        foreach ($roots as $root) {
+            $tree = [
+                ['item' => $root, 'level' => 0],
+                ...$this->renderer->subtree($root, $options),
+            ];
+
+            $directory = $root instanceof Task ? 'tasks/' : 'docs/';
+
+            foreach ($this->paths($tree, new ExportOptions(layout: $options->layout, format: $options->format)) as $key => $path) {
+                $paths[$key] = $directory.$path;
+            }
+
+            $entries = [...$entries, ...$tree];
+        }
+
+        $items = array_map(static fn (array $entry): Task|Doc => $entry['item'], $entries);
+
+        return $this->write(
+            $entries,
+            $paths,
+            $options,
+            $this->renderer->imagesFor($items, $options),
+            $this->renderer->attachmentsFor($items, $options),
+        );
+    }
+
+    /**
+     * Render one file per entry, then add the image and attachment files the
+     * documents point at. Each document is told where it sits, so its links to
+     * the others, to the pictures and up and down the tree are all relative.
+     *
+     * @param  list<array{item: Task|Doc, level: int}>  $entries
+     * @param  array<string, string>  $paths
+     * @return array<string, string>
+     */
+    private function write(array $entries, array $paths, ExportOptions $options, ExportImages $images, ExportAttachments $attachments): array
+    {
         $single = $options->forSingleItem();
         $files = [];
 
         foreach ($entries as $entry) {
-            $item = $entry['item'];
-            $path = $paths[$this->key($item)];
+            $path = $paths[$this->key($entry['item'])];
 
             $toRoot = $this->pathToRoot($path);
             $images->relativeTo($toRoot);
             $attachments->relativeTo($toRoot);
 
-            $files[$path] = $this->renderer->render($item, $single, new ExportContext(
+            $files[$path] = $this->renderer->render($entry['item'], $single, new ExportContext(
                 localLinks: $this->linksFrom($path, $paths),
                 images: $images,
                 attachments: $attachments,
@@ -135,9 +190,19 @@ class ExportBundle
     }
 
     /**
-     * The archive itself, as bytes.
+     * One item's archive, as bytes.
      */
     public function zip(Task|Doc $root, ExportOptions $options): string
+    {
+        return $this->archive($this->files($root, $options));
+    }
+
+    /**
+     * Pack a set of files into a ZIP and hand back its bytes.
+     *
+     * @param  array<string, string>  $files
+     */
+    public function archive(array $files): string
     {
         $archive = new ZipArchive;
         $path = tempnam(sys_get_temp_dir(), 'kanvigo-export');
@@ -146,7 +211,7 @@ class ExportBundle
             throw new RuntimeException('Could not create the export archive.');
         }
 
-        foreach ($this->files($root, $options) as $file => $contents) {
+        foreach ($files as $file => $contents) {
             $archive->addFromString($file, $contents);
         }
 
@@ -156,6 +221,16 @@ class ExportBundle
         @unlink($path);
 
         return $bytes;
+    }
+
+    /**
+     * The subtree below one item, as the archive would walk it.
+     *
+     * @return list<array{item: Task|Doc, level: int}>
+     */
+    public function subtreeOf(Task|Doc $root, ExportOptions $options): array
+    {
+        return $this->renderer->subtree($root, $options);
     }
 
     /**

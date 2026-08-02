@@ -33,7 +33,7 @@
             >
                 {{ __('Board') }}
             </flux:button>
-            @canany(['manage-tags', 'manage-variables'], $this->project)
+            @canany(['manage-tags', 'manage-variables', 'export-project'], $this->project)
                 <flux:dropdown align="end">
                     <flux:button
                         size="sm"
@@ -43,6 +43,14 @@
                         data-test="project-actions"
                     />
                     <flux:menu>
+                        @can('export-project', $this->project)
+                            <flux:menu.item
+                                icon="arrow-down-tray"
+                                wire:click="startProjectExport"
+                                data-test="export-project"
+                            >
+                                {{ __('Export project') }}</flux:menu.item>
+                        @endcan
                         @can('manage-tags', $this->project)
                             <flux:menu.item
                                 icon="tag"
@@ -532,6 +540,10 @@
             </div>
         </flux:modal>
     @endcan
+    @if ($this->canExportProject)
+        <x-project-export-modal />
+    @endif
+
     {{-- The editor's "Create variable…" dialog: one per page, wherever a `[`
          picker asks for a name it does not know yet. --}}
     @can('manage-variables', $this->project)

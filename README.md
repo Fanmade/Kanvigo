@@ -88,7 +88,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Export** — take a task or doc out as Markdown or a standalone HTML page,
   copied to the clipboard or downloaded as a file, optionally with its whole
   subtree, its comments and a header of its metadata — or as a ZIP holding one
-  file per item. See [docs/using/export.md](docs/using/export.md).
+  file per item — or a whole project at once, for admins. See
+  [docs/using/export.md](docs/using/export.md).
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails; oversized files are rejected with a clear message.
 - **Notifications** — subscribe per project (assignment subscribes you
