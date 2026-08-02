@@ -21,6 +21,7 @@ use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -389,6 +390,33 @@ trait ExportsContent
         }
 
         return $children;
+    }
+
+    /**
+     * Export straight away with the options this user last chose, skipping the
+     * dialog — the palette's zero-click path (KAN-482).
+     *
+     * Copy is the palette-shaped answer, so that is the default. When the
+     * remembered options need an archive there is nothing to put on a clipboard,
+     * so it downloads instead and says so rather than quietly doing something
+     * other than what was asked.
+     */
+    #[On('quick-export')]
+    public function quickExport(): ?StreamedResponse
+    {
+        $this->authorize('export-content', $this->exportable()->project);
+
+        $this->restoreExportOptions();
+
+        if ($this->exportOptions()->needsArchive()) {
+            Flux::toast(text: __('An archive cannot go on the clipboard — downloaded instead.'), variant: 'warning');
+
+            return $this->downloadExport();
+        }
+
+        $this->copyExport();
+
+        return null;
     }
 
     public function startExport(): void

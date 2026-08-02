@@ -133,6 +133,14 @@ When the export contains an image, an **Images** select decides how it travels:
 Both limits live in `config/kanvigo.php` (`export.image_max_edge`,
 `export.inline_budget`), not in a settings screen.
 
+## The quick way
+
+On a task or doc page, the command palette (⌘K / Ctrl+K) offers **Export this
+item**: it exports straight away with the settings you last used, without opening
+the dialog at all. The result lands on the clipboard — and when your remembered
+settings need an archive (a bundle, or images or attachments as files) it
+downloads instead and tells you so, since an archive cannot be pasted.
+
 ## Your settings are remembered
 
 The dialog opens with the options you chose last time — per user and across every

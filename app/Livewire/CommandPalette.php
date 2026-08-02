@@ -24,10 +24,17 @@ class CommandPalette extends Component
      */
     public ?string $contextShortName = null;
 
+    /**
+     * Whether the palette was opened on a task or doc page, which is the only
+     * place a "quick export" has something to export.
+     */
+    public bool $onItemPage = false;
+
     public function mount(): void
     {
         $shortName = request()->route('short_name');
         $this->contextShortName = is_string($shortName) ? $shortName : null;
+        $this->onItemPage = in_array(request()->route()?->getName(), ['task.show', 'doc.show'], true);
     }
 
     /**
@@ -95,6 +102,19 @@ class CommandPalette extends Component
             ));
         }
 
+        if ($this->canQuickExport($user)) {
+            // Not "open the export dialog": a command that opens a six-control
+            // dialog is a workflow, not a shortcut. This exports with the
+            // options the user last chose, and the page it lands on does the
+            // work — that is where the item, the permission and the audit live.
+            $actions->push(new SearchResult(
+                type: 'action',
+                title: __('Export this item'),
+                icon: 'arrow-down-tray',
+                event: 'quick-export',
+            ));
+        }
+
         if ($user->hasPermission(Permission::CreateProjects)) {
             $actions->push(new SearchResult(type: 'action', title: __('New project'), url: route('projects.index', ['create' => 1]), icon: 'folder-plus'));
         }
@@ -112,6 +132,22 @@ class CommandPalette extends Component
         return $actions
             ->filter(static fn (SearchResult $action): bool => str_contains(mb_strtolower($action->title), mb_strtolower($query)))
             ->values();
+    }
+
+    /**
+     * Whether to offer the quick export: only on a task or doc page, and only to
+     * someone who may export the project it belongs to. An entry that can only
+     * answer "nothing to export here" is noise in a palette.
+     */
+    private function canQuickExport(User $user): bool
+    {
+        if (! $this->onItemPage || $this->contextShortName === null) {
+            return false;
+        }
+
+        $project = $user->projects()->where('short_name', strtoupper($this->contextShortName))->first();
+
+        return $project !== null && Gate::allows('export-content', $project);
     }
 
     /**
