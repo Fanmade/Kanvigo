@@ -37,16 +37,32 @@ class ExportBundle
 
         $paths = $this->paths($entries, $options);
         $single = $options->forSingleItem();
+        $items = array_map(static fn (array $entry): Task|Doc => $entry['item'], $entries);
+
+        // One set of image decisions for the whole archive: a picture shown by
+        // two items is stored once, and its budget is spent once.
+        $images = $this->renderer->imagesFor($items, $options);
         $files = [];
 
         foreach ($entries as $entry) {
             $item = $entry['item'];
             $path = $paths[$this->key($item)];
 
-            $files[$path] = $this->renderer->render($item, $single, $this->linksFrom($path, $paths));
+            $images->relativeTo($this->pathToRoot($path));
+
+            $files[$path] = $this->renderer->render($item, $single, $this->linksFrom($path, $paths), $images);
         }
 
-        return $files;
+        return [...$files, ...$images->files()];
+    }
+
+    /**
+     * How to get from a file back to the archive root — `../` per directory it
+     * sits in, and nothing at all at the root.
+     */
+    private function pathToRoot(string $path): string
+    {
+        return str_repeat('../', substr_count($path, '/'));
     }
 
     /**

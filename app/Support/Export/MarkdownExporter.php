@@ -48,8 +48,11 @@ class MarkdownExporter
      *
      * @param  array<string, string>  $localLinks  in-bundle link targets keyed
      *                                             "task:12" (see ExportBundle)
+     * @param  ExportImages|null  $images  the image decisions to use, when an
+     *                                     archive owns one across several files;
+     *                                     otherwise this document gets its own
      */
-    public function render(Task|Doc $item, ExportOptions $options, array $localLinks = []): string
+    public function render(Task|Doc $item, ExportOptions $options, array $localLinks = [], ?ExportImages $images = null): string
     {
         $descendants = $options->descendants ? $this->subtree($item, $options) : [];
 
@@ -58,11 +61,7 @@ class MarkdownExporter
         $items = [$item, ...array_map(static fn (array $entry): Task|Doc => $entry['item'], $descendants)];
         $comments = $options->comments ? $this->commentsFor($items) : [];
 
-        $images = new ExportImages($options->images);
-        $images->prepare([
-            ...array_map(fn (Task|Doc $each): string => $this->rawHtml($each), $items),
-            ...array_map(static fn (Comment $comment): string => $comment->body, array_merge(...array_values($comments) ?: [[]])),
-        ]);
+        $images ??= $this->imagesFor($items, $comments, $options);
 
         $converter = $this->converter($images, $localLinks);
         $sections = [];
@@ -103,6 +102,25 @@ class MarkdownExporter
         }
 
         return implode("\n\n", $sections)."\n";
+    }
+
+    /**
+     * The image decisions for one document, prepared over its own content and
+     * the comments shown with it — one query for the attachments they reference.
+     *
+     * @param  list<Task|Doc>  $items
+     * @param  array<string, list<Comment>>  $comments
+     */
+    public function imagesFor(array $items, array $comments, ExportOptions $options): ExportImages
+    {
+        $images = new ExportImages($options->images);
+
+        $images->prepare([
+            ...array_map(fn (Task|Doc $each): string => $this->rawHtml($each), $items),
+            ...array_map(static fn (Comment $comment): string => $comment->body, array_merge(...array_values($comments) ?: [[]])),
+        ]);
+
+        return $images;
     }
 
     /**
@@ -189,6 +207,17 @@ class MarkdownExporter
      * The comments on every item in the export, keyed by "type:id" and ordered
      * oldest first. Loaded in one query per kind of item, so a subtree export
      * with a discussion on every task still costs a single round trip.
+     *
+     * @param  list<Task|Doc>  $items
+     * @return array<string, list<Comment>>
+     */
+    public function commentsForItems(array $items, ExportOptions $options): array
+    {
+        return $options->comments ? $this->commentsFor($items) : [];
+    }
+
+    /**
+     * The comments on every item in the export, keyed by "type:id".
      *
      * @param  list<Task|Doc>  $items
      * @return array<string, list<Comment>>

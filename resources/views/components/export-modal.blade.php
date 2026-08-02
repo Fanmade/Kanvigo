@@ -112,6 +112,14 @@
                 @endforeach
             </flux:select>
 
+            @if ($this->exportImages === \App\Enums\ExportImageMode::Files->value)
+                <flux:callout icon="archive-box" data-test="export-files-notice">
+                    <flux:callout.text>
+                        {{ __('The export is delivered as a ZIP archive, with the images beside the document.') }}
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+
             @if ($this->exportImages === \App\Enums\ExportImageMode::Inline->value)
                 <flux:callout variant="warning" icon="exclamation-triangle" data-test="export-inline-warning">
                     <flux:callout.text>
@@ -136,7 +144,7 @@
             </flux:modal.close>
             {{-- An archive has nowhere to go on the clipboard, so the offer is
                  withdrawn rather than left to fail. --}}
-            @unless ($this->exportBundle && $this->exportDescendants)
+            @unless ($this->exportNeedsArchive)
                 <flux:button
                     icon="document-duplicate"
                     wire:click="copyExport"

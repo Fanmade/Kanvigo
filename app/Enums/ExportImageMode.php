@@ -25,6 +25,12 @@ enum ExportImageMode: string
     case Link = 'link';
 
     /**
+     * The image files themselves, written into the archive beside the documents
+     * — which is why choosing it turns any export into a ZIP.
+     */
+    case Files = 'files';
+
+    /**
      * A downscaled `data:` URI — the file carries its own images and works with
      * no access to the instance at all, at the cost of its size.
      */
@@ -38,6 +44,7 @@ enum ExportImageMode: string
         return match ($this) {
             self::Embed => __('Show images by URL'),
             self::Link => __('List images as links'),
+            self::Files => __('Save images as files in the archive'),
             self::Inline => __('Embed images in the file'),
         };
     }

@@ -7,6 +7,7 @@ use App\Models\Attachment;
 use App\Support\ImageProcessing;
 use App\Support\InlineAttachments;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Decides what each inline image in an export turns into, for the one export
@@ -25,6 +26,11 @@ use Illuminate\Support\Facades\Storage;
  */
 class ExportImages
 {
+    /**
+     * Where the image files live inside the archive.
+     */
+    public const string IMAGE_DIRECTORY = 'images';
+
     /**
      * The attachments referenced by the export's content, keyed by id. Loaded
      * once for the whole document — a subtree export can repeat the same image
@@ -47,9 +53,49 @@ class ExportImages
      */
     private array $encoded = [];
 
+    /**
+     * The archive paths already assigned, keyed by attachment id.
+     *
+     * @var array<int, string>
+     */
+    private array $stored = [];
+
+    /**
+     * The image files this export wants written into the archive, as archive
+     * path => bytes. Only the Files mode fills it.
+     *
+     * @var array<string, string>
+     */
+    private array $files = [];
+
+    /**
+     * How to get from the document currently being rendered back to the archive
+     * root, e.g. `../` for a file one directory down. Empty at the root.
+     */
+    private string $basePath = '';
+
     public function __construct(public readonly ExportImageMode $mode)
     {
         $this->budget = (int) config('kanvigo.export.inline_budget');
+    }
+
+    /**
+     * Point the next rendered document at the archive root, so its image links
+     * resolve from wherever that document sits.
+     */
+    public function relativeTo(string $basePath): void
+    {
+        $this->basePath = $basePath;
+    }
+
+    /**
+     * The image files to write into the archive, as path => bytes.
+     *
+     * @return array<string, string>
+     */
+    public function files(): array
+    {
+        return $this->files;
     }
 
     /**
@@ -95,6 +141,18 @@ class ExportImages
             return '['.$label.']('.$absoluteUrl.')';
         }
 
+        if ($this->mode === ExportImageMode::Files) {
+            $path = $attachment === null ? null : $this->storedFile($attachment);
+
+            if ($path !== null) {
+                return '!['.$label.']('.$this->basePath.$path.')';
+            }
+
+            // The row is gone or its file is missing: a link back to the
+            // instance is still better than a path to nothing.
+            return '['.$label.']('.$absoluteUrl.') *'.__('image not exported').'*';
+        }
+
         if ($this->mode === ExportImageMode::Inline) {
             $dataUri = $attachment === null ? null : $this->dataUri($attachment);
 
@@ -108,6 +166,42 @@ class ExportImages
         }
 
         return '!['.$label.']('.$absoluteUrl.')';
+    }
+
+    /**
+     * The archive path for an attachment, remembering its bytes for the writer.
+     * The id prefixes the name so two files called `screenshot.png` cannot
+     * collide, and an image used twice is stored once.
+     */
+    private function storedFile(Attachment $attachment): ?string
+    {
+        $id = (int) $attachment->getKey();
+
+        if (isset($this->stored[$id])) {
+            return $this->stored[$id];
+        }
+
+        $disk = Storage::disk($attachment->disk);
+
+        if (! $disk->exists($attachment->path)) {
+            return null;
+        }
+
+        $name = self::IMAGE_DIRECTORY.'/'.$id.'-'.Str::of((string) $attachment->name)
+            ->ascii()
+            ->replaceMatches('/[^A-Za-z0-9._-]+/', '-')
+            // A run of dots is never part of a real name, and `..` in an archive
+            // entry is exactly what a careless extractor mishandles.
+            ->replaceMatches('/\.{2,}/', '-')
+            ->trim('-.')
+            ->lower()
+            ->toString();
+
+        // The original file travels, not a derivative: carrying the real image
+        // is the entire point of this mode.
+        $this->files[$name] = (string) $disk->get($attachment->path);
+
+        return $this->stored[$id] = $name;
     }
 
     /**

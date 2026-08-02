@@ -74,8 +74,7 @@ archive points at that file, so the bundle reads on its own; a reference to
 anything else keeps its absolute URL.
 
 An archive cannot go on the clipboard, so **Copy to clipboard** steps aside while
-this is on. Attachments are not yet bundled — images still follow the **Images**
-setting.
+this is on. Attachments other than inline images are not bundled yet.
 
 ## Comments
 
@@ -95,6 +94,11 @@ When the export contains an image, an **Images** select decides how it travels:
   renders for a signed-in member of the project and for nobody else.
 - **List images as links** — a plain link with the file's name. Never renders
   inline, and so is honest wherever the file ends up.
+- **Save images as files in the archive** — the images themselves, written into
+  an `images/` folder beside the documents and linked relatively. The original
+  files travel, not downscaled copies. Choosing this makes the export a ZIP even
+  for a single item, since the files need somewhere to live, so **Copy to
+  clipboard** steps aside.
 - **Embed images in the file** — the picture itself, as a `data:` URI, so the
   file needs no access to this instance at all. Images are downscaled first, and
   once the embedded images pass a size budget the remaining ones fall back to

@@ -42,6 +42,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * @property-read bool $exportHasDrafts
  * @property-read bool $exportHasImages
  * @property-read bool $exportHasComments
+ * @property-read bool $exportNeedsArchive
  */
 trait ExportsContent
 {
@@ -244,6 +245,18 @@ trait ExportsContent
     }
 
     /**
+     * Whether the export as configured has to arrive as an archive — one file
+     * per item, or images travelling as files. The clipboard is withdrawn in
+     * that case, because an archive cannot go on it.
+     */
+    #[Computed]
+    public function exportNeedsArchive(): bool
+    {
+        return ($this->exportBundle && $this->exportDescendants)
+            || $this->exportImages === ExportImageMode::Files->value;
+    }
+
+    /**
      * Whether the viewer may export at all. Deliberately not granted to viewers —
      * taking content out of the instance is more than reading it in place.
      */
@@ -331,9 +344,9 @@ trait ExportsContent
     {
         $options = $this->exportOptions();
 
-        // The clipboard holds text, so a bundle has nowhere to go. The button is
-        // hidden in that mode; this guards the action being called anyway.
-        if ($options->bundle) {
+        // The clipboard holds text, so an archive has nowhere to go. The button
+        // is hidden in that case; this guards the action being called anyway.
+        if ($options->needsArchive()) {
             Flux::toast(text: __('An archive cannot go on the clipboard — download it instead.'), variant: 'warning');
 
             return;
@@ -359,7 +372,7 @@ trait ExportsContent
         $item = $this->exportable();
         $options = $this->exportOptions();
 
-        if ($options->bundle) {
+        if ($options->needsArchive()) {
             $bundle = app(ExportBundle::class);
             $contents = $bundle->zip($item, $options);
             $filename = $bundle->filename($item, $options);

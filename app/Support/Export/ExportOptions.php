@@ -61,6 +61,16 @@ final readonly class ExportOptions
     ) {}
 
     /**
+     * Whether this export has to be delivered as an archive: because it is one
+     * file per item, or because the images travel as files and need somewhere to
+     * live. Either way there is nothing to put on a clipboard.
+     */
+    public function needsArchive(): bool
+    {
+        return $this->bundle || $this->images === ExportImageMode::Files;
+    }
+
+    /**
      * The same options, but for one item on its own — what each file of a bundle
      * is rendered with, since a bundle expresses the tree through its files
      * rather than by concatenating it into one document.

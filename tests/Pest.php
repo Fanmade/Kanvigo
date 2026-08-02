@@ -2,6 +2,7 @@
 
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Activity;
+use App\Models\Attachment;
 use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
@@ -10,6 +11,7 @@ use App\Support\Facades\Audit;
 use App\Support\InlineReferenceParser;
 use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /*
@@ -130,4 +132,31 @@ function userWithPermissions(Project $project, array $permissions): User
     );
 
     return User::factory()->create()->assignRole($role);
+}
+
+/**
+ * A stored PNG of the given size, attached to the task and embedded in its
+ * description as an inline image — the shape the export's image handling reads.
+ */
+function attachInlineImage(Task $task, int $width = 40, int $height = 30, string $name = 'diagram.png'): Attachment
+{
+    $image = imagecreatetruecolor($width, $height);
+    ob_start();
+    imagepng($image);
+    $bytes = (string) ob_get_clean();
+
+    $attachment = Attachment::factory()->inline()->create([
+        'attachable_id' => $task->getKey(),
+        'attachable_type' => $task->getMorphClass(),
+        'name' => $name,
+        'size' => strlen($bytes),
+    ]);
+
+    Storage::disk($attachment->disk)->put($attachment->path, $bytes);
+
+    $task->update([
+        'description' => '<p><img src="'.$attachment->thumbnailUrl(absolute: false).'" alt="Screenshot"></p>',
+    ]);
+
+    return $attachment;
 }

@@ -2,7 +2,6 @@
 
 use App\Enums\ExportImageMode;
 use App\Livewire\Tasks\TaskView;
-use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\Export\ExportOptions;
@@ -21,30 +20,6 @@ beforeEach(function () {
     $this->member = userWithRole($this->project, 'member');
     $this->actingAs($this->member);
 });
-
-/** A stored PNG of the given size, attached to the task and embedded in its description. */
-function attachInlineImage(Task $task, int $width = 40, int $height = 30, string $name = 'diagram.png'): Attachment
-{
-    $image = imagecreatetruecolor($width, $height);
-    ob_start();
-    imagepng($image);
-    $bytes = (string) ob_get_clean();
-
-    $attachment = Attachment::factory()->inline()->create([
-        'attachable_id' => $task->getKey(),
-        'attachable_type' => $task->getMorphClass(),
-        'name' => $name,
-        'size' => strlen($bytes),
-    ]);
-
-    Storage::disk($attachment->disk)->put($attachment->path, $bytes);
-
-    $task->update([
-        'description' => '<p><img src="'.$attachment->thumbnailUrl(absolute: false).'" alt="Screenshot"></p>',
-    ]);
-
-    return $attachment;
-}
 
 /** The rendered Markdown for a task in the given image mode. */
 function exportedWithImages(Task $task, ExportImageMode $mode): string
