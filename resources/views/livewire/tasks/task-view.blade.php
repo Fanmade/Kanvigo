@@ -111,11 +111,11 @@
     @if ($editing)
         <form wire:submit="save" class="flex flex-col gap-4">
             <flux:input wire:model="title" :label="__('Title')" />
-            <x-attachments.rich-editor :label="__('Description')" :mentionables-url="$this->mentionablesUrl" />
+            <x-attachments.rich-editor :label="__('Description')" preset="document" :mentionables-url="$this->mentionablesUrl" />
             <x-attachments.upload-button />
             <flux:input type="date" wire:model="dueDate" :label="__('Due date')" :description="__('Optional')" />
             <div class="flex gap-2">
-                <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
+                <flux:button type="submit" variant="primary" data-test="save-task">{{ __('Save') }}</flux:button>
                 <flux:button variant="ghost" wire:click="$set('editing', false)">{{ __('Cancel') }}</flux:button>
             </div>
         </form>

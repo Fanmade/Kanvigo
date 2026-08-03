@@ -1,5 +1,9 @@
 import { mergeAttributes } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
+import Table from '@tiptap/extension-table';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TableRow from '@tiptap/extension-table-row';
 import Sortable from 'sortablejs';
 import { mentionExtensions } from './mentions';
 import './references';
@@ -36,17 +40,21 @@ const LinkedImage = Image.extend({
 });
 
 /**
- * Add inline image support to Flux's rich-text editor.
+ * Add inline image and table support to Flux's rich-text editor.
  *
- * Flux's editor ships without a Tiptap Image extension, so it would otherwise
- * drop <img> nodes on load (losing inline images when a description is edited).
- * We register the Image extension and stash the Tiptap instance on the editor
- * element so the upload wrapper (Alpine `richEditor`) can insert images at the
- * cursor after they finish uploading.
+ * Flux's editor ships without Tiptap's Image and Table extensions, so it would
+ * otherwise drop <img> and <table> nodes on load (losing them when a
+ * description is edited). We register the extensions and stash the Tiptap
+ * instance on the editor element so the upload wrapper (Alpine `richEditor`)
+ * and the insert-table toolbar item can reach it.
  */
 document.addEventListener('flux:editor', (e) => {
     e.detail.registerExtensions([
         LinkedImage.configure({ HTMLAttributes: { class: 'rounded-lg' } }),
+        Table.configure({ resizable: false }),
+        TableRow,
+        TableHeader,
+        TableCell,
         ...mentionExtensions,
     ]);
 
@@ -245,6 +253,60 @@ document.addEventListener('alpine:init', () => {
                 pink: 'bg-pink-500',
                 rose: 'bg-rose-500',
             }[color] ?? 'bg-zinc-400';
+        },
+    }));
+
+    /**
+     * Grid-size picker behind the editor toolbar's insert-table button
+     * (resources/views/flux/editor/table.blade.php).
+     *
+     * Cells are numbered row-major; hovering or focusing one highlights the
+     * rows × cols rectangle up to it, clicking inserts a table of that size at
+     * the cursor via the Tiptap instance stashed on the editor root by the
+     * `flux:editor` listener above.
+     */
+    window.Alpine.data('editorTablePicker', () => ({
+        maxRows: 6,
+        maxCols: 8,
+        rows: 0,
+        cols: 0,
+
+        rowOf(cell) {
+            return Math.ceil(cell / this.maxCols);
+        },
+
+        colOf(cell) {
+            return ((cell - 1) % this.maxCols) + 1;
+        },
+
+        highlight(cell) {
+            this.rows = this.rowOf(cell);
+            this.cols = this.colOf(cell);
+        },
+
+        isSelected(cell) {
+            return this.rowOf(cell) <= this.rows && this.colOf(cell) <= this.cols;
+        },
+
+        reset() {
+            this.rows = 0;
+            this.cols = 0;
+        },
+
+        insert() {
+            const editor = this.$el.closest('[data-flux-editor]')?.__editor;
+
+            if (!editor || !this.rows) {
+                return;
+            }
+
+            editor
+                .chain()
+                .focus()
+                .insertTable({ rows: this.rows, cols: this.cols, withHeaderRow: true })
+                .run();
+
+            this.$el.closest('[popover]')?.hidePopover();
         },
     }));
 

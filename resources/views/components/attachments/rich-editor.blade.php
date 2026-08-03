@@ -12,13 +12,15 @@
 
     The toolbar is set either explicitly (`toolbar="…"`) or by a named `preset`,
     which keeps the shared button sets in one place instead of hand-copied strings:
-      - "compact": the comment/note set (formatting, lists, link).
+      - "compact": the comment/note set (formatting, lists, link, table).
       - "comment": the fuller comment-edit set (adds blockquote, align, undo/redo).
+      - "document": the description/doc set — Flux's default items plus table.
 --}}
 @php
     $toolbarPresets = [
-        'compact' => 'bold italic strike | bullet ordered | link',
-        'comment' => 'bold italic strike | bullet ordered blockquote | link | align ~ undo redo',
+        'compact' => 'bold italic strike | bullet ordered | link table',
+        'comment' => 'bold italic strike | bullet ordered blockquote | link table | align ~ undo redo',
+        'document' => 'heading | bold italic strike | bullet ordered blockquote | link table | align ~ undo redo',
     ];
 
     $resolvedToolbar = $toolbar ?? ($preset !== null ? ($toolbarPresets[$preset] ?? null) : null);

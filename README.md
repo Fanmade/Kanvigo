@@ -67,7 +67,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
 - **Rich text everywhere** — descriptions, doc bodies and comments are written in
   a Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) with headings, lists,
-  links, quotes, code and inline images pasted or dropped straight in.
+  links, quotes, code, tables inserted from a grid-size picker, and inline
+  images pasted or dropped straight in.
 - **Comments** — one-level replies, editing and soft-delete tombstones,
   collapsible per user, arriving live without disturbing a reply you're typing.
 - **Mentions & references** — type `@` to mention a project member (notifying and
