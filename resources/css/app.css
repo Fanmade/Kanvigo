@@ -279,3 +279,56 @@ html.full-width .app-content {
 .variable-hovercard-unset {
     @apply text-amber-700 dark:text-amber-300;
 }
+
+/* ---------------------------------------------------------------------------
+   Tables in rich text (editor content + rendered `prose` output)
+   --------------------------------------------------------------------------- */
+
+/* Inside the Flux editor: Flux ships no table styles, so a freshly inserted
+   table would be invisible. Tiptap wraps the table in a `.tableWrapper` div
+   (editor-view only — it is not part of the stored HTML). */
+[data-flux-editor] [data-slot='content'] .tableWrapper {
+    @apply my-3 overflow-x-auto;
+}
+
+[data-flux-editor] [data-slot='content'] table {
+    @apply w-full border-collapse text-sm;
+    table-layout: fixed;
+}
+
+[data-flux-editor] [data-slot='content'] th,
+[data-flux-editor] [data-slot='content'] td {
+    @apply relative border border-zinc-200 px-2.5 py-1.5 text-start align-top dark:border-zinc-600;
+}
+
+[data-flux-editor] [data-slot='content'] th {
+    @apply bg-zinc-50 font-semibold dark:bg-white/5;
+}
+
+/* Tiptap marks cells in a drag/shift selection with `.selectedCell`. */
+[data-flux-editor] [data-slot='content'] .selectedCell::after {
+    @apply pointer-events-none absolute inset-0 bg-accent/10 content-[''];
+}
+
+/* Rendered rich text (the `prose` wrapper in x-rich-text): override the
+   typography plugin's rules-only table look to match the editor's grid. The
+   plugin styles via :where(), so these plain selectors take precedence. */
+.prose table {
+    @apply my-3 text-sm;
+}
+
+.prose th,
+.prose td {
+    @apply border border-zinc-200 px-2.5 py-1.5 text-start align-top dark:border-zinc-600;
+}
+
+.prose th {
+    @apply bg-zinc-50 font-semibold dark:bg-white/5;
+}
+
+/* Cell content is wrapped in <p> by the editor — without this, the paragraph
+   margins inflate every row. */
+.prose th p,
+.prose td p {
+    @apply my-0;
+}
