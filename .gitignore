@@ -26,3 +26,4 @@ yarn-error.log
 /.zed
 /.ai/mcp/mcp.json
 /.claude/hooks/
+/tmp/
