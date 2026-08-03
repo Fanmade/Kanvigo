@@ -88,85 +88,92 @@
                  poll) never touch the overlay — a morph would re-apply the
                  server-rendered display:none and close an open lightbox. --}}
             <template x-teleport="body">
-            <div
-                x-show="open"
-                style="display: none"
-                data-test="attachment-lightbox"
-                role="dialog"
-                aria-modal="true"
-                class="fixed inset-0 z-50 flex flex-col bg-black/90"
-                x-on:click.self="close()"
-            >
-                <div class="flex items-center justify-between gap-4 p-4 text-sm text-white">
-                    <div class="min-w-0">
-                        <div data-test="lightbox-name" class="truncate" x-text="images[index]?.name"></div>
-                        <div data-test="lightbox-counter" class="text-white/60" x-text="`${index + 1} / ${images.length}`"></div>
-                    </div>
+                <div
+                    x-show="open"
+                    style="display: none"
+                    data-test="attachment-lightbox"
+                    role="dialog"
+                    aria-modal="true"
+                    class="fixed inset-0 z-50 flex flex-col bg-black/90"
+                    x-on:click.self="close()"
+                >
+                    <div class="flex items-center justify-between gap-4 p-4 text-sm text-white">
+                        <div class="min-w-0">
+                            <div data-test="lightbox-name" class="truncate" x-text="images[index]?.name"></div>
+                            <div
+                                data-test="lightbox-counter"
+                                class="text-white/60"
+                                x-text="`${index + 1} / ${images.length}`"
+                            ></div>
+                        </div>
 
-                    <div class="flex shrink-0 items-center gap-1">
-                        <a
-                            x-bind:href="images[index]?.url"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            data-test="lightbox-original"
-                            title="{{ __('Open original') }}"
-                            aria-label="{{ __('Open original') }}"
-                            class="rounded-md p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
-                        >
-                            <flux:icon name="arrow-top-right-on-square" variant="mini" />
-                        </a>
-                        <a
-                            x-bind:href="images[index]?.download"
-                            data-test="lightbox-download"
-                            title="{{ __('Download') }}"
-                            aria-label="{{ __('Download') }}"
-                            class="rounded-md p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
-                        >
-                            <flux:icon name="arrow-down-tray" variant="mini" />
-                        </a>
-                        <button
-                            type="button"
-                            x-on:click="close()"
-                            data-test="lightbox-close"
-                            aria-label="{{ __('Close') }}"
-                            class="rounded-md p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
-                        >
-                            <flux:icon name="x-mark" variant="mini" />
-                        </button>
-                    </div>
-                </div>
-
-                <div class="relative flex min-h-0 flex-1 items-center justify-center p-4 pt-0" x-on:click.self="close()">
-                    <img
-                        x-bind:src="images[index]?.url"
-                        x-bind:alt="images[index]?.name"
-                        class="max-h-full max-w-full rounded-md object-contain"
-                    />
-
-                    <template x-if="images.length > 1">
-                        <div>
+                        <div class="flex shrink-0 items-center gap-1">
+                            <a
+                                x-bind:href="images[index]?.url"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                data-test="lightbox-original"
+                                title="{{ __('Open original') }}"
+                                aria-label="{{ __('Open original') }}"
+                                class="rounded-md p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+                            >
+                                <flux:icon name="arrow-top-right-on-square" variant="mini" />
+                            </a>
+                            <a
+                                x-bind:href="images[index]?.download"
+                                data-test="lightbox-download"
+                                title="{{ __('Download') }}"
+                                aria-label="{{ __('Download') }}"
+                                class="rounded-md p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+                            >
+                                <flux:icon name="arrow-down-tray" variant="mini" />
+                            </a>
                             <button
                                 type="button"
-                                x-on:click="prev()"
-                                data-test="lightbox-prev"
-                                aria-label="{{ __('Previous image') }}"
-                                class="absolute top-1/2 left-4 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
+                                x-on:click="close()"
+                                data-test="lightbox-close"
+                                aria-label="{{ __('Close') }}"
+                                class="rounded-md p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
                             >
-                                <flux:icon name="chevron-left" />
-                            </button>
-                            <button
-                                type="button"
-                                x-on:click="next()"
-                                data-test="lightbox-next"
-                                aria-label="{{ __('Next image') }}"
-                                class="absolute top-1/2 right-4 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
-                            >
-                                <flux:icon name="chevron-right" />
+                                <flux:icon name="x-mark" variant="mini" />
                             </button>
                         </div>
-                    </template>
+                    </div>
+
+                    <div
+                        class="relative flex min-h-0 flex-1 items-center justify-center p-4 pt-0"
+                        x-on:click.self="close()"
+                    >
+                        <img
+                            x-bind:src="images[index]?.url"
+                            x-bind:alt="images[index]?.name"
+                            class="max-h-full max-w-full rounded-md object-contain"
+                        />
+
+                        <template x-if="images.length > 1">
+                            <div>
+                                <button
+                                    type="button"
+                                    x-on:click="prev()"
+                                    data-test="lightbox-prev"
+                                    aria-label="{{ __('Previous image') }}"
+                                    class="absolute top-1/2 left-4 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
+                                >
+                                    <flux:icon name="chevron-left" />
+                                </button>
+                                <button
+                                    type="button"
+                                    x-on:click="next()"
+                                    data-test="lightbox-next"
+                                    aria-label="{{ __('Next image') }}"
+                                    class="absolute top-1/2 right-4 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
+                                >
+                                    <flux:icon name="chevron-right" />
+                                </button>
+                            </div>
+                        </template>
+                    </div>
                 </div>
-            </div>
             </template>
         @endif
     </div>
