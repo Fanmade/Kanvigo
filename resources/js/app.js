@@ -71,6 +71,126 @@ document.addEventListener('flux:editor', (e) => {
 });
 
 /**
+ * The editor toolbar's table item (resources/views/flux/editor/table.blade.php).
+ *
+ * The popover is dual-mode, decided each time it opens: outside a table it
+ * shows a grid-size picker, inside a table the edit menu. Everything runs
+ * through delegated document-level listeners rather than Alpine: Flux's editor
+ * restructures the toolbar DOM when it mounts, which races Alpine's init and
+ * can leave per-element bindings dead. Commands run on the Tiptap instance
+ * stashed on the editor root above; `.focus()` returns focus to the editor,
+ * which makes Flux's dropdown close the popover — never close it directly
+ * (hidePopover() desyncs the dropdown's state and the trigger stops reopening).
+ */
+function editorForTableControl(element) {
+    return element.closest('[data-flux-editor]')?.__editor ?? null;
+}
+
+/** Highlight the rows × cols rectangle up to the given cell and show its size. */
+function highlightTableGrid(cell) {
+    const grid = cell.closest('[data-table-grid]');
+    const rows = parseInt(cell.dataset.row, 10);
+    const cols = parseInt(cell.dataset.col, 10);
+
+    grid.querySelectorAll('[data-table-cell]').forEach((candidate) => {
+        candidate.classList.toggle(
+            'is-selected',
+            parseInt(candidate.dataset.row, 10) <= rows && parseInt(candidate.dataset.col, 10) <= cols,
+        );
+    });
+
+    const label = grid.parentElement.querySelector('[data-table-size-label]');
+
+    if (label) {
+        label.textContent = `${rows} × ${cols}`;
+    }
+}
+
+function resetTableGrid(grid) {
+    grid.querySelectorAll('[data-table-cell]').forEach((cell) => cell.classList.remove('is-selected'));
+
+    const label = grid.parentElement.querySelector('[data-table-size-label]');
+
+    if (label) {
+        label.textContent = label.dataset.placeholder;
+    }
+}
+
+// Popover `toggle` events don't bubble — catch them in the capture phase. On
+// open, pick the panel to show; on close, clear the grid highlight.
+document.addEventListener(
+    'toggle',
+    (event) => {
+        const popover = event.target;
+
+        if (!(popover instanceof Element) || !popover.hasAttribute?.('data-table-popover')) {
+            return;
+        }
+
+        if (event.newState === 'open') {
+            const inTable = editorForTableControl(popover)?.isActive('table') ?? false;
+            popover.setAttribute('data-table-mode', inTable ? 'edit' : 'insert');
+        } else {
+            const grid = popover.querySelector('[data-table-grid]');
+
+            if (grid) {
+                resetTableGrid(grid);
+            }
+        }
+    },
+    true,
+);
+
+document.addEventListener('click', (event) => {
+    const commandButton = event.target.closest?.('[data-table-command]');
+
+    if (commandButton) {
+        editorForTableControl(commandButton)?.chain().focus()[commandButton.dataset.tableCommand]().run();
+
+        return;
+    }
+
+    const cell = event.target.closest?.('[data-table-cell]');
+
+    if (cell) {
+        editorForTableControl(cell)
+            ?.chain()
+            .focus()
+            .insertTable({
+                rows: parseInt(cell.dataset.row, 10),
+                cols: parseInt(cell.dataset.col, 10),
+                withHeaderRow: true,
+            })
+            .run();
+    }
+});
+
+// Hover and keyboard focus preview the table size; leaving the grid clears it.
+document.addEventListener('mouseover', (event) => {
+    const cell = event.target.closest?.('[data-table-cell]');
+
+    if (cell) {
+        highlightTableGrid(cell);
+    }
+});
+
+document.addEventListener('focusin', (event) => {
+    const cell = event.target.closest?.('[data-table-cell]');
+
+    if (cell) {
+        highlightTableGrid(cell);
+    }
+});
+
+document.addEventListener('mouseout', (event) => {
+    const grid = event.target.closest?.('[data-table-grid]');
+
+    if (grid && !grid.contains(event.relatedTarget)) {
+        resetTableGrid(grid);
+    }
+});
+
+/**
  * Walk the siblings of a card in the given direction and return the id of the
  * nearest neighbouring task card, or null if there is none.
  */
@@ -253,60 +373,6 @@ document.addEventListener('alpine:init', () => {
                 pink: 'bg-pink-500',
                 rose: 'bg-rose-500',
             }[color] ?? 'bg-zinc-400';
-        },
-    }));
-
-    /**
-     * Grid-size picker behind the editor toolbar's insert-table button
-     * (resources/views/flux/editor/table.blade.php).
-     *
-     * Cells are numbered row-major; hovering or focusing one highlights the
-     * rows × cols rectangle up to it, clicking inserts a table of that size at
-     * the cursor via the Tiptap instance stashed on the editor root by the
-     * `flux:editor` listener above.
-     */
-    window.Alpine.data('editorTablePicker', () => ({
-        maxRows: 6,
-        maxCols: 8,
-        rows: 0,
-        cols: 0,
-
-        rowOf(cell) {
-            return Math.ceil(cell / this.maxCols);
-        },
-
-        colOf(cell) {
-            return ((cell - 1) % this.maxCols) + 1;
-        },
-
-        highlight(cell) {
-            this.rows = this.rowOf(cell);
-            this.cols = this.colOf(cell);
-        },
-
-        isSelected(cell) {
-            return this.rowOf(cell) <= this.rows && this.colOf(cell) <= this.cols;
-        },
-
-        reset() {
-            this.rows = 0;
-            this.cols = 0;
-        },
-
-        insert() {
-            const editor = this.$el.closest('[data-flux-editor]')?.__editor;
-
-            if (!editor || !this.rows) {
-                return;
-            }
-
-            editor
-                .chain()
-                .focus()
-                .insertTable({ rows: this.rows, cols: this.cols, withHeaderRow: true })
-                .run();
-
-            this.$el.closest('[popover]')?.hidePopover();
         },
     }));
 

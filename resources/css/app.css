@@ -310,6 +310,17 @@ html.full-width .app-content {
     @apply pointer-events-none absolute inset-0 bg-accent/10 content-[''];
 }
 
+/* The insert-table grid-size picker in the toolbar popover (see
+   resources/views/flux/editor/table.blade.php). `.is-selected` marks the
+   rows × cols rectangle up to the hovered/focused cell. */
+.table-pick-cell {
+    @apply size-4 rounded-xs border border-zinc-300 dark:border-zinc-500;
+}
+
+.table-pick-cell.is-selected {
+    @apply border-accent bg-accent/20;
+}
+
 /* Rendered rich text (the `prose` wrapper in x-rich-text): override the
    typography plugin's rules-only table look to match the editor's grid. The
    plugin styles via :where(), so these plain selectors take precedence. */

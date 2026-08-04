@@ -113,7 +113,11 @@
                 maxlength="4"
                 class="uppercase"
             />
-            <x-attachments.rich-editor :label="__('Description')" preset="document" :mentionables-url="$this->mentionablesUrl" />
+            <x-attachments.rich-editor
+                :label="__('Description')"
+                preset="document"
+                :mentionables-url="$this->mentionablesUrl"
+            />
             <x-attachments.upload-button />
             <flux:input
                 type="number"

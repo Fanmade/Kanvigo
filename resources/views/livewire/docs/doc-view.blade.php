@@ -41,7 +41,12 @@
             <flux:input wire:model="title" :label="__('Title')" data-test="doc-title-input" />
             <flux:error name="title" />
 
-            <x-attachments.rich-editor property="body" :label="__('Body')" preset="document" :mentionables-url="$this->mentionablesUrl" />
+            <x-attachments.rich-editor
+                property="body"
+                :label="__('Body')"
+                preset="document"
+                :mentionables-url="$this->mentionablesUrl"
+            />
             <x-attachments.upload-button />
 
             <flux:select wire:model="parentId" :label="__('Nested under')" data-test="doc-parent-select">
