@@ -6,6 +6,7 @@ use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\Images\ImageTransformer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -373,6 +374,109 @@ it('does not audit the metadata-only fallthrough for a non-viewable type', funct
         ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
         ->assertOk()
         ->assertSee('cannot be displayed inline');
+
+    expect(attachmentDownloadAudits())->toBeEmpty();
+});
+
+/**
+ * Store an image attachment on the test task and return it.
+ */
+function imageAttachment(string $bytes, string $path = 'attachments/scan.png'): Attachment
+{
+    Storage::disk('attachments')->put($path, $bytes);
+    $dimensions = app(ImageTransformer::class)->dimensions($bytes);
+
+    return Attachment::factory()->create([
+        'attachable_id' => test()->task->id,
+        'attachable_type' => test()->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => $path,
+        'name' => basename($path),
+        'mime_type' => 'image/png',
+        'size' => strlen($bytes),
+        'width' => $dimensions[0] ?? null,
+        'height' => $dimensions[1] ?? null,
+    ]);
+}
+
+it('downscales a large image instead of inlining megabytes of base64', function () {
+    $original = imageFixture(4000, 3000);
+    $attachment = imageAttachment($original);
+
+    $response = KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk();
+
+    $response->assertSee('downscaled');
+    $response->assertDontSee(base64_encode($original));
+});
+
+it('downscales a tall image, which a width-only cap would have missed', function () {
+    $attachment = imageAttachment(imageFixture(1000, 8000), 'attachments/tall.png');
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('downscaled');
+});
+
+it('returns a small image untouched', function () {
+    $original = imageFixture(200, 150);
+    $attachment = imageAttachment($original, 'attachments/small.png');
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee(base64_encode($original));
+});
+
+it('honours explicit transform params', function () {
+    $attachment = imageAttachment(imageFixture(2000, 1500));
+
+    $response = KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id, 'width' => 300, 'format' => 'jpeg'])
+        ->assertOk();
+
+    $response->assertSee('image/jpeg');
+});
+
+it('falls back to metadata for a large image no driver can decode', function () {
+    // 3 MB of bytes that are not a decodable image — the HEIC/TIFF case.
+    $attachment = imageAttachment(str_repeat('x', 3 * 1024 * 1024), 'attachments/scan.heic');
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('cannot be displayed inline')
+        ->assertSee('signed URL');
+});
+
+it('refuses to inline an oversized audio file', function () {
+    Storage::disk('attachments')->put('attachments/long.mp3', str_repeat('a', 5 * 1024 * 1024));
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/long.mp3',
+        'name' => 'long.mp3',
+        'mime_type' => 'audio/mpeg',
+        'size' => 5 * 1024 * 1024,
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('too large to return inline')
+        ->assertSee('signed URL');
+});
+
+it('does not audit a content read when it only returns metadata', function () {
+    $attachment = imageAttachment(str_repeat('x', 3 * 1024 * 1024), 'attachments/scan.heic');
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk();
 
     expect(attachmentDownloadAudits())->toBeEmpty();
 });

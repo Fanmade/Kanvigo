@@ -7,6 +7,8 @@ use App\Mcp\Concerns\ResolvesAuthenticatedUser;
 use App\Models\Attachment;
 use App\Models\User;
 use App\Support\Facades\Audit;
+use App\Support\Images\ImageTransformer;
+use App\Support\Images\TransformSpec;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +19,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets the content of an attachment by its id, including inline images embedded in a project or task description. Image and audio attachments are returned as viewable content, and text-based attachments (logs, JSON, XML, CSV, …) are returned as text — up to 256 KiB per call, with an optional "offset" to page through larger files. Other file types return their metadata only. Every response also carries a short-lived signed URL the raw file can be downloaded from with a plain HTTP request (no credentials), so an agent can write the original bytes to disk. Attachment ids are listed by the get-project and get-task tools. Only attachments in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets the content of an attachment by its id, including inline images embedded in a project or task description. Image and audio attachments are returned as viewable content, and text-based attachments (logs, JSON, XML, CSV, …) are returned as text — up to 256 KiB per call, with an optional "offset" to page through larger files. Large images are returned downscaled to a vision-sized rendition by default so the response stays small; pass "width" and/or "height" (the image is fitted inside that box, aspect ratio preserved, never enlarged) plus optional "format" (webp, jpeg, png, avif) and "quality" to choose a rendition yourself. The get-task and get-project tools report each attachment size and pixel dimensions, so check those before asking for a smaller version of an already-small image. Other file types return their metadata only. Every response also carries a short-lived signed URL the raw file can be downloaded from with a plain HTTP request (no credentials), so an agent can write the original bytes to disk — the transform parameters work on that URL too. Attachment ids are listed by the get-project and get-task tools. Only attachments in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetAttachmentTool extends Tool
 {
@@ -29,6 +31,26 @@ class GetAttachmentTool extends Tool
      * pointing at the download link, so a big log can't blow up the response.
      */
     private const int MAX_INLINE_BYTES = 256 * 1024;
+
+    /**
+     * Above either of these an image is downscaled before it is inlined. Byte size
+     * catches a heavily-detailed small image; the edge length catches a long, thin
+     * scan that is modest on one axis and enormous on the other.
+     */
+    private const int AUTO_TRANSFORM_BYTES = 512 * 1024;
+
+    /**
+     * The largest encoded image returned inline. Anything still above this after a
+     * transform is handed over as a link instead — an oversized base64 payload is
+     * what breaks the client in the first place.
+     */
+    private const int MAX_INLINE_IMAGE_BYTES = 2 * 1024 * 1024;
+
+    /**
+     * Audio cannot be transformed, so it is simply gated: past this it becomes a
+     * link. Same defect as oversized images, same remedy.
+     */
+    private const int MAX_INLINE_AUDIO_BYTES = 4 * 1024 * 1024;
 
     /**
      * Textual `application/*` MIME types returned inline as text. `text/*` is
@@ -56,6 +78,10 @@ class GetAttachmentTool extends Tool
         $validated = $request->validate([
             'id' => ['required', 'integer'],
             'offset' => ['sometimes', 'integer', 'min:0'],
+            'width' => ['sometimes', 'integer', 'min:1', 'max:'.TransformSpec::MAX_DIMENSION],
+            'height' => ['sometimes', 'integer', 'min:1', 'max:'.TransformSpec::MAX_DIMENSION],
+            'format' => ['sometimes', 'string', 'in:'.implode(',', TransformSpec::FORMATS)],
+            'quality' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ], [
             'id.required' => 'You must provide the attachment id. Attachment ids are listed by the get-project and get-task tools.',
         ]);
@@ -83,25 +109,34 @@ class GetAttachmentTool extends Tool
         // as text falls through to the metadata link rather than emitting garbage.
         $isInlineText = $this->isTextual($mimeType) && mb_check_encoding($contents, 'UTF-8');
 
-        // Serving the bytes (image, audio or inline text) is a content read of the
-        // attachment over MCP — audit it like a REST/web download. The metadata-only
-        // fallthrough below discloses no content, so it is not audited; the signed
-        // link every response carries audits itself when it is actually followed.
-        if ($isImage || $isAudio || $isInlineText) {
-            Audit::record(AccessAudit::attachmentDownloaded($attachment));
-        }
-
         $downloadLink = Response::text($this->downloadLink($attachment, $user));
 
+        // Serving the bytes (image, audio or inline text) is a content read of the
+        // attachment over MCP — audit it like a REST/web download, at the point the
+        // bytes are actually inlined. Any fallthrough to metadata-plus-link below
+        // discloses no content, so it is not audited; the signed link every response
+        // carries audits itself when it is actually followed.
+
         if ($isImage) {
-            return Response::make([Response::image($contents, $mimeType), $downloadLink]);
+            return $this->imageResponse($attachment, $contents, $mimeType, $validated, $downloadLink);
         }
 
         if ($isAudio) {
+            if (strlen($contents) > self::MAX_INLINE_AUDIO_BYTES) {
+                return Response::make([
+                    Response::text('Attachment "'.$attachment->name.'" ('.$attachment->size.' bytes) is too large to return inline. Fetch it from the signed URL below.'),
+                    $downloadLink,
+                ]);
+            }
+
+            Audit::record(AccessAudit::attachmentDownloaded($attachment));
+
             return Response::make([Response::audio($contents, $mimeType), $downloadLink]);
         }
 
         if ($isInlineText) {
+            Audit::record(AccessAudit::attachmentDownloaded($attachment));
+
             return Response::make([
                 Response::text($this->inlineText($attachment, $contents, $validated['offset'] ?? 0)),
                 $downloadLink,
@@ -112,6 +147,86 @@ class GetAttachmentTool extends Tool
             Response::text('Attachment "'.$attachment->name.'" ('.($mimeType !== '' ? $mimeType : 'unknown type').', '.$attachment->size.' bytes) cannot be displayed inline. Only image, audio and text-based attachments are viewable.'),
             $downloadLink,
         ]);
+    }
+
+    /**
+     * The response for an image attachment.
+     *
+     * A caller that named a rendition gets exactly that. A caller that named
+     * nothing gets the stored bytes when they are small enough to inline safely,
+     * and a vision-sized WebP when they are not — an untransformed multi-megabyte
+     * image is what breaks the client, and a model downsamples past 1568 px on its
+     * side regardless, so the full-resolution bytes buy nothing.
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function imageResponse(Attachment $attachment, string $contents, string $mimeType, array $validated, Response $downloadLink): ResponseFactory
+    {
+        $transformer = app(ImageTransformer::class);
+        $requested = $this->requestedSpec($validated);
+        $dimensions = $transformer->dimensions($contents);
+        $notice = null;
+
+        $spec = $requested;
+
+        if ($spec === null) {
+            $tooLarge = strlen($contents) > self::AUTO_TRANSFORM_BYTES
+                || ($dimensions !== null && max($dimensions) > TransformSpec::DEFAULT_MAX_EDGE);
+
+            $spec = $tooLarge ? TransformSpec::visionDefault() : null;
+        }
+
+        if ($spec !== null) {
+            $rendered = $transformer->transform($contents, $spec);
+
+            if ($rendered !== null) {
+                $notice = 'This image was downscaled to fit '.$spec->width.'×'.$spec->height.' as '.$spec->mimeType()
+                    .'. The original is '.($dimensions === null ? 'of unknown size' : $dimensions[0].'×'.$dimensions[1])
+                    .' and '.$attachment->size.' bytes — fetch the signed URL below for it untouched.';
+                $contents = $rendered;
+                $mimeType = $spec->mimeType();
+            }
+        }
+
+        if (strlen($contents) > self::MAX_INLINE_IMAGE_BYTES) {
+            return Response::make([
+                Response::text('Attachment "'.$attachment->name.'" ('.$mimeType.', '.$attachment->size.' bytes) cannot be displayed inline: it is too large, and this server could not re-encode it to a smaller rendition. Fetch it from the signed URL below.'),
+                $downloadLink,
+            ]);
+        }
+
+        Audit::record(AccessAudit::attachmentDownloaded($attachment));
+
+        $blocks = [Response::image($contents, $mimeType)];
+
+        if ($notice !== null) {
+            $blocks[] = Response::text($notice);
+        }
+
+        $blocks[] = $downloadLink;
+
+        return Response::make($blocks);
+    }
+
+    /**
+     * The rendition the caller asked for, or null when they asked for none.
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function requestedSpec(array $validated): ?TransformSpec
+    {
+        $keys = ['width', 'height', 'format', 'quality'];
+
+        if (array_intersect_key($validated, array_flip($keys)) === []) {
+            return null;
+        }
+
+        return new TransformSpec(
+            width: $validated['width'] ?? null,
+            height: $validated['height'] ?? null,
+            format: $validated['format'] ?? 'webp',
+            quality: $validated['quality'] ?? TransformSpec::DEFAULT_QUALITY,
+        );
     }
 
     /**
@@ -185,6 +300,10 @@ class GetAttachmentTool extends Tool
                 ->required(),
             'offset' => $schema->integer()
                 ->description('For text-based attachments, the byte offset to start reading from (default 0). Up to 256 KiB is returned per call; when more remains, the response states the offset to pass to read the next part. Ignored for images and audio.'),
+            'width' => $schema->integer()->description('For images, the maximum width in pixels of the returned rendition (1–4096). The image is fitted inside the width/height box with its aspect ratio preserved and is never enlarged.'),
+            'height' => $schema->integer()->description('For images, the maximum height in pixels of the returned rendition (1–4096). Give this for tall images — a page scan can be narrow and still enormous.'),
+            'format' => $schema->string()->description('For images, the encoding of the returned rendition: webp (default), jpeg, png or avif.'),
+            'quality' => $schema->integer()->description('For images, the encoder quality from 1 to 100 (default 80). Ignored for png.'),
         ];
     }
 }
