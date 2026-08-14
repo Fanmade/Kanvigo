@@ -15,7 +15,7 @@
 
 - **Commit each task, never push.** Commit your task's work straight to `main` (this project is trunk-based — no feature branches) once its tests pass. The commit boundary is what the per-task review is scoped to. Never `git push`; the owner reviews the local history and pushes personally.
 - **Pint after every PHP change:** `vendor/bin/pint --dirty --format agent`.
-- **Run the minimum tests:** `php artisan test --compact --filter=<name>` or a single file path. Never `php artisan test --testsuite=Browser` directly (see `.ai/browser-tests`); no browser tests are needed for this plan.
+- **Run the minimum tests, and never let `artisan test` reach the Browser suite.** Invoke it with an explicit path (`php artisan test --compact tests/Feature/Foo/BarTest.php`) or with `--testsuite=Unit,Feature`. A bare `--filter=<name>` does **not** restrict the suite: Pest still loads the Browser suite and its plugin starts a `playwright run-server` that is reaped only on a clean finish. An interrupted run orphans that server, it holds the calling process's stdout pipe open, and a non-interactive session hangs rather than fails. Same reason `composer check` is banned below. If browser tests are ever genuinely needed they are `composer test:browser`, which self-reaps — never bare artisan. See `.ai/browser-tests`.
 - **Static closures:** any closure not using `$this` is declared `static` — except Pest test closures, model factory closures, and `Attribute` accessors. See `.ai/static-closures`.
 - **Cheapest condition first** in `&&` / `||` chains, without moving a guard that protects the operand after it. See `.ai/condition-ordering`.
 - **Explicit types everywhere:** parameter type hints, return types, PHPDoc array shapes. Curly braces on every control structure.
@@ -1105,7 +1105,7 @@ it('reports attachment size and dimensions so an agent can budget before fetchin
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `php artisan test --compact --filter="dimensions"`
+Run: `php artisan test --compact --testsuite=Unit,Feature --filter="dimensions"`
 Expected: FAIL — missing JSON paths / unseen strings.
 
 - [ ] **Step 3: Extend AttachmentResource**
@@ -1147,7 +1147,7 @@ In both tools' `schema()` methods, add to the attachment object:
 
 - [ ] **Step 6: Run the tests to verify they pass**
 
-Run: `php artisan test --compact --filter="dimensions"`
+Run: `php artisan test --compact --testsuite=Unit,Feature --filter="dimensions"`
 Expected: PASS.
 
 - [ ] **Step 7: Run the surrounding suites**
@@ -2027,7 +2027,7 @@ While in `docs/developing/api.md`, fix anything stale you notice in the attachme
 
 - [ ] **Step 5: Verify no translation work was missed**
 
-Run: `php artisan test --compact --filter=TranslationCompleteness`
+Run: `php artisan test --compact --testsuite=Unit,Feature --filter=TranslationCompleteness`
 Expected: PASS. This plan adds no user-facing UI strings; a failure means one crept in and needs a `de.json` entry.
 
 - [ ] **Step 6: Full verification**
