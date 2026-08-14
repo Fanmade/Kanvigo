@@ -146,7 +146,10 @@ they are stored, so a small logo costs nothing extra and loses no fidelity.
 
 Two fallbacks, both returning metadata plus the signed URL rather than bytes:
 
-- The bytes cannot be decoded by any available driver.
+- The bytes cannot be decoded by any available driver **and** exceed the 2 MiB
+  inline ceiling — the HEIC/TIFF scan case. An undecodable file *under* the
+  ceiling is served as stored: it is harmless to inline, and refusing it would
+  break callers that store small placeholder bytes.
 - The transformed output still exceeds 2 MiB.
 
 **Audio over MCP.** Audio has the identical uncapped path — a 20 MB MP3 fails
@@ -209,7 +212,8 @@ get-attachment (MCP)                    GET /api/v1/attachments/{id}
 | `width` / `height` / `quality` out of range | 422 naming the valid range |
 | `format` unknown, or `avif` without encoder support | 422 naming supported formats |
 | Transform param on a non-image attachment | 422 |
-| Undecodable bytes (no driver handles the format) | Metadata + signed URL (MCP); 422 (REST, params given) |
+| Undecodable bytes, over the 2 MiB inline ceiling | Metadata + signed URL (MCP); 422 (REST, params given) |
+| Undecodable bytes, under the ceiling | Served as stored (MCP) — a tiny unreadable file is harmless to inline, and refusing it would break callers that store placeholder bytes |
 | Decompression-bomb dimensions | Treated as undecodable |
 | Transformed output still over 2 MiB | Metadata + signed URL (MCP only) |
 | Attachment missing from disk | Existing behavior — 404 / tool error |
