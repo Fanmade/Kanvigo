@@ -160,3 +160,37 @@ function attachInlineImage(Task $task, int $width = 40, int $height = 30, string
 
     return $attachment;
 }
+
+/**
+ * Raw bytes of a throwaway test image of the given dimensions, filled with a
+ * coloured grid so the encoder cannot collapse it to a handful of bytes — tests
+ * that assert an image got smaller need it to have had a size to begin with.
+ *
+ * The grid cell is 150px: a fine 8px grid produces a pattern that is *too*
+ * regular — resampling it down to a smaller box aliases the tiles into
+ * per-pixel noise, which compresses worse than the original despite being
+ * visually smaller, defeating the very "materially smaller" tests this fixture
+ * exists for. 150px cells survive a realistic downscale as a still-blocky,
+ * still-compressible image.
+ */
+function imageFixture(int $width, int $height, string $format = 'png'): string
+{
+    $image = imagecreatetruecolor($width, $height);
+
+    for ($x = 0; $x < $width; $x += 150) {
+        for ($y = 0; $y < $height; $y += 150) {
+            $colour = imagecolorallocate($image, ($x * 7) % 256, ($y * 13) % 256, (($x + $y) * 3) % 256);
+            imagefilledrectangle($image, $x, $y, $x + 149, $y + 149, $colour);
+        }
+    }
+
+    ob_start();
+
+    match ($format) {
+        'jpeg' => imagejpeg($image, null, 92),
+        'webp' => imagewebp($image),
+        default => imagepng($image),
+    };
+
+    return (string) ob_get_clean();
+}
