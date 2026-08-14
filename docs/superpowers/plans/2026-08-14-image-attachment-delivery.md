@@ -784,10 +784,12 @@ Expected: PASS. The behavioural tests run twice (once per driver) where Imagick 
 
 ```bash
 vendor/bin/pint --dirty --format agent
-composer check
+composer types:check
 ```
 
-`composer check` is what verifies Larastan types here — do not run PHPStan against a single file (see the project's Larastan note).
+`composer types:check` runs Larastan across the project — do not run PHPStan against a single file (see the project's Larastan note).
+
+**Do not run `composer check`.** It chains `@test:all`, which runs the Browser suite. That suite starts a Playwright `run-server` and only reaps it if the run completes; an interrupted run orphans the server, which holds the calling process's stdout pipe open and hangs the session. Use `composer test` (lint + types + the Unit and Feature suites) when you want the broad gate, and `composer types:check` when you only want types.
 
 ---
 
@@ -1037,7 +1039,7 @@ Expected: PASS. `StoreAttachment` now writes two more columns; nothing should no
 
 ```bash
 vendor/bin/pint --dirty --format agent
-composer check
+composer types:check
 ```
 
 ---
@@ -1303,7 +1305,7 @@ Expected: PASS, 3 tests.
 
 ```bash
 vendor/bin/pint --dirty --format agent
-composer check
+composer types:check
 ```
 
 ---
@@ -1639,7 +1641,7 @@ Expected: PASS — in particular the existing signed-download and audit tests, w
 
 ```bash
 vendor/bin/pint --dirty --format agent
-composer check
+composer types:check
 ```
 
 ---
@@ -1988,7 +1990,7 @@ Expected: PASS.
 
 ```bash
 vendor/bin/pint --dirty --format agent
-composer check
+composer types:check
 ```
 
 ---
@@ -2031,11 +2033,12 @@ Expected: PASS. This plan adds no user-facing UI strings; a failure means one cr
 - [ ] **Step 6: Full verification**
 
 ```bash
-composer check
-php artisan test --compact
+composer test
 ```
 
-Expected: PASS across the suite. Report the actual output — if anything fails, say so with the failure rather than reporting completion.
+`composer test` is lint + types + the Unit and Feature suites. Do **not** use `composer check` here: it chains `@test:all`, which runs the Browser suite, and an interrupted browser run orphans a Playwright server that hangs the session. If the browser suite genuinely needs running, it is `composer test:browser` — which self-reaps — and never bare artisan.
+
+Expected: PASS, apart from the 4 pre-existing `DocumentationIndexTest` failures that predate this work. Report the actual output — if anything else fails, say so with the failure rather than reporting completion.
 
 ---
 
