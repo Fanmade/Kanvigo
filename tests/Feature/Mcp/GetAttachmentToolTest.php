@@ -11,8 +11,30 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Mcp\Server\Testing\TestResponse;
+use Laravel\Mcp\Transport\JsonRpcResponse;
 
 uses(RefreshDatabase::class);
+
+/**
+ * The base64-decoded bytes of the first image content block in an MCP tool
+ * response — the raw output, not the notice text describing it, so a test can
+ * assert against what the driver actually produced rather than what was asked
+ * for.
+ */
+function mcpImageBytes(TestResponse $response): string
+{
+    $reflection = new ReflectionProperty($response, 'response');
+    /** @var JsonRpcResponse $jsonRpcResponse */
+    $jsonRpcResponse = $reflection->getValue($response);
+    $content = $jsonRpcResponse->toArray()['result']['content'] ?? [];
+
+    $image = collect($content)->firstWhere('type', 'image');
+
+    expect($image)->not->toBeNull('The response has no image content block.');
+
+    return base64_decode((string) $image['data'], strict: true);
+}
 
 /**
  * The decoded `attachment_downloaded` access events currently in the outbox.
@@ -437,7 +459,37 @@ it('honours explicit transform params', function () {
         ->tool(GetAttachmentTool::class, ['id' => $attachment->id, 'width' => 300, 'format' => 'jpeg'])
         ->assertOk();
 
-    $response->assertSee('image/jpeg');
+    $info = getimagesizefromstring(mcpImageBytes($response));
+
+    expect($info)->not->toBeFalse()
+        ->and($info[2])->toBe(IMAGETYPE_JPEG)
+        ->and($info[0])->toBe(300);
+});
+
+it('downscales an image that is small in pixels but over the byte threshold', function () {
+    // Photographic noise compresses poorly, so this is well over 512 KiB while
+    // staying inside the 1568px edge-length bound — it can only trip the byte
+    // half of the auto-transform check, not the edge-length half.
+    $original = noisyImageFixture(500, 500);
+    expect(strlen($original))->toBeGreaterThan(512 * 1024);
+
+    $attachment = imageAttachment($original, 'attachments/noisy.png');
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('downscaled');
+});
+
+it('audits serving a transformed image as an attachment download', function () {
+    $attachment = imageAttachment(imageFixture(4000, 3000));
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('downscaled');
+
+    expect(attachmentDownloadAudits()->sole()['subject_id'])->toBe($attachment->id);
 });
 
 it('falls back to metadata for a large image no driver can decode', function () {

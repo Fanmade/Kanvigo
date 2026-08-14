@@ -166,6 +166,7 @@ class GetAttachmentTool extends Tool
         $requested = $this->requestedSpec($validated);
         $dimensions = $transformer->dimensions($contents);
         $notice = null;
+        $transformFailed = false;
 
         $spec = $requested;
 
@@ -179,8 +180,13 @@ class GetAttachmentTool extends Tool
         if ($spec !== null) {
             $rendered = $transformer->transform($contents, $spec);
 
-            if ($rendered !== null) {
-                $notice = 'This image was downscaled to fit '.$spec->width.'×'.$spec->height.' as '.$spec->mimeType()
+            if ($rendered === null) {
+                $transformFailed = true;
+            } else {
+                $target = $dimensions === null ? null : $spec->targetFor($dimensions[0], $dimensions[1]);
+
+                $notice = 'This image was downscaled to '.($target === null ? 'a smaller size' : $target[0].'×'.$target[1])
+                    .' and re-encoded as '.$spec->mimeType()
                     .'. The original is '.($dimensions === null ? 'of unknown size' : $dimensions[0].'×'.$dimensions[1])
                     .' and '.$attachment->size.' bytes — fetch the signed URL below for it untouched.';
                 $contents = $rendered;
@@ -189,8 +195,12 @@ class GetAttachmentTool extends Tool
         }
 
         if (strlen($contents) > self::MAX_INLINE_IMAGE_BYTES) {
+            $reason = $transformFailed
+                ? 'it is too large, and this server could not re-encode it to a smaller rendition'
+                : 'even the re-encoded rendition is still too large to inline';
+
             return Response::make([
-                Response::text('Attachment "'.$attachment->name.'" ('.$mimeType.', '.$attachment->size.' bytes) cannot be displayed inline: it is too large, and this server could not re-encode it to a smaller rendition. Fetch it from the signed URL below.'),
+                Response::text('Attachment "'.$attachment->name.'" ('.$mimeType.', '.strlen($contents).' bytes) cannot be displayed inline: '.$reason.'. Fetch it from the signed URL below.'),
                 $downloadLink,
             ]);
         }

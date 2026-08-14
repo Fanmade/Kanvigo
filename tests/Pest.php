@@ -194,3 +194,29 @@ function imageFixture(int $width, int $height, string $format = 'png'): string
 
     return (string) ob_get_clean();
 }
+
+/**
+ * Raw PNG bytes of a throwaway test image filled with per-pixel random noise.
+ *
+ * Unlike {@see imageFixture()}'s blocky grid, random noise defeats PNG's
+ * run-length/filter compression almost entirely, so even a modest, well-inside
+ * the 1568px vision-default edge bound image lands over a few hundred KiB —
+ * useful for tests that need to trip a *byte-size* threshold independently of
+ * pixel dimensions.
+ */
+function noisyImageFixture(int $width, int $height): string
+{
+    $image = imagecreatetruecolor($width, $height);
+
+    for ($x = 0; $x < $width; $x++) {
+        for ($y = 0; $y < $height; $y++) {
+            $colour = imagecolorallocate($image, random_int(0, 255), random_int(0, 255), random_int(0, 255));
+            imagesetpixel($image, $x, $y, $colour);
+        }
+    }
+
+    ob_start();
+    imagepng($image);
+
+    return (string) ob_get_clean();
+}
