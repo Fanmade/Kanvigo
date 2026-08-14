@@ -69,6 +69,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', SetAuditSource::class.':api']
         Route::get('projects/{short_name}/attachments', [AttachmentController::class, 'indexForProject'])->name('projects.attachments.index');
         Route::get('tasks/{reference}/attachments', [AttachmentController::class, 'indexForTask'])->name('tasks.attachments.index');
         Route::get('attachments/{attachment}', [AttachmentController::class, 'download'])->whereNumber('attachment')->name('attachments.download');
+        Route::get('attachments/{attachment}/metadata', [AttachmentController::class, 'metadata'])->whereNumber('attachment')->name('attachments.metadata');
 
         // Mutations additionally require a token with the `write` ability.
         Route::middleware('token.write')->group(static function (): void {

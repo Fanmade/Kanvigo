@@ -11,6 +11,7 @@ use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\Facades\Audit;
+use App\Support\Images\ImageTransformer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -48,6 +49,26 @@ class AttachmentController extends Controller
         abort_if($model === null || Auth::user()->cannot('view', $model), 404);
 
         return $this->downloadAttachment($model);
+    }
+
+    /**
+     * An attachment's full metadata record.
+     *
+     * Separate from the listing payload because this is where data too heavy to
+     * repeat on every attachment of every task belongs — starting with the
+     * automatically generated descriptions planned in KAN-544.
+     */
+    public function metadata(int $attachment, ImageTransformer $transformer): JsonResponse
+    {
+        $model = Attachment::find($attachment);
+
+        abort_if($model === null || Auth::user()->cannot('view', $model), 404);
+
+        return AttachmentResource::make($model)
+            ->additional(['data' => [
+                'transformable' => $model->width !== null && $transformer->supportsFormat('webp'),
+            ]])
+            ->response();
     }
 
     /**
