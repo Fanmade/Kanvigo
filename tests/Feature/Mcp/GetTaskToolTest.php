@@ -186,3 +186,23 @@ it('lists the task attachments with their ids', function () {
                 ->etc();
         });
 });
+
+it('reports attachment size and dimensions so an agent can budget before fetching', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+    Attachment::factory()->for($task, 'attachable')->create([
+        'name' => 'scan.png',
+        'mime_type' => 'image/png',
+        'size' => 6_291_456,
+        'width' => 4000,
+        'height' => 3000,
+    ]);
+
+    KanvigoServer::actingAs($user)
+        ->tool(GetTaskTool::class, ['reference' => $task->reference])
+        ->assertOk()
+        ->assertSee('"size":6291456')
+        ->assertSee('"width":4000')
+        ->assertSee('"height":3000');
+});

@@ -21,6 +21,8 @@ class AttachmentResource extends JsonResource
             'name' => $this->name,
             'mime_type' => $this->mime_type,
             'size' => $this->size,
+            'width' => $this->width,
+            'height' => $this->height,
             'is_inline' => $this->is_inline,
             'download_url' => route('api.v1.attachments.download', ['attachment' => $this->id]),
             'created_at' => $this->created_at?->toIso8601String(),

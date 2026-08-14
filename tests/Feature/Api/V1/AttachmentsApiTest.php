@@ -103,3 +103,21 @@ it('404s attachments for a task the user cannot access', function () {
 
     $this->getJson("/api/v1/tasks/{$task->reference}/attachments")->assertNotFound();
 });
+
+it('reports image dimensions in the attachment listing', function () {
+    Attachment::factory()->for($this->task, 'attachable')->create([
+        'name' => 'scan.png',
+        'mime_type' => 'image/png',
+        'size' => 6_291_456,
+        'width' => 4000,
+        'height' => 3000,
+    ]);
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $this->getJson("/api/v1/tasks/{$this->task->reference}/attachments")
+        ->assertOk()
+        ->assertJsonPath('data.0.width', 4000)
+        ->assertJsonPath('data.0.height', 3000)
+        ->assertJsonPath('data.0.size', 6291456);
+});
