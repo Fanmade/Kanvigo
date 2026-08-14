@@ -97,11 +97,30 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `POST`   | `/projects/{short_name}/attachments`                  | write   | Upload a file to a project (`file`). |
 | `GET`    | `/tasks/{reference}/attachments`                      | read    | A task's file attachments (paginated). |
 | `POST`   | `/tasks/{reference}/attachments`                      | write   | Upload a file to a task (`file`). |
-| `GET`    | `/attachments/{id}`                                   | read    | Download an attachment's file. |
+| `GET`    | `/attachments/{id}`                                   | read    | Download an attachment's file, or a rendition of it. |
+| `GET`    | `/attachments/{id}/metadata`                          | read    | An attachment's full record. |
 | `DELETE` | `/attachments/{id}`                                   | write   | Delete an attachment. |
 
+`GET /attachments/{id}` returns the stored file unchanged by default. For images
+you can request a rendition instead by passing any of `width`, `height`
+(1–4096 pixels), `format` (`webp`, `jpeg`, `png`, `avif`) and `quality`
+(1–100, default 80). The image is fitted inside the width/height box with its
+aspect ratio preserved and is never enlarged; give `height` too for a tall
+image — a width bound alone leaves it untouched. Passing a transform parameter
+for a non-image attachment is `422`. The same parameters work on the
+short-lived signed download links below.
+
+`GET /attachments/{id}/metadata` returns an attachment's full record — name,
+MIME type, byte size, pixel dimensions and whether the server can re-encode it
+(`transformable`). Attachment listings already carry `size`, `width` and
+`height`, so an agent can decide what to fetch without this call; the endpoint
+exists for detail too heavy to repeat in every listing.
+
 The MCP `get-attachment` tool returns, alongside the viewable content, a signed
-download link for the attachment's raw file. The link carries its own
+download link for the attachment's raw file. Large images are returned
+downscaled to a vision-sized rendition by default so the response stays small;
+the same `width`/`height`/`format`/`quality` parameters choose a rendition
+explicitly, and work on the signed link too. The link carries its own
 authorization — it names the user it was issued for, whose access is re-checked
 when it is followed — so it can be fetched with a plain HTTP request and no
 credentials. It expires after 30 minutes (`ATTACHMENTS_SIGNED_URL_TTL`), and the
