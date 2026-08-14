@@ -39,8 +39,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(static function (Exceptions $exceptions): void {
+        // The signed attachment download route lives in the web group (it is
+        // followed by MCP agents and plain curl, neither of which sends an
+        // Accept: application/json header), so it needs the same JSON error
+        // rendering as api/*  and mcp — otherwise an invalid transform param
+        // renders as a 302-to-previous-location instead of a 422.
         $exceptions->shouldRenderJsonWhen(
-            static fn (Request $request) => $request->is('api/*', 'mcp'),
+            static fn (Request $request) => $request->is('api/*', 'mcp')
+                || $request->routeIs('attachments.signed-download'),
         );
 
         // The login limiter throttles at the route middleware, so Fortify's

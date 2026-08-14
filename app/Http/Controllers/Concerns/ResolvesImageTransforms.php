@@ -13,6 +13,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 /**
  * Shared handling of the `width` / `height` / `format` / `quality` query
@@ -70,8 +71,10 @@ trait ResolvesImageTransforms
         $rendered = app(ImageTransformer::class)->transform((string) $disk->get($attachment->path), $spec);
 
         if ($rendered === null) {
+            // Keyed on 'image' rather than any of the four transform params —
+            // the caller may not have sent 'width' at all (e.g. only 'format').
             throw ValidationException::withMessages([
-                'width' => 'This attachment is not an image that can be transformed.',
+                'image' => 'This attachment is not an image that can be transformed.',
             ]);
         }
 
@@ -83,7 +86,7 @@ trait ResolvesImageTransforms
         return response($rendered, 200, [
             'Content-Type' => $spec->mimeType(),
             'Content-Length' => (string) strlen($rendered),
-            'Content-Disposition' => 'attachment; filename="'.$name.'"',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $name),
         ]);
     }
 }

@@ -45,3 +45,27 @@ it('still rejects a link whose attachment was swapped', function () {
 
     $this->get(str_replace("/{$this->attachment->id}/", "/{$other->id}/", $url))->assertForbidden();
 });
+
+it('still rejects a link with a param outside the excluded four', function () {
+    // Pins the exclusion list to exactly width/height/format/quality — a
+    // future widening of that list must fail this test loudly.
+    $url = $this->attachment->signedDownloadUrl($this->member);
+
+    $this->get($url.'&foo=bar')->assertForbidden();
+});
+
+it('422s an unknown format on the signed link, not a redirect', function () {
+    $url = $this->attachment->signedDownloadUrl($this->member);
+
+    $this->get($url.'&format=bmp')
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('format');
+});
+
+it('422s an out-of-range dimension on the signed link, not a redirect', function () {
+    $url = $this->attachment->signedDownloadUrl($this->member);
+
+    $this->get($url.'&width=99999')
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('width');
+});
