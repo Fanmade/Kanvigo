@@ -8,6 +8,7 @@ use App\Models\Doc;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Images\ImageTransformer;
 use App\Support\Thumbnail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +36,8 @@ class StoreAttachment
 
         $path = $file->store($directory, $disk);
 
+        $dimensions = app(ImageTransformer::class)->dimensions((string) $contents);
+
         return $attachable->attachments()->create([
             'disk' => $disk,
             'path' => $path,
@@ -42,6 +45,8 @@ class StoreAttachment
             'name' => $name,
             'mime_type' => $mimeType,
             'size' => $size,
+            'width' => $dimensions[0] ?? null,
+            'height' => $dimensions[1] ?? null,
             'is_inline' => $isInline,
             'uploaded_by' => $uploadedBy ?? auth()->id(),
         ]);

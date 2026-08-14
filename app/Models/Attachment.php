@@ -23,13 +23,15 @@ use Illuminate\Support\Facades\URL;
  * @property string $name
  * @property string|null $mime_type
  * @property int $size
+ * @property int|null $width
+ * @property int|null $height
  * @property bool $is_inline
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User|null $uploader
  * @property-read Model $attachable
  */
-#[Fillable(['disk', 'path', 'thumbnail_path', 'name', 'mime_type', 'size', 'is_inline', 'uploaded_by'])]
+#[Fillable(['disk', 'path', 'thumbnail_path', 'name', 'mime_type', 'size', 'width', 'height', 'is_inline', 'uploaded_by'])]
 class Attachment extends Model
 {
     /** @use HasFactory<AttachmentFactory> */
@@ -162,6 +164,8 @@ class Attachment extends Model
     {
         return [
             'size' => 'integer',
+            'width' => 'integer',
+            'height' => 'integer',
             'is_inline' => 'boolean',
         ];
     }
