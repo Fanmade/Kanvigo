@@ -35,6 +35,10 @@ class GdDriver implements ImageDriver
      */
     public function dimensions(string $bytes): ?array
     {
+        if (! $this->available()) {
+            return null;
+        }
+
         $info = @getimagesizefromstring($bytes);
 
         if ($info === false) {
@@ -52,6 +56,10 @@ class GdDriver implements ImageDriver
 
     public function transform(string $bytes, TransformSpec $spec): ?string
     {
+        if (! $this->available()) {
+            return null;
+        }
+
         if (! $this->supportsFormat($spec->format)) {
             return null;
         }

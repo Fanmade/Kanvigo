@@ -26,6 +26,36 @@ function transformerFor(string $driver): ImageTransformer
     return new ImageTransformer($driver === 'gd' ? new GdDriver : new ImagickDriver);
 }
 
+/**
+ * A landscape JPEG carrying an EXIF Orientation tag, hand-assembled as a
+ * minimal APP1 segment (TIFF header + one IFD entry) inserted right after the
+ * SOI marker — GD's `exif_read_data()` and Imagick's `getImageOrientation()`
+ * both read it as a real camera would have written it.
+ *
+ * Orientation 6 means "rotate 90° CW to display upright": a decoder honouring
+ * it reports the image as portrait (height and width swapped) despite the
+ * stored pixels being landscape.
+ */
+function jpegWithOrientation(int $width, int $height, int $orientation): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    imagefill($image, 0, 0, imagecolorallocate($image, 200, 50, 50));
+
+    ob_start();
+    imagejpeg($image, null, 90);
+    $jpeg = (string) ob_get_clean();
+
+    $tiff = 'II'.pack('v', 42).pack('V', 8)
+        .pack('v', 1) // one IFD entry
+        .pack('v', 0x0112).pack('v', 3).pack('V', 1).pack('v', $orientation).pack('v', 0) // Orientation, SHORT, count 1
+        .pack('V', 0); // no further IFDs
+
+    $exif = "Exif\0\0".$tiff;
+    $segment = "\xFF\xE1".pack('n', strlen($exif) + 2).$exif;
+
+    return substr($jpeg, 0, 2).$segment.substr($jpeg, 2);
+}
+
 it('reads the dimensions of an image', function (string $driver) {
     expect(transformerFor($driver)->dimensions(imageFixture(320, 240)))->toBe([320, 240]);
 })->with('drivers');
@@ -83,6 +113,20 @@ it('returns null for bytes it cannot decode', function (string $driver) {
 
 it('returns null for an unsupported output format', function (string $driver) {
     expect(transformerFor($driver)->transform(imageFixture(64, 64), new TransformSpec(format: 'tiff')))->toBeNull();
+})->with('drivers');
+
+it('fits an EXIF-rotated photo by its post-rotation aspect ratio', function (string $driver) {
+    $transformer = transformerFor($driver);
+
+    // Stored landscape 100x60, but Orientation 6 means it displays portrait
+    // (60x100). Fit that inside a 50x50 box: the height (100) is the binding
+    // constraint, so the correct target is 30x50. A driver that resizes using
+    // the stale pre-rotation dimensions instead binds on width and stretches
+    // the output to 50x30 — swapped, and the wrong aspect ratio for the box.
+    $output = $transformer->transform(jpegWithOrientation(100, 60, 6), new TransformSpec(width: 50, height: 50));
+
+    expect($output)->not->toBeNull()
+        ->and($transformer->dimensions((string) $output))->toBe([30, 50]);
 })->with('drivers');
 
 it('prefers imagick when the extension is loaded', function () {

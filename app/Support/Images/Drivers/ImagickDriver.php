@@ -71,6 +71,8 @@ class ImagickDriver implements ImageDriver
             $width = $image->getImageWidth();
             $height = $image->getImageHeight();
 
+            // Rotation doesn't change the pixel count, so the bomb guard is
+            // valid on these pre-orientation dimensions.
             if ($width < 1 || $height < 1 || ($width * $height) > ImageTransformer::BOMB_PIXELS) {
                 $image->clear();
 
@@ -82,8 +84,13 @@ class ImagickDriver implements ImageDriver
             $image = $image->coalesceImages();
             $image->setFirstIterator();
 
+            // autoOrient() can swap width/height (EXIF orientations 5-8 are
+            // 90/270 degree rotations), so the target has to be computed from
+            // the post-orientation dimensions or resizeImage() below — which
+            // forces exact dimensions rather than fitting them — stretches the
+            // image instead of rotating it cleanly.
             $image->autoOrient();
-            [$targetWidth, $targetHeight] = $spec->targetFor($width, $height);
+            [$targetWidth, $targetHeight] = $spec->targetFor($image->getImageWidth(), $image->getImageHeight());
             $image->resizeImage($targetWidth, $targetHeight, Imagick::FILTER_LANCZOS, 1);
 
             $image->setImageFormat($spec->format);
