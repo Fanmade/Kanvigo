@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\StoreAttachment;
 use App\Http\Controllers\Api\V1\Concerns\ResolvesApiReferences;
+use App\Http\Controllers\Concerns\ResolvesImageTransforms;
 use App\Http\Controllers\Concerns\ServesScopedAttachments;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AttachmentResource;
@@ -15,12 +16,14 @@ use App\Support\Images\ImageTransformer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
 {
     use ResolvesApiReferences;
+    use ResolvesImageTransforms;
     use ServesScopedAttachments;
 
     /**
@@ -41,14 +44,23 @@ class AttachmentController extends Controller
 
     /**
      * Stream an attachment's file content as a download.
+     *
+     * Byte-exact by default. Passing any of width/height/format/quality opts into
+     * a re-encoded rendition instead.
      */
-    public function download(int $attachment): StreamedResponse
+    public function download(Request $request, int $attachment): StreamedResponse|Response
     {
         $model = Attachment::find($attachment);
 
         abort_if($model === null || Auth::user()->cannot('view', $model), 404);
 
-        return $this->downloadAttachment($model);
+        $spec = $this->imageTransformSpec($request);
+
+        if ($spec === null) {
+            return $this->downloadAttachment($model);
+        }
+
+        return $this->transformedAttachmentResponse($model, $spec);
     }
 
     /**

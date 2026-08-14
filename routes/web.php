@@ -28,6 +28,7 @@ use App\Livewire\Projects\ProjectTaskTypes;
 use App\Livewire\Projects\ProjectVariables;
 use App\Livewire\Tasks\TaskView;
 use App\Livewire\Users\UserProfile;
+use Illuminate\Routing\Middleware\ValidateSignature;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -54,9 +55,16 @@ Route::post('/oauth/authorize', [ApproveMcpAuthorizationController::class, 'appr
  * no session cookie (an MCP agent fetching a file to disk). The signature names
  * the user the link was issued for and that user's access is re-checked when the
  * link is followed, so it grants nothing they could not download in the app.
+ *
+ * The signature deliberately excludes width/height/format/quality: Laravel signs
+ * the whole query string, so a plain 'signed' middleware would 403 the moment an
+ * agent appended a transform param to a link it was already handed. Leaving
+ * those four unsigned is safe — they cannot change which attachment is served or
+ * which user it was issued for, and each is clamped by validation before use.
+ * Do not "tighten" this back to 'signed' without re-reading this comment.
  */
 Route::get('attachments/{attachment}/download/{user}', SignedAttachmentDownloadController::class)
-    ->middleware('signed')
+    ->middleware(ValidateSignature::absolute(['width', 'height', 'format', 'quality']))
     ->whereNumber('attachment')
     ->name('attachments.signed-download');
 

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesImageTransforms;
 use App\Http\Controllers\Concerns\ServesScopedAttachments;
 use App\Models\Attachment;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -21,15 +24,22 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class SignedAttachmentDownloadController extends Controller
 {
+    use ResolvesImageTransforms;
     use ServesScopedAttachments;
 
     /**
      * Stream the attachment as a download to the user the link was issued for.
      */
-    public function __invoke(Attachment $attachment, User $user): StreamedResponse
+    public function __invoke(Request $request, Attachment $attachment, User $user): StreamedResponse|Response
     {
         abort_if(Gate::forUser($user)->denies('view', $attachment), 404);
 
-        return $this->downloadAttachment($attachment, $user);
+        $spec = $this->imageTransformSpec($request);
+
+        if ($spec === null) {
+            return $this->downloadAttachment($attachment, $user);
+        }
+
+        return $this->transformedAttachmentResponse($attachment, $spec, $user);
     }
 }
