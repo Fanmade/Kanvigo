@@ -13,7 +13,7 @@
 
 ## Global Constraints
 
-- **No commits.** This project's owner reviews and commits every change personally. Each task ends with Pint plus the affected tests — never `git commit`, never `git push`.
+- **Commit each task, never push.** Commit your task's work straight to `main` (this project is trunk-based — no feature branches) once its tests pass. The commit boundary is what the per-task review is scoped to. Never `git push`; the owner reviews the local history and pushes personally.
 - **Pint after every PHP change:** `vendor/bin/pint --dirty --format agent`.
 - **Run the minimum tests:** `php artisan test --compact --filter=<name>` or a single file path. Never `php artisan test --testsuite=Browser` directly (see `.ai/browser-tests`); no browser tests are needed for this plan.
 - **Static closures:** any closure not using `$this` is declared `static` — except Pest test closures, model factory closures, and `Attribute` accessors. See `.ai/static-closures`.
@@ -501,6 +501,10 @@ class GdDriver implements ImageDriver
 
     public function supportsFormat(string $format): bool
     {
+        if (! $this->available()) {
+            return false;
+        }
+
         return match ($format) {
             'webp' => function_exists('imagewebp'),
             'jpeg' => function_exists('imagejpeg'),
@@ -515,6 +519,10 @@ class GdDriver implements ImageDriver
      */
     public function dimensions(string $bytes): ?array
     {
+        if (! $this->available()) {
+            return null;
+        }
+
         $info = @getimagesizefromstring($bytes);
 
         if ($info === false) {
@@ -661,8 +669,12 @@ class ImagickDriver implements ImageDriver
             $image = $image->coalesceImages();
             $image->setFirstIterator();
 
+            // Re-read the dimensions after orienting: for EXIF orientations 5-8
+            // autoOrient() swaps width and height, and resizeImage() below forces
+            // the exact target it is given (no bestfit), so a target computed from
+            // the pre-rotation dimensions would stretch the image.
             $image->autoOrient();
-            [$targetWidth, $targetHeight] = $spec->targetFor($width, $height);
+            [$targetWidth, $targetHeight] = $spec->targetFor($image->getImageWidth(), $image->getImageHeight());
             $image->resizeImage($targetWidth, $targetHeight, Imagick::FILTER_LANCZOS, 1);
 
             $image->setImageFormat($spec->format);
@@ -724,7 +736,14 @@ class ImageTransformer
 
         $imagick = new ImagickDriver;
 
-        return $this->resolved = $imagick->available() ? $imagick : new GdDriver;
+        if ($imagick->available()) {
+            return $this->resolved = $imagick;
+        }
+
+        // GD's public methods answer null when its extension is missing, so a
+        // host with neither driver degrades to the metadata fallback rather than
+        // fatalling on an undefined function.
+        return $this->resolved = new GdDriver;
     }
 
     /**
@@ -1009,7 +1028,9 @@ Expected: PASS, 4 tests.
 
 - [ ] **Step 8: Run the existing attachment suites for regressions**
 
-Run: `php artisan test --compact --filter=Attachment`
+Run: `php artisan test --compact --testsuite=Unit,Feature --filter=Attachment`
+
+**The `--testsuite=Unit,Feature` is mandatory, not optional.** A bare `--filter=Attachment` also matches `tests/Browser/AttachmentUploadTest.php` and `AttachmentLightboxTest.php`, which start a Playwright `run-server` that is not reaped and holds the calling process's stdout pipe open — the run never returns and your session stalls. See `.ai/browser-tests`.
 Expected: PASS. `StoreAttachment` now writes two more columns; nothing should notice.
 
 - [ ] **Step 9: Format and type-check**
@@ -1609,7 +1630,9 @@ Expected: PASS.
 
 - [ ] **Step 8: Run every attachment-touching suite**
 
-Run: `php artisan test --compact --filter=Attachment`
+Run: `php artisan test --compact --testsuite=Unit,Feature --filter=Attachment`
+
+**The `--testsuite=Unit,Feature` is mandatory, not optional.** A bare `--filter=Attachment` also matches `tests/Browser/AttachmentUploadTest.php` and `AttachmentLightboxTest.php`, which start a Playwright `run-server` that is not reaped and holds the calling process's stdout pipe open — the run never returns and your session stalls. See `.ai/browser-tests`.
 Expected: PASS — in particular the existing signed-download and audit tests, which must be unaffected when no params are passed.
 
 - [ ] **Step 9: Format and type-check**
