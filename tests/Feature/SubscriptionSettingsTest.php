@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Status;
-use App\Livewire\Notifications\ManageNotifications;
+use App\Livewire\Notifications\SubscriptionSettings;
 use App\Livewire\Projects\ProjectBoard;
 use App\Models\Project;
 use App\Models\Task;
@@ -30,7 +30,7 @@ it('lists subscriptions grouped with notification counts', function () {
         ->call('moveTask', $this->task->id, Status::Done->value);
 
     $rows = Livewire::actingAs($this->user)
-        ->test(ManageNotifications::class)
+        ->test(SubscriptionSettings::class)
         ->instance()
         ->rows();
 
@@ -50,7 +50,7 @@ it('groups the per-subject counts without an order-by clause', function () {
     // clause"). SQLite tolerates it, so guard the query shape directly (KAN-329).
     DB::enableQueryLog();
 
-    Livewire::actingAs($this->user)->test(ManageNotifications::class)->instance()->rows();
+    Livewire::actingAs($this->user)->test(SubscriptionSettings::class)->instance()->rows();
 
     $grouped = collect(DB::getQueryLog())
         ->pluck('query')
@@ -66,7 +66,7 @@ it('unsubscribes from an item on the spot', function () {
     expect($this->task->isSubscribedBy($this->user))->toBeTrue();
 
     Livewire::actingAs($this->user)
-        ->test(ManageNotifications::class)
+        ->test(SubscriptionSettings::class)
         ->call('unsubscribe', 'task', $this->task->id);
 
     expect($this->task->fresh()->isSubscribedBy($this->user))->toBeFalse()
@@ -83,7 +83,7 @@ it('ignores an unsubscribe for an item the user is not subscribed to', function 
     // A tampered id the caller has no subscription to is scoped out — a no-op
     // that cannot remove another user's subscription pivot.
     Livewire::actingAs($this->user)
-        ->test(ManageNotifications::class)
+        ->test(SubscriptionSettings::class)
         ->call('unsubscribe', 'task', $otherTask->id);
 
     expect($otherTask->fresh()->isSubscribedBy($stranger))->toBeTrue()

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Notifications;
 
+use App\Livewire\Notifications\Concerns\DescribesNotifications;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,6 +15,8 @@ use Livewire\Component;
  */
 class NotificationsMenu extends Component
 {
+    use DescribesNotifications;
+
     #[Computed]
     public function unreadCount(): int
     {
@@ -94,28 +97,6 @@ class NotificationsMenu extends Component
         User::forgetUnreadNotificationCount($user->getKey());
 
         unset($this->unreadCount, $this->unreadBadge, $this->notifications);
-    }
-
-    /**
-     * The short verb describing what a notification's underlying action did to its
-     * subject (e.g. "commented on", "changed the status of"), shown on the menu
-     * line before the subject reference.
-     */
-    public function actionLabel(string $action): string
-    {
-        return match ($action) {
-            'created' => __('created'),
-            'status_changed' => __('changed the status of'),
-            'priority_changed' => __('changed the priority of'),
-            'type_changed' => __('changed the type of'),
-            'assignee_changed' => __('updated the assignees of'),
-            'tags_changed' => __('updated the tags of'),
-            'parent_changed' => __('moved'),
-            'commented' => __('commented on'),
-            'comment_deleted' => __('deleted a comment on'),
-            'mentioned' => __('mentioned you in'),
-            default => __('updated'),
-        };
     }
 
     public function open(string $id): void

@@ -5,11 +5,14 @@ namespace App\Livewire\Notifications;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Title('Notifications')]
-class ManageNotifications extends Component
+/**
+ * The subscriptions tab: the projects and tasks the user follows, with a switch
+ * to stop following each. The notifications those produce live in the inbox
+ * tab, {@see NotificationInbox}.
+ */
+class SubscriptionSettings extends Component
 {
     /**
      * The user's subscriptions with per-item notification counts.
