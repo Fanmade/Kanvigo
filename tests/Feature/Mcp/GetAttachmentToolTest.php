@@ -6,7 +6,10 @@ use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\Images\Contracts\ImageDriver;
+use App\Support\Images\Drivers\GdDriver;
 use App\Support\Images\ImageTransformer;
+use App\Support\Images\TransformSpec;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -466,10 +469,69 @@ it('honours explicit transform params', function () {
         ->and($info[0])->toBe(300);
 });
 
-it('downscales an image that is small in pixels but over the byte threshold', function () {
+it('errors rather than silently serving untransformed bytes when the requested format cannot be encoded', function () {
+    // Bind a driver that reports every format as unencodable, so the test does
+    // not depend on whether this host actually has an AVIF encoder. Without the
+    // supportsFormat() guard, transform() returns null, transformFailed is set,
+    // and the tool would inline the *original* PNG bytes while the response
+    // text still claims webp/avif — the caller believes it got a format it did
+    // not get.
+    app()->instance(ImageTransformer::class, new ImageTransformer(new class implements ImageDriver
+    {
+        public function available(): bool
+        {
+            return true;
+        }
+
+        public function supportsFormat(string $format): bool
+        {
+            return false;
+        }
+
+        public function dimensions(string $bytes): ?array
+        {
+            return (new GdDriver)->dimensions($bytes);
+        }
+
+        public function transform(string $bytes, TransformSpec $spec): ?string
+        {
+            return null;
+        }
+    }));
+
+    $attachment = imageAttachment(imageFixture(400, 300));
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id, 'format' => 'avif'])
+        ->assertHasErrors()
+        ->assertSee('avif');
+});
+
+it('rejects transform params on a non-image attachment instead of ignoring them', function () {
+    Storage::disk('attachments')->put('attachments/song.mp3', 'mp3-bytes');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/song.mp3',
+        'mime_type' => 'audio/mpeg',
+        'size' => strlen('mp3-bytes'),
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id, 'width' => 200])
+        ->assertHasErrors();
+});
+
+it('re-encodes, but does not claim to downscale, an image that is small in pixels but over the byte threshold', function () {
     // Photographic noise compresses poorly, so this is well over 512 KiB while
     // staying inside the 1568px edge-length bound — it can only trip the byte
-    // half of the auto-transform check, not the edge-length half.
+    // half of the auto-transform check, not the edge-length half. Because the
+    // 500x500 source is already inside the 1568x1568 default box, the transform
+    // re-encodes it to WebP without resizing anything — the notice must say
+    // "re-encoded", not "downscaled to 500×500", or it claims a resize that
+    // never happened.
     $original = noisyImageFixture(500, 500);
     expect(strlen($original))->toBeGreaterThan(512 * 1024);
 
@@ -478,7 +540,8 @@ it('downscales an image that is small in pixels but over the byte threshold', fu
     KanvigoServer::actingAs($this->member)
         ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
         ->assertOk()
-        ->assertSee('downscaled');
+        ->assertSee('re-encoded')
+        ->assertDontSee('downscaled');
 });
 
 it('audits serving a transformed image as an attachment download', function () {

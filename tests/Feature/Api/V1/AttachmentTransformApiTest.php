@@ -45,6 +45,31 @@ it('returns full metadata for an image attachment', function () {
         ->assertJsonPath('data.transformable', true);
 });
 
+it('reports transformable true for a legacy image with no stored width', function () {
+    // Every image uploaded before the width/height columns existed — or before
+    // attachments:backfill-dimensions has run on it — has width === null. Basing
+    // `transformable` on that column being set would report these as false even
+    // though the driver can decode and re-encode them fine; it has to be
+    // MIME-type-plus-encoder-support instead.
+    Storage::disk('attachments')->put('attachments/legacy.png', $this->image);
+
+    $legacy = Attachment::factory()->for($this->task, 'attachable')->create([
+        'disk' => 'attachments',
+        'path' => 'attachments/legacy.png',
+        'name' => 'legacy.png',
+        'mime_type' => 'image/png',
+        'width' => null,
+        'height' => null,
+    ]);
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $this->getJson("/api/v1/attachments/{$legacy->id}/metadata")
+        ->assertOk()
+        ->assertJsonPath('data.width', null)
+        ->assertJsonPath('data.transformable', true);
+});
+
 it('reports a non-image attachment as not transformable', function () {
     Storage::disk('attachments')->put('attachments/notes.txt', 'plain text');
 
@@ -132,8 +157,13 @@ it('rejects an unknown format', function () {
         ->assertJsonValidationErrors('format');
 });
 
-it('rejects transform params on a non-image attachment', function () {
-    Storage::disk('attachments')->put('attachments/spec.pdf', 'pdf-bytes');
+it('rejects transform params on a non-image attachment, even a real PDF Imagick can rasterize', function () {
+    // A real PDF, not an undecodable string literal: Imagick happily decodes
+    // and rasterizes PDFs via its Ghostscript delegate, so a transform() call
+    // on these bytes would succeed and return page 1 as an image with a 200 —
+    // this test only proves anything if the MIME-type guard, not decodability,
+    // is what produces the 422.
+    Storage::disk('attachments')->put('attachments/spec.pdf', pdfFixture());
 
     $pdf = Attachment::factory()->for($this->task, 'attachable')->create([
         'disk' => 'attachments',
@@ -143,5 +173,22 @@ it('rejects transform params on a non-image attachment', function () {
 
     Sanctum::actingAs($this->user, ['read']);
 
-    $this->getJson("/api/v1/attachments/{$pdf->id}?width=200")->assertStatus(422);
+    $response = $this->getJson("/api/v1/attachments/{$pdf->id}?width=200");
+
+    $response->assertStatus(422);
+    expect($response->headers->get('content-type'))->not->toContain('image');
+});
+
+it('rejects transform params on undecodable bytes claiming to be an image', function () {
+    Storage::disk('attachments')->put('attachments/bad.png', 'not actually a png');
+
+    $bad = Attachment::factory()->for($this->task, 'attachable')->create([
+        'disk' => 'attachments',
+        'path' => 'attachments/bad.png',
+        'mime_type' => 'image/png',
+    ]);
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $this->getJson("/api/v1/attachments/{$bad->id}?width=200")->assertStatus(422);
 });

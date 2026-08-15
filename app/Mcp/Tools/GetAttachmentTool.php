@@ -104,6 +104,14 @@ class GetAttachmentTool extends Tool
 
         $isImage = str_starts_with($mimeType, 'image/');
         $isAudio = str_starts_with($mimeType, 'audio/');
+
+        // The four transform params only mean something for an image. Silently
+        // ignoring them on, say, an audio/mpeg attachment would let a caller
+        // believe a resize happened when nothing was honored — match the REST
+        // download's 422 for the same request shape.
+        if (! $isImage && $this->requestedSpec($validated) !== null) {
+            return Response::error('The "width", "height", "format" and "quality" parameters only apply to image attachments; this attachment is '.($mimeType !== '' ? $mimeType : 'of unknown type').'.');
+        }
         // Inline text-based files (logs, JSON, …) so an agent can read them — but
         // only if the bytes are actually valid UTF-8, so a binary file mislabelled
         // as text falls through to the metadata link rather than emitting garbage.
@@ -160,10 +168,20 @@ class GetAttachmentTool extends Tool
      *
      * @param  array<string, mixed>  $validated
      */
-    private function imageResponse(Attachment $attachment, string $contents, string $mimeType, array $validated, Response $downloadLink): ResponseFactory
+    private function imageResponse(Attachment $attachment, string $contents, string $mimeType, array $validated, Response $downloadLink): Response|ResponseFactory
     {
         $transformer = app(ImageTransformer::class);
         $requested = $this->requestedSpec($validated);
+
+        // A format the caller explicitly named but this driver cannot encode is
+        // an error, not a silent fallback: without this check transform()
+        // returns null, transformFailed sets, and the *original* untransformed
+        // bytes get inlined below with no notice — the caller believes it got
+        // the format it asked for.
+        if ($requested !== null && ! $transformer->supportsFormat($requested->format)) {
+            return Response::error('The "'.$requested->format.'" format cannot be encoded on this server.');
+        }
+
         $dimensions = $transformer->dimensions($contents);
         $notice = null;
         $transformFailed = false;
@@ -182,11 +200,27 @@ class GetAttachmentTool extends Tool
 
             if ($rendered === null) {
                 $transformFailed = true;
+                // The caller is about to receive the original, untouched bytes
+                // instead of the rendition it asked for (or the auto-downscale it
+                // implicitly opted into) — it must never be told nothing.
+                $notice = 'This image could not be transformed on this server; the original, untransformed bytes are returned instead.';
             } else {
-                $target = $dimensions === null ? null : $spec->targetFor($dimensions[0], $dimensions[1]);
+                // A bounds-less spec (format/quality only) never resizes, and even
+                // a bounded spec doesn't when the box was already larger than the
+                // source (targetFor()'s upscale guard returns the source size
+                // unchanged) — say "re-encoded", not "downscaled to W×H", or the
+                // notice claims a resize that did not happen.
+                if ($dimensions === null) {
+                    $target = null;
+                    $resized = false;
+                } else {
+                    $target = $spec->targetFor($dimensions[0], $dimensions[1]);
+                    $resized = $spec->boundsGiven() && $target !== $dimensions;
+                }
 
-                $notice = 'This image was downscaled to '.($target === null ? 'a smaller size' : $target[0].'×'.$target[1])
-                    .' and re-encoded as '.$spec->mimeType()
+                $notice = ($resized
+                        ? 'This image was downscaled to '.$target[0].'×'.$target[1].' and re-encoded as '.$spec->mimeType()
+                        : 'This image was re-encoded as '.$spec->mimeType())
                     .'. The original is '.($dimensions === null ? 'of unknown size' : $dimensions[0].'×'.$dimensions[1])
                     .' and '.$attachment->size.' bytes — fetch the signed URL below for it untouched.';
                 $contents = $rendered;

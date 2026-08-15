@@ -133,6 +133,26 @@ it('generates a thumbnail for PDF uploads', function () {
     Storage::disk('attachments')->assertExists($attachment->thumbnail_path);
 });
 
+it('does not measure pixel dimensions for a PDF upload, even though Imagick can rasterize it', function () {
+    // Imagick's readImageBlob() decodes a PDF via its Ghostscript delegate just
+    // as readily as a real raster image, and would report its PostScript
+    // *points* as if they were pixels. StoreAttachment must gate on the MIME
+    // type — matching attachments:backfill-dimensions — so width/height stay
+    // null for anything that isn't actually image/*.
+    $file = UploadedFile::fake()->createWithContent('report.pdf', pdfFixture(800, 1000));
+
+    Livewire::actingAs($this->member)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('newFiles', [$file])
+        ->assertHasNoErrors();
+
+    $attachment = $this->project->attachments()->first();
+
+    expect($attachment->mime_type)->toBe('application/pdf')
+        ->and($attachment->width)->toBeNull()
+        ->and($attachment->height)->toBeNull();
+});
+
 it('serves an image thumbnail inline to a member', function () {
     Storage::disk('attachments')->put('attachments/thumbnails/thumb.png', 'png-bytes');
 

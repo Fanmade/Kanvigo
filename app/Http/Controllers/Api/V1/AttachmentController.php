@@ -78,7 +78,13 @@ class AttachmentController extends Controller
 
         return AttachmentResource::make($model)
             ->additional(['data' => [
-                'transformable' => $model->width !== null && $transformer->supportsFormat('webp'),
+                // Whether an available driver can decode and re-encode this
+                // file — a MIME-type check plus encoder support, not a stored
+                // `width`: width is null for every image uploaded before the
+                // dimensions columns existed, and (once populated) is also set
+                // for non-image formats a driver can merely rasterize (PDF), so
+                // its presence or absence is not reliable evidence either way.
+                'transformable' => str_starts_with((string) $model->mime_type, 'image/') && $transformer->supportsFormat('webp'),
             ]])
             ->response();
     }

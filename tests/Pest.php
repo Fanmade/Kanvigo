@@ -220,3 +220,24 @@ function noisyImageFixture(int $width, int $height): string
 
     return (string) ob_get_clean();
 }
+
+/**
+ * Raw bytes of a real, Imagick-rasterizable single-page PDF (`%PDF-1.4` header,
+ * a filled rectangle so the rasterized page isn't blank).
+ *
+ * Distinct from a `'pdf-bytes'` string literal: Imagick decodes and rasterizes
+ * this happily via its Ghostscript delegate, which is exactly the behaviour
+ * tests guarding "PDFs must 422 on transform" need to exercise — undecodable
+ * garbage would 422 for the wrong reason (it can't be read at all) and let a
+ * missing MIME-type guard slip through unnoticed.
+ */
+function pdfFixture(int $width = 800, int $height = 1000): string
+{
+    $pdf = new Imagick;
+    $pdf->newImage($width, $height, new ImagickPixel('skyblue'));
+    $pdf->setImageFormat('pdf');
+    $bytes = $pdf->getImageBlob();
+    $pdf->clear();
+
+    return $bytes;
+}

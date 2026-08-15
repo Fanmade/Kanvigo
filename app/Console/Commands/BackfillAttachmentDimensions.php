@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Attachment;
 use App\Support\Images\ImageTransformer;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -25,7 +26,8 @@ class BackfillAttachmentDimensions extends Command
         Attachment::query()
             ->whereNull('width')
             ->where('mime_type', 'like', 'image/%')
-            ->chunkById(100, static function ($attachments) use ($transformer, &$measured): void {
+            ->chunkById(100, static function (Collection $attachments) use ($transformer, &$measured): void {
+                /** @var Collection<int, Attachment> $attachments */
                 foreach ($attachments as $attachment) {
                     $disk = Storage::disk($attachment->disk);
 

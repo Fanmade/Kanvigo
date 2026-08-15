@@ -36,7 +36,14 @@ class StoreAttachment
 
         $path = $file->store($directory, $disk);
 
-        $dimensions = app(ImageTransformer::class)->dimensions((string) $contents);
+        // Only measure bytes the MIME type actually claims are an image. A raster
+        // decoder happily reads far more than that — PDF, EPS, PostScript, SVG —
+        // and would store those dimensions as if they were pixels, which they are
+        // not (PDF's are PostScript points). Matches the gate
+        // attachments:backfill-dimensions already applies.
+        $dimensions = str_starts_with((string) $mimeType, 'image/')
+            ? app(ImageTransformer::class)->dimensions((string) $contents)
+            : null;
 
         return $attachable->attachments()->create([
             'disk' => $disk,

@@ -2,6 +2,7 @@
 
 use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\GetProjectTool;
+use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -65,4 +66,23 @@ it('returns an empty comments array when the project has none', function () {
     KanvigoServer::actingAs($user)->tool(GetProjectTool::class, ['short_name' => 'ABC'])
         ->assertOk()
         ->assertStructuredContent(fn ($json) => $json->where('comments', [])->etc());
+});
+
+it('reports attachment size and dimensions so an agent can budget before fetching', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    Attachment::factory()->for($project, 'attachable')->create([
+        'name' => 'scan.png',
+        'mime_type' => 'image/png',
+        'size' => 6_291_456,
+        'width' => 4000,
+        'height' => 3000,
+    ]);
+
+    KanvigoServer::actingAs($user)
+        ->tool(GetProjectTool::class, ['short_name' => 'ABC'])
+        ->assertOk()
+        ->assertSee('"size":6291456')
+        ->assertSee('"width":4000')
+        ->assertSee('"height":3000');
 });

@@ -44,7 +44,11 @@ class ImagickDriver implements ImageDriver
     {
         try {
             $image = new Imagick;
-            $image->readImageBlob($bytes);
+            // pingImageBlob() reads only the header, not a full decode — unlike
+            // readImageBlob() it does not dispatch to a delegate (Ghostscript for
+            // PDF/EPS/PS, librsvg for SVG, ...), so measuring dimensions can never
+            // reach that surface even for bytes a caller mislabelled as an image.
+            $image->pingImageBlob($bytes);
             $geometry = $image->getImageGeometry();
             $image->clear();
         } catch (Throwable) {
@@ -81,7 +85,12 @@ class ImagickDriver implements ImageDriver
 
             // Flatten a multi-page source (a PDF-ish TIFF, an animated image) to
             // its first frame — the caller asked for one image, not a sequence.
+            // coalesceImages() returns a new Imagick handle; without clearing the
+            // original it leaks its decoded pixel buffer until GC, which matters
+            // on a multi-megapixel source.
+            $original = $image;
             $image = $image->coalesceImages();
+            $original->clear();
             $image->setFirstIterator();
 
             // autoOrient() can swap width/height (EXIF orientations 5-8 are
