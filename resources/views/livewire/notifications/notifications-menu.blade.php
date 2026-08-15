@@ -2,21 +2,22 @@
     @php($count = $this->unreadCount)
 
     <flux:dropdown position="bottom" align="end">
+        {{-- A control of its own, left of the account avatar: it carries the
+             unread badge and opens the notifications panel only. --}}
         <button
             type="button"
-            class="flex cursor-pointer items-center"
+            class="relative me-3 flex cursor-pointer items-center rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
             aria-label="{{ __('Notifications') }}"
             data-test="notifications-trigger"
         >
-            <flux:avatar
-                size="sm"
-                :name="auth()->user()->name"
-                :src="auth()->user()->avatarUrl()"
-                :initials="auth()->user()->initials()"
-                :badge="$this->unreadBadge"
-                badge:color="red"
-                badge:circle
-            />
+            <flux:icon.bell variant="outline" class="size-5" />
+
+            @if ($this->unreadBadge !== null)
+                <span
+                    class="absolute -end-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] leading-4 font-medium text-white"
+                    data-test="notifications-badge"
+                >{{ $this->unreadBadge }}</span>
+            @endif
         </button>
 
         <flux:menu class="w-80" data-test="notifications-panel">
@@ -93,8 +94,6 @@
             <flux:menu.item :href="route('notifications.index')" icon="bell" wire:navigate>
                 {{ __('Manage notifications') }}
             </flux:menu.item>
-
-            <x-account-menu-items />
         </flux:menu>
     </flux:dropdown>
 </div>

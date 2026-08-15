@@ -148,6 +148,8 @@
         @persist('notifications-menu')
             <livewire:notifications.notifications-menu />
         @endpersist
+
+        <x-header-account-menu />
     </flux:header>
 
     {{-- Flux persists the desktop collapse state in localStorage and only

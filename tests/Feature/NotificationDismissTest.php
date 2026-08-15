@@ -4,23 +4,9 @@ use App\Livewire\Notifications\NotificationsMenu;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
-
-/**
- * Create a notification for a user, optionally already read.
- */
-function makeNotification(User $user, ?string $reference = 'ABC-1', bool $read = false): Notification
-{
-    return $user->notifications()->create([
-        'id' => (string) Str::uuid(),
-        'type' => 'test',
-        'data' => ['url' => null, 'reference' => $reference],
-        'read_at' => $read ? now() : null,
-    ]);
-}
 
 it('dismisses a single notification without hard-deleting it', function () {
     $user = User::factory()->create();

@@ -17,6 +17,18 @@ it('keeps the notifications menu working across SPA navigation', function () {
         ->assertNoJavascriptErrors();
 });
 
+it('opens the account menu from the avatar, next to the bell', function () {
+    $this->actingAs(User::factory()->create());
+
+    $page = visit(route('dashboard'));
+
+    $page->assertVisible('@notifications-trigger')
+        ->click('@header-account-menu')
+        ->click('@header-account-settings')
+        ->assertPathIs('/settings/profile')
+        ->assertNoJavascriptErrors();
+});
+
 it('dismisses a notification from the panel without following its link', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

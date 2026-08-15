@@ -4,6 +4,7 @@ use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Activity;
 use App\Models\Attachment;
 use App\Models\Doc;
+use App\Models\Notification;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -12,6 +13,7 @@ use App\Support\InlineReferenceParser;
 use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /*
@@ -62,6 +64,19 @@ function seedActivity(Task|Project $subject, string $action, ?string $field = nu
     Audit::record($subject->contentAuditEvent($action, $field, $oldValue, $newValue));
 
     return $subject->activities()->orderByDesc('id')->firstOrFail();
+}
+
+/**
+ * Create a database notification for a user, unread unless stated otherwise.
+ */
+function makeNotification(User $user, ?string $reference = 'ABC-1', bool $read = false): Notification
+{
+    return $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'test',
+        'data' => ['url' => null, 'reference' => $reference],
+        'read_at' => $read ? now() : null,
+    ]);
 }
 
 /**
