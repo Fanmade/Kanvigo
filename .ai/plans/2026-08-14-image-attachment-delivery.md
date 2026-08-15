@@ -8,7 +8,7 @@
 
 **Tech Stack:** Laravel 13, PHP 8.5, Pest 4, `ext-imagick` + `ext-gd` (both present), Laravel MCP v0, Sanctum.
 
-**Spec:** `docs/superpowers/specs/2026-08-14-image-attachment-delivery-design.md`
+**Spec:** `.ai/specs/2026-08-14-image-attachment-delivery-design.md`
 **Board:** KAN-542 — <https://do.reuterben.de/KAN-542>
 
 ## Global Constraints
