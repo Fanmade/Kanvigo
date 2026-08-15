@@ -117,7 +117,6 @@
                 :mentionables-url="$this->mentionablesUrl"
             />
             <x-attachments.upload-button />
-            <flux:input type="date" wire:model="dueDate" :label="__('Due date')" :description="__('Optional')" />
             <div class="flex gap-2">
                 <flux:button type="submit" variant="primary" data-test="save-task">{{ __('Save') }}</flux:button>
                 <flux:button variant="ghost" wire:click="$set('editing', false)">{{ __('Cancel') }}</flux:button>
@@ -172,10 +171,6 @@
                             @endif
                         </div>
                     @endif
-                </div>
-
-                <div class="flex flex-wrap items-center gap-1">
-                    <x-due-date-badge :date="$this->task->due_date" />
                 </div>
 
                 <x-attachments.dropzone :enabled="$this->canUpdate">
@@ -279,6 +274,10 @@
 
                     <x-rail-row :label="__('Priority')">
                         <x-priority-control :priority="$this->task->priority" :can-edit="$this->canUpdate" />
+                    </x-rail-row>
+
+                    <x-rail-row :label="__('Due date')">
+                        <x-due-date-control :date="$this->task->due_date" :can-edit="$this->canUpdate" />
                     </x-rail-row>
 
                     @if ($this->taskTypes->isNotEmpty() || $this->task->taskType)

@@ -26,20 +26,43 @@ it('casts the due date to a date instance', function () {
         ->and($task->fresh()->due_date->format('Y-m-d'))->toBe('2026-07-01');
 });
 
-it('saves a due date through the task view', function () {
+it('saves a due date from the task rail', function () {
     Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
             'task_number' => $this->task->task_number,
         ])
-        ->call('edit')
-        ->set('dueDate', '2026-08-15')
-        ->call('save');
+        ->set('dueDate', '2026-08-15');
 
     expect($this->task->fresh()->due_date->format('Y-m-d'))->toBe('2026-08-15');
 });
 
-it('clears a due date through the task view', function () {
+it('clears a due date from the task rail', function () {
+    $this->task->update(['due_date' => '2026-08-15']);
+
+    Livewire::actingAs($this->member)
+        ->test(TaskView::class, [
+            'short_name' => 'ABC',
+            'task_number' => $this->task->task_number,
+        ])
+        ->set('dueDate', null);
+
+    expect($this->task->fresh()->due_date)->toBeNull();
+});
+
+it('rejects an invalid due date from the task rail', function () {
+    Livewire::actingAs($this->member)
+        ->test(TaskView::class, [
+            'short_name' => 'ABC',
+            'task_number' => $this->task->task_number,
+        ])
+        ->set('dueDate', 'not-a-date')
+        ->assertHasErrors(['dueDate' => 'date']);
+
+    expect($this->task->fresh()->due_date)->toBeNull();
+});
+
+it('does not expose the due date in the edit form', function () {
     $this->task->update(['due_date' => '2026-08-15']);
 
     Livewire::actingAs($this->member)
@@ -48,22 +71,45 @@ it('clears a due date through the task view', function () {
             'task_number' => $this->task->task_number,
         ])
         ->call('edit')
-        ->set('dueDate', '')
-        ->call('save');
-
-    expect($this->task->fresh()->due_date)->toBeNull();
+        ->assertDontSeeHtml('wire:model="dueDate"');
 });
 
-it('rejects an invalid due date in the task view', function () {
-    Livewire::actingAs($this->member)
+it('offers the due-date picker to an editor and a read-only badge to a viewer', function () {
+    $this->task->update(['due_date' => '2020-01-01']);
+
+    $editorHtml = Livewire::actingAs($this->member)
         ->test(TaskView::class, [
             'short_name' => 'ABC',
             'task_number' => $this->task->task_number,
         ])
-        ->call('edit')
-        ->set('dueDate', 'not-a-date')
-        ->call('save')
-        ->assertHasErrors(['dueDate' => 'date']);
+        ->html();
+
+    expect($editorHtml)->toContain('due-date-control')
+        ->and($editorHtml)->toContain('due-date-overdue');
+
+    $viewerHtml = Livewire::actingAs(userWithRole($this->project, 'viewer'))
+        ->test(TaskView::class, [
+            'short_name' => 'ABC',
+            'task_number' => $this->task->task_number,
+        ])
+        ->html();
+
+    expect($viewerHtml)->toContain('Jan 1, 2020')
+        ->and($viewerHtml)->not->toContain('due-date-control');
+});
+
+it('forbids a viewer from setting a due date', function () {
+    $viewer = userWithRole($this->project, 'viewer');
+
+    Livewire::actingAs($viewer)
+        ->test(TaskView::class, [
+            'short_name' => 'ABC',
+            'task_number' => $this->task->task_number,
+        ])
+        ->set('dueDate', '2026-08-15')
+        ->assertForbidden();
+
+    expect($this->task->fresh()->due_date)->toBeNull();
 });
 
 it('creates a task with a due date from the create dialog', function () {

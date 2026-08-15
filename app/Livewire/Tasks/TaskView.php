@@ -24,6 +24,7 @@ use App\Support\Facades\Audit;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
@@ -62,7 +63,11 @@ class TaskView extends Component
 
     public string $description = '';
 
-    public string $dueDate = '';
+    /**
+     * The due date as "Y-m-d", or null when the task has none. Edited inline from
+     * the metadata rail rather than in the edit form.
+     */
+    public ?string $dueDate = null;
 
     public string $status = Status::Planned->value;
 
@@ -119,6 +124,7 @@ class TaskView extends Component
         $this->status = $task->status->value;
         $this->priority = $task->priority->value;
         $this->typeId = $task->task_type_id;
+        $this->dueDate = $task->due_date?->format('Y-m-d');
         $this->assigneeIds = $task->assignees->pluck('id')->all();
     }
 
@@ -571,6 +577,34 @@ class TaskView extends Component
     }
 
     /**
+     * Inline due-date edit from the metadata rail. An empty value clears the date;
+     * the audited-field hook records the change on save.
+     */
+    public function updatedDueDate(): void
+    {
+        $task = $this->task;
+        $this->authorize('update', $task);
+
+        $this->validate(['dueDate' => ['nullable', 'date']]);
+
+        $new = $this->dueDate ? Carbon::parse($this->dueDate)->startOfDay() : null;
+        $task->due_date = $new;
+
+        if (! $task->isDirty('due_date')) {
+            return;
+        }
+
+        $cleared = $new === null;
+        $task->save();
+
+        unset($this->task);
+        Flux::toast(
+            text: $cleared ? __('Due date cleared.') : __('Due date updated.'),
+            variant: 'success',
+        );
+    }
+
+    /**
      * The project's configured task types, offered in the type control.
      *
      * @return Collection<int, TaskType>
@@ -660,7 +694,6 @@ class TaskView extends Component
 
         $this->title = $task->title;
         $this->description = (string) $task->description;
-        $this->dueDate = $task->due_date?->format('Y-m-d') ?? '';
         $this->editing = true;
     }
 
@@ -672,13 +705,11 @@ class TaskView extends Component
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'dueDate' => ['nullable', 'date'],
         ]);
 
         $task->update([
             'title' => $validated['title'],
             'description' => $validated['description'],
-            'due_date' => $validated['dueDate'] ?: null,
         ]);
 
         $this->editing = false;
