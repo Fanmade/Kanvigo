@@ -428,6 +428,38 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * The user's notifications, as the app's own {@see Notification} model
+     * rather than Laravel's — dismissed (soft-deleted) rows are excluded, and
+     * old ones are prunable.
+     *
+     * @return MorphMany<Notification, $this>
+     */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Notification::class, 'notifiable')->latest();
+    }
+
+    /**
+     * The user's read notifications.
+     *
+     * @return MorphMany<Notification, $this>
+     */
+    public function readNotifications(): MorphMany
+    {
+        return $this->notifications()->whereNotNull('read_at');
+    }
+
+    /**
+     * The user's unread notifications.
+     *
+     * @return MorphMany<Notification, $this>
+     */
+    public function unreadNotifications(): MorphMany
+    {
+        return $this->notifications()->whereNull('read_at');
+    }
+
+    /**
      * The number of unread notifications, read on every authenticated page for
      * the nav badge. Cached per user so it is a cheap cache hit instead of a
      * `count(*)` each request; {@see forgetUnreadNotificationCount()} busts it

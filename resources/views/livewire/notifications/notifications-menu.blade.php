@@ -22,14 +22,24 @@
         <flux:menu class="w-80" data-test="notifications-panel">
             <div class="flex items-center justify-between gap-2 px-2 py-1.5">
                 <flux:heading size="sm">{{ __('Notifications') }}</flux:heading>
-                @if ($count > 0)
-                    <flux:button
-                        size="xs"
-                        variant="ghost"
-                        wire:click="markAllRead"
-                        data-test="mark-all-read"
-                    >{{ __('Mark all read') }}</flux:button>
-                @endif
+                <div class="flex items-center gap-1">
+                    @if ($count > 0)
+                        <flux:button
+                            size="xs"
+                            variant="ghost"
+                            wire:click="markAllRead"
+                            data-test="mark-all-read"
+                        >{{ __('Mark all read') }}</flux:button>
+                    @endif
+                    @if ($this->notifications->isNotEmpty())
+                        <flux:button
+                            size="xs"
+                            variant="ghost"
+                            wire:click="clearAll"
+                            data-test="clear-all-notifications"
+                        >{{ __('Clear all') }}</flux:button>
+                    @endif
+                </div>
             </div>
 
             <flux:menu.separator />
@@ -37,23 +47,41 @@
             @forelse ($this->notifications as $notification)
                 @php($data = $notification->data)
                 @php($label = $this->actionLabel($data['action'] ?? ''))
-                <flux:menu.item
-                    wire:click="open('{{ $notification->id }}')"
-                    class="!h-auto"
-                    data-test="notification-{{ $notification->id }}"
-                >
-                    <div class="flex items-start gap-2 py-0.5 {{ $notification->read_at ? 'opacity-60' : '' }}">
+                {{--
+                    A plain row rather than a flux:menu.item: the dismiss button
+                    sits inside the row, and nesting it in a menu item would fire
+                    the item's own click handler as well.
+                --}}
+                <div class="group flex items-start gap-1 rounded-md pr-1 hover:bg-zinc-100 dark:hover:bg-zinc-700">
+                    <button
+                        type="button"
+                        class="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-2 py-1.5 text-left"
+                        wire:click="open('{{ $notification->id }}')"
+                        data-test="notification-{{ $notification->id }}"
+                    >
                         <span class="mt-1.5 size-2 shrink-0 rounded-full {{ $notification->read_at ? 'bg-transparent' : 'bg-red-500' }}"></span>
-                        <div class="min-w-0">
-                            <p class="text-sm whitespace-normal">
+                        <span class="min-w-0 {{ $notification->read_at ? 'opacity-60' : '' }}">
+                            <span class="block text-sm whitespace-normal">
                                 <span class="font-medium">{{ $data['actor'] ?? __('System') }}</span>
                                 {{ $label }}
                                 <span class="font-mono text-xs text-zinc-500">{{ $data['reference'] }}</span>
-                            </p>
-                            <p class="text-xs text-zinc-400"><x-relative-time :date="$notification->created_at" /></p>
-                        </div>
-                    </div>
-                </flux:menu.item>
+                            </span>
+                            <span class="block text-xs text-zinc-400"
+                                ><x-relative-time :date="$notification->created_at"
+                            /></span>
+                        </span>
+                    </button>
+
+                    <flux:button
+                        size="xs"
+                        variant="subtle"
+                        icon="x-mark"
+                        class="mt-1 shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                        :aria-label="__('Dismiss notification')"
+                        wire:click="dismiss('{{ $notification->id }}')"
+                        data-test="dismiss-notification-{{ $notification->id }}"
+                    />
+                </div>
             @empty
                 <div class="px-3 py-6 text-center">
                     <flux:text size="sm" class="text-zinc-400">{{ __('No notifications.') }}</flux:text>

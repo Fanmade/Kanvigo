@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Notifications;
 
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -37,12 +37,22 @@ class NotificationsMenu extends Component
     }
 
     /**
-     * @return Collection<int, DatabaseNotification>
+     * The panel's list: unread first, then the most recent read ones, so it
+     * drains on its own as notifications are read and dismissed.
+     *
+     * @return Collection<int, Notification>
      */
     #[Computed]
     public function notifications(): Collection
     {
-        return Auth::user()->notifications()->latest()->limit(10)->get();
+        return Auth::user()->notifications()
+            ->reorder()
+            // `read_at is null desc` is not portable; a case expression sorts
+            // unread (0) before read (1) on every supported driver.
+            ->orderByRaw('case when read_at is null then 0 else 1 end')
+            ->latest()
+            ->limit(10)
+            ->get();
     }
 
     public function markAllRead(): void
@@ -53,6 +63,34 @@ class NotificationsMenu extends Component
         // A bulk update fires no model events, so the cached unread count (which is
         // busted by DatabaseNotification's `updated` event) must be cleared by hand.
         $user->unreadNotifications()->update(['read_at' => now()]);
+        User::forgetUnreadNotificationCount($user->getKey());
+
+        unset($this->unreadCount, $this->unreadBadge, $this->notifications);
+    }
+
+    /**
+     * Dismiss one notification: it is soft-deleted, so it leaves the panel and
+     * the unread count but stays in the inbox archive until it is pruned. The
+     * lookup is scoped to the caller's own notifications, so a tampered id can
+     * never dismiss someone else's.
+     */
+    public function dismiss(string $id): void
+    {
+        Auth::user()->notifications()->whereKey($id)->first()?->delete();
+
+        unset($this->unreadCount, $this->unreadBadge, $this->notifications);
+    }
+
+    /**
+     * Dismiss every notification the user has.
+     */
+    public function clearAll(): void
+    {
+        $user = Auth::user();
+
+        // As with markAllRead: a bulk soft-delete fires no model events, so the
+        // cached unread count must be busted by hand.
+        $user->notifications()->delete();
         User::forgetUnreadNotificationCount($user->getKey());
 
         unset($this->unreadCount, $this->unreadBadge, $this->notifications);

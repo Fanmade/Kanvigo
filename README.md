@@ -99,6 +99,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   of a new tab.
 - **Notifications** — subscribe per project (assignment subscribes you
   automatically), with an unread badge in the header and a management page.
+  The panel lists unread first; dismiss a single notification or clear them all,
+  and dismissed ones are removed for good after a month.
 - **Profiles & avatars** — upload a profile picture (initials as the fallback);
   a profile page shows the projects you share with someone and their recent
   activity, visible only to people who share a project with them.

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\McpClientGrant;
+use App\Models\Notification;
 use App\Models\PersonalAccessToken;
 use App\Models\Project;
 use App\Models\Task;
@@ -113,9 +114,12 @@ class AppServiceProvider extends ServiceProvider
             User::forgetUnreadNotificationCount($notification->notifiable_id);
         };
 
-        DatabaseNotification::created($forget);
-        DatabaseNotification::updated($forget);
-        DatabaseNotification::deleted($forget);
+        // Registered on the app's own model, not the framework's parent class:
+        // Eloquent dispatches its events under the concrete class name, so hooks
+        // bound to DatabaseNotification would never fire for a Notification.
+        Notification::created($forget);
+        Notification::updated($forget);
+        Notification::deleted($forget);
     }
 
     /**

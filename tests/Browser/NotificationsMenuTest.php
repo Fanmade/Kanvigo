@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Str;
 
 it('keeps the notifications menu working across SPA navigation', function () {
     $this->actingAs(User::factory()->create());
@@ -14,4 +15,28 @@ it('keeps the notifications menu working across SPA navigation', function () {
         ->click('@notifications-trigger')
         ->assertVisible('@notifications-panel')
         ->assertNoJavascriptErrors();
+});
+
+it('dismisses a notification from the panel without following its link', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $notification = $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'test',
+        'data' => ['url' => route('projects.index'), 'reference' => 'ABC-1', 'action' => 'commented'],
+        'read_at' => null,
+    ]);
+
+    $page = visit(route('dashboard'));
+
+    $page->click('@notifications-trigger')
+        ->assertVisible("@notification-{$notification->id}")
+        ->click("@dismiss-notification-{$notification->id}")
+        // Dismissing must not trigger the row's own open() — we stay put.
+        ->assertPathIs('/dashboard')
+        ->assertMissing("@notification-{$notification->id}")
+        ->assertNoJavascriptErrors();
+
+    expect($user->notifications()->count())->toBe(0);
 });
