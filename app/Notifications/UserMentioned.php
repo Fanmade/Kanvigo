@@ -2,11 +2,11 @@
 
 namespace App\Notifications;
 
+use App\Concerns\ResolvesSubjectUrl;
 use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Notifications\Concerns\ResolvesSubjectUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 

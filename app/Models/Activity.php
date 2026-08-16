@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $new_value
  * @property Carbon|null $created_at
  * @property-read User|null $user
+ * @property-read Project|null $project
  * @property-read string|null $reference
  */
 #[Fillable(['user_id', 'token_name', 'action', 'field', 'old_value', 'new_value'])]
@@ -129,6 +130,17 @@ class Activity extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The project the entry belongs to, denormalized onto the row so a
+     * cross-project feed can filter and label without a polymorphic join.
+     *
+     * @return BelongsTo<Project, $this>
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /**

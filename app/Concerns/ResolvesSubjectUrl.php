@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Notifications\Concerns;
+namespace App\Concerns;
 
 use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
 
 /**
- * Resolves a notification's subject to the web URL the notifications menu links
- * to: the task page for a Task, the doc page for a Doc, the project page for a
- * Project, or null for anything else. Shared so {@see ItemActivity} and
- * {@see UserMentioned} link the same way.
+ * Resolves an activity or notification subject to the web page it lives on: the
+ * task page for a Task, the doc page for a Doc, the project page for a Project,
+ * or null for anything else. Shared so the notifications and the activity feed
+ * link the same way.
  */
 trait ResolvesSubjectUrl
 {

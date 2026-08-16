@@ -12,6 +12,7 @@ use App\Http\Controllers\OAuth\ApproveMcpAuthorizationController;
 use App\Http\Controllers\SignedAttachmentDownloadController;
 use App\Http\Controllers\TaskPreviewController;
 use App\Http\Controllers\UserPreviewController;
+use App\Livewire\Activity\GlobalActivityFeed;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
 use App\Livewire\Dashboard;
@@ -76,6 +77,7 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('board', Board::class)->name('board');
     Route::livewire('notes', NoteList::class)->name('notes.index');
     Route::livewire('notifications', NotificationsIndex::class)->name('notifications.index');
+    Route::livewire('activity', GlobalActivityFeed::class)->name('activity.index');
     Route::livewire('invite', InviteUser::class)->name('invitations.create');
 
     // The account menu's language switcher; the Appearance settings page stores

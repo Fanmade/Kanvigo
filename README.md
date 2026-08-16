@@ -106,6 +106,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   The notifications page keeps the full history in an **Inbox** tab — filterable
   by read state, project, activity type and period, with bulk mark-read and
   dismiss — next to a **Subscriptions** tab for what you follow.
+- **Activity feed** — one page with everything that happened across all your
+  projects, newest first and grouped by day. Unlike notifications it isn't
+  addressed at you: it answers "what did I miss?".
 - **Profiles & avatars** — upload a profile picture (initials as the fallback);
   a profile page shows the projects you share with someone and their recent
   activity, visible only to people who share a project with them.

@@ -51,6 +51,15 @@
                     {{ __('Notes') }}
                 </flux:sidebar.item>
                 <flux:sidebar.item
+                    icon="clock"
+                    :href="route('activity.index')"
+                    :current="request()->routeIs('activity.index')"
+                    wire:navigate
+                    data-test="nav-activity"
+                >
+                    {{ __('Activity') }}
+                </flux:sidebar.item>
+                <flux:sidebar.item
                     icon="bell"
                     :href="route('notifications.index')"
                     :current="request()->routeIs('notifications.index')"

@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Concerns\ResolvesSubjectUrl;
 use App\Models\Activity;
-use App\Notifications\Concerns\ResolvesSubjectUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
