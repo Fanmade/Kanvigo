@@ -111,6 +111,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   addressed at you: it answers "what did I miss?". Filter by person, project,
   activity type and period; your own activity is left out unless you ask for it,
   and a filtered feed keeps its state in the URL, so it can be shared.
+  A line marks what arrived since your last visit, and the sidebar carries a
+  count of what you haven't seen.
 - **Profiles & avatars** — upload a profile picture (initials as the fallback);
   a profile page shows the projects you share with someone and their recent
   activity, visible only to people who share a project with them.

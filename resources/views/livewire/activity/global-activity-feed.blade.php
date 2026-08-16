@@ -65,6 +65,16 @@
             <flux:card class="p-0">
                 <ul class="divide-y divide-zinc-200/70 dark:divide-white/10">
                     @foreach ($entries as $activity)
+                        @if ($activity->id === $this->firstSeenId)
+                            <li class="flex items-center gap-3 px-4 py-2" data-test="new-since-divider">
+                                <span class="h-px flex-1 bg-amber-300 dark:bg-amber-400/40"></span>
+                                <flux:text size="sm" class="shrink-0 text-amber-600 dark:text-amber-400">
+                                    {{ __('New since your last visit') }}
+                                </flux:text>
+                                <span class="h-px flex-1 bg-amber-300 dark:bg-amber-400/40"></span>
+                            </li>
+                        @endif
+
                         <li
                             class="flex items-start gap-2 px-4 py-2.5 text-sm"
                             wire:key="activity-{{ $activity->id }}"

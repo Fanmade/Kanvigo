@@ -50,10 +50,13 @@
                 >
                     {{ __('Notes') }}
                 </flux:sidebar.item>
+                @php($unseenActivity = auth()->user()->unseenActivityCount())
                 <flux:sidebar.item
                     icon="clock"
                     :href="route('activity.index')"
                     :current="request()->routeIs('activity.index')"
+                    :badge="$unseenActivity > 0 ? $unseenActivity : null"
+                    badge-color="amber"
                     wire:navigate
                     data-test="nav-activity"
                 >

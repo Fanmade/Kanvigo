@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Authorization\AccountPermissionProvisioner;
 use App\Enums\Permission;
 use App\Support\Facades\Audit;
+use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Fanmade\DelegatedPermissions\Concerns\HasRoles;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -41,6 +42,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $avatar_path
  * @property Carbon|null $email_verified_at
  * @property Carbon|null $deactivated_at
+ * @property Carbon|null $activities_seen_at
  * @property Carbon|null $deleted_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -139,6 +141,7 @@ class User extends Authenticatable implements PasskeyUser
         return [
             'email_verified_at' => 'datetime',
             'deactivated_at' => 'datetime',
+            'activities_seen_at' => 'datetime',
             'password' => 'hashed',
             'preferences' => 'array',
         ];
@@ -519,6 +522,48 @@ class User extends Authenticatable implements PasskeyUser
     private static function unreadNotificationCacheKey(int|string $userId): string
     {
         return 'notifications:unread:'.$userId;
+    }
+
+    /**
+     * How much activity has been recorded by other people since the user last
+     * opened the activity feed — the sidebar's "you missed this" badge.
+     *
+     * Deliberately a `count(*)` under the same visibility scope the feed uses,
+     * never a row load. Cached briefly rather than busted on write: the feed is
+     * an overview, not an inbox, so a badge that lags by a minute costs nothing,
+     * while recounting on every recorded activity would not.
+     */
+    public function unseenActivityCount(): int
+    {
+        $seenAt = $this->activities_seen_at;
+
+        return Cache::remember(
+            'activity:unseen:'.$this->getKey().':'.($seenAt?->getTimestamp() ?? 0),
+            now()->addMinute(),
+            fn (): int => Activity::query()
+                ->visibleTo($this)
+                ->when($seenAt !== null, static fn (Builder $query) => $query->where('created_at', '>', $seenAt))
+                ->where(fn (Builder $others) => $others
+                    ->whereNull('activities.user_id')
+                    ->orWhere('activities.user_id', '!=', $this->getKey()))
+                ->count(),
+        );
+    }
+
+    /**
+     * Mark the activity feed as seen right now, returning the timestamp it was
+     * at before. Callers keep the old value for display: stamping first would
+     * leave nothing marked new on the very render that is supposed to show it.
+     */
+    public function markActivitiesSeen(): ?CarbonInterface
+    {
+        $previous = $this->activities_seen_at;
+
+        // Quietly, and without touching updated_at: visiting a page is not an
+        // edit to the account, and it must not fire model events.
+        self::withoutTimestamps(fn () => $this->forceFill(['activities_seen_at' => Carbon::now()])->saveQuietly());
+
+        return $previous;
     }
 
     /**

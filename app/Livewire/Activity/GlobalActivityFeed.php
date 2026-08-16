@@ -93,6 +93,21 @@ class GlobalActivityFeed extends Component
     public bool $mine = false;
 
     /**
+     * When the reader last opened this page, as an ISO timestamp — the line
+     * between "new since your last visit" and the rest.
+     *
+     * Read and held here on mount while the stored value is stamped forward, so
+     * the render that is supposed to show what is new still knows what was new.
+     * Held as a property (not re-read) so it survives paging and filtering.
+     */
+    public ?string $seenAt = null;
+
+    public function mount(): void
+    {
+        $this->seenAt = Auth::user()->markActivitiesSeen()?->toIso8601String();
+    }
+
+    /**
      * A filter change invalidates the cursor: it points at a row that may not
      * be in the new result set at all.
      */
@@ -270,6 +285,30 @@ class GlobalActivityFeed extends Component
                 $activity->id => ActivityDescriber::describe($activity),
             ])
             ->all();
+    }
+
+    /**
+     * The id of the first row on this page that the reader has seen before —
+     * the divider goes above it. Null when the whole page is new (or all of it
+     * is old), in which case no divider is drawn.
+     */
+    #[Computed]
+    public function firstSeenId(): ?int
+    {
+        if ($this->seenAt === null) {
+            return null;
+        }
+
+        $seenAt = Carbon::parse($this->seenAt);
+        $items = collect($this->activities->items());
+
+        // Nothing new on this page: the reader is deep in history, and a "new
+        // since" line at the very top would be a lie.
+        if ($items->isEmpty() || $items->first()->created_at?->lessThanOrEqualTo($seenAt)) {
+            return null;
+        }
+
+        return $items->first(static fn (Activity $activity): bool => $activity->created_at?->lessThanOrEqualTo($seenAt) ?? false)?->id;
     }
 
     /**
