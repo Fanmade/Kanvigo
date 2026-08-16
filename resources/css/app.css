@@ -101,6 +101,10 @@
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
     @apply grid gap-2;
+    /* A grid item defaults to min-width:auto, so a control with wide content —
+       a select whose selected option is a long task title — grows past the
+       field instead of truncating inside it (KAN-540). */
+    grid-template-columns: minmax(0, 1fr);
 }
 
 [data-flux-label] {
