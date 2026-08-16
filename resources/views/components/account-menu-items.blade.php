@@ -62,7 +62,7 @@
     @foreach (\App\Http\Middleware\SetLocale::SUPPORTED as $code => $name)
         <form method="POST" action="{{ route('locale.update') }}" class="w-full">
             @csrf
-            <input type="hidden" name="locale" value="{{ $code }}">
+            <input type="hidden" name="locale" value="{{ $code }}" />
             <flux:menu.item
                 as="button"
                 type="submit"

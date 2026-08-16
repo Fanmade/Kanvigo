@@ -22,6 +22,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Kanvigo\Audit\Contracts\AuditCategory;
@@ -105,8 +106,10 @@ class User extends Authenticatable implements PasskeyUser
             $user->projects()->detach();
             $user->roles()->detach();
             $user->assignedTasks()->detach();
-            $user->subscribedProjects()->detach();
-            $user->subscribedTasks()->detach();
+            // Drop every subscription row, opted-out ones included — the
+            // relations above hide those, so detaching through them would leave
+            // the tombstones behind.
+            DB::table('subscriptions')->where('user_id', $user->getKey())->delete();
         });
     }
 
@@ -501,11 +504,17 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * The projects the user follows. An unsubscribed row is kept on file so an
+     * automatic trigger can't re-subscribe the user, but it is not a
+     * subscription — hence excluded here, as in {@see HasSubscribers}.
+     *
      * @return MorphToMany<Project, $this>
      */
     public function subscribedProjects(): MorphToMany
     {
-        return $this->morphedByMany(Project::class, 'subscribable', 'subscriptions')->withTimestamps();
+        return $this->morphedByMany(Project::class, 'subscribable', 'subscriptions')
+            ->wherePivotNull('unsubscribed_at')
+            ->withTimestamps();
     }
 
     /**
@@ -513,7 +522,9 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function subscribedTasks(): MorphToMany
     {
-        return $this->morphedByMany(Task::class, 'subscribable', 'subscriptions')->withTimestamps();
+        return $this->morphedByMany(Task::class, 'subscribable', 'subscriptions')
+            ->wherePivotNull('unsubscribed_at')
+            ->withTimestamps();
     }
 
     /**

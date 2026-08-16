@@ -270,6 +270,17 @@ class Project extends Model implements Mentionable, Subscribable, UsesVariables
     }
 
     /**
+     * Creating a project does not subscribe its creator. A project-level watch
+     * relays every task's activity, which is a deliberate choice rather than a
+     * side effect of setting the project up — the bell on the project page is
+     * where it belongs.
+     */
+    public function autoSubscribesCreator(): bool
+    {
+        return false;
+    }
+
+    /**
      * The users granted access to this project.
      *
      * @return BelongsToMany<User, $this>

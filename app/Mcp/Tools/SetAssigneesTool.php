@@ -50,7 +50,7 @@ class SetAssigneesTool extends Tool
         $changes = $task->assignees()->sync($assigneeIds);
 
         if ($changes['attached'] !== []) {
-            $task->subscribers()->syncWithoutDetaching($changes['attached']);
+            $task->autoSubscribe($changes['attached']);
         }
 
         $task->recordAssigneeChange($changes['attached'], $changes['detached']);

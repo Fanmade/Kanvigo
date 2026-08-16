@@ -663,7 +663,7 @@ class TaskView extends Component
 
         // Assigning a user automatically subscribes them to updates.
         if ($changes['attached'] !== []) {
-            $task->subscribers()->syncWithoutDetaching($changes['attached']);
+            $task->autoSubscribe($changes['attached']);
         }
 
         $task->recordAssigneeChange($changes['attached'], $changes['detached']);

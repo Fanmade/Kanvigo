@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\HasMentions;
+use App\Concerns\HasSubscribers;
 use App\Concerns\IndexesVariableUsages;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
@@ -36,6 +37,22 @@ class Comment extends Model implements Mentionable, UsesVariables
     use IndexesVariableUsages;
     use PrunesInlineAttachments;
     use SanitizesRichText;
+
+    /**
+     * Commenting subscribes the author to the item they commented on: having
+     * said something is the clearest signal of interest there is. Hooked on the
+     * model so every write path — the Livewire editor, the REST API, MCP —
+     * behaves the same, and skipped when the author already unsubscribed
+     * ({@see HasSubscribers::autoSubscribe()}).
+     */
+    protected static function booted(): void
+    {
+        static::created(static function (Comment $comment): void {
+            if ($comment->user_id !== null) {
+                $comment->inlineAttachmentOwner()->autoSubscribe([$comment->user_id]);
+            }
+        });
+    }
 
     /**
      * A comment's mentionable users are those of the project or task it is on, so

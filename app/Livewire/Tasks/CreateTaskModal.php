@@ -653,7 +653,7 @@ class CreateTaskModal extends Component
         }
 
         $task->assignees()->sync($assigneeIds);
-        $task->subscribers()->syncWithoutDetaching($assigneeIds);
+        $task->autoSubscribe($assigneeIds);
         $task->recordAssigneeChange($assigneeIds, []);
     }
 

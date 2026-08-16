@@ -97,8 +97,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   rejected with a clear message.
   Image attachments open in a lightbox gallery with keyboard navigation instead
   of a new tab.
-- **Notifications** — subscribe per project (assignment subscribes you
-  automatically), with an unread badge in the header and a management page.
+- **Notifications** — subscribe per project or task; getting involved subscribes
+  you automatically (creating a task, being assigned, commenting, being
+  mentioned), and unsubscribing sticks — no trigger puts you back. There's an
+  unread badge in the header and a management page.
   The panel lists unread first; dismiss a single notification or clear them all,
   and dismissed ones are removed for good after a month.
   The notifications page keeps the full history in an **Inbox** tab — filterable

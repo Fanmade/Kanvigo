@@ -105,7 +105,7 @@ trait HasMentions
         // Tasks and projects take subscribers; a doc does not, so a mention there
         // notifies the user without subscribing them to anything.
         if ($subject instanceof Task || $subject instanceof Project) {
-            $subject->subscribers()->syncWithoutDetaching($recipientIds);
+            $subject->autoSubscribe($recipientIds);
         }
 
         $actor = Auth::user();
