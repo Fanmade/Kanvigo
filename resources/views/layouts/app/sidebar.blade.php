@@ -55,6 +55,7 @@
                     :href="route('notifications.index')"
                     :current="request()->routeIs('notifications.index')"
                     wire:navigate
+                    data-test="nav-notifications"
                 >
                     {{ __('Notifications') }}
                 </flux:sidebar.item>

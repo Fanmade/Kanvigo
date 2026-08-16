@@ -10,11 +10,15 @@ use Symfony\Component\HttpFoundation\Response;
 class SetLocale
 {
     /**
-     * The locales the application supports.
+     * The locales the application supports, each mapped to its name in its own
+     * language — so a switcher reads the same whichever locale is active.
      *
-     * @var array<int, string>
+     * @var array<string, string>
      */
-    protected array $supported = ['en', 'de'];
+    public const array SUPPORTED = [
+        'en' => 'English',
+        'de' => 'Deutsch',
+    ];
 
     /**
      * Resolve the active locale from the session, falling back to the
@@ -24,11 +28,13 @@ class SetLocale
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $supported = array_keys(self::SUPPORTED);
+
         $locale = $request->session()->get('locale')
-            ?? $request->getPreferredLanguage($this->supported)
+            ?? $request->getPreferredLanguage($supported)
             ?? config('app.locale');
 
-        if (in_array($locale, $this->supported, true)) {
+        if (in_array($locale, $supported, true)) {
             App::setLocale($locale);
         }
 

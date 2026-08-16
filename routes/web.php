@@ -5,6 +5,7 @@ use App\Http\Controllers\AttachmentThumbnailController;
 use App\Http\Controllers\AttachmentViewController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DocPreviewController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MentionSuggestionsController;
 use App\Http\Controllers\NoteAttachmentController;
 use App\Http\Controllers\OAuth\ApproveMcpAuthorizationController;
@@ -76,6 +77,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('notes', NoteList::class)->name('notes.index');
     Route::livewire('notifications', NotificationsIndex::class)->name('notifications.index');
     Route::livewire('invite', InviteUser::class)->name('invitations.create');
+
+    // The account menu's language switcher; the Appearance settings page stores
+    // the same session value.
+    Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
     Route::livewire('admin/users', UserManagement::class)->name('admin.users');
 
     // Avatars are stored privately and streamed only to authenticated viewers.

@@ -120,7 +120,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   to a typed reference (`PROJ-42`, `PROJ42`, `PROJ-D3`), find tasks by a bare
   number, and run quick actions such as creating a task or a doc.
 - **Appearance** — English and German following the browser language, light and
-  dark, and an optional full-width layout for large displays.
+  dark, and an optional full-width layout for large displays. Theme and language
+  are also switchable straight from the account menu.
 
 ### Access & administration
 

@@ -53,6 +53,29 @@
     </flux:radio.group>
 </div>
 
+{{-- Language, unlike the theme, is a server-side setting: each option posts the
+     choice and the page comes back rendered in it. The options are labelled in
+     their own language so they read the same whichever locale is active. --}}
+<flux:menu.separator />
+
+<flux:menu.group :heading="__('Language')">
+    @foreach (\App\Http\Middleware\SetLocale::SUPPORTED as $code => $name)
+        <form method="POST" action="{{ route('locale.update') }}" class="w-full">
+            @csrf
+            <input type="hidden" name="locale" value="{{ $code }}">
+            <flux:menu.item
+                as="button"
+                type="submit"
+                :icon:trailing="app()->getLocale() === $code ? 'check' : null"
+                class="w-full cursor-pointer"
+                :data-test="$testPrefix ? $testPrefix.'-language-'.$code : null"
+            >
+                {{ $name }}
+            </flux:menu.item>
+        </form>
+    @endforeach
+</flux:menu.group>
+
 <flux:menu.separator />
 
 <form method="POST" action="{{ route('logout') }}" class="w-full">
