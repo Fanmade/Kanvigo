@@ -108,7 +108,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   dismiss — next to a **Subscriptions** tab for what you follow.
 - **Activity feed** — one page with everything that happened across all your
   projects, newest first and grouped by day. Unlike notifications it isn't
-  addressed at you: it answers "what did I miss?".
+  addressed at you: it answers "what did I miss?". Filter by person, project,
+  activity type and period; your own activity is left out unless you ask for it,
+  and a filtered feed keeps its state in the URL, so it can be shared.
 - **Profiles & avatars** — upload a profile picture (initials as the fallback);
   a profile page shows the projects you share with someone and their recent
   activity, visible only to people who share a project with them.

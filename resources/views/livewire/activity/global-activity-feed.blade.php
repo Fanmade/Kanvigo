@@ -1,6 +1,61 @@
 <div class="flex w-full flex-col gap-6" data-test="global-activity-feed">
     <flux:heading size="xl">{{ __('Activity') }}</flux:heading>
 
+    <div class="flex flex-wrap items-end gap-3">
+        <flux:select wire:model.live="actor" :label="__('Person')" size="sm" class="max-w-56" data-test="filter-actor">
+            <flux:select.option value="">{{ __('Everyone') }}</flux:select.option>
+            @foreach ($this->actors as $actor)
+                <flux:select.option value="{{ $actor->public_id }}">{{ $actor->name }}</flux:select.option>
+            @endforeach
+        </flux:select>
+
+        <flux:select
+            wire:model.live="project"
+            :label="__('Project')"
+            size="sm"
+            class="max-w-56"
+            data-test="filter-project"
+        >
+            <flux:select.option value="">{{ __('All projects') }}</flux:select.option>
+            @foreach ($this->projects as $filterProject)
+                <flux:select.option value="{{ $filterProject->short_name }}">
+                    {{ $filterProject->short_name }} · {{ $filterProject->title }}
+                </flux:select.option>
+            @endforeach
+        </flux:select>
+
+        <flux:select
+            wire:model.live="category"
+            :label="__('Type')"
+            size="sm"
+            class="max-w-48"
+            data-test="filter-category"
+        >
+            <flux:select.option value="all">{{ __('All activity') }}</flux:select.option>
+            @foreach (array_keys($this::ACTION_CATEGORIES) as $category)
+                <flux:select.option value="{{ $category }}">{{ $this->categoryLabel($category) }}</flux:select.option>
+            @endforeach
+        </flux:select>
+
+        <flux:select wire:model.live="range" :label="__('Period')" size="sm" class="max-w-40" data-test="filter-range">
+            <flux:select.option value="all">{{ __('Any time') }}</flux:select.option>
+            <flux:select.option value="today">{{ __('Today') }}</flux:select.option>
+            <flux:select.option value="week">{{ __('Last 7 days') }}</flux:select.option>
+            <flux:select.option value="month">{{ __('Last 30 days') }}</flux:select.option>
+        </flux:select>
+
+        <flux:switch wire:model.live="mine" :label="__('Include my own')" data-test="filter-mine" />
+
+        @if ($this->isFiltered)
+            <flux:button
+                size="sm"
+                variant="ghost"
+                wire:click="clearFilters"
+                data-test="clear-filters"
+            >{{ __('Clear filters') }}</flux:button>
+        @endif
+    </div>
+
     @forelse ($this->days as $day => $entries)
         <section class="flex flex-col gap-3" wire:key="day-{{ $day }}">
             <flux:heading size="sm" class="text-zinc-500 dark:text-zinc-400" data-test="activity-day">
@@ -57,7 +112,11 @@
     @empty
         <flux:card>
             <flux:text class="text-zinc-500" data-test="activity-empty">
-                {{ __('Nothing has happened yet in the projects you can see.') }}
+                @if ($this->isFiltered)
+                    {{ __('No activity matches these filters.') }}
+                @else
+                    {{ __('Nothing has happened yet in the projects you can see.') }}
+                @endif
             </flux:text>
         </flux:card>
     @endforelse

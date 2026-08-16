@@ -2,14 +2,17 @@
 
 namespace App\Livewire\Activity;
 
+use App\Audit\Sinks\ActivityLogSink;
 use App\Concerns\ResolvesSubjectUrl;
 use App\Models\Activity;
 use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use App\Models\Variable;
 use App\Support\ActivityDescriber;
 use Illuminate\Contracts\Pagination\CursorPaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
@@ -17,6 +20,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -37,6 +41,135 @@ class GlobalActivityFeed extends Component
     public const int PER_PAGE = 30;
 
     /**
+     * The activity-type filter's options: every feed-worthy action, grouped into
+     * the handful of kinds a reader actually asks for. Derived from — and kept
+     * exhaustive against — {@see ActivityLogSink::FEED_ACTIONS}, so a new action
+     * cannot quietly become unfilterable (ActivityTypeFilterTest enforces it).
+     *
+     * @var array<string, list<string>>
+     */
+    public const array ACTION_CATEGORIES = [
+        'comments' => ['commented', 'comment_deleted'],
+        'progress' => ['created', 'status_changed', 'parent_changed', 'archived', 'unarchived', 'canceled', 'reopened'],
+        'assignments' => ['assignee_changed'],
+        'details' => ['priority_changed', 'type_changed', 'tags_changed', 'dependency_changed'],
+        'attachments' => ['attachment_added', 'attachment_removed'],
+        'tags' => ['tag_renamed', 'tag_recolored', 'tag_deleted', 'tag_merged'],
+        'variables' => ['variable_created', 'variable_renamed', 'variable_value_changed', 'variable_deleted'],
+    ];
+
+    /**
+     * The public id of the person whose activity to show, or '' for everyone.
+     * The opaque id rather than the numeric one: the filter lives in a URL that
+     * gets shared.
+     */
+    #[Url]
+    public string $actor = '';
+
+    /**
+     * The short name of the project to restrict to, or '' for all of them.
+     */
+    #[Url]
+    public string $project = '';
+
+    /**
+     * A key of {@see self::ACTION_CATEGORIES}, or 'all'.
+     */
+    #[Url]
+    public string $category = 'all';
+
+    /**
+     * How far back to look: all, today, week or month.
+     */
+    #[Url]
+    public string $range = 'all';
+
+    /**
+     * Whether the reader's own activity is included. Off by default: on a feed
+     * you visit to see what others did, your own trail is the loudest thing on
+     * the page and the least informative.
+     */
+    #[Url]
+    public bool $mine = false;
+
+    /**
+     * A filter change invalidates the cursor: it points at a row that may not
+     * be in the new result set at all.
+     */
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['actor', 'project', 'category', 'range', 'mine'], true)) {
+            $this->resetPage();
+            unset($this->activities, $this->days, $this->descriptions);
+        }
+    }
+
+    /**
+     * The people offered by the actor filter: everyone who shares a project with
+     * the reader — the same set whose activity can appear in the feed.
+     *
+     * @return Collection<int, User>
+     */
+    #[Computed]
+    public function actors(): Collection
+    {
+        return User::query()
+            ->whereHas('projects', fn (Builder $projects) => $projects->whereIn(
+                'projects.id',
+                Auth::user()->projectIdsWithPermission('view-activity-log'),
+            ))
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * The projects offered by the project filter.
+     *
+     * @return Collection<int, Project>
+     */
+    #[Computed]
+    public function projects(): Collection
+    {
+        return Auth::user()->projects()->orderBy('title')->get();
+    }
+
+    /**
+     * The label for an activity-type category.
+     */
+    public function categoryLabel(string $category): string
+    {
+        return match ($category) {
+            'comments' => __('Comments'),
+            'progress' => __('Progress'),
+            'assignments' => __('Assignments'),
+            'details' => __('Details'),
+            'attachments' => __('Attachments'),
+            'tags' => __('Tags'),
+            'variables' => __('Variables'),
+            default => __('All activity'),
+        };
+    }
+
+    /**
+     * Whether any filter is narrowing the feed right now — drives the "clear"
+     * button. The default "without my own" is not counted: it is the resting
+     * state, not something the reader set.
+     */
+    #[Computed]
+    public function isFiltered(): bool
+    {
+        return $this->actor !== '' || $this->project !== '' || $this->category !== 'all' || $this->range !== 'all';
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset(['actor', 'project', 'category', 'range']);
+
+        $this->resetPage();
+        unset($this->activities, $this->days, $this->descriptions);
+    }
+
+    /**
      * The page of activity the user may read, newest first.
      *
      * Cursor pagination rather than offset: the feed grows at the head, so an
@@ -48,8 +181,7 @@ class GlobalActivityFeed extends Component
     #[Computed]
     public function activities(): CursorPaginator
     {
-        return Activity::query()
-            ->visibleTo(Auth::user())
+        return $this->filtered(Activity::query()->visibleTo(Auth::user()))
             ->with(['user', 'project'])
             // Each row names its subject, and a task/doc/variable row also names
             // the project it sits in — without loading those up front the list
@@ -65,6 +197,50 @@ class GlobalActivityFeed extends Component
             ->latest('created_at')
             ->latest('id')
             ->cursorPaginate(self::PER_PAGE);
+    }
+
+    /**
+     * Apply the current filters to the (already authorized) feed query.
+     *
+     * The filters only ever narrow what the visibility scope allows: an actor or
+     * project the reader cannot see resolves to nothing rather than widening the
+     * result, so a hand-edited URL gains nobody anything.
+     *
+     * @param  Builder<Activity>  $query
+     * @return Builder<Activity>
+     */
+    protected function filtered(Builder $query): Builder
+    {
+        if (! $this->mine) {
+            $query->where(static fn (Builder $others): Builder => $others
+                ->whereNull('activities.user_id')
+                ->orWhere('activities.user_id', '!=', Auth::id()));
+        }
+
+        if ($this->actor !== '') {
+            $query->whereHas('user', fn (Builder $user) => $user->where('public_id', $this->actor));
+        }
+
+        if ($this->project !== '') {
+            $query->whereHas('project', fn (Builder $project) => $project->where('short_name', $this->project));
+        }
+
+        if (array_key_exists($this->category, self::ACTION_CATEGORIES)) {
+            $query->whereIn('action', self::ACTION_CATEGORIES[$this->category]);
+        }
+
+        $since = match ($this->range) {
+            'today' => Carbon::now()->startOfDay(),
+            'week' => Carbon::now()->subWeek(),
+            'month' => Carbon::now()->subMonth(),
+            default => null,
+        };
+
+        if ($since !== null) {
+            $query->where('created_at', '>=', $since);
+        }
+
+        return $query;
     }
 
     /**

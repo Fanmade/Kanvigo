@@ -32,7 +32,7 @@ class ActivityLogSink implements AuditSink
      * types must NOT be added here casually: anything accepted busts board
      * caches and notifies subscribers.
      */
-    private const array FEED_ACTIONS = [
+    public const array FEED_ACTIONS = [
         'created',
         'status_changed',
         'priority_changed',
