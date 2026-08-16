@@ -285,6 +285,22 @@ html.full-width .app-content {
 }
 
 /* ---------------------------------------------------------------------------
+   Unwrappable content in the editor (KAN-523)
+   --------------------------------------------------------------------------- */
+
+/* A pasted log line or stack trace has no break opportunity, so it would push
+   the whole editor content sideways. Let the code block scroll on its own —
+   the same treatment the rendered `prose` output already gives it — and break
+   over-long words in ordinary paragraphs instead of scrolling the editor. */
+[data-flux-editor] [data-slot='content'] pre {
+    @apply overflow-x-auto;
+}
+
+[data-flux-editor] [data-slot='content'] {
+    overflow-wrap: break-word;
+}
+
+/* ---------------------------------------------------------------------------
    Tables in rich text (editor content + rendered `prose` output)
    --------------------------------------------------------------------------- */
 

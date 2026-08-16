@@ -35,7 +35,14 @@
                     data-test="comment-composer-trigger"
                 />
 
-                <form x-ref="composer" x-show="expanded" x-cloak wire:submit="addComment" class="flex flex-col gap-2">
+                <form
+                    x-ref="composer"
+                    x-show="expanded"
+                    x-cloak
+                    wire:submit="addComment"
+                    class="flex flex-col gap-2"
+                    data-test="comment-composer"
+                >
                     @if ($this->referencedActivityEntries->isNotEmpty())
                         <div class="flex flex-col gap-1.5" data-test="comment-references">
                             <flux:text size="xs" class="text-zinc-500">{{ __('Referencing') }}</flux:text>

@@ -23,6 +23,7 @@
                                 variant="ghost"
                                 icon="pencil-square"
                                 wire:click="startEdit({{ $comment->id }})"
+                                data-test="edit-comment"
                             />
                         </flux:tooltip>
                     @endcan
@@ -47,7 +48,7 @@
             <flux:text size="xs" class="text-zinc-500 dark:text-zinc-400">{{ $comment->delete_reason }}</flux:text>
         @endif
     @elseif ($editingId === $comment->id)
-        <form wire:submit="updateComment" class="flex flex-col gap-2">
+        <form wire:submit="updateComment" class="flex flex-col gap-2" data-test="comment-edit-form">
             <x-attachments.rich-editor property="editBody" preset="comment" :mentionables-url="$mentionablesUrl" />
             <div class="flex justify-end gap-2">
                 <flux:button
