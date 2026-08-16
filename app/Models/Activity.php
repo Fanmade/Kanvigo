@@ -4,11 +4,13 @@ namespace App\Models;
 
 use App\Concerns\HasScopedNumber;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -45,6 +47,34 @@ class Activity extends Model
     public function subject(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Restrict a query to the activity the given user may read.
+     *
+     * Authorization belongs in the query, not behind the pagination: filtering
+     * a page after it has been fetched shortens it silently, so a feed page
+     * would shrink wherever a foreign project's rows fall in it. The denormalized
+     * project_id (KAN-550) makes it a plain `whereIn` — no polymorphic join.
+     *
+     * Where visibility is finer than the project it is layered on top: a doc
+     * draft is readable only by those who may edit docs in its project, so the
+     * activity recorded on it is too.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        $query->whereIn('project_id', $user->projectIdsWithPermission('view-activity-log'))
+            ->whereNot(static function (Builder $hidden) use ($user): void {
+                $hidden->where('subject_type', (new Doc)->getMorphClass())
+                    ->whereNotIn('project_id', $user->projectIdsWithPermission('edit-doc'))
+                    ->whereExists(static fn (QueryBuilder $doc): QueryBuilder => $doc
+                        ->from('docs')
+                        ->whereColumn('docs.id', 'activities.subject_id')
+                        ->where('docs.is_public', false));
+            });
     }
 
     /**

@@ -74,6 +74,13 @@ class User extends Authenticatable implements PasskeyUser
     private ?McpClientGrant $oauthGrant = null;
 
     /**
+     * Per-instance memo for {@see projectIdsWithPermission()}, keyed by permission.
+     *
+     * @var array<string, list<int>>
+     */
+    private array $permittedProjectIds = [];
+
+    /**
      * Detach a user's collaborative relationships when their account is removed,
      * so a soft-deleted account no longer holds project access, task assignments
      * or notification subscriptions. A force delete leaves the database cascades
@@ -249,6 +256,27 @@ class User extends Authenticatable implements PasskeyUser
         }
 
         return $this->resolveScopedPermission($permission, $scope);
+    }
+
+    /**
+     * The ids of the user's projects in which they hold the given permission.
+     *
+     * Permissions resolve through the delegation engine per project, so they
+     * cannot be expressed as a subquery. Resolving the (small, membership-bound)
+     * list here keeps the check a single `whereIn` in the caller's query instead
+     * of a filter applied to already-fetched rows. Memoised per instance: a
+     * Livewire page re-renders the same query several times per request.
+     *
+     * @return list<int>
+     */
+    public function projectIdsWithPermission(string $permission): array
+    {
+        return $this->permittedProjectIds[$permission] ??= array_values(
+            $this->projects()->get()
+                ->filter(fn (Project $project): bool => $this->hasScopedPermission($permission, $project))
+                ->map(static fn (Project $project): int => (int) $project->getKey())
+                ->all()
+        );
     }
 
     /**
