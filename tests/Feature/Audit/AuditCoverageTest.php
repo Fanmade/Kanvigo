@@ -396,7 +396,7 @@ describe('content events', function () {
 
         // Free text stays out of the trail: the change is recorded, the content is not.
         $description = assertAudited('description_changed', 'content');
-        expect($description['metadata'])->toBe(['field' => 'description']);
+        expect($description['metadata'])->toBe(['field' => 'description', 'project_id' => $project->id]);
 
         expect(assertAudited('due_date_changed', 'content')['metadata']['new'])->toBe('2026-08-01');
         assertAudited('priority_changed', 'content');

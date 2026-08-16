@@ -5,6 +5,7 @@ namespace App\Concerns;
 use App\Audit\Sinks\ActivityLogSink;
 use App\Enums\RelationshipType;
 use App\Models\Activity;
+use App\Models\Project;
 use App\Models\User;
 use App\Support\Facades\Audit;
 use Illuminate\Database\Eloquent\Model;
@@ -108,12 +109,35 @@ trait LogsActivity
      */
     public function contentAuditEvent(string $action, ?string $field = null, ?string $oldValue = null, ?string $newValue = null): AuditEvent
     {
+        $metadata = array_filter(
+            ['field' => $field, 'old' => $oldValue, 'new' => $newValue],
+            static fn (?string $value): bool => $value !== null,
+        );
+
+        // The owning project travels with the event rather than being resolved
+        // when the row is written: by then the sink only has a morph type and
+        // id, and a subject deleted in between no longer answers for its
+        // project. Here the model is still in hand.
+        $metadata['project_id'] = $this->auditProjectId();
+
         return AuditEvent::make($action, AuditCategory::Content)
             ->withSubject($this->getMorphClass(), $this->getKey())
-            ->withMetadata(array_filter(
-                ['field' => $field, 'old' => $oldValue, 'new' => $newValue],
-                static fn (?string $value): bool => $value !== null,
-            ));
+            ->withMetadata($metadata);
+    }
+
+    /**
+     * The project this model's activity belongs to. A project answers with
+     * itself; everything else carries a project_id column.
+     */
+    public function auditProjectId(): ?int
+    {
+        if ($this instanceof Project) {
+            return (int) $this->getKey();
+        }
+
+        $projectId = $this->getAttribute('project_id');
+
+        return $projectId === null ? null : (int) $projectId;
     }
 
     /**

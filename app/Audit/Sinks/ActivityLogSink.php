@@ -127,6 +127,7 @@ class ActivityLogSink implements AuditSink
 
         $activity->subject_type = $event->subjectType;
         $activity->subject_id = (int) $event->subjectId;
+        $activity->project_id = $this->resolveProjectId($event, $subject);
 
         if ($event->occurredAt !== null) {
             $activity->created_at = Carbon::instance($event->occurredAt);
@@ -135,6 +136,23 @@ class ActivityLogSink implements AuditSink
         $activity->save();
 
         return $activity->setRelation('subject', $subject);
+    }
+
+    /**
+     * The project the row belongs to. Emitters put it in the event metadata
+     * while the subject is still in hand ({@see LogsActivity::auditProjectId()});
+     * the refetched subject is only a fallback for events built by hand, and
+     * yields nothing once the subject is gone.
+     */
+    protected function resolveProjectId(AuditEvent $event, ?Model $subject): ?int
+    {
+        $projectId = $event->metadata['project_id'] ?? null;
+
+        if ($projectId === null && $subject !== null && method_exists($subject, 'auditProjectId')) {
+            $projectId = $subject->auditProjectId();
+        }
+
+        return $projectId === null ? null : (int) $projectId;
     }
 
     /**
