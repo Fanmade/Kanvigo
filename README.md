@@ -87,6 +87,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Quick notes** — jot a personal note from anywhere, optionally share it
   read-only with a project, and convert it into a task in one step. See
   [docs/using/quick-notes.md](docs/using/quick-notes.md).
+- **Copy a task's address** — click the task's own breadcrumb crumb to copy its
+  reference (`PROJ-42`); the ⋯ menu also copies the task's link or a ready-made
+  Markdown link carrying reference and title. Available to anyone who can see
+  the task.
 - **Export** — take a task or doc out as Markdown or a standalone HTML page,
   copied to the clipboard or downloaded as a file, optionally with its whole
   subtree, its comments and a header of its metadata — or as a ZIP holding one

@@ -490,4 +490,32 @@ document.addEventListener('alpine:init', () => {
             }
         },
     }));
+
+    /**
+     * Copy-to-clipboard controls (task reference, link, markdown link).
+     *
+     * Only the browser can reach the clipboard, so the values are rendered into
+     * the markup and copied client-side. `copied` drives a check icon for ~1.5s;
+     * a toast confirms the copy for controls that have no room for an icon (menu
+     * items). Where the Clipboard API is unavailable — an insecure context, or
+     * permission denied — the failure is reported instead of passing silently.
+     */
+    window.Alpine.data('clipboardCopy', (config = {}) => ({
+        copied: false,
+
+        async copy(text, message = null) {
+            try {
+                await navigator.clipboard.writeText(text);
+
+                this.copied = true;
+                setTimeout(() => (this.copied = false), 1500);
+
+                if (message) {
+                    this.$flux?.toast({ variant: 'success', text: message });
+                }
+            } catch (e) {
+                this.$flux?.toast({ variant: 'danger', text: config.failedMessage ?? '' });
+            }
+        },
+    }));
 });

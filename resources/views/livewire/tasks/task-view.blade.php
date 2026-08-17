@@ -24,7 +24,23 @@
                 </a>
             @endforeach
             <span class="text-zinc-300">/</span>
-            <span class="font-mono text-zinc-400">{{ $this->task->reference }}</span>
+            {{-- The task's own crumb navigates nowhere, so it doubles as the
+                 one-gesture "copy the reference" affordance (KAN-494). --}}
+            {{-- A native title, not flux:tooltip: the Flux tooltip overlays a plain
+                 button and swallows the click it is meant to advertise. --}}
+            <div x-data="clipboardCopy({ failedMessage: @js(__('Could not copy to the clipboard.')) })">
+                <button
+                    type="button"
+                    x-on:click="copy(@js($this->task->reference))"
+                    class="flex cursor-pointer items-center gap-1 font-mono text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+                    title="{{ __('Copy reference') }}"
+                    data-test="copy-reference"
+                >
+                    {{ $this->task->reference }}
+                    <flux:icon.document-duplicate variant="micro" x-show="! copied" />
+                    <flux:icon.check variant="micro" class="text-green-500" x-show="copied" x-cloak />
+                </button>
+            </div>
         </div>
         <div class="flex shrink-0 items-center gap-3">
             <flux:tooltip :content="__('Project board')">
@@ -128,49 +144,72 @@
             <div class="flex min-w-0 flex-1 flex-col gap-6">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <flux:heading size="xl" class="min-w-0">{{ $this->task->title }}</flux:heading>
-                    @if ($this->canUpdate || $this->canExport)
-                        <div class="flex shrink-0 items-center gap-2">
-                            @if ($this->canExport || ($this->canUpdate && ! $this->task->isCanceled()))
-                                <flux:dropdown align="end">
-                                    <flux:button
-                                        size="sm"
-                                        variant="ghost"
-                                        icon="ellipsis-horizontal"
-                                        :aria-label="__('Actions')"
-                                        data-test="task-actions"
-                                    />
-                                    <flux:menu>
-                                        @if ($this->canExport)
-                                            <flux:menu.item
-                                                icon="arrow-down-tray"
-                                                wire:click="startExport"
-                                                data-test="export-task"
-                                            >
-                                                {{ __('Export') }}</flux:menu.item>
-                                        @endif
-                                        @if ($this->canUpdate && ! $this->task->isCanceled())
-                                            <flux:menu.item
-                                                icon="x-circle"
-                                                variant="danger"
-                                                wire:click="confirmCancel"
-                                                data-test="cancel-task"
-                                            >
-                                                {{ __('Cancel task') }}</flux:menu.item>
-                                        @endif
-                                    </flux:menu>
-                                </flux:dropdown>
-                            @endif
-                            @if ($this->canUpdate)
-                                <flux:button
-                                    size="sm"
-                                    icon="pencil-square"
-                                    variant="ghost"
-                                    wire:click="edit"
-                                    data-test="edit-task"
-                                >{{ __('Edit') }}</flux:button>
-                            @endif
-                        </div>
-                    @endif
+                    @php($taskUrl = route('task.show', ['short_name' => $shortName, 'task_number' => $this->task->task_number]))
+                    <div class="flex shrink-0 items-center gap-2">
+                        <flux:dropdown align="end">
+                            <flux:button
+                                size="sm"
+                                variant="ghost"
+                                icon="ellipsis-horizontal"
+                                :aria-label="__('Actions')"
+                                data-test="task-actions"
+                            />
+                            <flux:menu x-data="clipboardCopy({ failedMessage: @js(__('Could not copy to the clipboard.')) })">
+                                {{-- The clipboard is only reachable client-side, so the
+                                     three shapes of a task's address are rendered into the
+                                     markup and copied by Alpine (KAN-495). --}}
+                                <flux:menu.item
+                                    icon="link"
+                                    x-on:click="copy(@js($taskUrl), @js(__('Link copied.')))"
+                                    data-test="copy-link"
+                                >
+                                    {{ __('Copy link') }}</flux:menu.item>
+                                <flux:menu.item
+                                    icon="code-bracket"
+                                    x-on:click="copy(@js('['.$this->task->reference.' '.$this->task->title.']('.$taskUrl.')'), @js(__('Markdown link copied.')))"
+                                    data-test="copy-markdown-link"
+                                >
+                                    {{ __('Copy as Markdown link') }}</flux:menu.item>
+                                <flux:menu.item
+                                    icon="document-duplicate"
+                                    x-on:click="copy(@js($this->task->reference), @js(__('Reference copied.')))"
+                                    data-test="copy-reference-menu"
+                                >
+                                    {{ __('Copy reference') }}</flux:menu.item>
+
+                                @if ($this->canExport || ($this->canUpdate && ! $this->task->isCanceled()))
+                                    <flux:menu.separator />
+                                @endif
+
+                                @if ($this->canExport)
+                                    <flux:menu.item
+                                        icon="arrow-down-tray"
+                                        wire:click="startExport"
+                                        data-test="export-task"
+                                    >
+                                        {{ __('Export') }}</flux:menu.item>
+                                @endif
+                                @if ($this->canUpdate && ! $this->task->isCanceled())
+                                    <flux:menu.item
+                                        icon="x-circle"
+                                        variant="danger"
+                                        wire:click="confirmCancel"
+                                        data-test="cancel-task"
+                                    >
+                                        {{ __('Cancel task') }}</flux:menu.item>
+                                @endif
+                            </flux:menu>
+                        </flux:dropdown>
+                        @if ($this->canUpdate)
+                            <flux:button
+                                size="sm"
+                                icon="pencil-square"
+                                variant="ghost"
+                                wire:click="edit"
+                                data-test="edit-task"
+                            >{{ __('Edit') }}</flux:button>
+                        @endif
+                    </div>
                 </div>
 
                 <x-attachments.dropzone :enabled="$this->canUpdate">
