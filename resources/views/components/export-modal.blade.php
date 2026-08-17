@@ -9,7 +9,7 @@
 --}}
 <flux:modal
     wire:model.self="exporting"
-    class="md:w-96"
+    class="md:w-xl"
     data-test="export-modal"
     x-on:export-copied.window="navigator.clipboard.writeText($event.detail.markdown)"
 >
