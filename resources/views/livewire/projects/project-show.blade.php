@@ -9,7 +9,7 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 sm:shrink-0">
-            <x-live-updates-toggle />
+            <x-live-updates-toggle :live-updates="$liveUpdates" />
             <livewire:subscriptions.subscription-toggle
                 :subscribable="$this->project"
                 :wire:key="'sub-project-'.$this->project->id"

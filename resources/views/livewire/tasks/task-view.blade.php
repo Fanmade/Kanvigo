@@ -54,7 +54,7 @@
                     data-test="task-board-link"
                 />
             </flux:tooltip>
-            <x-live-updates-toggle />
+            <x-live-updates-toggle :live-updates="$liveUpdates" />
             <livewire:subscriptions.subscription-toggle
                 :subscribable="$this->task"
                 :wire:key="'sub-task-'.$this->task->id"

@@ -39,6 +39,29 @@ it('persists the choice when the toggle is flipped', function () {
     expect($this->user->fresh()->preference(Board::LIVE_UPDATES_PREFERENCE_KEY))->toBeTrue();
 });
 
+it('flips and persists the preference through the icon toggle', function () {
+    $component = Livewire::actingAs($this->user)
+        ->test(Board::class)
+        ->call('toggleLiveUpdates')
+        ->assertSet('liveUpdates', false);
+
+    expect($this->user->fresh()->preference(Board::LIVE_UPDATES_PREFERENCE_KEY))->toBeFalse();
+
+    $component->call('toggleLiveUpdates')
+        ->assertSet('liveUpdates', true);
+
+    expect($this->user->fresh()->preference(Board::LIVE_UPDATES_PREFERENCE_KEY))->toBeTrue();
+});
+
+it('shows the paused icon while live updates are off', function () {
+    $this->user->setPreference(Board::LIVE_UPDATES_PREFERENCE_KEY, false);
+
+    Livewire::actingAs($this->user)
+        ->test(Board::class)
+        ->assertSeeHtml('data-test="live-updates-toggle"')
+        ->assertSeeHtml('aria-label="Enable live updates"');
+});
+
 it('exposes the poll interval only while enabled', function () {
     $component = Livewire::actingAs($this->user)->test(Board::class);
 

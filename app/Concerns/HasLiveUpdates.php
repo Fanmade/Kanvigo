@@ -40,6 +40,17 @@ trait HasLiveUpdates
     }
 
     /**
+     * Flip live updates from the icon toggle. A server-side assignment skips
+     * Livewire's `updated` hook, so the preference is persisted here.
+     */
+    public function toggleLiveUpdates(): void
+    {
+        $this->liveUpdates = ! $this->liveUpdates;
+
+        Auth::user()?->setPreference(self::LIVE_UPDATES_PREFERENCE_KEY, $this->liveUpdates);
+    }
+
+    /**
      * How often a live view refreshes, in seconds (configurable).
      */
     public function livePollIntervalSeconds(): int

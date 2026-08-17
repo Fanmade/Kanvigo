@@ -3,7 +3,7 @@
         <flux:heading size="xl">{{ __('Board') }}</flux:heading>
 
         <div class="flex items-center gap-4">
-            <x-live-updates-toggle />
+            <x-live-updates-toggle :live-updates="$liveUpdates" />
             <flux:switch
                 wire:model.live="showArchived"
                 :label="__('Show archived')"

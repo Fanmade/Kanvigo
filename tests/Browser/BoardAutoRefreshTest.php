@@ -57,10 +57,8 @@ it('does not auto-refresh while live updates are off', function () {
     Task::factory()->for($project)->status(Status::ToDo)->create(['title' => 'Task Delta']);
 
     // Off means the board never pulls Delta in on its own; turning live updates on
-    // (via the display-options dropdown) surfaces it on the next commit — a
-    // deterministic barrier, not a fixed wait.
+    // surfaces it on the next commit — a deterministic barrier, not a fixed wait.
     $page->assertDontSee('Task Delta')
-        ->click('@board-display')
         ->click('@live-updates-toggle')
         ->waitForText('Task Delta')
         ->assertNoJavascriptErrors();

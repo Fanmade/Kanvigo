@@ -74,17 +74,7 @@
                     </flux:popover>
                 </flux:dropdown>
 
-                <flux:dropdown align="end">
-                    <flux:button
-                        icon="adjustments-horizontal"
-                        :aria-label="__('Display options')"
-                        data-test="board-display"
-                    />
-
-                    <flux:popover class="flex w-64 flex-col gap-3">
-                        <x-live-updates-toggle />
-                    </flux:popover>
-                </flux:dropdown>
+                <x-live-updates-toggle :live-updates="$liveUpdates" />
 
                 <flux:button
                     variant="primary"
