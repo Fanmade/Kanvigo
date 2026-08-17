@@ -114,6 +114,26 @@ it('sanitizes an HTML description written through the tool', function () {
         ->not->toContain('<script');
 });
 
+it('keeps a table written through the tool intact', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+
+    KanvigoServer::tool(CreateTaskTool::class, [
+        'reference' => $project->short_name,
+        'title' => 'Tabulated',
+        'description' => '<table><thead><tr><th>Field</th><th>Value</th></tr></thead>'
+            .'<tbody><tr><td colspan="2"><p>Both</p></td></tr></tbody></table>',
+    ])->assertOk();
+
+    $task = $project->tasks()->where('title', 'Tabulated')->first();
+
+    expect($task->description)
+        ->toContain('<table>')
+        ->toContain('<th>Field</th>')
+        ->toContain('<td colspan="2">');
+});
+
 it('defaults a new task to Planned status', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);

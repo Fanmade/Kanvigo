@@ -95,10 +95,12 @@ use Laravel\Mcp\Server\Tool;
     manage curated links.
 
     Task and project descriptions, doc bodies and comment bodies are HTML, restricted to a small allow-list:
-    headings, bold/italic, lists, links, blockquotes, code, and inline images (rendered as a
+    headings, bold/italic, lists, links, blockquotes, code, tables and inline images (rendered as a
     thumbnail linking to the full-size image). The get tools return this content as HTML, and the
     create/update/comment tools expect it as HTML — whatever you send is sanitized to that
-    allow-list, so unsupported tags are dropped.
+    allow-list, so unsupported tags are dropped. Write a table as real HTML
+    (table/thead/tbody/tr/th/td, colspan and rowspan included) rather than a Markdown table: only
+    the HTML form survives, and it renders and round-trips unchanged.
 
     Projects, tasks and docs may have file attachments, including images embedded inline in their
     descriptions or bodies. The get tools list each attachment's id; pass that id to the

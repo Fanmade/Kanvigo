@@ -50,6 +50,23 @@ it('adds a comment to a project', function () {
     ]);
 });
 
+it('keeps a table in a comment body intact', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+
+    KanvigoServer::tool(AddCommentTool::class, [
+        'reference' => $task->reference,
+        'body' => '<table><tbody><tr><th>Run</th><td>green</td></tr></tbody></table>',
+    ])->assertOk();
+
+    expect($task->comments()->sole()->body)
+        ->toContain('<table>')
+        ->toContain('<th>Run</th>')
+        ->toContain('<td>green</td>');
+});
+
 it('posts a reply carrying the parent comment id', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);

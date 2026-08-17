@@ -12,8 +12,9 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  * Markdown), so the content is HTML. Because the MCP/API can also write
  * description content directly, every value is run through an allow-list
  * sanitizer on output to prevent stored XSS. The allow-list covers the tags the
- * editor produces plus the inline-image markup (a thumbnail linking to the
- * full-size attachment via relative routes).
+ * editor produces — including tables, which come through Symfony's safe
+ * elements with their colspan/rowspan intact — plus the inline-image markup (a
+ * thumbnail linking to the full-size attachment via relative routes).
  */
 class RichTextSanitizer
 {
