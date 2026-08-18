@@ -144,10 +144,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   and passkeys.
 - **Project roles & membership** — each member holds one or more per-project
   roles and may do the union of their permissions. Owner, admin, member and a
-  read-only viewer are seeded; custom roles are created under a parent role and
-  bounded by its permissions, so delegation can never escalate. Managers assign
-  roles as chips from the project page and only ever see roles at or below their
-  own.
+  read-only viewer are seeded; custom roles sit under a parent role and are
+  bounded by its permissions, so delegation can never escalate. A per-project
+  **Roles** page shows the role tree with each role's permissions and the members
+  holding it, and managers assign roles as chips from the project page — both
+  only ever showing roles at or below their own.
 - **Cross-project access** — the account-level `access-all-projects` permission
   lets staff see every project. It grants visibility only; contributing still
   requires a role on the project.

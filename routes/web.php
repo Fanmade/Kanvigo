@@ -24,6 +24,7 @@ use App\Livewire\Notes\NoteList;
 use App\Livewire\Notifications\NotificationsIndex;
 use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectList;
+use App\Livewire\Projects\ProjectRoles;
 use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Projects\ProjectTags;
 use App\Livewire\Projects\ProjectTaskTypes;
@@ -135,6 +136,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('/{short_name}/tags', ProjectTags::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.tags');
+
+    Route::livewire('/{short_name}/roles', ProjectRoles::class)
+        ->where('short_name', '[A-Z]{2,4}')
+        ->name('project.roles');
 
     Route::livewire('/{short_name}/variables', ProjectVariables::class)
         ->where('short_name', '[A-Z]{2,4}')

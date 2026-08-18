@@ -1,7 +1,7 @@
 <?php
 
 use App\Authorization\ProjectRoleProvisioner;
-use App\Livewire\Projects\ProjectRoles;
+use App\Livewire\Projects\ProjectRolesModal;
 use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
@@ -23,7 +23,7 @@ it('lists the seeded roles for an owner', function () {
     $owner = projectOwner($project);
 
     $roles = Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->instance()->roles()->pluck('name');
 
     expect($roles)->toContain('owner', 'admin', 'member');
@@ -35,7 +35,7 @@ it('lets an owner define a custom role bounded by the project permissions', func
     $createTask = Permission::query()->where('name', 'create-task')->value('id');
 
     Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->set('name', 'Triager')
         ->set('permissionIds', [$createTask])
         ->call('createRole')
@@ -54,7 +54,7 @@ it('rejects a duplicate role name', function () {
     $owner = projectOwner($project);
 
     Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->set('name', 'admin')
         ->call('createRole')
         ->assertHasErrors('name');
@@ -66,7 +66,7 @@ it('will not delete a seeded base role', function () {
     $admin = Role::query()->where('scope_id', $project->id)->where('name', 'admin')->firstOrFail();
 
     Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->call('deleteRole', $admin->id);
 
     expect(Role::query()->whereKey($admin->id)->exists())->toBeTrue();
@@ -77,14 +77,14 @@ it('deletes a custom role', function () {
     $owner = projectOwner($project);
 
     Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->set('name', 'Triager')
         ->call('createRole');
 
     $role = Role::query()->where('scope_id', $project->id)->where('name', 'Triager')->firstOrFail();
 
     Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->call('deleteRole', $role->id);
 
     expect(Role::query()->whereKey($role->id)->exists())->toBeFalse();
@@ -97,6 +97,6 @@ it('forbids a non-owner from managing roles', function () {
     );
 
     Livewire::actingAs($member)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->assertForbidden();
 });

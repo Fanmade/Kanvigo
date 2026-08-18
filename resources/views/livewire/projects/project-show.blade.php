@@ -91,7 +91,8 @@
                         @can('manage-roles', $this->project)
                             <flux:menu.item
                                 icon="shield-check"
-                                wire:click="$set('managingRoles', true)"
+                                :href="route('project.roles', $this->project)"
+                                wire:navigate
                                 data-test="manage-roles"
                             >
                                 {{ __('Manage roles') }}</flux:menu.item>
@@ -530,20 +531,6 @@
         </flux:modal>
     @endcan
 
-    @can('manage-roles', $this->project)
-        <flux:modal wire:model="managingRoles" class="w-full max-w-5xl" data-test="roles-modal">
-            <div class="flex flex-col gap-4">
-                <flux:heading size="lg">{{ __('Manage roles') }}</flux:heading>
-
-                @if ($this->managingRoles)
-                    <livewire:projects.project-roles
-                        :project="$this->project"
-                        :wire:key="'roles-'.$this->project->id"
-                    />
-                @endif
-            </div>
-        </flux:modal>
-    @endcan
     @if ($this->canExportProject)
         <x-project-export-modal />
     @endif

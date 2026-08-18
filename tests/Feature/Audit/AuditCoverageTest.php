@@ -10,7 +10,7 @@ use App\Enums\Priority;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Invitations\AcceptInvitation;
 use App\Livewire\Invitations\InviteUser;
-use App\Livewire\Projects\ProjectRoles;
+use App\Livewire\Projects\ProjectRolesModal;
 use App\Livewire\Settings\ApiTokens;
 use App\Livewire\Settings\DeleteUserForm;
 use App\Livewire\Settings\Passkeys;
@@ -331,7 +331,7 @@ describe('authorization and membership events', function () {
         $logId = Permission::query()->where('name', 'view-activity-log')->value('id');
 
         $component = Livewire::actingAs($owner)
-            ->test(ProjectRoles::class, ['project' => $project])
+            ->test(ProjectRolesModal::class, ['project' => $project])
             ->set('name', 'Auditor')
             ->set('parentId', $ownerRole->id)
             ->set('permissionIds', [$viewId])

@@ -1,7 +1,7 @@
 <?php
 
 use App\Authorization\ProjectRoleProvisioner;
-use App\Livewire\Projects\ProjectRoles;
+use App\Livewire\Projects\ProjectRolesModal;
 use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
@@ -19,7 +19,7 @@ it('shows an owner the whole project tree, including viewer, but never the syste
     joinProject($project, $owner, 'owner');
 
     $names = Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->instance()->roles()->pluck('name')->all();
 
     expect($names)->toContain('owner', 'admin', 'member', 'viewer')
@@ -39,7 +39,7 @@ it('limits a delegated manager to their subtree and parent-bounded grants', func
     );
     $manager = User::factory()->create()->assignRole($lead);
 
-    $component = Livewire::actingAs($manager)->test(ProjectRoles::class, ['project' => $project]);
+    $component = Livewire::actingAs($manager)->test(ProjectRolesModal::class, ['project' => $project]);
 
     // Visibility: the manager sees only their own role — never ancestors or base roles.
     expect($component->instance()->roles()->pluck('name')->all())->toBe(['Lead']);
@@ -79,7 +79,7 @@ it('refuses to delete a protected base role', function () {
     $memberRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
 
     Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->call('deleteRole', $memberRole->id);
 
     expect(Role::query()->whereKey($memberRole->id)->exists())->toBeTrue();
@@ -100,7 +100,7 @@ it('edits a custom role in place and cascades a revoke to its descendants', func
     $ids = static fn (array $names): array => Permission::query()->whereIn('name', $names)->pluck('id')->all();
 
     Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->call('startEdit', $lead->id)
         // Keep view-project + create-task, drop edit-task, add manage-dependencies.
         ->set('editPermissionIds', $ids(['view-project', 'create-task', 'manage-dependencies']))
@@ -129,7 +129,7 @@ it('drops an out-of-bounds permission when editing a role', function () {
     $ids = Permission::query()->whereIn('name', ['view-project', 'create-task', 'manage-settings'])->pluck('id')->all();
 
     Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->call('startEdit', $sub->id)
         ->set('editPermissionIds', $ids)
         ->call('saveRole')
@@ -147,7 +147,7 @@ it('will not open a protected base role for editing', function () {
     $member = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
 
     $editingRoleId = Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->call('startEdit', $member->id)
         ->get('editingRoleId');
 
@@ -164,7 +164,7 @@ it('orders the visible roles as a hierarchy with each role\'s depth', function (
     app(RoleManager::class)->createRole('Triager', $memberRole, ['view-project'], $project);
 
     $tree = Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->instance()->roleTree();
 
     $depthByName = collect($tree)
@@ -191,7 +191,7 @@ it('prefills the new-role permissions from a role, capped by the chosen parent',
 
     // Parent = member, copy from owner: the selection is capped to member's set.
     $component = Livewire::actingAs($owner)
-        ->test(ProjectRoles::class, ['project' => $project])
+        ->test(ProjectRolesModal::class, ['project' => $project])
         ->set('parentId', $memberRole->id)
         ->call('selectRolePermissions', $ownerRole->id);
 

@@ -1,176 +1,120 @@
-<div class="flex flex-col gap-4" data-test="project-roles">
-    <div x-data="{ open: true }">
-        <button
-            type="button"
-            x-on:click="open = ! open"
-            x-bind:aria-expanded="open ? 'true' : 'false'"
-            class="flex w-full items-center gap-2 text-start"
-            data-test="toggle-roles-list"
-        >
-            <flux:icon.chevron-right
-                variant="micro"
-                class="shrink-0 text-zinc-400 transition-transform"
-                x-bind:class="open && 'rotate-90'"
-            />
-            <flux:heading size="sm">{{ __('Existing roles') }}</flux:heading>
-            <flux:badge size="sm" color="zinc">{{ count($this->roleTree) }}</flux:badge>
-        </button>
+<div class="app-content mx-auto flex w-full max-w-5xl flex-col gap-6" data-test="project-roles">
+    {{-- Header --}}
+    <x-project-settings-header :project="$this->project" :title="__('Roles')" />
 
+    <flux:text class="text-zinc-500">
+        {{ __('The roles you may manage in this project: the ones you hold and everything delegated beneath them.') }}
+    </flux:text>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {{-- Master: the visible role tree, names and hierarchy only --}}
         <div
-            x-show="open"
-            x-cloak
-            class="mt-3 flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10"
+            class="flex flex-col divide-y divide-zinc-200 self-start rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10"
             data-test="roles-list"
         >
             @foreach ($this->roleTree as $node)
                 @php($role = $node['role'])
-                <div wire:key="role-{{ $role->id }}" data-test="role-row-{{ $role->id }}" x-data="{ open: false }">
-                    <div
-                        class="flex items-center justify-between gap-3 p-3"
-                        style="padding-inline-start: {{ $node['depth'] * 1.25 + 0.75 }}rem"
-                    >
-                        <button
-                            type="button"
-                            x-on:click="open = ! open"
-                            x-bind:aria-expanded="open ? 'true' : 'false'"
-                            class="flex min-w-0 items-center gap-1.5 text-start"
-                            data-test="toggle-role-{{ $role->id }}"
-                        >
-                            <flux:icon.chevron-right
-                                variant="micro"
-                                class="shrink-0 text-zinc-400 transition-transform"
-                                x-bind:class="open && 'rotate-90'"
-                            />
-                            <flux:heading size="sm" class="truncate">{{ $role->name }}</flux:heading>
-                        </button>
+                <button
+                    type="button"
+                    wire:key="role-{{ $role->id }}"
+                    wire:click="selectRole({{ $role->id }})"
+                    @class([
+                        'flex items-center justify-between gap-2 p-3 text-start',
+                        'bg-zinc-100 dark:bg-white/10' => $this->selectedRole?->id === $role->id,
+                    ])
+                    style="padding-inline-start: {{ $node['depth'] * 1.25 + 0.75 }}rem"
+                    data-test="role-row-{{ $role->id }}"
+                >
+                    <span class="flex min-w-0 items-center gap-2">
+                        <flux:heading size="sm" class="truncate">{{ $role->name }}</flux:heading>
 
-                        @if ($this->editableRoleIds->contains($role->id))
-                            <div class="flex shrink-0 items-center gap-1">
-                                <flux:button
-                                    size="xs"
-                                    variant="ghost"
-                                    icon="pencil-square"
-                                    :aria-label="__('Edit role')"
-                                    wire:click="startEdit({{ $role->id }})"
-                                    data-test="edit-role-{{ $role->id }}"
-                                />
-                                <flux:button
-                                    size="xs"
-                                    variant="ghost"
-                                    icon="trash"
-                                    :aria-label="__('Delete role')"
-                                    wire:click="deleteRole({{ $role->id }})"
-                                    wire:confirm="{{ __('Delete this role?') }}"
-                                    data-test="delete-role-{{ $role->id }}"
-                                />
-                            </div>
+                        @if ($this->isBaseRole($role))
+                            <flux:badge size="sm" color="zinc" data-test="role-base-{{ $role->id }}">
+                                {{ __('Base') }}</flux:badge>
+                        @endif
+                    </span>
+
+                    <flux:badge size="sm" color="zinc" data-test="role-members-{{ $role->id }}">
+                        {{ $this->memberCounts[$role->id] ?? 0 }}</flux:badge>
+                </button>
+            @endforeach
+        </div>
+
+        {{-- Detail: the selected role, read-only --}}
+        <div class="md:col-span-2">
+            @if ($this->selectedRole)
+                <div
+                    class="flex flex-col gap-5 rounded-lg border border-zinc-200 p-4 dark:border-white/10"
+                    wire:key="role-detail-{{ $this->selectedRole->id }}"
+                    data-test="role-detail"
+                >
+                    <div class="flex flex-col gap-1">
+                        <flux:heading size="lg" data-test="role-detail-name">{{ $this->selectedRole->name }}</flux:heading>
+
+                        @if ($this->selectedRole->description)
+                            <flux:text class="text-zinc-500">{{ $this->selectedRole->description }}</flux:text>
+                        @endif
+
+                        @if ($this->selectedRoleParent)
+                            <flux:text size="sm" class="text-zinc-400" data-test="role-detail-parent">
+                                {{ __('Delegated from :role', ['role' => $this->selectedRoleParent->name]) }}
+                            </flux:text>
                         @endif
                     </div>
 
-                    <div
-                        x-show="open"
-                        x-cloak
-                        class="pe-3 pb-3"
-                        style="padding-inline-start: {{ $node['depth'] * 1.25 + 2 }}rem"
-                    >
-                        <flux:text size="sm" class="text-zinc-500" data-test="role-permissions-{{ $role->id }}">
-                            {{ collect($this->permissionsByRole[$role->id] ?? [])->map(fn (string $name) => $this->permissionLabel($name))->implode(', ') ?: __('No permissions') }}
-                        </flux:text>
+                    <div class="flex flex-col gap-2">
+                        <flux:heading size="sm">{{ __('Permissions') }}</flux:heading>
+
+                        @if (empty($this->selectedRolePermissionGroups))
+                            <flux:text size="sm" class="text-zinc-500" data-test="role-detail-no-permissions">
+                                {{ __('No permissions') }}
+                            </flux:text>
+                        @else
+                            <dl class="flex flex-col gap-2" data-test="role-detail-permissions">
+                                @foreach ($this->selectedRolePermissionGroups as $group => $labels)
+                                    <div class="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
+                                        <dt class="w-40 shrink-0">
+                                            <flux:text size="sm" class="text-zinc-500">{{ __($group) }}</flux:text>
+                                        </dt>
+                                        <dd class="min-w-0">
+                                            <flux:text size="sm">{{ implode(', ', $labels) }}</flux:text>
+                                        </dd>
+                                    </div>
+                                @endforeach
+                            </dl>
+                        @endif
                     </div>
 
-                    @if ($this->editingRoleId === $role->id && $this->editingRole)
-                        <div class="px-3 pb-3">
-                            <form
-                                wire:submit="saveRole"
-                                class="flex flex-col gap-3 rounded-lg bg-zinc-50 p-3 dark:bg-white/5"
-                                data-test="edit-role-form-{{ $role->id }}"
-                            >
-                                <x-permission-picker
-                                    :groups="$this->editPermissionGroups"
-                                    model="editPermissionIds"
-                                    test-prefix="edit-permission"
-                                    :resolver="$this"
-                                />
+                    <div class="flex flex-col gap-2">
+                        <flux:heading size="sm">{{ __('Members') }}</flux:heading>
 
-                                <div class="flex items-center gap-2">
-                                    <flux:button
-                                        type="submit"
-                                        size="sm"
-                                        variant="primary"
-                                        data-test="save-edit-role"
-                                    >{{ __('Save') }}</flux:button>
-                                    <flux:button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        wire:click="cancelEdit"
-                                        data-test="cancel-edit-role"
-                                    >{{ __('Cancel') }}</flux:button>
-                                </div>
-                            </form>
-                        </div>
-                    @endif
+                        @if ($this->selectedRoleMembers->isEmpty())
+                            <flux:text size="sm" class="text-zinc-500" data-test="role-detail-no-members">
+                                {{ __('Nobody holds this role.') }}
+                            </flux:text>
+                        @else
+                            <div class="flex flex-wrap gap-3" data-test="role-detail-members">
+                                @foreach ($this->selectedRoleMembers as $member)
+                                    <x-user-link
+                                        :user="$member"
+                                        class="flex items-center gap-2"
+                                        wire:key="role-member-{{ $member->id }}"
+                                    >
+                                        <x-user-avatar :user="$member" />
+                                        <flux:text size="sm">{{ $member->name }}</flux:text>
+                                    </x-user-link>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
                 </div>
-            @endforeach
+            @else
+                <x-empty-state :heading="__('No roles to manage')" test="roles-empty">
+                    <flux:text size="sm" class="text-zinc-400">
+                        {{ __('You hold no role in this project that can be delegated from.') }}
+                    </flux:text>
+                </x-empty-state>
+            @endif
         </div>
     </div>
-
-    <form
-        wire:submit="createRole"
-        class="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-white/10"
-        data-test="create-role-form"
-    >
-        <flux:heading size="sm">{{ __('Add a custom role') }}</flux:heading>
-
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <flux:input wire:model="name" :label="__('Name')" data-test="role-name" />
-
-            <flux:select wire:model.live="parentId" :label="__('Parent role')" data-test="role-parent">
-                @foreach ($this->assignableParents as $parent)
-                    <flux:select.option :value="$parent->id">{{ $parent->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
-        <flux:error name="parentId" />
-        <flux:error name="name" />
-
-        <flux:field>
-            <flux:label>{{ __('Permissions') }}</flux:label>
-            <flux:description>{{ __('A new role can hold any subset of its parent role\'s permissions.') }}</flux:description>
-
-            @if (! empty($this->permissionGroups))
-                <div class="mt-2" data-test="copy-role-permissions">
-                    <flux:dropdown align="start">
-                        <flux:button
-                            type="button"
-                            size="xs"
-                            variant="subtle"
-                            icon:trailing="chevron-down"
-                            data-test="copy-role-trigger"
-                        >{{ __('Copy from role') }}</flux:button>
-                        <flux:menu>
-                            @foreach ($this->roleTree as $node)
-                                <flux:menu.item
-                                    wire:click="selectRolePermissions({{ $node['role']->id }})"
-                                    data-test="use-role-permissions-{{ $node['role']->id }}"
-                                >
-                                    {{ str_repeat('— ', $node['depth']).$node['role']->name }}</flux:menu.item>
-                            @endforeach
-                        </flux:menu>
-                    </flux:dropdown>
-                </div>
-            @endif
-
-            <x-permission-picker
-                :groups="$this->permissionGroups"
-                model="permissionIds"
-                test-prefix="role-permission"
-                :resolver="$this"
-                :empty-message="__('Choose a parent role to see the permissions you can delegate.')"
-                class="mt-2"
-            />
-        </flux:field>
-
-        <flux:button type="submit" variant="primary" data-test="save-role">{{ __('Add role') }}</flux:button>
-    </form>
 </div>
