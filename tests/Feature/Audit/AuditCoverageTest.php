@@ -10,7 +10,7 @@ use App\Enums\Priority;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Invitations\AcceptInvitation;
 use App\Livewire\Invitations\InviteUser;
-use App\Livewire\Projects\ProjectRolesModal;
+use App\Livewire\Projects\ProjectRoles;
 use App\Livewire\Settings\ApiTokens;
 use App\Livewire\Settings\DeleteUserForm;
 use App\Livewire\Settings\Passkeys;
@@ -331,23 +331,25 @@ describe('authorization and membership events', function () {
         $logId = Permission::query()->where('name', 'view-activity-log')->value('id');
 
         $component = Livewire::actingAs($owner)
-            ->test(ProjectRolesModal::class, ['project' => $project])
-            ->set('name', 'Auditor')
-            ->set('parentId', $ownerRole->id)
-            ->set('permissionIds', [$viewId])
+            ->test(ProjectRoles::class, ['short_name' => $project->short_name])
+            ->call('selectRole', $ownerRole->id)
+            ->call('startCreate')
+            ->set('newName', 'Auditor')
+            ->set('newPermissionIds', [$viewId])
             ->call('createRole');
 
         expect(assertAudited('role_created', 'authz')['metadata']['role'])->toBe('Auditor');
 
         $role = Role::query()->where('name', 'Auditor')->firstOrFail();
 
-        $component->call('startEdit', $role->id)
+        $component->call('selectRole', $role->id)
+            ->call('startEdit')
             ->set('editPermissionIds', [$viewId, $logId])
             ->call('saveRole');
 
         expect(assertAudited('role_updated', 'authz')['metadata']['granted'])->toBe(['view-activity-log']);
 
-        $component->call('deleteRole', $role->id);
+        $component->call('deleteRole');
 
         expect(assertAudited('role_deleted', 'authz')['metadata']['role'])->toBe('Auditor');
     });

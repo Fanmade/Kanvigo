@@ -1,12 +1,14 @@
 <?php
 
 use App\Authorization\ProjectRoleProvisioner;
-use App\Livewire\Projects\ProjectRolesModal;
+use App\Livewire\Projects\ProjectRoles;
 use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\Role;
+use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -18,13 +20,21 @@ function projectOwner(Project $project): User
     );
 }
 
+/**
+ * The roles page, with the named role open in the detail pane.
+ */
+function rolesPage(User $manager, Project $project, ?Role $selected = null): Testable
+{
+    $component = Livewire::actingAs($manager)->test(ProjectRoles::class, ['short_name' => $project->short_name]);
+
+    return $selected === null ? $component : $component->call('selectRole', $selected->id);
+}
+
 it('lists the seeded roles for an owner', function () {
     $project = Project::factory()->create();
     $owner = projectOwner($project);
 
-    $roles = Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->instance()->roles()->pluck('name');
+    $roles = rolesPage($owner, $project)->instance()->roles()->pluck('name');
 
     expect($roles)->toContain('owner', 'admin', 'member');
 });
@@ -32,12 +42,13 @@ it('lists the seeded roles for an owner', function () {
 it('lets an owner define a custom role bounded by the project permissions', function () {
     $project = Project::factory()->create();
     $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
     $createTask = Permission::query()->where('name', 'create-task')->value('id');
 
-    Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->set('name', 'Triager')
-        ->set('permissionIds', [$createTask])
+    rolesPage($owner, $project, $ownerRole)
+        ->call('startCreate')
+        ->set('newName', 'Triager')
+        ->set('newPermissionIds', [$createTask])
         ->call('createRole')
         ->assertHasNoErrors();
 
@@ -49,15 +60,30 @@ it('lets an owner define a custom role bounded by the project permissions', func
         ->and($triager->can('manage-settings', $project))->toBeFalse();
 });
 
+it('opens the new role in the detail pane', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    $component = rolesPage($owner, $project, $ownerRole)
+        ->call('startCreate')
+        ->set('newName', 'Triager')
+        ->call('createRole')
+        ->assertSet('creating', false);
+
+    expect($component->instance()->selectedRole()->name)->toBe('Triager');
+});
+
 it('rejects a duplicate role name', function () {
     $project = Project::factory()->create();
     $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
 
-    Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->set('name', 'admin')
+    rolesPage($owner, $project, $ownerRole)
+        ->call('startCreate')
+        ->set('newName', 'admin')
         ->call('createRole')
-        ->assertHasErrors('name');
+        ->assertHasErrors('newName');
 });
 
 it('will not delete a seeded base role', function () {
@@ -65,29 +91,91 @@ it('will not delete a seeded base role', function () {
     $owner = projectOwner($project);
     $admin = Role::query()->where('scope_id', $project->id)->where('name', 'admin')->firstOrFail();
 
-    Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->call('deleteRole', $admin->id);
+    rolesPage($owner, $project, $admin)->call('deleteRole');
 
     expect(Role::query()->whereKey($admin->id)->exists())->toBeTrue();
 });
 
-it('deletes a custom role', function () {
+it('deletes a custom role and falls back to its parent', function () {
     $project = Project::factory()->create();
     $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
 
-    Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->set('name', 'Triager')
+    rolesPage($owner, $project, $ownerRole)
+        ->call('startCreate')
+        ->set('newName', 'Triager')
         ->call('createRole');
 
     $role = Role::query()->where('scope_id', $project->id)->where('name', 'Triager')->firstOrFail();
 
-    Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->call('deleteRole', $role->id);
+    rolesPage($owner, $project, $role)
+        ->call('deleteRole')
+        ->assertSet('selectedRoleId', $ownerRole->id);
 
     expect(Role::query()->whereKey($role->id)->exists())->toBeFalse();
+});
+
+it('names the deletion consequence', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    rolesPage($owner, $project, $ownerRole)
+        ->call('startCreate')
+        ->set('newName', 'Triager')
+        ->call('createRole');
+
+    $role = Role::query()->where('scope_id', $project->id)->where('name', 'Triager')->firstOrFail();
+    User::factory()->create()->assignRole($role);
+
+    $consequence = rolesPage($owner, $project, $role)->instance()->deleteConsequence();
+
+    expect($consequence)->toContain('Triager', 'owner', '1 member');
+});
+
+it('renames a custom role and stores its description', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    rolesPage($owner, $project, $ownerRole)
+        ->call('startCreate')
+        ->set('newName', 'Triager')
+        ->call('createRole');
+
+    $role = Role::query()->where('scope_id', $project->id)->where('name', 'Triager')->firstOrFail();
+
+    rolesPage($owner, $project, $role)
+        ->call('startEdit')
+        ->set('editName', 'Triage lead')
+        ->set('editDescription', 'Sorts the inbox.')
+        ->call('saveRole')
+        ->assertHasNoErrors()
+        ->assertSet('editing', false);
+
+    expect($role->fresh()->name)->toBe('Triage lead')
+        ->and($role->fresh()->description)->toBe('Sorts the inbox.');
+});
+
+it('rejects renaming a role onto an existing name', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    rolesPage($owner, $project, $ownerRole)
+        ->call('startCreate')
+        ->set('newName', 'Triager')
+        ->call('createRole');
+
+    $role = Role::query()->where('scope_id', $project->id)->where('name', 'Triager')->firstOrFail();
+
+    rolesPage($owner, $project, $role)
+        ->call('startEdit')
+        ->set('editName', 'admin')
+        ->call('saveRole')
+        ->assertHasErrors('editName');
+
+    expect($role->fresh()->name)->toBe('Triager');
 });
 
 it('forbids a non-owner from managing roles', function () {
@@ -97,6 +185,35 @@ it('forbids a non-owner from managing roles', function () {
     );
 
     Livewire::actingAs($member)
-        ->test(ProjectRolesModal::class, ['project' => $project])
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
         ->assertForbidden();
+});
+
+it('keeps a role the manager holds themselves read-only', function () {
+    $project = Project::factory()->create();
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $lead = app(RoleManager::class)->createRole('Lead', $ownerRole, ['view-project', 'manage-roles'], $project);
+    $manager = User::factory()->create()->assignRole($lead);
+
+    $component = rolesPage($manager, $project, $lead)
+        ->call('startEdit')
+        ->assertSet('editing', false);
+
+    expect($component->instance()->readOnlyReason())
+        ->toBe(__('You cannot edit a role you hold yourself.'));
+});
+
+it('bounds the edit picker to the parent role', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    $lead = app(RoleManager::class)
+        ->createRole('Lead', $ownerRole, ['view-project', 'create-task'], $project);
+    $sub = app(RoleManager::class)
+        ->createRole('Sub', $lead, ['view-project'], $project);
+
+    $allowed = rolesPage($owner, $project, $sub)->instance()->editAllowedPermissions();
+
+    expect($allowed)->toEqualCanonicalizing(['view-project', 'create-task']);
 });

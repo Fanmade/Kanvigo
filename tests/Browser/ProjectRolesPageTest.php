@@ -3,6 +3,7 @@
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use App\Models\User;
+use Fanmade\DelegatedPermissions\Models\Role;
 use Fanmade\DelegatedPermissions\RoleManager;
 
 it('reaches the roles page from the project menu and browses the role tree', function () {
@@ -32,4 +33,44 @@ it('reaches the roles page from the project menu and browses the role tree', fun
         ->assertSeeIn('@role-detail-members', 'Robin Lead')
         ->assertSeeIn('@role-detail-permissions', 'Create')
         ->assertNoJavascriptErrors();
+});
+
+it('creates and edits a custom role from the detail pane', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    joinProject($project, $user, 'owner');
+
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    $this->actingAs($user);
+
+    $page = visit("/{$project->short_name}/roles?role={$ownerRole->id}");
+
+    // The owner role is held by this manager, so it is read-only.
+    $page->assertVisible('@role-read-only-reason')
+        ->assertMissing('@edit-role')
+        ->click('@add-child-role')
+        ->fill('@new-role-name', 'Triager')
+        ->check('@new-permission-create-task')
+        ->click('@save-new-role')
+        ->assertSeeIn('@role-detail-name', 'Triager')
+        ->assertSeeIn('@role-detail-permissions', 'Create');
+
+    $role = Role::query()
+        ->where('scope_id', $project->id)
+        ->where('name', 'Triager')
+        ->firstOrFail();
+
+    // A child of Triager may only be granted what Triager holds — the rest is locked.
+    $page->click('@add-child-role')
+        ->assertVisible('@new-permission-bound-delete-project')
+        ->click('@cancel-new-role');
+
+    $page->click('@edit-role')
+        ->fill('@edit-role-name', 'Triage lead')
+        ->click('@save-role')
+        ->assertSeeIn('@role-detail-name', 'Triage lead')
+        ->assertNoJavascriptErrors();
+
+    expect($role->fresh()->name)->toBe('Triage lead');
 });

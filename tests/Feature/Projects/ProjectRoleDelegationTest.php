@@ -1,7 +1,7 @@
 <?php
 
 use App\Authorization\ProjectRoleProvisioner;
-use App\Livewire\Projects\ProjectRolesModal;
+use App\Livewire\Projects\ProjectRoles;
 use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
@@ -19,7 +19,7 @@ it('shows an owner the whole project tree, including viewer, but never the syste
     joinProject($project, $owner, 'owner');
 
     $names = Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
         ->instance()->roles()->pluck('name')->all();
 
     expect($names)->toContain('owner', 'admin', 'member', 'viewer')
@@ -39,13 +39,13 @@ it('limits a delegated manager to their subtree and parent-bounded grants', func
     );
     $manager = User::factory()->create()->assignRole($lead);
 
-    $component = Livewire::actingAs($manager)->test(ProjectRolesModal::class, ['project' => $project]);
+    $component = Livewire::actingAs($manager)->test(ProjectRoles::class, ['short_name' => $project->short_name]);
 
     // Visibility: the manager sees only their own role — never ancestors or base roles.
     expect($component->instance()->roles()->pluck('name')->all())->toBe(['Lead']);
 
-    // The permission picker (parent defaults to Lead) offers only Lead's permissions.
-    $offered = collect($component->instance()->permissionGroups())->flatten()->pluck('name');
+    // A new child of Lead may only be granted Lead's own permissions.
+    $offered = $component->instance()->createAllowedPermissions();
     expect($offered)->toContain('create-task', 'edit-task', 'manage-roles')
         ->and($offered)->not->toContain('manage-settings', 'delete-project');
 
@@ -53,9 +53,9 @@ it('limits a delegated manager to their subtree and parent-bounded grants', func
     $editTask = Permission::where('name', 'edit-task')->value('id');
     $settings = Permission::where('name', 'manage-settings')->value('id');
 
-    $component->set('name', 'Triager')
-        ->set('parentId', $lead->id)
-        ->set('permissionIds', [$editTask, $settings])
+    $component->call('startCreate')
+        ->set('newName', 'Triager')
+        ->set('newPermissionIds', [$editTask, $settings])
         ->call('createRole')
         ->assertHasNoErrors();
 
@@ -64,10 +64,10 @@ it('limits a delegated manager to their subtree and parent-bounded grants', func
     expect($triager->parent_id)->toBe($lead->id)
         ->and(app(PermissionResolver::class)->permissionsFor($triager)->all())->toBe(['edit-task']);
 
-    // Deeper-only: the manager may delete the role below them, not their own role.
-    $deletable = $component->instance()->deletableRoleIds()->all();
-    expect($deletable)->toContain($triager->id)
-        ->and($deletable)->not->toContain($lead->id);
+    // Deeper-only: the manager may edit and delete the role below them, not their own role.
+    $editable = $component->instance()->editableRoleIds()->all();
+    expect($editable)->toContain($triager->id)
+        ->and($editable)->not->toContain($lead->id);
 });
 
 it('refuses to delete a protected base role', function () {
@@ -79,8 +79,9 @@ it('refuses to delete a protected base role', function () {
     $memberRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
 
     Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->call('deleteRole', $memberRole->id);
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
+        ->call('selectRole', $memberRole->id)
+        ->call('deleteRole');
 
     expect(Role::query()->whereKey($memberRole->id)->exists())->toBeTrue();
 });
@@ -100,8 +101,9 @@ it('edits a custom role in place and cascades a revoke to its descendants', func
     $ids = static fn (array $names): array => Permission::query()->whereIn('name', $names)->pluck('id')->all();
 
     Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->call('startEdit', $lead->id)
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
+        ->call('selectRole', $lead->id)
+        ->call('startEdit')
         // Keep view-project + create-task, drop edit-task, add manage-dependencies.
         ->set('editPermissionIds', $ids(['view-project', 'create-task', 'manage-dependencies']))
         ->call('saveRole')
@@ -129,8 +131,9 @@ it('drops an out-of-bounds permission when editing a role', function () {
     $ids = Permission::query()->whereIn('name', ['view-project', 'create-task', 'manage-settings'])->pluck('id')->all();
 
     Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->call('startEdit', $sub->id)
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
+        ->call('selectRole', $sub->id)
+        ->call('startEdit')
         ->set('editPermissionIds', $ids)
         ->call('saveRole')
         ->assertHasNoErrors();
@@ -146,12 +149,14 @@ it('will not open a protected base role for editing', function () {
 
     $member = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
 
-    $editingRoleId = Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->call('startEdit', $member->id)
-        ->get('editingRoleId');
+    $component = Livewire::actingAs($owner)
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
+        ->call('selectRole', $member->id)
+        ->call('startEdit')
+        ->assertSet('editing', false);
 
-    expect($editingRoleId)->toBeNull();
+    expect($component->instance()->readOnlyReason())
+        ->toBe(__('Base roles are defined in code and cannot be edited.'));
 });
 
 it('orders the visible roles as a hierarchy with each role\'s depth', function () {
@@ -164,7 +169,7 @@ it('orders the visible roles as a hierarchy with each role\'s depth', function (
     app(RoleManager::class)->createRole('Triager', $memberRole, ['view-project'], $project);
 
     $tree = Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
         ->instance()->roleTree();
 
     $depthByName = collect($tree)
@@ -191,12 +196,13 @@ it('prefills the new-role permissions from a role, capped by the chosen parent',
 
     // Parent = member, copy from owner: the selection is capped to member's set.
     $component = Livewire::actingAs($owner)
-        ->test(ProjectRolesModal::class, ['project' => $project])
-        ->set('parentId', $memberRole->id)
-        ->call('selectRolePermissions', $ownerRole->id);
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
+        ->call('selectRole', $memberRole->id)
+        ->call('startCreate')
+        ->call('copyPermissionsFrom', $ownerRole->id);
 
     $selected = Permission::query()
-        ->whereKey($component->get('permissionIds'))
+        ->whereKey($component->get('newPermissionIds'))
         ->pluck('name')
         ->sort()
         ->values()
