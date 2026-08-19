@@ -43,6 +43,13 @@ Kanvigo is under active development and does not yet follow semantic versioning.
 
 ### Fixed
 
+- Seeding now **fails loudly when `ADMIN_EMAIL` or `ADMIN_PASSWORD` is missing**,
+  naming the variable that is absent. It previously returned quietly and reported
+  success, leaving a fresh instance with no administrator and — because
+  registration is invitation-only — no way in short of a console session. A local
+  environment still only warns, since the demo seeder provides an account there,
+  and that demo account is now announced rather than created silently.
+
 - The REST task detail response (`GET /api/v1/tasks/{reference}`) now returns the
   task `description`. The API accepted one on create and update but never gave it
   back, so a client could not read what it had written. The task *list* stays lean

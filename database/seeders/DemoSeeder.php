@@ -539,10 +539,21 @@ class DemoSeeder extends Seeder
             return $admin;
         }
 
-        return User::factory()->admin()->create([
+        $admin = User::factory()->admin()->create([
             'name' => config('admin.name') ?: 'Admin',
             'email' => $email ?: 'admin@example.com',
         ]);
+
+        // This account holds every account permission and its password is a
+        // random one from the factory, so nobody can actually sign in as it.
+        // Say so rather than leaving a full-permission account nobody knows about.
+        $this->command->warn(sprintf(
+            'Demo administrator %s created with every account permission and a random password. '
+            .'Set ADMIN_EMAIL and ADMIN_PASSWORD and seed again for an account you can sign in to.',
+            $admin->email,
+        ));
+
+        return $admin;
     }
 
     /**

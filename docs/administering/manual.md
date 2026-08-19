@@ -42,10 +42,11 @@ ADMIN_EMAIL=you@example.com
 ADMIN_PASSWORD=a-real-password
 ```
 
-That account gets every account permission. Two behaviours to know: if either
-the email or the password is blank **no administrator is created at all**,
-quietly — and if a user with that email already exists the seeder skips it, so
-re-seeding never resets a password.
+That account gets every account permission. Two behaviours to know: seeding
+**fails with an error** if either variable is missing, rather than leaving you
+with an instance nobody can sign in to — and if a user with that email already
+exists the seeder says so and leaves it alone, so re-seeding never resets a
+password.
 
 Seed once, with `php artisan db:seed`. The getting-started snippet in the README
 uses `migrate:fresh --seed`, which **drops every table**: right on an empty
