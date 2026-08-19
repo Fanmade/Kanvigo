@@ -66,4 +66,39 @@ return [
         'max_project_items' => (int) env('KANVIGO_EXPORT_MAX_PROJECT_ITEMS', 2000),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Activity feed retention
+    |--------------------------------------------------------------------------
+    |
+    | The product activity feed is append-only: every audited content action adds
+    | a row. The daily "activity:prune" command deletes entries older than this
+    | many days, which also drops the comment links pointing at them. Set to 0 —
+    | the default — to keep the feed forever.
+    |
+    | The "what did I miss" marker is a timestamp on the reader, not a feed row,
+    | so pruning never disturbs it.
+    |
+    */
+
+    'activity' => [
+        'retention_days' => (int) env('KANVIGO_ACTIVITY_RETENTION_DAYS', 0),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification retention
+    |--------------------------------------------------------------------------
+    |
+    | How many days a notification is kept once the reader is done with it —
+    | dismissed, or merely read. Both are pruned by the daily "model:prune";
+    | a notification that is still unread is kept however old it is, so nothing
+    | addressed at someone disappears before they have seen it.
+    |
+    */
+
+    'notifications' => [
+        'retention_days' => (int) env('KANVIGO_NOTIFICATION_RETENTION_DAYS', 30),
+    ],
+
 ];

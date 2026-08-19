@@ -10,4 +10,5 @@ Schedule::command('attachments:prune-inline')->daily();
 Schedule::command('tasks:auto-archive')->daily();
 Schedule::command('audit:outbox:drain')->everyMinute();
 Schedule::command('audit:outbox:prune')->daily();
+Schedule::command('activity:prune')->daily();
 Schedule::command('model:prune', ['--model' => [Notification::class]])->daily();

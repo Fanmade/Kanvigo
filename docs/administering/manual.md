@@ -76,7 +76,8 @@ Kanvigo needs two background processes.
 | `tasks:auto-archive` | daily | Archives Done tasks past the threshold |
 | `attachments:prune-inline` | daily | Removes orphaned inline uploads |
 | `audit:outbox:prune` | daily | Deletes dispatched audit rows past retention |
-| `model:prune` (notifications) | daily | Deletes dismissed notifications after 30 days |
+| `activity:prune` | daily | Deletes activity-feed entries past retention (off by default) |
+| `model:prune` (notifications) | daily | Deletes dismissed and read notifications past retention |
 
 Without it: no backups, nothing auto-archives, orphaned attachments accumulate,
 and queued audit sinks never receive anything. The default audit sink is
@@ -130,6 +131,11 @@ uncomment what you need to change.
 | `ATTACHMENTS_MAX_SIZE` | 12288 (KB) | Per-file cap. Raising it means also raising Livewire's temporary-upload rule, PHP's `upload_max_filesize` and `post_max_size`, and any reverse-proxy body limit |
 | `ATTACHMENTS_SIGNED_URL_TTL` | 30 (minutes) | Lifetime of signed download links |
 | `ATTACHMENTS_GHOSTSCRIPT` | `gs` | Binary used for PDF thumbnails |
+
+**`config/kanvigo.php`** — retention for the two append-only tables:
+`KANVIGO_ACTIVITY_RETENTION_DAYS` (default `0`, meaning the activity feed is kept
+forever) and `KANVIGO_NOTIFICATION_RETENTION_DAYS` (default 30). Both are applied
+by daily scheduled commands, so they take effect without a migration.
 
 **`config/audit.php`** — `AUDIT_OUTBOX_RETENTION_DAYS` (default 30, `0` keeps
 forever) and `AUDIT_PII_TOKEN_SALT`, which falls back to the application key.
@@ -271,8 +277,16 @@ retry. Pruning deletes **only delivered** rows past
 Consuming the trail externally needs both the `manage-users` account permission
 and a token with the audit ability — the endpoint is `GET /api/v1/audit-events`.
 
-Two things to plan around: the activity feed table has **no pruning at all** and
-grows without bound, and undismissed notifications are likewise kept forever.
+Two things to plan around, both append-only and both pruned by a daily command:
+
+- **The activity feed.** `activity:prune` deletes entries older than
+  `KANVIGO_ACTIVITY_RETENTION_DAYS`. It defaults to `0` — keep forever — because
+  the feed is product history, so set a window if the table's growth matters
+  more to you than old history. Comments linking to a pruned entry lose the
+  link; the "what did I miss" marker is a timestamp per reader and is unaffected.
+- **Notifications.** `model:prune` deletes notifications that were dismissed or
+  read more than `KANVIGO_NOTIFICATION_RETENTION_DAYS` (default 30) ago. A
+  notification that is still unread is never pruned, however old it is.
 
 ## Backups
 
