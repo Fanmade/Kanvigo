@@ -48,6 +48,13 @@ Kanvigo is under active development and does not yet follow semantic versioning.
 
 ### Fixed
 
+- `.env.example` now lists **every setting the application's own configuration
+  reads** — task depth, auto-archive, the live-updates interval, the export
+  limits, attachment handling, audit retention and PII salt, backup encryption
+  and the permission layer — commented out at their defaults, with a line saying
+  what each group does. A test keeps the file and `config/` from drifting apart
+  again.
+
 - `composer setup` now **creates `database/database.sqlite`** when SQLite is the
   configured connection, so a fresh `git clone` install no longer fails at the
   migrate step. Other connections are left alone.

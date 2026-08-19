@@ -107,7 +107,8 @@ inside the application only, and no configuration turns them into mail.
 
 ## Settings worth knowing
 
-Most of these are absent from `.env.example` — the defaults live in `config/`.
+Each of these is listed, commented out at its default, in `.env.example`;
+uncomment what you need to change.
 
 **`config/kanvigo.php`**
 
