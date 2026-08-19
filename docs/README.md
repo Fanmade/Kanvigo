@@ -6,6 +6,8 @@ front door — what Kanvigo is, the feature list, and how to get it running.
 
 ## Using Kanvigo
 
+- [User manual](using/manual.md) — the guided tour: signing in, finding your way,
+  projects and boards, tasks, writing, keeping up, and your account settings.
 - [Inviting users](using/inviting-users.md) — invitation-only onboarding, where
   the mail goes, and what a new account can do.
 - [Quick notes](using/quick-notes.md) — personal notes, sharing them with a

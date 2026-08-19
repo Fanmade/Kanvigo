@@ -287,7 +287,8 @@ the coverage threshold and the browser-suite caveats.
 
 Full index: [docs/README.md](docs/README.md).
 
-- **Using Kanvigo** — [inviting users](docs/using/inviting-users.md),
+- **Using Kanvigo** — [user manual](docs/using/manual.md),
+  [inviting users](docs/using/inviting-users.md),
   [quick notes](docs/using/quick-notes.md),
   [reference docs](docs/using/reference-docs.md),
   [export](docs/using/export.md).
