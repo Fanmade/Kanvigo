@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Projects;
 
-use App\Authorization\PermissionCatalog;
+use App\Authorization\ProjectPermission;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use App\Models\User;
@@ -32,7 +32,7 @@ use Livewire\Component;
  * current manager may act on. The left pane lists the visible role tree by name
  * and hierarchy only; the right pane is the single editing surface — the role's
  * name and description, its permissions grouped per
- * {@see ProjectRoleProvisioner::GROUPS}, the members holding it, and the delete
+ * {@see ProjectPermission::groups()}, the members holding it, and the delete
  * and "add child role" actions. Restricted to holders of the project
  * `manage-roles` permission.
  *
@@ -213,12 +213,12 @@ class ProjectRoles extends Component
 
         $groups = [];
 
-        foreach (ProjectRoleProvisioner::GROUPS as $group => $names) {
+        foreach (ProjectPermission::groups() as $group => $names) {
             $labels = [];
 
             foreach ($names as $name) {
                 if ($held->contains($name)) {
-                    $labels[] = PermissionCatalog::pickerLabel($name);
+                    $labels[] = ProjectPermission::pickerLabelFor($name);
                 }
             }
 
@@ -277,7 +277,7 @@ class ProjectRoles extends Component
         $held = Auth::user()->permissionsIn($this->project);
 
         return array_values(array_filter(
-            ProjectRoleProvisioner::CATALOG,
+            ProjectPermission::names(),
             static fn (string $name): bool => $held->contains($name),
         ));
     }
@@ -303,7 +303,7 @@ class ProjectRoles extends Component
 
         $groups = [];
 
-        foreach (ProjectRoleProvisioner::GROUPS as $group => $names) {
+        foreach (ProjectPermission::groups() as $group => $names) {
             $permissions = [];
 
             foreach ($names as $name) {
@@ -412,7 +412,7 @@ class ProjectRoles extends Component
 
         return $role !== null
             && $this->canEditSelected()
-            && array_key_exists($role->name, ProjectRoleProvisioner::GRANTS);
+            && array_key_exists($role->name, ProjectRoleProvisioner::grants());
     }
 
     /**
@@ -710,11 +710,11 @@ class ProjectRoles extends Component
         }
 
         $parent = $role->parent;
-        $allowed = $parent === null ? collect(ProjectRoleProvisioner::CATALOG) : $resolver->permissionsFor($parent);
+        $allowed = $parent === null ? collect(ProjectPermission::names()) : $resolver->permissionsFor($parent);
 
         $visible = $this->managerPermissions();
 
-        $defaults = collect(ProjectRoleProvisioner::GRANTS[$role->name]);
+        $defaults = collect(ProjectRoleProvisioner::grants()[$role->name]);
         $desired = $defaults
             ->filter(static fn (string $name): bool => $allowed->contains($name) && in_array($name, $visible, true))
             ->values();
@@ -922,20 +922,20 @@ class ProjectRoles extends Component
 
     /**
      * The human-readable, translated label for a permission name, used wherever
-     * a permission is shown in the picker. Defers to {@see PermissionCatalog}.
+     * a permission is shown in the picker. Defers to {@see ProjectPermission}.
      */
     public function permissionLabel(string $name): string
     {
-        return PermissionCatalog::label($name);
+        return ProjectPermission::labelFor($name);
     }
 
     /**
      * The short label for a permission in the picker, where the group heading
-     * already names the subject. Defers to {@see PermissionCatalog}.
+     * already names the subject. Defers to {@see ProjectPermission}.
      */
     public function permissionPickerLabel(string $name): string
     {
-        return PermissionCatalog::pickerLabel($name);
+        return ProjectPermission::pickerLabelFor($name);
     }
 
     /**
@@ -944,7 +944,7 @@ class ProjectRoles extends Component
      */
     public function permissionDescription(string $name): ?string
     {
-        return PermissionCatalog::description($name);
+        return ProjectPermission::descriptionFor($name);
     }
 
     /**
@@ -970,7 +970,7 @@ class ProjectRoles extends Component
     private function catalogPermissionIds(Collection $names): array
     {
         return Permission::query()
-            ->whereIn('name', ProjectRoleProvisioner::CATALOG)
+            ->whereIn('name', ProjectPermission::names())
             ->whereIn('name', $names->values()->all())
             ->pluck('id')
             ->map(static fn (mixed $id): int => (int) $id)
@@ -987,7 +987,7 @@ class ProjectRoles extends Component
     {
         return Permission::query()
             ->whereKey($ids)
-            ->whereIn('name', ProjectRoleProvisioner::CATALOG)
+            ->whereIn('name', ProjectPermission::names())
             ->pluck('name');
     }
 

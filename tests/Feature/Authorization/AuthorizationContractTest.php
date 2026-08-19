@@ -1,6 +1,6 @@
 <?php
 
-use App\Authorization\ProjectRoleProvisioner;
+use App\Authorization\ProjectPermission;
 use App\Enums\Permission;
 use App\Policies\ProjectPolicy;
 use App\Policies\TaskPolicy;
@@ -15,7 +15,7 @@ use App\Policies\VariablePolicy;
 function grantablePermissionNames(): array
 {
     return [
-        ...ProjectRoleProvisioner::CATALOG,
+        ...ProjectPermission::names(),
         ...array_map(static fn (Permission $permission): string => $permission->value, Permission::cases()),
     ];
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Authorization\ProjectPermission;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Livewire\Projects\ProjectList;
 use App\Models\Project;
@@ -49,18 +50,18 @@ it('provisions an owner→admin→member→viewer tree with the recomputed grant
 
 it('keeps each role a subset of the one above it', function () {
     foreach ([['viewer', 'member'], ['member', 'admin'], ['admin', 'owner']] as [$child, $parent]) {
-        expect(array_diff(ProjectRoleProvisioner::GRANTS[$child], ProjectRoleProvisioner::GRANTS[$parent]))
+        expect(array_diff(ProjectRoleProvisioner::grants()[$child], ProjectRoleProvisioner::grants()[$parent]))
             ->toBe([], "{$child} grants must be a subset of {$parent}");
     }
 
     // Owner holds exactly the flat catalog.
-    expect(ProjectRoleProvisioner::GRANTS['owner'])->toBe(ProjectRoleProvisioner::CATALOG);
+    expect(ProjectRoleProvisioner::grants()['owner'])->toBe(ProjectPermission::names());
 });
 
 it('seeds the permission groups covering the whole catalog', function () {
     app(ProjectRoleProvisioner::class)->seedCatalog();
 
-    foreach (ProjectRoleProvisioner::GROUPS as $name => $permissions) {
+    foreach (ProjectPermission::groups() as $name => $permissions) {
         $group = PermissionGroup::query()->where('name', $name)->first();
 
         expect($group)->not->toBeNull("group {$name} should be seeded")
@@ -69,8 +70,8 @@ it('seeds the permission groups covering the whole catalog', function () {
     }
 
     // Every catalog permission belongs to exactly one group (no orphans, no dupes).
-    expect(collect(ProjectRoleProvisioner::GROUPS)->flatten()->sort()->values()->all())
-        ->toBe(collect(ProjectRoleProvisioner::CATALOG)->sort()->values()->all());
+    expect(collect(ProjectPermission::groups())->flatten()->sort()->values()->all())
+        ->toBe(collect(ProjectPermission::names())->sort()->values()->all());
 });
 
 it('isolates access to the scoping project', function () {

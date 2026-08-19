@@ -140,10 +140,11 @@ project.
 
 ### Adding a permission
 
-For a **project** permission: add the name to the provisioner's `GROUPS` and
-`CATALOG`, add it to the role defaults it belongs in, give it a label and picker
-label (and a description if it isn't obvious) in `PermissionCatalog`, add the
-German strings, then write a policy method under a *different* ability name.
+For a **project** permission: add a case to `App\Authorization\ProjectPermission`
+with its group, label and picker label (and a description if it isn't obvious) —
+the flat and grouped catalogs derive from the cases — add it to the provisioner's
+role defaults where it belongs, add the German strings, then write a policy
+method under a *different* ability name.
 
 For an **account** permission: add a case to `App\Enums\Permission` with a
 `label()` arm. The provisioner creates its global role on the next run.

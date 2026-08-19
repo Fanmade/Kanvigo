@@ -253,7 +253,7 @@ it('restores a base role to its seeded permissions', function () {
     rolesPage($owner, $project, $member)->call('resetToDefaults');
 
     expect($resolver->permissionsFor($member->fresh())->all())
-        ->toEqualCanonicalizing(ProjectRoleProvisioner::GRANTS['member']);
+        ->toEqualCanonicalizing(ProjectRoleProvisioner::grants()['member']);
 });
 
 it('offers no reset for a custom role or the owner role', function () {

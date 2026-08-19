@@ -249,5 +249,5 @@ it('prefills the new-role permissions from a role, capped by the chosen parent',
         ->values()
         ->all();
 
-    expect($selected)->toBe(collect(ProjectRoleProvisioner::GRANTS['member'])->sort()->values()->all());
+    expect($selected)->toBe(collect(ProjectRoleProvisioner::grants()['member'])->sort()->values()->all());
 });

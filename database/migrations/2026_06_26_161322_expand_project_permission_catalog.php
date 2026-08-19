@@ -1,5 +1,6 @@
 <?php
 
+use App\Authorization\ProjectPermission;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use Fanmade\DelegatedPermissions\Models\Permission;
@@ -35,12 +36,12 @@ return new class extends Migration
         app(ProjectRoleProvisioner::class)->seedCatalog();
 
         $permissionIds = Permission::query()
-            ->whereIn('name', ProjectRoleProvisioner::CATALOG)
+            ->whereIn('name', ProjectPermission::names())
             ->pluck('id', 'name');
 
         $idsFor = static fn (string $role): array => array_map(
             static fn (string $name): int => $permissionIds[$name],
-            ProjectRoleProvisioner::GRANTS[$role],
+            ProjectRoleProvisioner::grants()[$role],
         );
 
         Project::query()->each(function (Project $project) use ($idsFor): void {
@@ -82,11 +83,11 @@ return new class extends Migration
         Permission::query()->where('name', 'create-task')->update(['name' => 'create-tasks']);
 
         Permission::query()
-            ->whereIn('name', array_values(array_diff(ProjectRoleProvisioner::CATALOG, self::ORIGINAL)))
+            ->whereIn('name', array_values(array_diff(ProjectPermission::names(), self::ORIGINAL)))
             ->delete();
 
         PermissionGroup::query()
-            ->whereIn('name', array_keys(ProjectRoleProvisioner::GROUPS))
+            ->whereIn('name', array_keys(ProjectPermission::groups()))
             ->delete();
     }
 };

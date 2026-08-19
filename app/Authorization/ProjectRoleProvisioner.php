@@ -25,41 +25,6 @@ use Kanvigo\Audit\Contracts\AuditEvent;
 class ProjectRoleProvisioner
 {
     /**
-     * The project-scoped permission catalog, grouped for the management UI. The
-     * group order and contents drive how the permission picker is laid out; the
-     * flattened set is the catalog every project role is bounded by.
-     *
-     * @var array<string, list<string>>
-     */
-    public const array GROUPS = [
-        'Project' => ['view-project', 'manage-settings', 'delete-project', 'view-activity-log', 'export-content', 'export-project'],
-        'Members & roles' => ['manage-members', 'invite-members', 'manage-roles'],
-        'Tasks' => ['create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies'],
-        'Tags' => ['manage-tags', 'tag-tasks'],
-        'Attachments' => ['manage-attachments', 'delete-attachment'],
-        'Comments' => ['create-comment', 'moderate-comments'],
-        'Docs' => ['create-doc', 'edit-doc', 'delete-doc'],
-        'Variables' => ['manage-variables'],
-    ];
-
-    /**
-     * The flat project-scoped permission catalog (every permission across the
-     * groups). The owner role holds exactly this set.
-     *
-     * @var list<string>
-     */
-    public const array CATALOG = [
-        'view-project', 'manage-settings', 'delete-project', 'view-activity-log', 'export-content', 'export-project',
-        'manage-members', 'invite-members', 'manage-roles',
-        'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
-        'manage-tags', 'tag-tasks',
-        'manage-attachments', 'delete-attachment',
-        'create-comment', 'moderate-comments',
-        'create-doc', 'edit-doc', 'delete-doc',
-        'manage-variables',
-    ];
-
-    /**
      * The permissions each seeded role starts with. Each role is a strict
      * superset of the one below it (owner ⊇ admin ⊇ member ⊇ viewer), so the
      * delegation bounds (child ⊆ parent) hold. These mirror today's coarse
@@ -72,31 +37,34 @@ class ProjectRoleProvisioner
      * role to the set named here through its "Reset to defaults" action. `owner`
      * is the exception — it holds the whole catalog and is never edited.
      *
-     * @var array<string, list<string>>
+     * @return array<string, list<string>>
      */
-    public const array GRANTS = [
-        'viewer' => ['view-project', 'view-activity-log'],
-        'member' => [
-            'view-project', 'view-activity-log', 'export-content',
-            'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
-            'manage-tags', 'tag-tasks',
-            'manage-attachments', 'delete-attachment',
-            'create-comment',
-            'create-doc', 'edit-doc', 'delete-doc',
-            'manage-variables',
-        ],
-        'admin' => [
-            'view-project', 'view-activity-log', 'export-content', 'export-project',
-            'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
-            'manage-tags', 'tag-tasks',
-            'manage-attachments', 'delete-attachment',
-            'create-comment', 'moderate-comments',
-            'manage-settings', 'delete-project',
-            'create-doc', 'edit-doc', 'delete-doc',
-            'manage-variables',
-        ],
-        'owner' => self::CATALOG,
-    ];
+    public static function grants(): array
+    {
+        return [
+            'viewer' => ['view-project', 'view-activity-log'],
+            'member' => [
+                'view-project', 'view-activity-log', 'export-content',
+                'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
+                'manage-tags', 'tag-tasks',
+                'manage-attachments', 'delete-attachment',
+                'create-comment',
+                'create-doc', 'edit-doc', 'delete-doc',
+                'manage-variables',
+            ],
+            'admin' => [
+                'view-project', 'view-activity-log', 'export-content', 'export-project',
+                'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
+                'manage-tags', 'tag-tasks',
+                'manage-attachments', 'delete-attachment',
+                'create-comment', 'moderate-comments',
+                'manage-settings', 'delete-project',
+                'create-doc', 'edit-doc', 'delete-doc',
+                'manage-variables',
+            ],
+            'owner' => ProjectPermission::names(),
+        ];
+    }
 
     public function __construct(private readonly RoleManager $roles) {}
 
@@ -106,14 +74,17 @@ class ProjectRoleProvisioner
      */
     public function seedCatalog(): void
     {
-        $existing = Permission::query()->whereIn('name', self::CATALOG)->pluck('id', 'name');
+        $catalog = ProjectPermission::names();
+        $groups = ProjectPermission::groups();
 
-        if ($existing->count() === count(self::CATALOG)
-            && PermissionGroup::query()->whereIn('name', array_keys(self::GROUPS))->count() === count(self::GROUPS)) {
+        $existing = Permission::query()->whereIn('name', $catalog)->pluck('id', 'name');
+
+        if ($existing->count() === count($catalog)
+            && PermissionGroup::query()->whereIn('name', array_keys($groups))->count() === count($groups)) {
             return;
         }
 
-        foreach (self::CATALOG as $name) {
+        foreach ($catalog as $name) {
             $existing[$name] ??= Permission::query()->create(['name' => $name])->getKey();
         }
 
@@ -127,7 +98,7 @@ class ProjectRoleProvisioner
      */
     protected function seedGroups(Collection $permissionIds): void
     {
-        foreach (self::GROUPS as $groupName => $names) {
+        foreach (ProjectPermission::groups() as $groupName => $names) {
             $group = PermissionGroup::query()->firstOrCreate(['name' => $groupName]);
             $group->permissions()->sync(array_map(static fn (string $name): int => $permissionIds[$name], $names));
         }
@@ -165,10 +136,12 @@ class ProjectRoleProvisioner
             return $existing->all();
         }
 
-        $owner = $existing['owner'] ?? $this->roles->createRole('owner', $this->systemRole(), self::GRANTS['owner'], $project);
-        $admin = $existing['admin'] ?? $this->roles->createRole('admin', $owner, self::GRANTS['admin']);
-        $member = $existing['member'] ?? $this->roles->createRole('member', $admin, self::GRANTS['member']);
-        $viewer = $existing['viewer'] ?? $this->roles->createRole('viewer', $member, self::GRANTS['viewer']);
+        $grants = self::grants();
+
+        $owner = $existing['owner'] ?? $this->roles->createRole('owner', $this->systemRole(), $grants['owner'], $project);
+        $admin = $existing['admin'] ?? $this->roles->createRole('admin', $owner, $grants['admin']);
+        $member = $existing['member'] ?? $this->roles->createRole('member', $admin, $grants['member']);
+        $viewer = $existing['viewer'] ?? $this->roles->createRole('viewer', $member, $grants['viewer']);
 
         return ['owner' => $owner, 'admin' => $admin, 'member' => $member, 'viewer' => $viewer];
     }
