@@ -87,6 +87,7 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan passport:keys --no-interaction || true",
+            "@php -r \"if (!file_exists('database/database.sqlite') && !preg_match('/^DB_CONNECTION=(?!sqlite)/m', @file_get_contents('.env') ?: '')) touch('database/database.sqlite');\"",
             "@php artisan migrate --force",
             "npm install",
             "npm run build"

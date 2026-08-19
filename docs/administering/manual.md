@@ -23,14 +23,13 @@ code itself.
 ## First run
 
 `composer setup` installs dependencies, copies `.env.example` to `.env`,
-generates the application key, generates Passport keys, migrates and builds the
-assets. Two things it does *not* do:
+generates the application key and the Passport keys, creates the SQLite file
+when that is the configured connection, migrates, and builds the assets.
 
-- **It does not create the SQLite file.** With the default
-  `DB_CONNECTION=sqlite`, create `database/database.sqlite` yourself first or the
-  migration fails.
-- **It does not seed.** Seeding is the separate step that creates your first
-  administrator.
+**It does not seed.** Seeding is the separate step that creates your first
+administrator, and it is deliberately not folded in: locally it also loads demo
+content, which is not idempotent, so a second `composer setup` would duplicate
+it.
 
 ### The first administrator
 
@@ -48,11 +47,11 @@ with an instance nobody can sign in to — and if a user with that email already
 exists the seeder says so and leaves it alone, so re-seeding never resets a
 password.
 
-Seed once, with `php artisan db:seed`. The getting-started snippet in the README
-uses `migrate:fresh --seed`, which **drops every table**: right on an empty
-instance, catastrophic afterwards. Laravel's destructive-command guard only
-applies when `APP_ENV=production`, so a staging box with `APP_ENV=local` will
-happily wipe itself.
+Seed with `php artisan db:seed`. It is safe to repeat: an existing administrator
+is left alone and its password is not reset. Do not reach for `migrate:fresh
+--seed` — it **drops every table** first, and Laravel's destructive-command guard
+only applies when `APP_ENV=production`, so a staging box on `local` will happily
+wipe itself.
 
 ### Demo data
 
@@ -313,7 +312,8 @@ Do:
 
 Don't:
 
-- run `migrate:fresh --seed` after the first install;
+- run `migrate:fresh` on an instance with data in it — `db:seed` is the
+  repeatable step;
 - run a real instance with `APP_ENV=local` — that is what triggers the demo
   seeder;
 - leave the system role enabled once proper administrator accounts exist;

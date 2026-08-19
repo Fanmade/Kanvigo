@@ -234,11 +234,12 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 Requirements: PHP 8.4+, Composer, Node.js, and a Flux Pro license.
 
 ```bash
-# Install dependencies, create .env, generate the key, migrate, and build assets
+# Install dependencies, create .env and the SQLite file, generate the key,
+# migrate, and build assets
 composer setup
 
-# Seed the database (creates the configured admin and local demo data)
-php artisan migrate:fresh --seed
+# Seed the database (creates the configured admin and, locally, demo data)
+php artisan db:seed
 
 # Run the full dev stack (server, queue, logs, Vite)
 composer dev
@@ -248,8 +249,9 @@ The app is served at <http://localhost:8000>.
 
 ### Default admin
 
-The seeder creates an administrator (with all permissions) only when you set
-both credentials in your `.env`:
+Seeding needs both credentials in your `.env`, and **fails with an error** if
+either is missing — registration is invitation-only, so an instance without an
+administrator cannot be signed into:
 
 ```dotenv
 ADMIN_NAME="Admin"        # optional, defaults to "Admin"
@@ -265,6 +267,14 @@ admin if none is configured).
 
 Public registration is disabled: the admin invites everyone else by email. See
 [Inviting users](docs/using/inviting-users.md).
+
+> Seeding is safe to repeat — an existing admin is left alone and its password is
+> not reset. `migrate:fresh --seed` is a different thing entirely: it **drops
+> every table** first, so keep it for a throwaway database. Laravel's guard
+> against destructive commands only applies when `APP_ENV=production`.
+
+Running an instance for real? Read the
+[administrator manual](docs/administering/manual.md).
 
 ## Testing & quality
 

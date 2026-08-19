@@ -18,10 +18,9 @@ composer setup      # install, .env, key, Passport keys, migrate, npm build
 composer dev        # serve + queue:listen + pail + vite, all in one
 ```
 
-With the default SQLite connection, create `database/database.sqlite` before the
-first migrate — `composer setup` does not. Then seed once with
-`php artisan db:seed`; on a local environment that also loads a demo project
-set.
+`composer setup` creates the SQLite file for you when that is the configured
+connection. Seed separately with `php artisan db:seed` — on a local environment
+that also loads a demo project set.
 
 For the browser suite, install the browser once: `npx playwright install
 chromium`.

@@ -36,12 +36,21 @@ Kanvigo is under active development and does not yet follow semantic versioning.
 
 ### Changed
 
+- The getting-started instructions now seed with `php artisan db:seed` instead of
+  `migrate:fresh --seed`. The latter drops every table before seeding, which is
+  only ever right on a throwaway database, and Laravel's guard against
+  destructive commands does not apply outside `APP_ENV=production`.
+
 - The MCP list tools (`list-tasks`, `list-projects`, `list-docs`) and the tasks
   listed by `get-project` now return each item's absolute `url`, so an agent can
   link what it lists without a second call. The get and create/update tools
   already did.
 
 ### Fixed
+
+- `composer setup` now **creates `database/database.sqlite`** when SQLite is the
+  configured connection, so a fresh `git clone` install no longer fails at the
+  migrate step. Other connections are left alone.
 
 - Seeding now **fails loudly when `ADMIN_EMAIL` or `ADMIN_PASSWORD` is missing**,
   naming the variable that is absent. It previously returned quietly and reported
