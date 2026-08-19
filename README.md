@@ -292,7 +292,9 @@ Full index: [docs/README.md](docs/README.md).
   [quick notes](docs/using/quick-notes.md),
   [reference docs](docs/using/reference-docs.md),
   [export](docs/using/export.md).
-- **Developing & integrating** — [REST API](docs/developing/api.md),
+- **Administering Kanvigo** — [administrator manual](docs/administering/manual.md).
+- **Developing & integrating** — [developer manual](docs/developing/manual.md),
+  [REST API](docs/developing/api.md),
   [audit layer](docs/developing/audit.md),
   [testing & quality](docs/developing/testing.md).
 - [CHANGELOG.md](CHANGELOG.md) — notable changes.

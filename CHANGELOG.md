@@ -12,6 +12,15 @@ Kanvigo is under active development and does not yet follow semantic versioning.
 
 ### Added
 
+- **Manuals for all three audiences** — a [user manual](docs/using/manual.md)
+  walking through the application end to end, an [administrator
+  manual](docs/administering/manual.md) covering first run, the scheduler and
+  queue, the settings worth tuning, accounts, API access, the audit trail and
+  backups, and a [developer manual](docs/developing/manual.md) mapping the
+  codebase, the authorization layer, the extension seams and the conventions.
+  `docs/` gains an `administering/` home alongside `using/`, `developing/` and
+  `adr/`.
+
 - **Project variables** — named stand-ins for facts that recur or are not decided
   yet. Write `[main_protagonist]` in a description, doc body or comment and it
   shows the project's current value for it; an unset variable renders as a visible

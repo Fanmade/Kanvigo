@@ -25,12 +25,15 @@ it('lists every documentation page in the index', function (string $page) use ($
 })->with('documentation pages');
 
 /**
- * The halves are the whole point of the split: a page directly in `docs/`
- * belongs to no audience, and is how the old flat folder creeps back. `adr/` is
- * the third home — a decision record documents a choice, not the product.
+ * The audience folders are the whole point of the split: a page directly in
+ * `docs/` belongs to no audience, and is how the old flat folder creeps back.
+ * `using/` is for the people working in Kanvigo, `administering/` for whoever
+ * runs an instance and `developing/` for whoever works on or integrates with
+ * it; `adr/` is the fourth home — a decision record documents a choice, not the
+ * product.
  */
-it('keeps every documentation page in the usage, developer or decision half', function (string $page) {
-    $homes = ['using/', 'developing/', 'adr/'];
+it('keeps every documentation page in a usage, administration, developer or decision home', function (string $page) {
+    $homes = ['using/', 'administering/', 'developing/', 'adr/'];
 
     expect(array_filter($homes, static fn (string $home): bool => str_starts_with($page, $home)))->not->toBeEmpty();
 })->with('documentation pages');

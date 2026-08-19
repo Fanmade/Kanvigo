@@ -1,8 +1,9 @@
 # Documentation
 
-Two halves: how to *use* Kanvigo, and how to *work on or integrate with* it,
-plus the decision records behind the design. The [README](../README.md) is the
-front door — what Kanvigo is, the feature list, and how to get it running.
+Three audiences: how to *use* Kanvigo, how to *run an instance* of it, and how
+to *work on or integrate with* it, plus the decision records behind the design.
+The [README](../README.md) is the front door — what Kanvigo is, the feature
+list, and how to get it running.
 
 ## Using Kanvigo
 
@@ -19,8 +20,17 @@ front door — what Kanvigo is, the feature list, and how to get it running.
 - [Variables](using/variables.md) — named stand-ins for facts that recur or are
   not decided yet, written as `[name]` and resolved when the text is read.
 
+## Administering Kanvigo
+
+- [Administrator manual](administering/manual.md) — first run and the seeded
+  admin, the scheduler and queue, mail, the settings worth tuning, accounts and
+  permissions, API and MCP access, the audit trail and backups.
+
 ## Developing & integrating
 
+- [Developer manual](developing/manual.md) — getting set up, the quality gate,
+  how the code is laid out, authorization, the extension seams and the
+  conventions.
 - [REST API](developing/api.md) — authentication, endpoints, tokens and the
   `PROJ-D3` reference scheme.
 - [Audit layer](developing/audit.md) — how audited actions are emitted, and how
