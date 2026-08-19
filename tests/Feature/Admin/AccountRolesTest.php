@@ -15,12 +15,14 @@ use Livewire\Livewire;
 uses(RefreshDatabase::class);
 
 /**
- * An account administrator allowed to manage named global roles.
+ * An account administrator who may manage named global roles and holds every
+ * account permission, so the picker offers the whole catalog. Roles may only
+ * carry permissions their author holds (KAN-559).
  */
 function accountRoleAdmin(): User
 {
     $user = User::factory()->create();
-    $user->syncPermissions([Permission::ManageAccountRoles]);
+    $user->syncPermissions(Permission::cases());
 
     return $user->fresh();
 }
@@ -174,4 +176,76 @@ it('counts role members without a query per role', function () {
     };
 
     expect($countQueries(10))->toBeLessThanOrEqual($countQueries(1));
+});
+
+it('offers only the account permissions the administrator holds', function () {
+    $admin = User::factory()->create();
+    $admin->syncPermissions([Permission::ManageAccountRoles, Permission::InviteUsers]);
+
+    $offered = collect(Livewire::actingAs($admin->fresh())
+        ->test(AccountRoles::class)
+        ->instance()->catalogGroups())
+        ->flatten()
+        ->pluck('name');
+
+    expect($offered)->toContain(Permission::InviteUsers->value)
+        ->and($offered)->not->toContain(Permission::ManageUsers->value, Permission::AccessAllProjects->value);
+});
+
+it('refuses to put a permission the administrator lacks into a new role', function () {
+    $admin = User::factory()->create();
+    $admin->syncPermissions([Permission::ManageAccountRoles, Permission::InviteUsers]);
+
+    $ids = PackagePermission::query()
+        ->whereIn('name', [Permission::InviteUsers->value, Permission::ManageUsers->value])
+        ->pluck('id')
+        ->all();
+
+    Livewire::actingAs($admin->fresh())
+        ->test(AccountRoles::class)
+        ->call('startCreate')
+        ->set('newName', 'Recruiter')
+        ->set('newPermissionIds', $ids)
+        ->call('createRole')
+        ->assertHasNoErrors();
+
+    $role = Role::query()->whereNull('scope_type')->where('name', 'Recruiter')->firstOrFail();
+
+    expect(app(PermissionResolver::class)->permissionsFor($role)->all())->toBe([Permission::InviteUsers->value]);
+});
+
+it('leaves a permission the administrator lacks untouched when saving a role', function () {
+    $admin = User::factory()->create();
+    $admin->syncPermissions([Permission::ManageAccountRoles, Permission::InviteUsers]);
+
+    $role = namedAccountRole('User manager', [Permission::InviteUsers, Permission::ManageUsers]);
+
+    $component = Livewire::actingAs($admin->fresh())
+        ->test(AccountRoles::class)
+        ->call('selectRole', $role->id)
+        ->call('startEdit');
+
+    // The form names what it cannot touch, and clearing it changes nothing.
+    expect($component->instance()->beyondReachPermissions())->toBe([Permission::ManageUsers->label()]);
+
+    $component->set('editPermissionIds', [])
+        ->call('saveRole')
+        ->assertHasNoErrors();
+
+    expect(app(PermissionResolver::class)->permissionsFor($role->fresh())->all())
+        ->toBe([Permission::ManageUsers->value]);
+});
+
+it('offers an administrator only their own permission when they hold just one', function () {
+    $admin = User::factory()->create();
+    $admin->syncPermissions([Permission::ManageAccountRoles]);
+
+    $offered = collect(Livewire::actingAs($admin->fresh())
+        ->test(AccountRoles::class)
+        ->instance()->catalogGroups())
+        ->flatten()
+        ->pluck('name');
+
+    // Only manage-account-roles itself — a role granting it is legitimate.
+    expect($offered->all())->toBe([Permission::ManageAccountRoles->value]);
 });

@@ -17,6 +17,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Kanvigo\Audit\Contracts\AuditCategory;
 use Kanvigo\Audit\Contracts\AuditEvent;
@@ -205,21 +206,73 @@ class AccountRoles extends Component
     }
 
     /**
-     * The account permission catalog as one picker group.
+     * The account permissions the acting administrator holds themselves — the
+     * ceiling on what they may put into a named role. A role is a way to hand a
+     * permission to someone else, so building one out of permissions you do not
+     * hold would be an escalation by proxy. (The system-role break-glass holder
+     * effectively holds everything and is unaffected.)
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function adminPermissions(): array
+    {
+        $held = Auth::user()->permissionsIn();
+
+        return array_values(array_filter(
+            $this->catalog(),
+            static fn (string $name): bool => $held->contains($name),
+        ));
+    }
+
+    /**
+     * The permissions the selected role holds that the administrator does not,
+     * labelled. These stay exactly as they are through an edit — the form never
+     * showed them, so it must not revoke them either.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function beyondReachPermissions(): array
+    {
+        $role = $this->selectedRole();
+
+        if ($role === null) {
+            return [];
+        }
+
+        $held = app(PermissionResolver::class)->permissionsFor($role);
+        $mine = $this->adminPermissions();
+
+        return array_values(array_map(
+            fn (string $name): string => $this->permissionLabel($name),
+            array_filter(
+                $this->catalog(),
+                static fn (string $name): bool => $held->contains($name) && ! in_array($name, $mine, true),
+            ),
+        ));
+    }
+
+    /**
+     * The picker's single group, narrowed to the permissions the administrator
+     * holds. Empty when they hold none — the form then says so rather than
+     * rendering an empty card.
      *
      * @return array<string, list<Permission>>
      */
     #[Computed]
     public function catalogGroups(): array
     {
+        $visible = $this->adminPermissions();
+
         $permissions = Permission::query()
-            ->whereIn('name', $this->catalog())
+            ->whereIn('name', $visible)
             ->get()
             ->keyBy('name');
 
         $group = [];
 
-        foreach ($this->catalog() as $name) {
+        foreach ($visible as $name) {
             if ($permissions->has($name)) {
                 $group[] = $permissions->get($name);
             }
@@ -331,8 +384,15 @@ class AccountRoles extends Component
             ->filter(static fn (string $name): bool => $allowed->contains($name))
             ->values();
 
+        // Diffed against only what the administrator holds, so a permission
+        // outside their set — reachable here, since named roles are siblings of
+        // the chip roles rather than descendants of the admin's own — is left
+        // exactly as it is instead of being revoked by a form that never showed
+        // it.
+        $mine = $this->adminPermissions();
+
         $current = $resolver->permissionsFor($role)
-            ->filter(fn (string $name): bool => in_array($name, $this->catalog(), true))
+            ->filter(static fn (string $name): bool => in_array($name, $mine, true))
             ->map(static fn (string $name): string => $name)
             ->values();
 
@@ -534,14 +594,16 @@ class AccountRoles extends Component
      */
     private function allowedUnder(?Role $parent): array
     {
+        $mine = $this->adminPermissions();
+
         if ($parent === null) {
-            return $this->catalog();
+            return $mine;
         }
 
         $allowed = app(PermissionResolver::class)->permissionsFor($parent);
 
         return array_values(array_filter(
-            $this->catalog(),
+            $mine,
             static fn (string $name): bool => $allowed->contains($name),
         ));
     }
@@ -600,6 +662,9 @@ class AccountRoles extends Component
             $this->selectedRoleMembers,
             $this->editAllowedPermissions,
             $this->createAllowedPermissions,
+            $this->adminPermissions,
+            $this->catalogGroups,
+            $this->beyondReachPermissions,
             $this->creatingParent,
             $this->deleteConsequence,
         );

@@ -6,7 +6,7 @@ use Fanmade\DelegatedPermissions\Models\Role;
 
 it('creates a named account role and assigns it in user administration', function () {
     $admin = User::factory()->create(['name' => 'Ada Admin']);
-    $admin->syncPermissions([Permission::ManageUsers, Permission::ManageAccountRoles]);
+    $admin->syncPermissions([Permission::ManageUsers, Permission::ManageAccountRoles, Permission::InviteUsers]);
     $member = User::factory()->create(['name' => 'Bob Member']);
 
     $this->actingAs($admin->fresh());
@@ -40,5 +40,19 @@ it('hides the account roles link from an admin without the permission', function
 
     visit('/admin/users')
         ->assertMissing('@account-roles-link')
+        ->assertNoJavascriptErrors();
+});
+
+it('offers an administrator only the permissions they hold themselves', function () {
+    $admin = User::factory()->create();
+    $admin->syncPermissions([Permission::ManageAccountRoles, Permission::InviteUsers]);
+
+    $this->actingAs($admin->fresh());
+
+    visit('/admin/roles')
+        ->click('@new-account-role')
+        ->assertVisible('@new-account-permission-invite-users')
+        ->assertMissing('@new-account-permission-manage-users')
+        ->assertMissing('@new-account-permission-access-all-projects')
         ->assertNoJavascriptErrors();
 });

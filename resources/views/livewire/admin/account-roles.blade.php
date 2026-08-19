@@ -126,6 +126,7 @@
 
                             <flux:field>
                                 <flux:label>{{ __('Permissions') }}</flux:label>
+                                <flux:description>{{ __('A role can only hand out permissions you hold yourself.') }}</flux:description>
 
                                 <x-permission-picker
                                     :groups="$this->catalogGroups"
@@ -133,9 +134,16 @@
                                     model="editPermissionIds"
                                     test-prefix="edit-account-permission"
                                     :resolver="$this"
+                                    :empty-message="__('You hold no account permissions yourself, so there is nothing to put into a role.')"
                                     class="mt-2"
                                 />
                             </flux:field>
+
+                            @if ($this->beyondReachPermissions !== [])
+                                <flux:text size="sm" class="text-zinc-500" data-test="account-role-beyond-reach">
+                                    {{ __('This role also grants :permissions. You do not hold them, so they stay untouched.', ['permissions' => implode(', ', $this->beyondReachPermissions)]) }}
+                                </flux:text>
+                            @endif
 
                             <div class="flex items-center gap-2">
                                 <flux:button
@@ -214,6 +222,7 @@
 
                     <flux:field>
                         <flux:label>{{ __('Permissions') }}</flux:label>
+                        <flux:description>{{ __('A role can only hand out permissions you hold yourself.') }}</flux:description>
 
                         <x-permission-picker
                             :groups="$this->catalogGroups"
@@ -221,6 +230,7 @@
                             model="newPermissionIds"
                             test-prefix="new-account-permission"
                             :resolver="$this"
+                            :empty-message="__('You hold no account permissions yourself, so there is nothing to put into a role.')"
                             class="mt-2"
                         />
                     </flux:field>
