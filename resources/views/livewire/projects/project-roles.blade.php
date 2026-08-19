@@ -78,6 +78,7 @@
                                     variant="ghost"
                                     icon="pencil-square"
                                     :aria-label="__('Edit role')"
+                                    title="{{ __('Edit role') }}"
                                     wire:click="startEdit"
                                     data-test="edit-role"
                                 />
@@ -89,6 +90,7 @@
                                     variant="ghost"
                                     icon="arrow-path"
                                     :aria-label="__('Reset to defaults')"
+                                    title="{{ __('Reset to defaults') }}"
                                     wire:click="resetToDefaults"
                                     wire:confirm="{{ $this->resetConsequence }}"
                                     data-test="reset-role"
@@ -99,8 +101,18 @@
                                 <flux:button
                                     size="sm"
                                     variant="ghost"
+                                    icon="arrows-right-left"
+                                    :aria-label="__('Move under…')"
+                                    title="{{ __('Move under…') }}"
+                                    wire:click="startMove"
+                                    data-test="move-role"
+                                />
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
                                     icon="trash"
                                     :aria-label="__('Delete role')"
+                                    title="{{ __('Delete role') }}"
                                     wire:click="deleteRole"
                                     wire:confirm="{{ $this->deleteConsequence }}"
                                     data-test="delete-role"
@@ -113,6 +125,64 @@
                         <flux:text size="sm" class="text-zinc-500" data-test="role-read-only-reason">
                             {{ $this->readOnlyReason }}
                         </flux:text>
+                    @endif
+
+                    @if ($this->moving)
+                        <div class="flex flex-col gap-2" data-test="move-role-panel">
+                            <flux:heading size="sm">
+                                {{ __('Move :role under…', ['role' => $this->selectedRole->name]) }}
+                            </flux:heading>
+
+                            <flux:error name="moving" />
+
+                            @if ($this->moveTargets === [])
+                                <flux:text size="sm" class="text-zinc-500" data-test="no-move-targets">
+                                    {{ __('There is no other role you manage to move this one under.') }}
+                                </flux:text>
+                            @else
+                                <div
+                                    class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10"
+                                >
+                                    @foreach ($this->moveTargets as $target)
+                                        <div
+                                            class="flex items-center justify-between gap-3 p-3"
+                                            wire:key="move-target-{{ $target['role']->id }}"
+                                        >
+                                            <div class="flex min-w-0 flex-col">
+                                                <flux:text class="truncate">{{ $target['role']->name }}</flux:text>
+
+                                                @if ($target['exceeding'] !== [])
+                                                    <flux:text
+                                                        size="sm"
+                                                        class="text-zinc-500"
+                                                        data-test="move-blocked-{{ $target['role']->id }}"
+                                                    >
+                                                        {{ __('Revoke :permissions first — this role does not hold them.', ['permissions' => collect($target['exceeding'])->map(fn (string $name) => $this->permissionLabel($name))->implode(', ')]) }}
+                                                    </flux:text>
+                                                @endif
+                                            </div>
+
+                                            <flux:button
+                                                size="xs"
+                                                variant="subtle"
+                                                wire:click="moveRole({{ $target['role']->id }})"
+                                                :disabled="$target['exceeding'] !== []"
+                                                data-test="move-to-{{ $target['role']->id }}"
+                                            >{{ __('Move here') }}</flux:button>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div>
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    wire:click="cancelMove"
+                                    data-test="cancel-move-role"
+                                >{{ __('Cancel') }}</flux:button>
+                            </div>
+                        </div>
                     @endif
 
                     @if ($this->editing)

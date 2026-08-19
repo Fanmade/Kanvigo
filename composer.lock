@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "98d507fe14169be13e47e1dbb188fe3b",
+    "content-hash": "82e9601dc9f961c040e792008476fef4",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -729,16 +729,16 @@
         },
         {
             "name": "fanmade/laravel-delegated-permissions",
-            "version": "v0.1.7",
+            "version": "v0.1.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Fanmade/laravel-delegated-permissions.git",
-                "reference": "fcf956e5f15a293f2536055be80c8a5b924dcc91"
+                "reference": "e6aa166aa9bc45a1db9732213d6df0431bbdee9f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Fanmade/laravel-delegated-permissions/zipball/fcf956e5f15a293f2536055be80c8a5b924dcc91",
-                "reference": "fcf956e5f15a293f2536055be80c8a5b924dcc91",
+                "url": "https://api.github.com/repos/Fanmade/laravel-delegated-permissions/zipball/e6aa166aa9bc45a1db9732213d6df0431bbdee9f",
+                "reference": "e6aa166aa9bc45a1db9732213d6df0431bbdee9f",
                 "shasum": ""
             },
             "require": {
@@ -785,9 +785,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Fanmade/laravel-delegated-permissions/issues",
-                "source": "https://github.com/Fanmade/laravel-delegated-permissions/tree/v0.1.7"
+                "source": "https://github.com/Fanmade/laravel-delegated-permissions/tree/v0.1.8"
             },
-            "time": "2026-06-30T22:50:29+00:00"
+            "time": "2026-08-19T08:21:35+00:00"
         },
         {
             "name": "firebase/php-jwt",
@@ -15413,7 +15413,8 @@
         "ext-gd": "*",
         "ext-imagick": "*",
         "ext-libxml": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "ext-zip": "*"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"

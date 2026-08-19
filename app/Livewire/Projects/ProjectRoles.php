@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\DelegatedPermissions;
+use Fanmade\DelegatedPermissions\Exceptions\DelegatedPermissionsException;
 use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Fanmade\DelegatedPermissions\PermissionResolver;
@@ -77,6 +78,9 @@ class ProjectRoles extends Component
 
     /** Whether the "add child role" form is open under the selected role. */
     public bool $creating = false;
+
+    /** Whether the "move under…" panel is open for the selected role. */
+    public bool $moving = false;
 
     public string $newName = '';
 
@@ -718,6 +722,140 @@ class ProjectRoles extends Component
     }
 
     /**
+     * Where the selected role could be re-parented to: every visible role in the
+     * project except itself, its own descendants (that would be a cycle) and the
+     * parent it already sits under. Each candidate carries the permissions the
+     * moved subtree holds but the candidate does not — non-empty means the
+     * package would reject the move, and the manager has to revoke them first.
+     *
+     * @return list<array{role: Role, exceeding: list<string>}>
+     */
+    #[Computed]
+    public function moveTargets(): array
+    {
+        $role = $this->selectedRole();
+
+        if ($role === null || ! $this->canRemoveSelected()) {
+            return [];
+        }
+
+        $resolver = app(PermissionResolver::class);
+        $subtree = $resolver->permissionsInSubtree($role);
+        $excluded = [$role->id, ...$this->descendantIds($role)];
+
+        $targets = [];
+
+        foreach ($this->roleTree() as $node) {
+            $candidate = $node['role'];
+
+            if (in_array($candidate->id, $excluded, true) || $candidate->id === $role->parent_id) {
+                continue;
+            }
+
+            $allowed = $resolver->permissionsFor($candidate);
+
+            $targets[] = [
+                'role' => $candidate,
+                'exceeding' => array_values($subtree
+                    ->reject(static fn (string $permission): bool => $allowed->contains($permission))
+                    ->all()),
+            ];
+        }
+
+        return $targets;
+    }
+
+    /**
+     * The ids of the role's descendants among the visible roles.
+     *
+     * @return list<int>
+     */
+    private function descendantIds(Role $role): array
+    {
+        $childrenByParent = $this->roles()->groupBy(static fn (Role $node): int => $node->parent_id ?? 0);
+
+        $ids = [];
+        $queue = [$role->id];
+
+        while ($queue !== []) {
+            $parentId = array_pop($queue);
+
+            foreach ($childrenByParent->get($parentId, collect()) as $child) {
+                $ids[] = $child->id;
+                $queue[] = $child->id;
+            }
+        }
+
+        return $ids;
+    }
+
+    public function startMove(): void
+    {
+        $this->authorize('manage-roles', $this->project);
+
+        if (! $this->canRemoveSelected()) {
+            return;
+        }
+
+        $this->editing = false;
+        $this->creating = false;
+        $this->moving = true;
+        $this->resetErrorBag();
+    }
+
+    public function cancelMove(): void
+    {
+        $this->reset('moving');
+    }
+
+    /**
+     * Re-parent the selected role under another visible role. The package
+     * enforces the structural invariants and rejects a move whose subtree holds
+     * more than the new parent — nothing is ever silently revoked, so the
+     * offending permissions are reported back instead.
+     */
+    public function moveRole(RoleManager $roles, int $targetId): void
+    {
+        $project = $this->project;
+        $this->authorize('manage-roles', $project);
+
+        $role = $this->selectedRole();
+
+        if ($role === null || ! $this->canRemoveSelected()) {
+            return;
+        }
+
+        $target = collect($this->moveTargets())->firstWhere('role.id', $targetId);
+
+        if ($target === null) {
+            return;
+        }
+
+        $from = $role->parent?->name;
+
+        try {
+            $roles->moveRole($role, $target['role']);
+        } catch (DelegatedPermissionsException $exception) {
+            $this->addError('moving', $exception->getMessage());
+
+            return;
+        }
+
+        Audit::record(AuditEvent::make('role_moved', AuditCategory::Authz)
+            ->withSubject($project->getMorphClass(), $project->getKey())
+            ->withMetadata(array_filter([
+                'role' => $role->name,
+                'from' => $from,
+                'to' => $target['role']->name,
+            ], static fn (mixed $value): bool => $value !== null)));
+
+        $this->cancelMove();
+        $this->forgetRoleCaches();
+
+        Flux::toast(text: __('Role moved.'), variant: 'success');
+    }
+
+    /**
      * Delete the selected role. Its children move up under its parent (their
      * permissions are already a subset of that grandparent's), and the pane
      * falls back to the parent.
@@ -823,6 +961,7 @@ class ProjectRoles extends Component
     {
         $this->cancelEdit();
         $this->cancelCreate();
+        $this->cancelMove();
     }
 
     /**
@@ -843,6 +982,7 @@ class ProjectRoles extends Component
             $this->canResetSelected,
             $this->readOnlyReason,
             $this->resetConsequence,
+            $this->moveTargets,
             $this->selectedRole,
             $this->selectedRoleParent,
             $this->selectedRolePermissionGroups,

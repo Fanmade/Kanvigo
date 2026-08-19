@@ -284,3 +284,69 @@ it('skips a default the parent role no longer holds when resetting', function ()
     expect($restored)->not->toContain('export-content')
         ->and($restored)->toContain('create-task');
 });
+
+it('re-parents a custom role under another visible role', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $provisioner = app(ProjectRoleProvisioner::class);
+    $ownerRole = $provisioner->roleFor($project, 'owner');
+    $memberRole = $provisioner->roleFor($project, 'member');
+
+    $role = app(RoleManager::class)->createRole('Triager', $ownerRole, ['view-project'], $project);
+
+    rolesPage($owner, $project, $role)
+        ->call('startMove')
+        ->assertSet('moving', true)
+        ->call('moveRole', $memberRole->id)
+        ->assertHasNoErrors()
+        ->assertSet('moving', false);
+
+    expect($role->fresh()->parent_id)->toBe($memberRole->id);
+});
+
+it('reports the permissions blocking a move instead of pruning them', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $provisioner = app(ProjectRoleProvisioner::class);
+    $ownerRole = $provisioner->roleFor($project, 'owner');
+    $viewerRole = $provisioner->roleFor($project, 'viewer');
+
+    // manage-settings is outside viewer's set, so the move must be refused.
+    $role = app(RoleManager::class)->createRole('Governor', $ownerRole, ['view-project', 'manage-settings'], $project);
+
+    $targets = collect(rolesPage($owner, $project, $role)->call('startMove')->instance()->moveTargets())
+        ->firstWhere('role.id', $viewerRole->id);
+
+    expect($targets['exceeding'])->toContain('manage-settings');
+
+    rolesPage($owner, $project, $role)->call('moveRole', $viewerRole->id);
+
+    expect($role->fresh()->parent_id)->toBe($ownerRole->id)
+        ->and(app(PermissionResolver::class)->permissionsFor($role->fresh())->all())
+        ->toContain('manage-settings');
+});
+
+it('offers no move target that would create a cycle', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $roles = app(RoleManager::class);
+
+    $lead = $roles->createRole('Lead', $ownerRole, ['view-project'], $project);
+    $sub = $roles->createRole('Sub', $lead, ['view-project'], $project);
+
+    $offered = collect(rolesPage($owner, $project, $lead)->call('startMove')->instance()->moveTargets())
+        ->pluck('role.id');
+
+    expect($offered)->not->toContain($lead->id, $sub->id, $ownerRole->id);
+});
+
+it('does not offer a move for a base role', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $member = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
+
+    $component = rolesPage($owner, $project, $member)->call('startMove')->assertSet('moving', false);
+
+    expect($component->instance()->moveTargets())->toBe([]);
+});

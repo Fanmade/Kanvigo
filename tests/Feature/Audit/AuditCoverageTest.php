@@ -25,6 +25,7 @@ use App\Models\Task;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\Role;
+use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -352,6 +353,26 @@ describe('authorization and membership events', function () {
         $component->call('deleteRole');
 
         expect(assertAudited('role_deleted', 'authz')['metadata']['role'])->toBe('Auditor');
+    });
+
+    it('audits re-parenting a role', function () {
+        $project = Project::factory()->create();
+        $owner = userWithRole($project, 'owner');
+        $provisioner = app(ProjectRoleProvisioner::class);
+        $ownerRole = $provisioner->roleFor($project, 'owner');
+        $memberRole = $provisioner->roleFor($project, 'member');
+
+        $role = app(RoleManager::class)->createRole('Auditor', $ownerRole, ['view-project'], $project);
+
+        Livewire::actingAs($owner)
+            ->test(ProjectRoles::class, ['short_name' => $project->short_name])
+            ->call('selectRole', $role->id)
+            ->call('startMove')
+            ->call('moveRole', $memberRole->id);
+
+        $event = assertAudited('role_moved', 'authz');
+
+        expect($event['metadata'])->toMatchArray(['role' => 'Auditor', 'from' => 'owner', 'to' => 'member']);
     });
 
     it('audits creating, resending and revoking an invitation', function () {

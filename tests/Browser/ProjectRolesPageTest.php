@@ -100,3 +100,32 @@ it('retunes a seeded base role and restores its defaults', function () {
     expect(app(PermissionResolver::class)->permissionsFor($member->fresh())->all())
         ->not->toContain('create-task');
 });
+
+it('moves a custom role under another role from the detail pane', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    joinProject($project, $user, 'owner');
+
+    $provisioner = app(ProjectRoleProvisioner::class);
+    $ownerRole = $provisioner->roleFor($project, 'owner');
+    $viewerRole = $provisioner->roleFor($project, 'viewer');
+    $adminRole = $provisioner->roleFor($project, 'admin');
+
+    // manage-settings sits in admin's set but not viewer's, so only admin is a
+    // valid destination and viewer is offered but blocked.
+    $role = app(RoleManager::class)
+        ->createRole('Governor', $ownerRole, ['view-project', 'manage-settings'], $project);
+
+    $this->actingAs($user);
+
+    visit("/{$project->short_name}/roles?role={$role->id}")
+        ->click('@move-role')
+        ->assertVisible('@move-role-panel')
+        ->assertVisible("@move-blocked-{$viewerRole->id}")
+        ->click("@move-to-{$adminRole->id}")
+        ->assertMissing('@move-role-panel')
+        ->assertSeeIn('@role-detail-parent', 'admin')
+        ->assertNoJavascriptErrors();
+
+    expect($role->fresh()->parent_id)->toBe($adminRole->id);
+});

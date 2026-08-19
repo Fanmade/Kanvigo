@@ -29,7 +29,7 @@
             >{{ __($group) }}</flux:text>
             <div class="flex flex-col gap-1.5">
                 @foreach ($permissions as $permission)
-                    @php($outOfBounds = $allowed !== null && ! in_array($permission->name, $allowed, true))
+                    @php($outOfBounds = ($allowed !== null && ! in_array($permission->name, $allowed, true)))
                     <div class="flex items-center gap-1.5">
                         <flux:checkbox
                             value="{{ $permission->id }}"
@@ -38,7 +38,8 @@
                             data-test="{{ $testPrefix }}-{{ $permission->name }}"
                         />
                         @if ($outOfBounds)
-                            <flux:tooltip :content="__('The parent role does not hold this permission, so it cannot be delegated.')">
+                            <flux:tooltip
+                                :content="__('The parent role does not hold this permission, so it cannot be delegated.')">
                                 <flux:icon.lock-closed
                                     variant="micro"
                                     class="cursor-help text-zinc-400"

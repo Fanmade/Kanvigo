@@ -147,11 +147,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   read-only viewer are seeded; custom roles sit under a parent role and are
   bounded by its permissions, so delegation can never escalate. A per-project
   **Roles** page is the place to browse the role tree, create, rename,
-  re-permission or delete the custom roles beneath your own, and retune the
-  seeded admin, member and viewer roles — each with a "Reset to defaults" action;
-  owner keeps the full catalog and stays fixed. Managers assign roles as chips
-  from the project page, and both surfaces only ever show roles at or below their
-  own.
+  re-permission, re-parent or delete the custom roles beneath your own, and to
+  retune the seeded admin, member and viewer roles — each with a "Reset to
+  defaults" action; owner keeps the full catalog and stays fixed. Managers assign
+  roles as chips from the project page, and both surfaces only ever show roles at
+  or below their own.
 - **Cross-project access** — the account-level `access-all-projects` permission
   lets staff see every project. It grants visibility only; contributing still
   requires a role on the project.
