@@ -12,6 +12,10 @@ Kanvigo is under active development and does not yet follow semantic versioning.
 
 ### Added
 
+- **Collapsible board columns on small screens** — each column's header carries a
+  chevron below `md`, folding its cards away so the next status is reachable
+  without scrolling past a full column. Columns are always expanded from `md` up.
+
 - **Manuals for all three audiences** — a [user manual](docs/using/manual.md)
   walking through the application end to end, an [administrator
   manual](docs/administering/manual.md) covering first run, the scheduler and

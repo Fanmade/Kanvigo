@@ -175,6 +175,7 @@
   "Close the parent task too?": "Übergeordnete Aufgabe auch schließen?",
   "Closed": "Geschlossen",
   "Closed tasks": "Geschlossene Aufgaben",
+  "Collapse the :status column": "Spalte :status einklappen",
   "Collected shortly after each edit, so a change made moments ago may not be listed yet.": "Wird kurz nach jeder Änderung erfasst, eine gerade eben gemachte Änderung fehlt daher womöglich noch.",
   "Color": "Farbe",
   "color": "Farbe",

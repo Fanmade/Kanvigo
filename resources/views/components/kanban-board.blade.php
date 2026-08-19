@@ -3,8 +3,15 @@
 <div class="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
     @foreach ($columns as $column)
         @php($statusValue = $column['status']->value)
+        {{-- Collapsing is a small-screen affordance: the board stacks to one column
+             below `md`, so an expanded column can bury the next status under a
+             screenful of cards. The state is local Alpine — purely presentational,
+             nothing for Livewire to know about — and is applied as `max-md:hidden`
+             so columns are always expanded from `md` up, whatever was toggled
+             before the viewport grew. --}}
         <div
             data-test="column-{{ $statusValue }}"
+            x-data="{ collapsed: false }"
             class="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50"
         >
             {{-- The per-column search collapses to a single icon to keep the
@@ -15,9 +22,22 @@
                 x-data="{ expanded: @js(trim((string) ($column['search'] ?? '')) !== '') }"
             >
                 <div class="flex items-center justify-between gap-2">
-                    <flux:badge size="sm" :color="$column['status']->color()" :icon="$column['status']->icon()">
-                        {{ $column['status']->label() }}
-                    </flux:badge>
+                    <div class="flex min-w-0 items-center gap-1.5">
+                        <flux:button
+                            size="xs"
+                            variant="subtle"
+                            icon="chevron-down"
+                            class="transition-transform md:hidden"
+                            x-bind:class="collapsed && '-rotate-90'"
+                            x-on:click="collapsed = ! collapsed"
+                            x-bind:aria-expanded="collapsed ? 'false' : 'true'"
+                            :aria-label="__('Collapse the :status column', ['status' => $column['status']->label()])"
+                            data-test="column-collapse-{{ $statusValue }}"
+                        />
+                        <flux:badge size="sm" :color="$column['status']->color()" :icon="$column['status']->icon()">
+                            {{ $column['status']->label() }}
+                        </flux:badge>
+                    </div>
                     <div class="flex items-center gap-1.5">
                         <flux:button
                             x-show="! expanded"
@@ -53,6 +73,7 @@
                 data-task-list
                 data-status="{{ $statusValue }}"
                 class="flex flex-1 flex-col gap-2 overflow-y-auto p-3"
+                x-bind:class="collapsed && 'max-md:hidden'"
             >
                 @forelse ($column['tasks'] as $task)
                     <div

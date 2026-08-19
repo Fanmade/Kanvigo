@@ -33,7 +33,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Kanban board** — drag-and-drop across Planned, To do, In progress and Done,
   per project or globally. Touch-friendly, with a keyboard-accessible "Move to"
   menu on every card, per-column search, filters by priority, type and assignee,
-  and manual card order. Live updates keep it current, never mid-drag.
+  manual card order, and columns that collapse on small screens so the next
+  status is never a screenful away. Live updates keep it current, never mid-drag.
 - **Project overview** — a collapsible, filterable list of top-level tasks, each
   with its direct subtasks as quick links. Closed and archived tasks stay hidden
   until you ask for them.
