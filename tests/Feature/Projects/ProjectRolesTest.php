@@ -350,3 +350,69 @@ it('does not offer a move for a base role', function () {
 
     expect($component->instance()->moveTargets())->toBe([]);
 });
+
+it('offers only the permissions the manager holds themselves', function () {
+    $project = Project::factory()->create();
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    // Lead may manage roles and work on tasks, but holds nothing from
+    // "Members & roles" beyond manage-roles itself, and no doc permissions.
+    $lead = app(RoleManager::class)->createRole(
+        'Lead',
+        $ownerRole,
+        ['view-project', 'manage-roles', 'create-task', 'edit-task'],
+        $project,
+    );
+    $manager = User::factory()->create()->assignRole($lead);
+    $child = app(RoleManager::class)->createRole('Triager', $lead, ['view-project'], $project);
+
+    $groups = rolesPage($manager, $project, $child)->call('startEdit')->instance()->catalogGroups();
+
+    $offered = collect($groups)->flatten()->pluck('name');
+
+    expect($offered)->toContain('create-task', 'edit-task', 'manage-roles')
+        ->and($offered)->not->toContain('manage-members', 'invite-members', 'create-doc', 'manage-settings')
+        ->and($groups)->not->toHaveKey('Docs');
+});
+
+it('still lists a permission the manager holds but the parent lacks, locked', function () {
+    $project = Project::factory()->create();
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $roles = app(RoleManager::class);
+
+    $lead = $roles->createRole('Lead', $ownerRole, ['view-project', 'manage-roles', 'create-task'], $project);
+    $manager = User::factory()->create()->assignRole($lead);
+
+    // Mid holds less than Lead, so its child's bound excludes create-task —
+    // which the manager does hold, so it stays visible and locked.
+    $mid = $roles->createRole('Mid', $lead, ['view-project'], $project);
+    $child = $roles->createRole('Junior', $mid, ['view-project'], $project);
+
+    $component = rolesPage($manager, $project, $child)->call('startEdit');
+    $offered = collect($component->instance()->catalogGroups())->flatten()->pluck('name');
+
+    expect($offered)->toContain('create-task')
+        ->and($component->instance()->editAllowedPermissions())->not->toContain('create-task');
+});
+
+it('ignores a permission outside the manager\'s own set when saving', function () {
+    $project = Project::factory()->create();
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $roles = app(RoleManager::class);
+    $resolver = app(PermissionResolver::class);
+
+    $lead = $roles->createRole('Lead', $ownerRole, ['view-project', 'manage-roles', 'create-task'], $project);
+    $manager = User::factory()->create()->assignRole($lead);
+    $child = $roles->createRole('Triager', $lead, ['view-project'], $project);
+
+    $ids = Permission::query()->whereIn('name', ['view-project', 'create-task', 'manage-settings'])->pluck('id')->all();
+
+    rolesPage($manager, $project, $child)
+        ->call('startEdit')
+        ->set('editPermissionIds', $ids)
+        ->call('saveRole')
+        ->assertHasNoErrors();
+
+    expect($resolver->permissionsFor($child->fresh())->all())
+        ->toEqualCanonicalizing(['view-project', 'create-task']);
+});

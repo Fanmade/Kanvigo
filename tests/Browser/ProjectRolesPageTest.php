@@ -129,3 +129,26 @@ it('moves a custom role under another role from the detail pane', function () {
 
     expect($role->fresh()->parent_id)->toBe($adminRole->id);
 });
+
+it('shows a delegated manager only the permissions they hold', function () {
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $roles = app(RoleManager::class);
+
+    $lead = $roles->createRole('Lead', $ownerRole, ['view-project', 'manage-roles', 'create-task'], $project);
+    // Only the Lead role — joining as a member would add member's permissions
+    // to the manager's own set and widen what the picker may offer.
+    $manager = User::factory()->create()->assignRole($lead);
+
+    $child = $roles->createRole('Triager', $lead, ['view-project'], $project);
+
+    $this->actingAs($manager);
+
+    visit("/{$project->short_name}/roles?role={$child->id}")
+        ->click('@edit-role')
+        ->assertVisible('@edit-permission-create-task')
+        // Not held by the manager, so not offered at all — group included.
+        ->assertMissing('@edit-permission-manage-members')
+        ->assertMissing('@edit-permission-create-doc')
+        ->assertNoJavascriptErrors();
+});

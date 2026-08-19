@@ -264,17 +264,40 @@ class ProjectRoles extends Component
     }
 
     /**
-     * The project permission catalog as Permission models, grouped for the
-     * picker. Every group is offered; what the manager may actually grant is
-     * bounded per role by {@see editAllowedPermissions()}.
+     * The permissions the manager themselves effectively holds in this project
+     * — the ceiling on everything they can hand out. Delegation is bounded by
+     * the parent role, but a manager may not surface, grant or revoke a
+     * permission they do not hold at all.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function managerPermissions(): array
+    {
+        $held = Auth::user()->permissionsIn($this->project);
+
+        return array_values(array_filter(
+            ProjectRoleProvisioner::CATALOG,
+            static fn (string $name): bool => $held->contains($name),
+        ));
+    }
+
+    /**
+     * The permissions offered by the picker, as Permission models grouped for
+     * display: the catalog narrowed to what the manager holds themselves, with
+     * groups that end up empty dropped. What may then actually be ticked is
+     * bounded per role by {@see editAllowedPermissions()} — a permission the
+     * manager holds but the role's parent lacks stays listed, and locked.
      *
      * @return array<string, list<Permission>>
      */
     #[Computed]
     public function catalogGroups(): array
     {
+        $visible = $this->managerPermissions();
+
         $byName = Permission::query()
-            ->whereIn('name', ProjectRoleProvisioner::CATALOG)
+            ->whereIn('name', $visible)
             ->get()
             ->keyBy('name');
 
@@ -522,13 +545,18 @@ class ProjectRoles extends Component
         }
 
         $allowed = $resolver->permissionsFor($parent);
+        $visible = $this->managerPermissions();
 
         $desired = $this->permissionNamesFor($this->editPermissionIds)
-            ->filter(static fn (string $name): bool => $allowed->contains($name))
+            ->filter(static fn (string $name): bool => $allowed->contains($name) && in_array($name, $visible, true))
             ->values();
 
+        // Diffed against only what the manager can see, so a permission outside
+        // their own set would be left as it is rather than revoked by an edit
+        // that never showed it. Defensive: an editable role is always a
+        // descendant of one the manager holds, so its set is already a subset.
         $current = $resolver->permissionsFor($role)
-            ->filter(static fn (string $name): bool => in_array($name, ProjectRoleProvisioner::CATALOG, true))
+            ->filter(static fn (string $name): bool => in_array($name, $visible, true))
             ->map(static fn (string $name): string => $name)
             ->values();
 
@@ -646,8 +674,9 @@ class ProjectRoles extends Component
         // Bound the chosen permissions to the parent (the picker already disables
         // the rest, this is the safety net so a tampered id can't escalate).
         $allowed = $resolver->permissionsFor($parent);
+        $visible = $this->managerPermissions();
         $names = $this->permissionNamesFor($this->newPermissionIds)
-            ->filter(static fn (string $name): bool => $allowed->contains($name))
+            ->filter(static fn (string $name): bool => $allowed->contains($name) && in_array($name, $visible, true))
             ->values()
             ->all();
 
@@ -683,12 +712,17 @@ class ProjectRoles extends Component
         $parent = $role->parent;
         $allowed = $parent === null ? collect(ProjectRoleProvisioner::CATALOG) : $resolver->permissionsFor($parent);
 
+        $visible = $this->managerPermissions();
+
         $defaults = collect(ProjectRoleProvisioner::GRANTS[$role->name]);
-        $desired = $defaults->filter(static fn (string $name): bool => $allowed->contains($name))->values();
+        $desired = $defaults
+            ->filter(static fn (string $name): bool => $allowed->contains($name) && in_array($name, $visible, true))
+            ->values();
         $skipped = $defaults->diff($desired)->values();
 
+        // As in saveRole(): a permission the manager cannot see is left alone.
         $current = $resolver->permissionsFor($role)
-            ->filter(static fn (string $name): bool => in_array($name, ProjectRoleProvisioner::CATALOG, true))
+            ->filter(static fn (string $name): bool => in_array($name, $visible, true))
             ->map(static fn (string $name): string => $name)
             ->values();
 
@@ -975,6 +1009,8 @@ class ProjectRoles extends Component
             $this->roleTree,
             $this->memberCounts,
             $this->deleteConsequence,
+            $this->managerPermissions,
+            $this->catalogGroups,
             $this->editableRoleIds,
             $this->removableRoleIds,
             $this->canEditSelected,
