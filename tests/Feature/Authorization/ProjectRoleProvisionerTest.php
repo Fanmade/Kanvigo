@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\PermissionGroup;
 use Fanmade\DelegatedPermissions\Models\Role;
+use Fanmade\DelegatedPermissions\PermissionResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -108,4 +109,17 @@ it('assigns the creator the owner role when a project is created through the dia
 
     expect($user->can('manage-members', $project))->toBeTrue()
         ->and($user->can('create-task', $project))->toBeTrue();
+});
+
+it('treats the seeded grants as defaults and leaves an edited base role alone', function () {
+    $project = Project::factory()->create();
+    $provisioner = app(ProjectRoleProvisioner::class);
+    $resolver = app(PermissionResolver::class);
+
+    $member = $provisioner->roleFor($project, 'member');
+    $resolver->revoke($member, 'create-task');
+
+    $provisioner->provision($project);
+
+    expect($resolver->permissionsFor($member->fresh())->all())->not->toContain('create-task');
 });

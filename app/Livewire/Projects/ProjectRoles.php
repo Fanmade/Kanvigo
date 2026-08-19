@@ -50,6 +50,14 @@ class ProjectRoles extends Component
     /** The seeded base roles, marked as such and not manager-created. */
     private const array BASE_ROLES = ['owner', 'admin', 'member', 'viewer'];
 
+    /**
+     * The base roles that stay code-owned. `owner` holds the whole catalog and
+     * anchors both `manage-roles` and the delegation tree, so it is never edited
+     * here; admin/member/viewer are seeded from {@see ProjectRoleProvisioner::GRANTS}
+     * and may then be tuned per project.
+     */
+    private const array FIXED_ROLES = ['owner'];
+
     #[Locked]
     public string $shortName;
 
@@ -314,9 +322,9 @@ class ProjectRoles extends Component
     }
 
     /**
-     * The ids of roles the manager may edit or delete: strictly below them
-     * (visible but not one of their own) and not a seeded base role. Base roles
-     * stay code-owned and a manager may never edit a role they hold themselves.
+     * The ids of roles whose permissions the manager may edit: strictly below
+     * them (visible but not one of their own — a manager never re-permissions a
+     * role they hold) and not one of the code-owned roles.
      *
      * @return Collection<int, int>
      */
@@ -326,12 +334,27 @@ class ProjectRoles extends Component
         $heldIds = Auth::user()->rolesIn($this->project)->pluck('id');
 
         return $this->roles()
-            ->reject(fn (Role $role): bool => $this->isBaseRole($role) || $heldIds->contains($role->id))
+            ->reject(fn (Role $role): bool => $this->isFixedRole($role) || $heldIds->contains($role->id))
             ->pluck('id');
     }
 
     /**
-     * Whether the selected role may be edited and deleted here.
+     * The ids of roles the manager may rename or delete — the editable custom
+     * ones. Base role names are addressed from code (member syncing, the owner
+     * rule, invitations), so all four keep their name and cannot be removed.
+     *
+     * @return Collection<int, int>
+     */
+    #[Computed]
+    public function removableRoleIds(): Collection
+    {
+        return $this->roles()
+            ->filter(fn (Role $role): bool => ! $this->isBaseRole($role) && $this->editableRoleIds()->contains($role->id))
+            ->pluck('id');
+    }
+
+    /**
+     * Whether the selected role's permissions may be edited here.
      */
     #[Computed]
     public function canEditSelected(): bool
@@ -339,6 +362,30 @@ class ProjectRoles extends Component
         $role = $this->selectedRole();
 
         return $role !== null && $this->editableRoleIds()->contains($role->id);
+    }
+
+    /**
+     * Whether the selected role may be renamed and deleted (custom roles only).
+     */
+    #[Computed]
+    public function canRemoveSelected(): bool
+    {
+        $role = $this->selectedRole();
+
+        return $role !== null && $this->removableRoleIds()->contains($role->id);
+    }
+
+    /**
+     * Whether the selected role can be restored to its seeded permission set.
+     */
+    #[Computed]
+    public function canResetSelected(): bool
+    {
+        $role = $this->selectedRole();
+
+        return $role !== null
+            && $this->canEditSelected()
+            && array_key_exists($role->name, ProjectRoleProvisioner::GRANTS);
     }
 
     /**
@@ -354,11 +401,24 @@ class ProjectRoles extends Component
             return null;
         }
 
-        if ($this->isBaseRole($role)) {
-            return __('Base roles are defined in code and cannot be edited.');
+        if ($this->isFixedRole($role)) {
+            return __('The owner role holds every permission by design and cannot be edited.');
         }
 
         return __('You cannot edit a role you hold yourself.');
+    }
+
+    /**
+     * What resetting the selected role does, spelled out for the confirmation.
+     */
+    #[Computed]
+    public function resetConsequence(): string
+    {
+        $role = $this->selectedRole();
+
+        return $role === null
+            ? ''
+            : __('Restore :role to its default permissions? Any permission removed by this is also removed from the roles beneath it.', ['role' => $role->name]);
     }
 
     /**
@@ -439,14 +499,19 @@ class ProjectRoles extends Component
             return;
         }
 
+        $canRename = $this->canRemoveSelected();
+
         $validated = $this->validate([
-            'editName' => ['required', 'string', 'max:255'],
+            ...$canRename ? ['editName' => ['required', 'string', 'max:255']] : [],
             'editDescription' => ['nullable', 'string', 'max:255'],
             'editPermissionIds' => ['array'],
             'editPermissionIds.*' => ['integer'],
         ]);
 
-        if ($this->nameTaken($validated['editName'], $role->id)) {
+        // A base role's name is addressed from code, so it is never renamed here.
+        $newName = $canRename ? $validated['editName'] : $role->name;
+
+        if ($canRename && $this->nameTaken($newName, $role->id)) {
             $this->addError('editName', __('A role with that name already exists.'));
 
             return;
@@ -474,12 +539,12 @@ class ProjectRoles extends Component
             $resolver->revoke($role, $name);
         }
 
-        $renamedFrom = $role->name !== $validated['editName'] ? $role->name : null;
+        $renamedFrom = $role->name !== $newName ? $role->name : null;
         $describedChanged = (string) $role->description !== (string) $validated['editDescription'];
 
         if ($renamedFrom !== null || $describedChanged) {
             $roles->updateRole($role, [
-                'name' => $validated['editName'],
+                'name' => $newName,
                 'description' => $validated['editDescription'] === '' ? null : $validated['editDescription'],
             ]);
         }
@@ -596,6 +661,63 @@ class ProjectRoles extends Component
     }
 
     /**
+     * Restore the selected base role to the permission set it is seeded with,
+     * applying the difference through grant/revoke so the revokes cascade to
+     * descendants. Defaults the role's parent no longer holds are skipped rather
+     * than forced, keeping the delegation bound intact.
+     */
+    public function resetToDefaults(PermissionResolver $resolver): void
+    {
+        $this->authorize('manage-roles', $this->project);
+
+        $role = $this->selectedRole();
+
+        if ($role === null || ! $this->canResetSelected()) {
+            return;
+        }
+
+        $parent = $role->parent;
+        $allowed = $parent === null ? collect(ProjectRoleProvisioner::CATALOG) : $resolver->permissionsFor($parent);
+
+        $defaults = collect(ProjectRoleProvisioner::GRANTS[$role->name]);
+        $desired = $defaults->filter(static fn (string $name): bool => $allowed->contains($name))->values();
+        $skipped = $defaults->diff($desired)->values();
+
+        $current = $resolver->permissionsFor($role)
+            ->filter(static fn (string $name): bool => in_array($name, ProjectRoleProvisioner::CATALOG, true))
+            ->map(static fn (string $name): string => $name)
+            ->values();
+
+        $granted = $desired->diff($current)->values();
+        $revoked = $current->diff($desired)->values();
+
+        foreach ($granted as $name) {
+            $resolver->grant($role, $name);
+        }
+
+        foreach ($revoked as $name) {
+            $resolver->revoke($role, $name);
+        }
+
+        if ($granted->isNotEmpty() || $revoked->isNotEmpty()) {
+            Audit::record(AuditEvent::make('role_updated', AuditCategory::Authz)
+                ->withSubject($this->project->getMorphClass(), $this->project->getKey())
+                ->withMetadata(array_filter([
+                    'role' => $role->name,
+                    'reset' => true,
+                    'granted' => $granted->all(),
+                    'revoked' => $revoked->all(),
+                    'skipped' => $skipped->all(),
+                ], static fn (mixed $value): bool => $value !== [])));
+        }
+
+        $this->closeForms();
+        $this->forgetRoleCaches();
+
+        Flux::toast(text: __('Role restored to its defaults.'), variant: 'success');
+    }
+
+    /**
      * Delete the selected role. Its children move up under its parent (their
      * permissions are already a subset of that grandparent's), and the pane
      * falls back to the parent.
@@ -607,7 +729,7 @@ class ProjectRoles extends Component
 
         $role = $this->selectedRole();
 
-        if ($role === null || ! $this->canEditSelected()) {
+        if ($role === null || ! $this->canRemoveSelected()) {
             return;
         }
 
@@ -715,8 +837,12 @@ class ProjectRoles extends Component
             $this->memberCounts,
             $this->deleteConsequence,
             $this->editableRoleIds,
+            $this->removableRoleIds,
             $this->canEditSelected,
+            $this->canRemoveSelected,
+            $this->canResetSelected,
             $this->readOnlyReason,
+            $this->resetConsequence,
             $this->selectedRole,
             $this->selectedRoleParent,
             $this->selectedRolePermissionGroups,
@@ -733,6 +859,14 @@ class ProjectRoles extends Component
     public function isBaseRole(Role $role): bool
     {
         return in_array($role->name, self::BASE_ROLES, true);
+    }
+
+    /**
+     * Whether the role is code-owned and therefore never edited here.
+     */
+    public function isFixedRole(Role $role): bool
+    {
+        return in_array($role->name, self::FIXED_ROLES, true);
     }
 
     public function render(): View

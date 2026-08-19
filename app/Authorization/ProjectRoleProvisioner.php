@@ -60,11 +60,17 @@ class ProjectRoleProvisioner
     ];
 
     /**
-     * The permissions each seeded role holds. Each role is a strict superset of
-     * the one below it (owner ⊇ admin ⊇ member ⊇ viewer), so the delegation
-     * bounds (child ⊆ parent) hold. These mirror today's coarse behaviour:
-     * members contribute, admins also govern settings, owners also manage people
-     * and roles; viewer is read-only.
+     * The permissions each seeded role starts with. Each role is a strict
+     * superset of the one below it (owner ⊇ admin ⊇ member ⊇ viewer), so the
+     * delegation bounds (child ⊆ parent) hold. These mirror today's coarse
+     * behaviour: members contribute, admins also govern settings, owners also
+     * manage people and roles; viewer is read-only.
+     *
+     * These are seed defaults, not a live definition: {@see provision()} never
+     * re-syncs a role that already exists, so a project's own edits to
+     * admin/member/viewer survive re-provisioning. The roles page restores a
+     * role to the set named here through its "Reset to defaults" action. `owner`
+     * is the exception — it holds the whole catalog and is never edited.
      *
      * @var array<string, list<string>>
      */

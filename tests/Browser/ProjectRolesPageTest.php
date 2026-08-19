@@ -4,6 +4,7 @@ use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Role;
+use Fanmade\DelegatedPermissions\PermissionResolver;
 use Fanmade\DelegatedPermissions\RoleManager;
 
 it('reaches the roles page from the project menu and browses the role tree', function () {
@@ -73,4 +74,29 @@ it('creates and edits a custom role from the detail pane', function () {
         ->assertNoJavascriptErrors();
 
     expect($role->fresh()->name)->toBe('Triage lead');
+});
+
+it('retunes a seeded base role and restores its defaults', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    joinProject($project, $user, 'owner');
+
+    $member = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
+
+    $this->actingAs($user);
+
+    $page = visit("/{$project->short_name}/roles?role={$member->id}");
+
+    // A base role is editable, but its name is fixed and it cannot be deleted.
+    $page->assertVisible('@edit-role')
+        ->assertVisible('@reset-role')
+        ->assertMissing('@delete-role')
+        ->click('@edit-role')
+        ->uncheck('@edit-permission-create-task')
+        ->click('@save-role')
+        ->assertMissing('@edit-role-form')
+        ->assertNoJavascriptErrors();
+
+    expect(app(PermissionResolver::class)->permissionsFor($member->fresh())->all())
+        ->not->toContain('create-task');
 });

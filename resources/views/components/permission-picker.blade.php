@@ -16,15 +16,18 @@
 --}}
 <flux:checkbox.group
     wire:model="{{ $model }}"
-    {{ $attributes->merge(['class' => 'columns-1 gap-x-8 sm:columns-2 lg:columns-3']) }}
+    {{ $attributes->merge(['class' => 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3']) }}
 >
     @forelse ($groups as $group => $permissions)
         <div
-            class="mb-3 flex break-inside-avoid flex-col gap-1"
+            class="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 dark:border-white/10"
             wire:key="{{ $testPrefix }}-group-{{ \Illuminate\Support\Str::slug($group) }}"
         >
-            <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
-            <div class="flex flex-col gap-1">
+            <flux:text
+                size="xs"
+                class="font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400"
+            >{{ __($group) }}</flux:text>
+            <div class="flex flex-col gap-1.5">
                 @foreach ($permissions as $permission)
                     @php($outOfBounds = $allowed !== null && ! in_array($permission->name, $allowed, true))
                     <div class="flex items-center gap-1.5">

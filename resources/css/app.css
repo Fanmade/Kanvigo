@@ -107,6 +107,17 @@
     grid-template-columns: minmax(0, 1fr);
 }
 
+/* Flux's inline fields (a checkbox/radio/switch followed by its label) get their
+   two-column grid from a `grid-cols-[auto_1fr]` utility in the package's blade
+   stubs. Tailwind never emits it — the stubs live under the gitignored vendor/
+   directory, so the @source above yields no candidates — and the block rule
+   above then lays the control and its label out in one column, stacking them.
+   Restore the intended layout here rather than depending on that utility. */
+[data-flux-field]:has(> [data-flux-control] ~ [data-flux-label]) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+}
+
 [data-flux-label] {
     @apply  !mb-0 !leading-tight;
 }

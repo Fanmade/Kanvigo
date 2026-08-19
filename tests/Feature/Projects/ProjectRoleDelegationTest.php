@@ -142,21 +142,62 @@ it('drops an out-of-bounds permission when editing a role', function () {
         ->toEqualCanonicalizing(['view-project', 'create-task']);
 });
 
-it('will not open a protected base role for editing', function () {
+it('opens a seeded base role for permission editing', function () {
+    $project = Project::factory()->create();
+    $owner = User::factory()->create();
+    joinProject($project, $owner, 'owner');
+
+    $member = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
+    $exportProject = Permission::where('name', 'export-project')->value('id');
+
+    $component = Livewire::actingAs($owner)
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name])
+        ->call('selectRole', $member->id)
+        ->call('startEdit')
+        ->assertSet('editing', true);
+
+    $component->set('editPermissionIds', [...$component->get('editPermissionIds'), $exportProject])
+        ->call('saveRole')
+        ->assertHasNoErrors();
+
+    expect(app(PermissionResolver::class)->permissionsFor($member->fresh())->all())
+        ->toContain('export-project');
+});
+
+it('keeps the owner role read-only', function () {
+    $project = Project::factory()->create();
+    $owner = User::factory()->create();
+    joinProject($project, $owner, 'owner');
+
+    // A delegated manager below owner still sees no editing affordance on it.
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $lead = app(RoleManager::class)->createRole('Lead', $ownerRole, ['view-project', 'manage-roles'], $project);
+    $manager = User::factory()->create()->assignRole($lead);
+
+    $component = Livewire::actingAs($manager)
+        ->test(ProjectRoles::class, ['short_name' => $project->short_name]);
+
+    expect($component->instance()->editableRoleIds()->all())->not->toContain($ownerRole->id);
+});
+
+it('will not rename or delete a seeded base role', function () {
     $project = Project::factory()->create();
     $owner = User::factory()->create();
     joinProject($project, $owner, 'owner');
 
     $member = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
 
-    $component = Livewire::actingAs($owner)
+    Livewire::actingAs($owner)
         ->test(ProjectRoles::class, ['short_name' => $project->short_name])
         ->call('selectRole', $member->id)
         ->call('startEdit')
-        ->assertSet('editing', false);
+        ->set('editName', 'Contributor')
+        ->call('saveRole')
+        ->assertHasNoErrors()
+        ->call('deleteRole');
 
-    expect($component->instance()->readOnlyReason())
-        ->toBe(__('Base roles are defined in code and cannot be edited.'));
+    expect($member->fresh()->name)->toBe('member')
+        ->and(Role::query()->whereKey($member->id)->exists())->toBeTrue();
 });
 
 it('orders the visible roles as a hierarchy with each role\'s depth', function () {

@@ -81,6 +81,21 @@
                                     wire:click="startEdit"
                                     data-test="edit-role"
                                 />
+                            @endif
+
+                            @if ($this->canResetSelected)
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="arrow-path"
+                                    :aria-label="__('Reset to defaults')"
+                                    wire:click="resetToDefaults"
+                                    wire:confirm="{{ $this->resetConsequence }}"
+                                    data-test="reset-role"
+                                />
+                            @endif
+
+                            @if ($this->canRemoveSelected)
                                 <flux:button
                                     size="sm"
                                     variant="ghost"
@@ -102,7 +117,18 @@
 
                     @if ($this->editing)
                         <form wire:submit="saveRole" class="flex flex-col gap-3" data-test="edit-role-form">
-                            <flux:input wire:model="editName" :label="__('Name')" data-test="edit-role-name" />
+                            @if ($this->canRemoveSelected)
+                                <flux:input wire:model="editName" :label="__('Name')" data-test="edit-role-name" />
+                            @else
+                                <flux:input
+                                    :value="$this->selectedRole->name"
+                                    :label="__('Name')"
+                                    :description="__('Base role names are referenced from code and stay fixed.')"
+                                    disabled
+                                    data-test="edit-role-name"
+                                />
+                            @endif
+
                             <flux:input
                                 wire:model="editDescription"
                                 :label="__('Description')"
@@ -111,7 +137,7 @@
 
                             <flux:field>
                                 <flux:label>{{ __('Permissions') }}</flux:label>
-                                <flux:description>{{ __('A role can hold any subset of its parent role\'s permissions.') }}</flux:description>
+                                <flux:description>{{ __('A role can hold any subset of its parent role\'s permissions. Removing one also removes it from the roles beneath this one.') }}</flux:description>
 
                                 <x-permission-picker
                                     :groups="$this->catalogGroups"

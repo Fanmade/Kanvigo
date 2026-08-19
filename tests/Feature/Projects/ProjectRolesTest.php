@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\Role;
+use Fanmade\DelegatedPermissions\PermissionResolver;
 use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportTesting\Testable;
@@ -157,6 +158,26 @@ it('renames a custom role and stores its description', function () {
         ->and($role->fresh()->description)->toBe('Sorts the inbox.');
 });
 
+it('renames a role in the same save as a permission change', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $role = app(RoleManager::class)->createRole('Triager', $ownerRole, ['view-project'], $project);
+    $logId = Permission::query()->where('name', 'view-activity-log')->value('id');
+    $viewId = Permission::query()->where('name', 'view-project')->value('id');
+
+    rolesPage($owner, $project, $role)
+        ->call('startEdit')
+        ->set('editName', 'Triage lead')
+        ->set('editPermissionIds', [$viewId, $logId])
+        ->call('saveRole')
+        ->assertHasNoErrors();
+
+    expect($role->fresh()->name)->toBe('Triage lead')
+        ->and(app(PermissionResolver::class)->permissionsFor($role->fresh())->all())
+        ->toEqualCanonicalizing(['view-project', 'view-activity-log']);
+});
+
 it('rejects renaming a role onto an existing name', function () {
     $project = Project::factory()->create();
     $owner = projectOwner($project);
@@ -216,4 +237,50 @@ it('bounds the edit picker to the parent role', function () {
     $allowed = rolesPage($owner, $project, $sub)->instance()->editAllowedPermissions();
 
     expect($allowed)->toEqualCanonicalizing(['view-project', 'create-task']);
+});
+
+it('restores a base role to its seeded permissions', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $provisioner = app(ProjectRoleProvisioner::class);
+    $member = $provisioner->roleFor($project, 'member');
+    $resolver = app(PermissionResolver::class);
+
+    // Drift: drop a default and add one the parent (admin) also holds.
+    $resolver->revoke($member, 'create-task');
+    $resolver->grant($member, 'moderate-comments');
+
+    rolesPage($owner, $project, $member)->call('resetToDefaults');
+
+    expect($resolver->permissionsFor($member->fresh())->all())
+        ->toEqualCanonicalizing(ProjectRoleProvisioner::GRANTS['member']);
+});
+
+it('offers no reset for a custom role or the owner role', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $custom = app(RoleManager::class)->createRole('Triager', $ownerRole, ['view-project'], $project);
+
+    expect(rolesPage($owner, $project, $custom)->instance()->canResetSelected())->toBeFalse()
+        ->and(rolesPage($owner, $project, $ownerRole)->instance()->canResetSelected())->toBeFalse();
+});
+
+it('skips a default the parent role no longer holds when resetting', function () {
+    $project = Project::factory()->create();
+    $owner = projectOwner($project);
+    $provisioner = app(ProjectRoleProvisioner::class);
+    $admin = $provisioner->roleFor($project, 'admin');
+    $member = $provisioner->roleFor($project, 'member');
+    $resolver = app(PermissionResolver::class);
+
+    // The parent lost export-content, so member cannot be given it back.
+    $resolver->revoke($admin, 'export-content');
+
+    rolesPage($owner, $project, $member)->call('resetToDefaults');
+
+    $restored = $resolver->permissionsFor($member->fresh());
+
+    expect($restored)->not->toContain('export-content')
+        ->and($restored)->toContain('create-task');
 });
