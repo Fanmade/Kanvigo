@@ -12,10 +12,14 @@ use App\Mail\InvitationMail;
 use App\Models\Invitation;
 use App\Models\Project;
 use App\Models\User;
+use App\Queries\NamedAccountRoles;
 use App\Support\Facades\Audit;
 use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
+use Fanmade\DelegatedPermissions\Models\Role;
+use Fanmade\DelegatedPermissions\PermissionResolver;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -84,7 +88,7 @@ class UserManagement extends Component
     public function users(): Collection
     {
         return User::query()
-            ->with(['pendingInvitations'])
+            ->with(['pendingInvitations', 'roles'])
             ->when($this->search !== '', function ($query): void {
                 $term = '%'.$this->search.'%';
                 $query->where(static function ($query) use ($term): void {
@@ -104,6 +108,90 @@ class UserManagement extends Component
     public function pendingInvitations(): Collection
     {
         return Invitation::query()->valid()->with('inviter')->latest()->get();
+    }
+
+    /**
+     * The named account roles an administrator may assign, if any exist.
+     *
+     * @return Collection<int, Role>
+     */
+    #[Computed]
+    public function accountRoles(): Collection
+    {
+        return app(NamedAccountRoles::class)->handle();
+    }
+
+    /**
+     * The named roles the user holds.
+     *
+     * @return SupportCollection<int, Role>
+     */
+    public function rolesOf(User $user): SupportCollection
+    {
+        $named = app(NamedAccountRoles::class);
+
+        return $user->roles->filter(static fn (Role $role): bool => $named->isNamed($role))->values();
+    }
+
+    /**
+     * Whether the user was granted the permission directly, through its own
+     * single-permission chip role, rather than through a named role.
+     */
+    public function hasDirectPermission(User $user, Permission $permission): bool
+    {
+        return $user->roles->contains(
+            static fn (Role $role): bool => $role->scope_type === null
+                && $role->scope_id === null
+                && $role->name === $permission->value,
+        );
+    }
+
+    /**
+     * The named roles that hand the user the given permission, for the chips
+     * that are not directly toggleable.
+     *
+     * @return list<string>
+     */
+    public function rolesGranting(User $user, Permission $permission): array
+    {
+        $resolver = app(PermissionResolver::class);
+
+        return array_values($this->rolesOf($user)
+            ->filter(static fn (Role $role): bool => $resolver->permissionsFor($role)->contains($permission->value))
+            ->map(static fn (Role $role): string => $role->name)
+            ->all());
+    }
+
+    /**
+     * Assign or remove a named account role for the given user.
+     */
+    public function toggleRole(int $userId, int $roleId): void
+    {
+        $user = User::findOrFail($userId);
+
+        $this->authorize('update', $user);
+
+        $role = $this->accountRoles()->firstWhere('id', $roleId);
+
+        if ($role === null) {
+            return;
+        }
+
+        $held = $user->roles->contains('id', $role->id);
+
+        if ($held) {
+            $user->removeRole($role);
+        } else {
+            $user->assignRole($role);
+        }
+
+        Audit::record(AuditEvent::make($held ? 'account_role_unassigned' : 'account_role_assigned', AuditCategory::Authz)
+            ->withSubject($user->getMorphClass(), $user->getKey())
+            ->withMetadata(['role' => $role->name]));
+
+        unset($this->users);
+
+        Flux::toast(text: __('Roles updated.'), variant: 'success');
     }
 
     /**
@@ -341,7 +429,7 @@ class UserManagement extends Component
      * the managed user already holds there, the assignable seeded roles still
      * available to grant, and whether the row is read-only (they own the project).
      *
-     * @return array{heldNames: \Illuminate\Support\Collection<int, string>, addable: \Illuminate\Support\Collection<int, string>, readonly: bool}
+     * @return array{heldNames: SupportCollection<int, string>, addable: SupportCollection<int, string>, readonly: bool}
      */
     public function projectRow(Project $project): array
     {

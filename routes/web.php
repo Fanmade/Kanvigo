@@ -13,6 +13,7 @@ use App\Http\Controllers\SignedAttachmentDownloadController;
 use App\Http\Controllers\TaskPreviewController;
 use App\Http\Controllers\UserPreviewController;
 use App\Livewire\Activity\GlobalActivityFeed;
+use App\Livewire\Admin\AccountRoles;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
 use App\Livewire\Dashboard;
@@ -85,6 +86,7 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     // the same session value.
     Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
     Route::livewire('admin/users', UserManagement::class)->name('admin.users');
+    Route::livewire('admin/roles', AccountRoles::class)->name('admin.roles');
 
     // Avatars are stored privately and streamed only to authenticated viewers.
     Route::get('users/{user}/avatar', AvatarController::class)->name('avatar');

@@ -152,6 +152,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   defaults" action; owner keeps the full catalog and stays fixed. Managers assign
   roles as chips from the project page, and both surfaces only ever show roles at
   or below their own.
+- **Account roles** — account-level permissions can be bundled under a name
+  (e.g. "User manager" = invite users + manage users) on an admin-only **Account
+  roles** page and assigned to people in user administration, next to the
+  single-permission chips. A permission held through a role is shown on the user
+  row as such and is revoked by removing the role.
 - **Cross-project access** — the account-level `access-all-projects` permission
   lets staff see every project. It grants visibility only; contributing still
   requires a role on the project.

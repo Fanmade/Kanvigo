@@ -2,13 +2,26 @@
     <div class="flex items-center justify-between gap-4">
         <flux:heading size="xl">{{ __('User administration') }}</flux:heading>
 
-        <flux:input
-            wire:model.live.debounce.300ms="search"
-            icon="magnifying-glass"
-            :placeholder="__('Search name or email')"
-            class="max-w-xs"
-            data-test="user-search"
-        />
+        <div class="flex items-center gap-2">
+            @can('manage-account-roles')
+                <flux:button
+                    size="sm"
+                    variant="ghost"
+                    icon="shield-check"
+                    :href="route('admin.roles')"
+                    wire:navigate
+                    data-test="account-roles-link"
+                >{{ __('Account roles') }}</flux:button>
+            @endcan
+
+            <flux:input
+                wire:model.live.debounce.300ms="search"
+                icon="magnifying-glass"
+                :placeholder="__('Search name or email')"
+                class="max-w-xs"
+                data-test="user-search"
+            />
+        </div>
     </div>
 
     {{-- User accounts --}}
@@ -96,8 +109,22 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <flux:text size="sm" class="text-zinc-500">{{ __('Permissions') }}:</flux:text>
                     @foreach ($this->permissions as $permission)
-                        @php($granted = $user->hasPermission($permission))
-                        @if ($this->locksSelfOutOfManagement($user, $permission))
+                        @php($granted = $this->hasDirectPermission($user, $permission))
+                        @php($fromRoles = $granted ? [] : $this->rolesGranting($user, $permission))
+                        @if ($fromRoles !== [])
+                            {{-- Held through a named role: shown so the row stays the whole
+                                 truth, but revoked by unassigning that role, not here. --}}
+                            <flux:button
+                                size="xs"
+                                variant="filled"
+                                icon="shield-check"
+                                disabled
+                                title="{{ __('From the role :roles', ['roles' => implode(', ', $fromRoles)]) }}"
+                                :data-test="'perm-role-'.$user->id.'-'.$permission->value"
+                            >
+                                {{ $permission->label() }}
+                            </flux:button>
+                        @elseif ($this->locksSelfOutOfManagement($user, $permission))
                             <flux:tooltip :content="__('You cannot revoke your own user management permission.')">
                                 <flux:button
                                     size="xs"
@@ -122,6 +149,25 @@
                         @endif
                     @endforeach
                 </div>
+
+                @if ($this->accountRoles->isNotEmpty())
+                    <div class="flex flex-wrap items-center gap-2">
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Roles') }}:</flux:text>
+                        @foreach ($this->accountRoles as $role)
+                            @php($held = $user->roles->contains('id', $role->id))
+                            <flux:button
+                                size="xs"
+                                :variant="$held ? 'primary' : 'ghost'"
+                                :icon="$held ? 'check' : 'plus'"
+                                wire:click="toggleRole({{ $user->id }}, {{ $role->id }})"
+                                wire:key="user-role-{{ $user->id }}-{{ $role->id }}"
+                                :data-test="'role-'.$user->id.'-'.$role->id"
+                            >
+                                {{ $role->name }}
+                            </flux:button>
+                        @endforeach
+                    </div>
+                @endif
             </flux:card>
         @endforeach
     </div>

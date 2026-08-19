@@ -1,10 +1,12 @@
 <?php
 
+use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\Permission;
 use App\Livewire\Admin\UserManagement;
 use App\Mail\InvitationMail;
 use App\Models\Invitation;
 use App\Models\User;
+use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
@@ -218,4 +220,53 @@ it('forbids a non-administrator from mounting the management component', functio
     Livewire::actingAs(User::factory()->create())
         ->test(UserManagement::class)
         ->assertForbidden();
+});
+
+it('assigns and removes a named account role', function () {
+    $admin = User::factory()->create();
+    $admin->syncPermissions([Permission::ManageUsers]);
+    $member = User::factory()->create();
+
+    $role = app(RoleManager::class)->createRole(
+        'User manager',
+        app(ProjectRoleProvisioner::class)->systemRole(),
+        [Permission::InviteUsers->value, Permission::ManageUsers->value],
+    );
+
+    $component = Livewire::actingAs($admin->fresh())
+        ->test(UserManagement::class)
+        ->call('toggleRole', $member->id, $role->id);
+
+    expect($member->fresh()->hasPermission(Permission::InviteUsers))->toBeTrue();
+
+    $component->call('toggleRole', $member->id, $role->id);
+
+    expect($member->fresh()->hasPermission(Permission::InviteUsers))->toBeFalse();
+});
+
+it('separates a directly granted permission from one held through a role', function () {
+    $admin = User::factory()->create();
+    $admin->syncPermissions([Permission::ManageUsers]);
+
+    $member = User::factory()->create();
+    $member->syncPermissions([Permission::CreateProjects]);
+
+    $role = app(RoleManager::class)->createRole(
+        'Recruiter',
+        app(ProjectRoleProvisioner::class)->systemRole(),
+        [Permission::InviteUsers->value],
+    );
+    $member->assignRole($role);
+
+    $component = Livewire::actingAs($admin->fresh())->test(UserManagement::class);
+    $instance = $component->instance();
+    $subject = $member->fresh()->load('roles');
+
+    expect($instance->hasDirectPermission($subject, Permission::CreateProjects))->toBeTrue()
+        ->and($instance->hasDirectPermission($subject, Permission::InviteUsers))->toBeFalse()
+        ->and($instance->rolesGranting($subject, Permission::InviteUsers))->toBe(['Recruiter'])
+        ->and($instance->rolesOf($subject)->pluck('name')->all())->toBe(['Recruiter']);
+
+    // The role-derived permission renders as a locked chip, not a toggle.
+    $component->assertSeeHtml('perm-role-'.$member->id.'-'.Permission::InviteUsers->value);
 });
