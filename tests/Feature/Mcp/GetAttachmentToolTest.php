@@ -20,19 +20,28 @@ use Laravel\Mcp\Transport\JsonRpcResponse;
 uses(RefreshDatabase::class);
 
 /**
- * The base64-decoded bytes of the first image content block in an MCP tool
- * response — the raw output, not the notice text describing it, so a test can
- * assert against what the driver actually produced rather than what was asked
- * for.
+ * The content blocks of an MCP tool response. `TestResponse` keeps the
+ * JSON-RPC response protected and exposes only assertions over its text, so a
+ * test that needs the raw blocks has to reach for the property itself.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function mcpResponseContent(TestResponse $response): array
+{
+    /** @var JsonRpcResponse $jsonRpcResponse */
+    $jsonRpcResponse = (new ReflectionProperty($response, 'response'))->getValue($response);
+
+    return $jsonRpcResponse->toArray()['result']['content'] ?? [];
+}
+
+/**
+ * The decoded bytes of the first image content block in an MCP tool response —
+ * the raw output, not the notice text describing it, so a test can assert
+ * against what the driver actually produced rather than what was asked for.
  */
 function mcpImageBytes(TestResponse $response): string
 {
-    $reflection = new ReflectionProperty($response, 'response');
-    /** @var JsonRpcResponse $jsonRpcResponse */
-    $jsonRpcResponse = $reflection->getValue($response);
-    $content = $jsonRpcResponse->toArray()['result']['content'] ?? [];
-
-    $image = collect($content)->firstWhere('type', 'image');
+    $image = collect(mcpResponseContent($response))->firstWhere('type', 'image');
 
     expect($image)->not->toBeNull('The response has no image content block.');
 
