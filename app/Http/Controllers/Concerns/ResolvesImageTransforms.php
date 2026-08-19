@@ -100,6 +100,11 @@ trait ResolvesImageTransforms
             'Content-Type' => $spec->mimeType(),
             'Content-Length' => (string) strlen($rendered),
             'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $name),
+            // Bytes this application encoded, from a curated format list — but
+            // served under the same hardening as a stored file, so no attachment
+            // route is an exception ({@see ServesScopedAttachments}).
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
         ]);
     }
 }

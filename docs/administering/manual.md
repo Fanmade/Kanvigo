@@ -184,6 +184,24 @@ directly (`ATTACHMENTS_GHOSTSCRIPT`), not through an ImageMagick delegate. Drop
 that binary too if you would rather not rasterize PDFs at all — attachments then
 fall back to a generic icon.
 
+### How uploaded files are served
+
+Attachments are served from the application's own origin, through authenticated
+routes, which makes the browser's disposition of them a security decision rather
+than a convenience. Two rules apply, and neither is configurable:
+
+- **Inline display is an allow-list.** Raster images, PDFs, plain text, audio and
+  video are served inline; everything else — SVG, HTML, XHTML, XML — arrives as a
+  download. A type the browser parses as a *document* can carry script, and
+  inline from our origin that script would run with the viewer's session.
+- **Every attachment response is locked down** with
+  `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src
+  'none'; sandbox`, so a mislabelled file cannot be upgraded to something
+  executable and a document type cannot reach anything if it is opened.
+
+Uploads are not restricted by type: any file may be attached, and it is the
+serving side that decides what the browser is allowed to do with it.
+
 ## Accounts and access
 
 ### Onboarding

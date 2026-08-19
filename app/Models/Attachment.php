@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\Attachments\InlineSafeTypes;
+use App\Support\Images\RasterImageTypes;
 use Database\Factories\AttachmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -137,10 +139,14 @@ class Attachment extends Model
 
     /**
      * Whether this attachment is an image that can be shown in the gallery.
+     *
+     * Narrower than "image/*": an SVG is served as a download rather than inline
+     * ({@see InlineSafeTypes}) and gets no thumbnail, so previewing it would only
+     * ever render a broken image. It appears as a file instead.
      */
     public function isImage(): bool
     {
-        return str_starts_with((string) $this->mime_type, 'image/');
+        return RasterImageTypes::isDecodable($this->mime_type);
     }
 
     /**

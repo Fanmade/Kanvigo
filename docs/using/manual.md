@@ -179,7 +179,9 @@ is flagged *Blocked* while any blocker is still open. Cycles are refused.
 
 Drop files onto the description to attach them, several at once. Images and PDFs
 get thumbnails, and images open in a lightbox — **Esc** closes it, **←** and
-**→** move between them.
+**→** move between them. SVG files are the exception: they can be attached and
+downloaded, but they are never previewed or displayed in the page, because an SVG
+can carry code.
 
 Comments sit under the task, support one level of replies, and can be edited or
 withdrawn (leaving a tombstone rather than a silent gap). They arrive live
