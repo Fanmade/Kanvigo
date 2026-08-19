@@ -9,6 +9,7 @@ use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\Images\ImageTransformer;
+use App\Support\Images\RasterImageTypes;
 use App\Support\Thumbnail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -36,12 +37,13 @@ class StoreAttachment
 
         $path = $file->store($directory, $disk);
 
-        // Only measure bytes the MIME type actually claims are an image. A raster
-        // decoder happily reads far more than that — PDF, EPS, PostScript, SVG —
+        // Only measure bytes whose MIME type is one of the raster formats we
+        // decode. A decoder reads far more than that — PDF, EPS, PostScript, SVG —
         // and would store those dimensions as if they were pixels, which they are
-        // not (PDF's are PostScript points). Matches the gate
+        // not (PDF's are PostScript points); worse, those formats are handled by
+        // delegates that shell out ({@see RasterImageTypes}). Matches the gate
         // attachments:backfill-dimensions already applies.
-        $dimensions = str_starts_with((string) $mimeType, 'image/')
+        $dimensions = RasterImageTypes::isDecodable($mimeType)
             ? app(ImageTransformer::class)->dimensions((string) $contents)
             : null;
 

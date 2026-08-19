@@ -13,6 +13,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Support\Facades\Audit;
 use App\Support\Images\ImageTransformer;
+use App\Support\Images\RasterImageTypes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -84,7 +85,7 @@ class AttachmentController extends Controller
                 // dimensions columns existed, and (once populated) is also set
                 // for non-image formats a driver can merely rasterize (PDF), so
                 // its presence or absence is not reliable evidence either way.
-                'transformable' => str_starts_with((string) $model->mime_type, 'image/') && $transformer->supportsFormat('webp'),
+                'transformable' => RasterImageTypes::isDecodable($model->mime_type) && $transformer->supportsFormat('webp'),
             ]])
             ->response();
     }

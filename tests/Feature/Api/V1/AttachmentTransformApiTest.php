@@ -192,3 +192,30 @@ it('rejects transform params on undecodable bytes claiming to be an image', func
 
     $this->getJson("/api/v1/attachments/{$bad->id}?width=200")->assertStatus(422);
 });
+
+it('refuses to transform an SVG and reports it as not transformable', function () {
+    // An SVG passes any "image/*" gate but is rasterized by ImageMagick's
+    // librsvg delegate. It is served untouched or not at all.
+    Storage::disk('attachments')->put(
+        'attachments/diagram.svg',
+        '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"></svg>',
+    );
+
+    $svg = Attachment::factory()->for($this->task, 'attachable')->create([
+        'disk' => 'attachments',
+        'path' => 'attachments/diagram.svg',
+        'name' => 'diagram.svg',
+        'mime_type' => 'image/svg+xml',
+    ]);
+
+    Sanctum::actingAs($this->user, ['read']);
+
+    $this->getJson("/api/v1/attachments/{$svg->id}/metadata")
+        ->assertOk()
+        ->assertJsonPath('data.transformable', false);
+
+    $response = $this->getJson("/api/v1/attachments/{$svg->id}?width=200");
+
+    $response->assertStatus(422);
+    expect($response->headers->get('content-type'))->not->toContain('image');
+});

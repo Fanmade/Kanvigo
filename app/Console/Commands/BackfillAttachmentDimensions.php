@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Attachment;
 use App\Support\Images\ImageTransformer;
+use App\Support\Images\RasterImageTypes;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Fills in width/height for attachments stored before those columns existed.
  * Safe to re-run: rows that already carry dimensions, and rows whose bytes no
- * driver can decode, are skipped.
+ * driver can decode, are skipped. Only the raster types we hand to a decoder are
+ * measured at all ({@see RasterImageTypes}).
  */
 class BackfillAttachmentDimensions extends Command
 {
@@ -25,7 +27,7 @@ class BackfillAttachmentDimensions extends Command
 
         Attachment::query()
             ->whereNull('width')
-            ->where('mime_type', 'like', 'image/%')
+            ->whereIn('mime_type', RasterImageTypes::ALLOWED)
             ->chunkById(100, static function (Collection $attachments) use ($transformer, &$measured): void {
                 /** @var Collection<int, Attachment> $attachments */
                 foreach ($attachments as $attachment) {

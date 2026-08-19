@@ -71,3 +71,39 @@ it('leaves undecodable rows null and still succeeds', function () {
 
     expect($attachment->refresh()->width)->toBeNull();
 });
+
+it('leaves dimensions null for an SVG upload rather than handing it to a delegate', function () {
+    // image/svg+xml satisfies "image/*" but is decoded by ImageMagick's librsvg
+    // delegate — a coder the stock policy leaves enabled and which has a history
+    // of file-disclosure bugs. It must never reach the transformer, so it is
+    // stored unmeasured like any other opaque file.
+    $file = UploadedFile::fake()->createWithContent(
+        'diagram.svg',
+        '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"></svg>',
+    );
+
+    $attachment = app(StoreAttachment::class)->handle($file, $this->task, uploadedBy: $this->user->id);
+
+    expect($attachment->mime_type)->toBe('image/svg+xml')
+        ->and($attachment->width)->toBeNull()
+        ->and($attachment->height)->toBeNull();
+});
+
+it('skips SVG rows when backfilling dimensions', function () {
+    Storage::disk('attachments')->put(
+        'attachments/diagram.svg',
+        '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"></svg>',
+    );
+
+    $svg = Attachment::factory()->for($this->task, 'attachable')->create([
+        'disk' => 'attachments',
+        'path' => 'attachments/diagram.svg',
+        'mime_type' => 'image/svg+xml',
+        'width' => null,
+        'height' => null,
+    ]);
+
+    $this->artisan('attachments:backfill-dimensions')->assertSuccessful();
+
+    expect($svg->fresh()->width)->toBeNull();
+});

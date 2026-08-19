@@ -44,10 +44,13 @@ class ImagickDriver implements ImageDriver
     {
         try {
             $image = new Imagick;
-            // pingImageBlob() reads only the header, not a full decode — unlike
-            // readImageBlob() it does not dispatch to a delegate (Ghostscript for
-            // PDF/EPS/PS, librsvg for SVG, ...), so measuring dimensions can never
-            // reach that surface even for bytes a caller mislabelled as an image.
+            // pingImageBlob() reads geometry rather than decoding the whole image,
+            // so it is the cheaper call — but it is not a guarantee: pinging a PDF
+            // on a host with the open ImageMagick policy still returns real page
+            // geometry, which means a delegate (Ghostscript, librsvg, ...) plausibly
+            // ran. The MIME allow-list callers apply before getting here is the
+            // actual protection ({@see \App\Support\Images\RasterImageTypes});
+            // ping is only defence in depth.
             $image->pingImageBlob($bytes);
             $geometry = $image->getImageGeometry();
             $image->clear();

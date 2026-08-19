@@ -121,6 +121,8 @@ uncomment what you need to change.
 | `KANVIGO_EXPORT_IMAGE_MAX_EDGE` | 1024 | Longest edge for images inlined into an export |
 | `KANVIGO_EXPORT_INLINE_BUDGET` | 5 MiB | Past this, export images degrade to links |
 | `KANVIGO_EXPORT_MAX_PROJECT_ITEMS` | 2000 | Whole-project exports above this are refused — they are built in the request |
+| `KANVIGO_ACTIVITY_RETENTION_DAYS` | 0 | Days of activity feed kept; `0` keeps it forever. Applied by the daily `activity:prune` |
+| `KANVIGO_NOTIFICATION_RETENTION_DAYS` | 30 | Days a notification is kept after it was dismissed or read; unread ones are never pruned |
 
 **`config/attachments.php`**
 
@@ -132,11 +134,6 @@ uncomment what you need to change.
 | `ATTACHMENTS_SIGNED_URL_TTL` | 30 (minutes) | Lifetime of signed download links |
 | `ATTACHMENTS_GHOSTSCRIPT` | `gs` | Binary used for PDF thumbnails |
 
-**`config/kanvigo.php`** — retention for the two append-only tables:
-`KANVIGO_ACTIVITY_RETENTION_DAYS` (default `0`, meaning the activity feed is kept
-forever) and `KANVIGO_NOTIFICATION_RETENTION_DAYS` (default 30). Both are applied
-by daily scheduled commands, so they take effect without a migration.
-
 **`config/audit.php`** — `AUDIT_OUTBOX_RETENTION_DAYS` (default 30, `0` keeps
 forever) and `AUDIT_PII_TOKEN_SALT`, which falls back to the application key.
 Rotating that salt invalidates every pseudonymous token already published; that
@@ -145,6 +142,47 @@ is deliberate, and it is the crypto-shredding lever.
 Out of the box `SESSION_DRIVER`, `CACHE_STORE` and `QUEUE_CONNECTION` all point
 at the database, so with SQLite a single file carries sessions, cache, queue and
 data. Fine for a small instance, a write-contention risk beyond that.
+
+## Image processing
+
+Thumbnails and avatar crops are produced with GD; the renditions the API and MCP
+serve on the fly prefer ImageMagick when the extension is installed, because it
+reads formats GD cannot (HEIC, TIFF). Only a fixed list of raster types — JPEG,
+PNG, GIF, WebP, AVIF, HEIC/HEIF, TIFF, BMP — is ever handed to a decoder.
+Everything else, **SVG included**, is stored and served untouched: no thumbnail,
+no pixel dimensions, and a `422` for any rendition request. That is deliberate.
+ImageMagick decodes SVG, EPS, PostScript, MVG and MSL through *delegates* that
+shell out to librsvg or Ghostscript, or interpret a scripting language, and that
+surface has a long history of remote-code-execution and file-disclosure bugs.
+
+Harden the library as well, so the restriction does not rest on the application
+alone. A stock `/etc/ImageMagick-6/policy.xml` (or `-7`) ships those coders
+enabled — often with the restrictive lines commented out. Uncomment or add:
+
+```xml
+<policymap>
+  <policy domain="coder" rights="none" pattern="PS" />
+  <policy domain="coder" rights="none" pattern="PS2" />
+  <policy domain="coder" rights="none" pattern="PS3" />
+  <policy domain="coder" rights="none" pattern="EPS" />
+  <policy domain="coder" rights="none" pattern="PDF" />
+  <policy domain="coder" rights="none" pattern="XPS" />
+  <policy domain="coder" rights="none" pattern="MSL" />
+  <policy domain="coder" rights="none" pattern="MVG" />
+  <policy domain="coder" rights="none" pattern="SVG" />
+  <policy domain="coder" rights="none" pattern="URL" />
+  <policy domain="coder" rights="none" pattern="HTTPS" />
+  <policy domain="delegate" rights="none" pattern="*" />
+  <policy domain="resource" name="memory" value="256MiB" />
+  <policy domain="resource" name="width" value="16KP" />
+  <policy domain="resource" name="height" value="16KP" />
+</policymap>
+```
+
+PDF thumbnails are unaffected: they are rendered by calling Ghostscript
+directly (`ATTACHMENTS_GHOSTSCRIPT`), not through an ImageMagick delegate. Drop
+that binary too if you would rather not rasterize PDFs at all — attachments then
+fall back to a generic icon.
 
 ## Accounts and access
 

@@ -595,3 +595,30 @@ it('does not audit a content read when it only returns metadata', function () {
 
     expect(attachmentDownloadAudits())->toBeEmpty();
 });
+
+it('does not inline an SVG as image content, and refuses transform params on it', function () {
+    // "image/*" is not the set of types we hand to a decoder: an SVG is
+    // rasterized by ImageMagick's librsvg delegate, so it is treated as an
+    // opaque file — metadata plus a signed link, like a PDF.
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"></svg>';
+    Storage::disk('attachments')->put('attachments/diagram.svg', $svg);
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/diagram.svg',
+        'name' => 'diagram.svg',
+        'mime_type' => 'image/svg+xml',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertDontSee(base64_encode($svg))
+        ->assertSee('diagram.svg');
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id, 'width' => 200])
+        ->assertHasErrors();
+});

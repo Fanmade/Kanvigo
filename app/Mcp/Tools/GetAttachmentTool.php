@@ -8,6 +8,7 @@ use App\Models\Attachment;
 use App\Models\User;
 use App\Support\Facades\Audit;
 use App\Support\Images\ImageTransformer;
+use App\Support\Images\RasterImageTypes;
 use App\Support\Images\TransformSpec;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -102,7 +103,11 @@ class GetAttachmentTool extends Tool
         $mimeType = (string) $attachment->mime_type;
         $contents = (string) $disk->get($attachment->path);
 
-        $isImage = str_starts_with($mimeType, 'image/');
+        // Only the raster formats a driver may decode count as an image here: an
+        // SVG must not be handed to a delegate-backed coder, and its bytes are of
+        // no use to a vision model either — it falls through to the inline-text or
+        // metadata branches below like any other file ({@see RasterImageTypes}).
+        $isImage = RasterImageTypes::isDecodable($mimeType);
         $isAudio = str_starts_with($mimeType, 'audio/');
 
         // The four transform params only mean something for an image. Silently

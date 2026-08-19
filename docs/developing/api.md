@@ -106,8 +106,10 @@ you can request a rendition instead by passing any of `width`, `height`
 (1–4096 pixels), `format` (`webp`, `jpeg`, `png`, `avif`) and `quality`
 (1–100, default 80). The image is fitted inside the width/height box with its
 aspect ratio preserved and is never enlarged; give `height` too for a tall
-image — a width bound alone leaves it untouched. Passing a transform parameter
-for a non-image attachment is `422`. The same parameters work on the
+image — a width bound alone leaves it untouched. Renditions are limited to the
+raster formats the server decodes (JPEG, PNG, GIF, WebP, AVIF, HEIC/HEIF, TIFF,
+BMP); a transform parameter on anything else — a PDF, an SVG — is `422`, and
+`metadata` reports it as `transformable: false`. The same parameters work on the
 short-lived signed download links below.
 
 `GET /attachments/{id}/metadata` returns an attachment's full record — name,

@@ -7,6 +7,7 @@ use App\Models\Attachment;
 use App\Models\User;
 use App\Support\Facades\Audit;
 use App\Support\Images\ImageTransformer;
+use App\Support\Images\RasterImageTypes;
 use App\Support\Images\TransformSpec;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -64,12 +65,13 @@ trait ResolvesImageTransforms
      */
     protected function transformedAttachmentResponse(Attachment $attachment, TransformSpec $spec, ?User $actor = null): Response
     {
-        // A raster decoder happily rasterizes far more than "images" — Imagick
-        // decodes PDF, EPS, PostScript and SVG too — so "transform() returned
-        // something" is not a safe proxy for "this is an image". Gate on the
-        // stored MIME type first: the spec mandates a 422 for a non-image
-        // attachment, not a 200 with page 1 of a PDF re-encoded as WebP.
-        if (! str_starts_with((string) $attachment->mime_type, 'image/')) {
+        // A decoder rasterizes far more than "images" — Imagick decodes PDF, EPS,
+        // PostScript and SVG too, through delegates that shell out — so
+        // "transform() returned something" is neither a safe proxy for "this is an
+        // image" nor a surface to expose. Gate on the stored MIME type first: the
+        // spec mandates a 422 for a non-image attachment, not a 200 with page 1 of
+        // a PDF re-encoded as WebP ({@see RasterImageTypes}).
+        if (! RasterImageTypes::isDecodable($attachment->mime_type)) {
             throw ValidationException::withMessages([
                 'image' => 'This attachment is not an image that can be transformed.',
             ]);
