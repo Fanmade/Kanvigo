@@ -50,7 +50,10 @@
                 >
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 flex-col gap-1">
-                            <flux:heading size="lg" data-test="role-detail-name">{{ $this->selectedRole->name }}</flux:heading>
+                            <flux:heading
+                                size="lg"
+                                data-test="role-detail-name"
+                            >{{ $this->selectedRole->name }}</flux:heading>
 
                             @if ($this->selectedRole->description)
                                 <flux:text class="text-zinc-500">{{ $this->selectedRole->description }}</flux:text>
@@ -140,9 +143,7 @@
                                     {{ __('There is no other role you manage to move this one under.') }}
                                 </flux:text>
                             @else
-                                <div
-                                    class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10"
-                                >
+                                <div class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10">
                                     @foreach ($this->moveTargets as $target)
                                         <div
                                             class="flex items-center justify-between gap-3 p-3"
