@@ -116,6 +116,11 @@
                         @if (! empty($data['title']))
                             <span class="text-zinc-500">· {{ $data['title'] }}</span>
                         @endif
+                        {{-- A bundled notification (a waiting reminder) names its
+                             oldest subject and counts the rest. --}}
+                        @if (($data['count'] ?? 1) > 1)
+                            <span class="text-zinc-500">{{ __('and :count more', ['count' => $data['count'] - 1]) }}</span>
+                        @endif
                     </span>
                     <span class="block text-xs text-zinc-400"
                         ><x-relative-time :date="$notification->created_at"

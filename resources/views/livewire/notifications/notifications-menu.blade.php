@@ -66,6 +66,9 @@
                                 <span class="font-medium">{{ $data['actor'] ?? __('System') }}</span>
                                 {{ $label }}
                                 <span class="font-mono text-xs text-zinc-500">{{ $data['reference'] }}</span>
+                                @if (($data['count'] ?? 1) > 1)
+                                    <span class="text-xs text-zinc-500">{{ __('and :count more', ['count' => $data['count'] - 1]) }}</span>
+                                @endif
                             </span>
                             <span class="block text-xs text-zinc-400"
                                 ><x-relative-time :date="$notification->created_at"

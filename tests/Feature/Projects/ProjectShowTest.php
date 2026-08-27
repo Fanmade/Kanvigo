@@ -329,6 +329,27 @@ it('shows the configured system default on the auto-archive field', function () 
         ->assertSee('42');
 });
 
+it('shows the configured system default on the waiting-reminder field', function () {
+    config()->set('kanvigo.tasks.waiting_nudge_days', 9);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->call('edit')
+        ->assertSeeHtml('data-test="project-waiting-nudge-days"')
+        ->assertSee('9');
+});
+
+it('saves a per-project waiting-reminder threshold', function () {
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->call('edit')
+        ->set('waitingNudgeDays', 21)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($this->project->fresh()->waitingNudgeThresholdDays())->toBe(21);
+});
+
 it('forbids non-members', function () {
     Livewire::actingAs(User::factory()->create())
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])

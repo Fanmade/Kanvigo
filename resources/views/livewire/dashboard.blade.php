@@ -23,6 +23,64 @@
         @endforeach
     </div>
 
+    {{-- Open input requests. Sits above the rest because it is the one thing on
+         the dashboard that somebody else is blocked on, and it disappears
+         entirely once the queue is empty — the sidebar item stays visible, so
+         nothing is lost by not printing "nothing is waiting" here. --}}
+    @if ($this->waitingOnMeCount > 0)
+        <div data-test="dashboard-waiting">
+            <div class="mb-2 flex items-center justify-between gap-2">
+                <flux:heading size="lg" class="flex items-center gap-2">
+                    {{ __('Waiting on me') }}
+                    <flux:badge size="sm" color="amber" data-test="dashboard-waiting-count">
+                        {{ $this->waitingOnMeCount }}
+                    </flux:badge>
+                </flux:heading>
+
+                <flux:button
+                    size="xs"
+                    variant="subtle"
+                    icon="arrow-right"
+                    icon:trailing
+                    :href="route('waiting.index')"
+                    wire:navigate
+                    data-test="dashboard-waiting-all"
+                >{{ __('See all') }}</flux:button>
+            </div>
+
+            <x-list-card>
+                @foreach ($this->waitingOnMeShown as $task)
+                    <a
+                        href="{{ route('task.show', ['short_name' => $task->project->short_name, 'task_number' => $task->task_number]) }}"
+                        wire:navigate
+                        wire:key="dashboard-waiting-{{ $task->id }}"
+                        class="flex flex-col gap-1.5 px-4 py-3 hover:bg-zinc-50 sm:flex-row sm:items-center sm:justify-between sm:gap-3 dark:hover:bg-zinc-800"
+                        data-test="dashboard-waiting-{{ $task->id }}"
+                    >
+                        <div class="flex min-w-0 flex-col gap-1.5">
+                            <div class="flex items-center gap-2">
+                                <flux:badge
+                                    size="sm"
+                                    color="indigo"
+                                    variant="pill"
+                                >{{ $task->project->short_name }}</flux:badge>
+                                <flux:text size="xs" class="font-mono text-zinc-400">{{ $task->reference }}</flux:text>
+                            </div>
+                            <span class="truncate text-sm">{{ $task->title }}</span>
+                        </div>
+
+                        <flux:text size="xs" class="shrink-0 text-zinc-500 dark:text-zinc-400">
+                            {{ __('Asked by :name', ['name' => $task->waitingBy?->name ?? __('Someone')]) }}
+                            @if ($task->waiting_since)
+                                · {{ $task->waiting_since->diffForHumans() }}
+                            @endif
+                        </flux:text>
+                    </a>
+                @endforeach
+            </x-list-card>
+        </div>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-3">
         {{-- My tasks (in progress first, then to-do) --}}
         <div class="lg:col-span-1">

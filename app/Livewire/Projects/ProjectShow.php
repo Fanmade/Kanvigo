@@ -68,6 +68,12 @@ class ProjectShow extends Component
      */
     public ?int $autoArchiveDays = null;
 
+    /**
+     * Days an unanswered "waiting on" request may sit before the awaited person
+     * is reminded, or null to inherit the system default.
+     */
+    public ?int $waitingNudgeDays = null;
+
     public bool $showArchived = false;
 
     /**
@@ -189,6 +195,17 @@ class ProjectShow extends Component
     public function defaultAutoArchiveDays(): int
     {
         return (int) config('kanvigo.tasks.auto_archive_days', 0);
+    }
+
+    /**
+     * The system-wide default number of days before an unanswered "waiting on"
+     * request is nudged, surfaced on the per-project field so a member can see
+     * what leaving it blank inherits (0 means reminders are off by default).
+     */
+    #[Computed]
+    public function defaultWaitingNudgeDays(): int
+    {
+        return (int) config('kanvigo.tasks.waiting_nudge_days', 0);
     }
 
     /**
@@ -397,6 +414,7 @@ class ProjectShow extends Component
         $this->short_name = $this->project->short_name;
         $this->description = (string) $this->project->description;
         $this->autoArchiveDays = $this->project->auto_archive_days;
+        $this->waitingNudgeDays = $this->project->waiting_nudge_days;
         $this->editing = true;
     }
 
@@ -413,6 +431,7 @@ class ProjectShow extends Component
             'short_name' => Project::shortNameRules($project->id),
             'description' => ['nullable', 'string'],
             'autoArchiveDays' => ['nullable', 'integer', 'min:0', 'max:3650'],
+            'waitingNudgeDays' => ['nullable', 'integer', 'min:0', 'max:3650'],
         ]);
 
         $shortNameChanged = $project->short_name !== $validated['short_name'];
@@ -422,6 +441,7 @@ class ProjectShow extends Component
             'short_name' => $validated['short_name'],
             'description' => $validated['description'],
             'auto_archive_days' => $validated['autoArchiveDays'],
+            'waiting_nudge_days' => $validated['waitingNudgeDays'],
         ]);
 
         $this->editing = false;

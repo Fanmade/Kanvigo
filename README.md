@@ -61,8 +61,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   Duplicate, Deprecated) instead of deleting it, or archive finished work. Both
   keep the full history and are reversible; Done tasks are auto-archived after a
   per-project threshold.
-- **Dashboard** — per-status counts, a 14-day completion chart, and a "My tasks"
-  list of your in-progress and to-do work plus unassigned to-do tasks.
+- **Dashboard** — the oldest requests waiting on you, per-status counts, a 14-day
+  completion chart, and a "My tasks" list of your in-progress and to-do work plus
+  unassigned to-do tasks.
 
 ### Writing & collaboration
 
@@ -128,6 +129,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   on you, and what you are waiting on others for. Each entry carries the full
   description and a quick reply, so most answers never need the task page; the
   sidebar badge counts what is waiting on you.
+- **Reminders for stale requests** — a request left unanswered past a per-project
+  threshold reminds the person it waits on, bundled into one notification per
+  project and repeated at that interval, and its badge turns red.
 - **Multi-assignee tasks** — for pairing and ensemble work, with a one-click
   "assign to me".
 

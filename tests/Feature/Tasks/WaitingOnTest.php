@@ -180,6 +180,48 @@ describe('the board card', function () {
             ->assertSee($this->other->name);
     });
 
+    it('marks the badge overdue once the wait passes the reminder threshold', function () {
+        config()->set('kanvigo.tasks.waiting_nudge_days', 7);
+
+        Auth::login($this->member);
+        app(SetWaitingOn::class)->handle($this->task, $this->other);
+        Auth::logout();
+
+        $this->task->forceFill(['waiting_since' => Carbon::now()->subDays(10)])->save();
+
+        expect($this->task->fresh()->isWaitOverdue())->toBeTrue();
+
+        Livewire::actingAs($this->member)
+            ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+            ->assertSeeHtml('data-overdue="true"');
+    });
+
+    it('leaves a young wait un-highlighted', function () {
+        config()->set('kanvigo.tasks.waiting_nudge_days', 7);
+
+        Auth::login($this->member);
+        app(SetWaitingOn::class)->handle($this->task, $this->other);
+        Auth::logout();
+
+        expect($this->task->fresh()->isWaitOverdue())->toBeFalse();
+
+        Livewire::actingAs($this->member)
+            ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+            ->assertDontSeeHtml('data-overdue="true"');
+    });
+
+    it('never marks a wait overdue when reminders are switched off', function () {
+        config()->set('kanvigo.tasks.waiting_nudge_days', 0);
+
+        Auth::login($this->member);
+        app(SetWaitingOn::class)->handle($this->task, $this->other);
+        Auth::logout();
+
+        $this->task->forceFill(['waiting_since' => Carbon::now()->subYear()])->save();
+
+        expect($this->task->fresh()->isWaitOverdue())->toBeFalse();
+    });
+
     it('renders no badge for a task nobody is waiting on', function () {
         Livewire::actingAs($this->member)
             ->test(ProjectBoard::class, ['short_name' => 'ABC'])

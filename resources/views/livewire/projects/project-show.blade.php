@@ -129,6 +129,15 @@
                 :placeholder="$this->defaultAutoArchiveDays"
                 data-test="project-auto-archive-days"
             />
+            <flux:input
+                type="number"
+                min="0"
+                wire:model="waitingNudgeDays"
+                :label="__('Remind about unanswered requests after (days)')"
+                :description="__('A task waiting on someone this many days reminds them, and repeats at that interval while it stays open. Leave blank to use the system default (:days days), or 0 to disable for this project.', ['days' => $this->defaultWaitingNudgeDays])"
+                :placeholder="$this->defaultWaitingNudgeDays"
+                data-test="project-waiting-nudge-days"
+            />
             <div class="flex gap-2">
                 <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
                 <flux:button variant="ghost" wire:click="$set('editing', false)">{{ __('Cancel') }}</flux:button>

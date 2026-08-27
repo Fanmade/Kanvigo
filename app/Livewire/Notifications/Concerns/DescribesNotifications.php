@@ -19,7 +19,7 @@ trait DescribesNotifications
         'mentions' => ['mentioned'],
         'comments' => ['commented', 'comment_deleted'],
         'progress' => ['created', 'status_changed', 'parent_changed'],
-        'assignments' => ['assignee_changed', 'waiting_on_changed'],
+        'assignments' => ['assignee_changed', 'waiting_on_changed', 'waiting_reminder'],
         'details' => ['priority_changed', 'type_changed', 'tags_changed'],
     ];
 
@@ -37,6 +37,7 @@ trait DescribesNotifications
             'type_changed' => __('changed the type of'),
             'assignee_changed' => __('updated the assignees of'),
             'waiting_on_changed' => __('changed who is awaited on'),
+            'waiting_reminder' => __('is still waiting for your answer on'),
             'tags_changed' => __('updated the tags of'),
             'parent_changed' => __('moved'),
             'commented' => __('commented on'),

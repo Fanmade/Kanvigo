@@ -4,9 +4,11 @@ namespace App\Livewire;
 
 use App\Concerns\ManagesNotes;
 use App\Enums\Status;
+use App\Enums\WaitingScope;
 use App\Models\Activity;
 use App\Models\Note;
 use App\Models\Task;
+use App\Queries\WaitingTasks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -15,6 +17,13 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+/**
+ * The `waitingOnMe` computed is read as a property (`$this->waitingOnMe`, never
+ * `$this->waitingOnMe()`) so Livewire memoizes the fetched rows for the request
+ * — the count and the listed slice both derive from that one result set.
+ *
+ * @property-read EloquentCollection<int, Task> $waitingOnMe
+ */
 #[Title('Dashboard')]
 class Dashboard extends Component
 {
@@ -29,6 +38,12 @@ class Dashboard extends Component
      * Maximum number of notes rendered in the Notes panel.
      */
     private const NOTES_LIMIT = 50;
+
+    /**
+     * How many "waiting on me" items the dashboard widget lists before it stops
+     * and points at the full page.
+     */
+    private const WAITING_LIMIT = 5;
 
     /**
      * The user's actionable tasks across their projects, in progress first then
@@ -60,6 +75,47 @@ class Dashboard extends Component
             ->select('tasks.*')
             ->limit(self::ACTIVE_TASKS_LIMIT)
             ->get();
+    }
+
+    /**
+     * The oldest tasks waiting on this user to answer, capped at
+     * {@see WAITING_LIMIT}. One row beyond the cap is fetched so the widget can
+     * tell whether more remain without asking the database a second time.
+     *
+     * @return EloquentCollection<int, Task>
+     */
+    #[Computed]
+    public function waitingOnMe(): EloquentCollection
+    {
+        return app(WaitingTasks::class)->handle(Auth::user(), WaitingScope::OnMe)
+            ->limit(self::WAITING_LIMIT + 1)
+            ->get();
+    }
+
+    /**
+     * How many tasks are waiting on this user in total. Derived from the rows
+     * already fetched whenever they fit under the cap — only a list that ran off
+     * the end needs counting.
+     */
+    #[Computed]
+    public function waitingOnMeCount(): int
+    {
+        $fetched = $this->waitingOnMe;
+
+        return $fetched->count() <= self::WAITING_LIMIT
+            ? $fetched->count()
+            : app(WaitingTasks::class)->handle(Auth::user(), WaitingScope::OnMe)->count();
+    }
+
+    /**
+     * The listed slice — the fetched rows minus the extra look-ahead row.
+     *
+     * @return EloquentCollection<int, Task>
+     */
+    #[Computed]
+    public function waitingOnMeShown(): EloquentCollection
+    {
+        return $this->waitingOnMe->take(self::WAITING_LIMIT);
     }
 
     /**

@@ -29,10 +29,11 @@ use Illuminate\Validation\Rule;
  * @property string $short_name
  * @property string|null $description
  * @property int|null $auto_archive_days
+ * @property int|null $waiting_nudge_days
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['title', 'short_name', 'description', 'auto_archive_days'])]
+#[Fillable(['title', 'short_name', 'description', 'auto_archive_days', 'waiting_nudge_days'])]
 class Project extends Model implements Mentionable, Subscribable, UsesVariables
 {
     /** @use HasFactory<ProjectFactory> */
@@ -126,6 +127,7 @@ class Project extends Model implements Mentionable, Subscribable, UsesVariables
     {
         return [
             'auto_archive_days' => 'integer',
+            'waiting_nudge_days' => 'integer',
         ];
     }
 
@@ -137,6 +139,19 @@ class Project extends Model implements Mentionable, Subscribable, UsesVariables
     public function autoArchiveThresholdDays(): ?int
     {
         $days = $this->auto_archive_days ?? (int) config('kanvigo.tasks.auto_archive_days', 0);
+
+        return $days > 0 ? $days : null;
+    }
+
+    /**
+     * The effective number of days an unanswered "waiting on" request may sit in
+     * this project before the awaited person is reminded — and the interval the
+     * reminder repeats at — or null when reminders are off. A per-project value
+     * overrides the global default; an explicit 0 disables it here.
+     */
+    public function waitingNudgeThresholdDays(): ?int
+    {
+        $days = $this->waiting_nudge_days ?? (int) config('kanvigo.tasks.waiting_nudge_days', 0);
 
         return $days > 0 ? $days : null;
     }

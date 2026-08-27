@@ -19,6 +19,7 @@ use App\Concerns\Nestable;
 use App\Concerns\PrunesInlineAttachments;
 use App\Concerns\SanitizesRichText;
 use App\Concerns\SyncsInlineReferences;
+use App\Console\Commands\NudgeWaitingRequests;
 use App\Contracts\Dependable;
 use App\Contracts\Mentionable;
 use App\Contracts\Referenceable;
@@ -60,6 +61,7 @@ use Illuminate\Support\Collection;
  * @property int|null $waiting_on_user_id
  * @property Carbon|null $waiting_since
  * @property int|null $waiting_by_user_id
+ * @property Carbon|null $waiting_nudged_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
@@ -157,6 +159,7 @@ class Task extends Model implements Dependable, Mentionable, Referenceable, Subs
             'completed_at' => 'datetime',
             'canceled_at' => 'datetime',
             'waiting_since' => 'datetime',
+            'waiting_nudged_at' => 'datetime',
             'cancel_reason' => CancelReason::class,
         ];
     }
@@ -241,6 +244,19 @@ class Task extends Model implements Dependable, Mentionable, Referenceable, Subs
         $since = $this->waiting_since;
 
         return $since === null ? null : (int) $since->diffInDays(Carbon::now());
+    }
+
+    /**
+     * Whether the wait has run past the point where its project starts reminding
+     * the awaited person — the threshold that colours the badge and drives
+     * {@see NudgeWaitingRequests}. False when the task is
+     * not waiting, or when the project has reminders switched off.
+     */
+    public function isWaitOverdue(): bool
+    {
+        $days = $this->waiting_since === null ? null : $this->project->waitingNudgeThresholdDays();
+
+        return $days !== null && $this->waiting_since->lte(Carbon::now()->subDays($days));
     }
 
     /**

@@ -74,12 +74,14 @@ Kanvigo needs two background processes.
 | `backup:clean` | 01:00 | Applies backup retention |
 | `backup:run` | 01:30 | Takes the backup |
 | `tasks:auto-archive` | daily | Archives Done tasks past the threshold |
+| `tasks:nudge-waiting` | daily | Reminds people about unanswered "waiting on" requests |
 | `attachments:prune-inline` | daily | Removes orphaned inline uploads |
 | `audit:outbox:prune` | daily | Deletes dispatched audit rows past retention |
 | `activity:prune` | daily | Deletes activity-feed entries past retention (off by default) |
 | `model:prune` (notifications) | daily | Deletes dismissed and read notifications past retention |
 
-Without it: no backups, nothing auto-archives, orphaned attachments accumulate,
+Without it: no backups, nothing auto-archives, nobody is reminded about stale
+input requests, orphaned attachments accumulate,
 and queued audit sinks never receive anything. The default audit sink is
 synchronous, so the in-app activity feed keeps working regardless.
 
@@ -117,6 +119,7 @@ uncomment what you need to change.
 | --- | --- | --- |
 | `KANVIGO_TASK_MAX_DEPTH` | 3 | How deep subtasks may nest |
 | `KANVIGO_AUTO_ARCHIVE_DAYS` | 30 | Days a Done task waits before archiving; projects may override, `0` disables |
+| `KANVIGO_WAITING_NUDGE_DAYS` | 7 | Days an unanswered "waiting on" request waits before reminding, and the repeat interval; projects may override, `0` disables |
 | `KANVIGO_LIVE_UPDATES_INTERVAL` | 15 | Seconds between board refreshes (polling — there is no websocket setup) |
 | `KANVIGO_EXPORT_IMAGE_MAX_EDGE` | 1024 | Longest edge for images inlined into an export |
 | `KANVIGO_EXPORT_INLINE_BUDGET` | 5 MiB | Past this, export images degrade to links |

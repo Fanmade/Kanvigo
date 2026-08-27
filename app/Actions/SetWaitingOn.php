@@ -39,6 +39,8 @@ class SetWaitingOn
         $task->waiting_on_user_id = $user?->getKey();
         $task->waiting_since = $user === null ? null : Carbon::now();
         $task->waiting_by_user_id = $user === null || $actorId === null ? null : (int) $actorId;
+        // A fresh wait has never been nudged, whoever it is now on.
+        $task->waiting_nudged_at = null;
         $task->save();
         $task->setRelation('waitingOn', $user);
         $task->unsetRelation('waitingBy');

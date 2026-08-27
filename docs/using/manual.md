@@ -24,10 +24,11 @@ The sidebar carries the pages that are not tied to one project:
 
 | Page | What it is for |
 | --- | --- |
-| **Dashboard** | Your own status: counts per status, a "My tasks" list, your recent completions and your notes |
+| **Dashboard** | Your own status: what is waiting on you, counts per status, a "My tasks" list, your recent completions and your notes |
 | **Projects** | Every project you can see; where new ones are created |
 | **Board** | One Kanban board across all your projects |
 | **Notes** | Your personal notes |
+| **Waiting on** | What other people need from you, and what you are waiting on them for |
 | **Activity** | Everything that happened across your projects |
 | **Notifications** | What was addressed to you |
 
@@ -101,6 +102,9 @@ sidebar, and each needs the matching permission:
 - **Members** — add and remove people, and give each of them one or more roles.
 - **Auto-archive** — how many days a task stays in Done before it is archived off
   the board. Blank uses the instance default, `0` switches it off.
+- **Waiting reminders** — how many days an unanswered "waiting on" request waits
+  before the awaited person is reminded, and how often the reminder repeats while
+  it stays open. Blank uses the instance default, `0` switches it off.
 
 ## The board
 
@@ -148,6 +152,15 @@ on** them from the rail. The board card then shows who is awaited and for how
 long, they are subscribed to the task and notified, and the wait clears itself
 the moment they comment on it. A task waits on one person at a time; "Not
 waiting" clears it by hand.
+
+A request that goes unanswered long enough reminds the person it is waiting on —
+once per interval, with all of that project's open requests for them bundled into
+a single notification — and its badge turns red so the delay is visible on the
+board. The project's **Waiting reminders** setting decides after how long.
+
+The dashboard opens with the oldest handful of requests waiting on you — project,
+task, who asked and how long — so the first thing you see is what somebody else is
+blocked on. It disappears once you have answered everything.
 
 The **Waiting on** page in the sidebar collects all of it across projects, in two
 tabs: *Waiting on me* — what other people need from you, oldest wait first — and

@@ -23,6 +23,14 @@ return [
          * "auto_archive_days"); 0 disables auto-archiving.
          */
         'auto_archive_days' => (int) env('KANVIGO_AUTO_ARCHIVE_DAYS', 30),
+
+        /*
+         * Default number of days a "waiting on" request may stay unanswered
+         * before the awaited person is reminded, and the interval at which the
+         * reminder repeats while it stays open. Projects may override this
+         * (their "waiting_nudge_days"); 0 disables reminders.
+         */
+        'waiting_nudge_days' => (int) env('KANVIGO_WAITING_NUDGE_DAYS', 7),
     ],
 
     /*
