@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\SetWaitingOn;
+use App\Enums\DeliveryMode;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
@@ -75,6 +76,26 @@ it('renders the waiting reminder mail, listing every request', function () {
     expect($reminder)->not->toBeNull()
         ->and($reminder)->toContain($this->task->reference)
         ->and($reminder)->toContain($second->reference);
+});
+
+it('renders the digest mail, listing every unread update', function () {
+    $this->recipient->setPreference(User::EMAIL_MODE_PREFERENCE_KEY, DeliveryMode::Daily->value);
+    $this->task->subscribe($this->recipient);
+
+    Auth::login($this->actor);
+    $this->task->update(['priority' => Priority::High]);
+    $this->task->update(['priority' => Priority::Highest]);
+    Auth::logout();
+
+    Mail::mailer()->getSymfonyTransport()->flush();
+
+    $this->artisan('notifications:send-digests')->assertSuccessful();
+
+    $digest = collect(sentMailBodies())
+        ->first(static fn (string $body): bool => str_contains($body, 'Pick a colour'));
+
+    expect($digest)->not->toBeNull()
+        ->and($digest)->toContain($this->task->reference);
 });
 
 it('sends nothing at all to someone who has not opted in', function () {

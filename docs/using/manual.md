@@ -269,6 +269,11 @@ Two pages that sound alike and are not:
   both — the in-app notifications are unaffected either way, since the way to
   quieten those is to stop following the item. Mail is only ever sent to a
   confirmed address, and mentions are in-app only for now.
+
+  Choose **as it happens** for one mail per update, or a **daily** or **weekly**
+  digest that collects everything you have not read into a single mail. A digest
+  that would be empty is not sent, and anything you have already read in the app
+  is left out of it.
 - **Activity** is everything that happened across your projects, newest first and
   grouped by day. It is not addressed at you — it answers "what did I miss?".
   Filter by person, project, type and period; your own activity is left out

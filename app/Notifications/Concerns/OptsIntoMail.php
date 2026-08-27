@@ -2,6 +2,7 @@
 
 namespace App\Notifications\Concerns;
 
+use App\Enums\DeliveryMode;
 use App\Models\User;
 
 /**
@@ -41,7 +42,8 @@ trait OptsIntoMail
     /**
      * Whether this recipient has asked to be e-mailed and can be.
      *
-     * The master switch decides first; a notification then also has to survive
+     * The master switch decides first, then the delivery mode — a digest
+     * subscriber is mailed by the digest command, not from here — and finally
      * the per-level narrowing ({@see mailLevelKey()}), which lets someone follow
      * their own tasks by mail without hearing about every project-level change.
      */
@@ -50,6 +52,12 @@ trait OptsIntoMail
         if (! $notifiable instanceof User
             || $notifiable->email_verified_at === null
             || ! $notifiable->preference(User::EMAIL_PREFERENCE_KEY, false)) {
+            return false;
+        }
+
+        // A digest subscriber gets nothing as it happens — the scheduled digest
+        // is their whole delivery.
+        if ($notifiable->deliveryMode() !== DeliveryMode::Immediate) {
             return false;
         }
 

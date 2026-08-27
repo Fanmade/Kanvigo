@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Authorization\AccountPermissionProvisioner;
+use App\Enums\DeliveryMode;
 use App\Enums\Permission;
 use App\Enums\WaitingScope;
 use App\Notifications\Concerns\OptsIntoMail;
@@ -47,6 +48,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $email_verified_at
  * @property Carbon|null $deactivated_at
  * @property Carbon|null $activities_seen_at
+ * @property Carbon|null $digest_sent_at
  * @property Carbon|null $deleted_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -144,6 +146,7 @@ class User extends Authenticatable implements HasLocalePreference, PasskeyUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'digest_sent_at' => 'datetime',
             'deactivated_at' => 'datetime',
             'activities_seen_at' => 'datetime',
             'password' => 'hashed',
@@ -229,9 +232,23 @@ class User extends Authenticatable implements HasLocalePreference, PasskeyUser
      * change. Both default to true and only apply once
      * {@see EMAIL_PREFERENCE_KEY} is on.
      */
+    public const string EMAIL_MODE_PREFERENCE_KEY = 'notifications.email_mode';
+
     public const string EMAIL_PROJECTS_PREFERENCE_KEY = 'notifications.email_projects';
 
     public const string EMAIL_TASKS_PREFERENCE_KEY = 'notifications.email_tasks';
+
+    /**
+     * How this user wants e-mail delivered: as it happens, or collected into a
+     * digest. Defaults to immediate, and means nothing while the master e-mail
+     * switch is off.
+     */
+    public function deliveryMode(): DeliveryMode
+    {
+        $stored = $this->preference(self::EMAIL_MODE_PREFERENCE_KEY);
+
+        return DeliveryMode::tryFrom(is_string($stored) ? $stored : '') ?? DeliveryMode::default();
+    }
 
     /**
      * The language this user has chosen for the interface, or null to follow the

@@ -16,13 +16,30 @@
         </flux:description>
     </flux:field>
 
-    {{-- The per-level switches only mean anything once e-mail is on; they stay
+    {{-- The interval and the per-level switches only mean anything once e-mail is
+         on; they stay
          visible while it is off so the shape of the setting is obvious, but read
          as inactive. --}}
     <div
         @class(['flex flex-col gap-4 ps-2', 'pointer-events-none opacity-50' => ! $email])
         @if ($email) data-test="delivery-levels-active" @endif
     >
+        <flux:field>
+            <flux:label>{{ __('How often') }}</flux:label>
+            <flux:radio.group wire:model.live="mode" variant="segmented" data-test="delivery-mode">
+                @foreach ($this->modes() as $mode)
+                    <flux:radio
+                        :value="$mode->value"
+                        :disabled="! $email"
+                        data-test="delivery-mode-{{ $mode->value }}"
+                    >{{ $mode->label() }}</flux:radio>
+                @endforeach
+            </flux:radio.group>
+            <flux:description>
+                {{ __('A digest collects what you have not read yet into a single mail instead of sending one per update.') }}
+            </flux:description>
+        </flux:field>
+
         <flux:field variant="inline">
             <flux:switch wire:model.live="emailTasks" :disabled="! $email" data-test="email-tasks-toggle" />
             <flux:label>{{ __('Tasks') }}</flux:label>

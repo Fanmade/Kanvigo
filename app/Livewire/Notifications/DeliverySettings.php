@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Notifications;
 
+use App\Enums\DeliveryMode;
 use App\Models\User;
 use App\Notifications\Concerns\OptsIntoMail;
 use Flux\Flux;
@@ -26,6 +27,12 @@ class DeliverySettings extends Component
     public bool $email = false;
 
     /**
+     * How e-mail is delivered — as it happens, or collected into a digest. A
+     * {@see DeliveryMode} value; meaningful only while {@see $email} is on.
+     */
+    public string $mode = 'immediate';
+
+    /**
      * Per-level opt-in, meaningful only while {@see $email} is on. Both default
      * on so switching e-mail on delivers everything the user follows, and each
      * can then be turned off to narrow it.
@@ -39,6 +46,7 @@ class DeliverySettings extends Component
         $user = Auth::user();
 
         $this->email = (bool) $user->preference(User::EMAIL_PREFERENCE_KEY, false);
+        $this->mode = $user->deliveryMode()->value;
         $this->emailProjects = (bool) $user->preference(User::EMAIL_PROJECTS_PREFERENCE_KEY, true);
         $this->emailTasks = (bool) $user->preference(User::EMAIL_TASKS_PREFERENCE_KEY, true);
     }
@@ -46,6 +54,35 @@ class DeliverySettings extends Component
     public function updatedEmail(bool $value): void
     {
         $this->persist(User::EMAIL_PREFERENCE_KEY, $value);
+    }
+
+    /**
+     * The delivery mode is validated against the enum rather than trusted: the
+     * radio is user-writable state like any other Livewire property.
+     */
+    public function updatedMode(string $value): void
+    {
+        $mode = DeliveryMode::tryFrom($value);
+
+        if ($mode === null) {
+            $this->mode = Auth::user()->deliveryMode()->value;
+
+            return;
+        }
+
+        Auth::user()->setPreference(User::EMAIL_MODE_PREFERENCE_KEY, $mode->value);
+
+        Flux::toast(text: __('Notification settings saved.'), variant: 'success');
+    }
+
+    /**
+     * The delivery modes offered by the radio.
+     *
+     * @return array<int, DeliveryMode>
+     */
+    public function modes(): array
+    {
+        return DeliveryMode::cases();
     }
 
     public function updatedEmailProjects(bool $value): void

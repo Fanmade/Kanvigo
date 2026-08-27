@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\DeliveryMode;
 use App\Livewire\Notifications\DeliverySettings;
 use App\Models\Activity;
 use App\Models\Project;
@@ -62,6 +63,27 @@ describe('the screen', function () {
 
         expect($this->user->fresh()->preference(User::EMAIL_PROJECTS_PREFERENCE_KEY))->toBeFalse()
             ->and($this->user->fresh()->preference(User::EMAIL_TASKS_PREFERENCE_KEY, true))->toBeTrue();
+    });
+
+    it('persists the delivery mode', function () {
+        Livewire::actingAs($this->user)
+            ->test(DeliverySettings::class)
+            ->assertSet('mode', DeliveryMode::Immediate->value)
+            ->set('email', true)
+            ->set('mode', DeliveryMode::Weekly->value);
+
+        expect($this->user->fresh()->deliveryMode())->toBe(DeliveryMode::Weekly);
+    });
+
+    it('rejects a delivery mode that is not a real one', function () {
+        $this->user->setPreference(User::EMAIL_MODE_PREFERENCE_KEY, DeliveryMode::Daily->value);
+
+        Livewire::actingAs($this->user->fresh())
+            ->test(DeliverySettings::class)
+            ->set('mode', 'hourly')
+            ->assertSet('mode', DeliveryMode::Daily->value);
+
+        expect($this->user->fresh()->deliveryMode())->toBe(DeliveryMode::Daily);
     });
 
     it('warns when the address is not confirmed', function () {

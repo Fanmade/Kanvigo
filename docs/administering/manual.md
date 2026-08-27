@@ -75,6 +75,7 @@ Kanvigo needs two background processes.
 | `backup:run` | 01:30 | Takes the backup |
 | `tasks:auto-archive` | daily | Archives Done tasks past the threshold |
 | `tasks:nudge-waiting` | daily | Reminds people about unanswered "waiting on" requests |
+| `notifications:send-digests` | daily | E-mails catch-up digests to users who asked for one |
 | `attachments:prune-inline` | daily | Removes orphaned inline uploads |
 | `audit:outbox:prune` | daily | Deletes dispatched audit rows past retention |
 | `activity:prune` | daily | Deletes activity-feed entries past retention (off by default) |
@@ -113,7 +114,10 @@ without it they sit in the queue and the in-app notification is all anyone sees.
 Mail is never sent to an address that has not been verified.
 
 Users switch it on for themselves under **Notifications → Delivery**, where they
-can also narrow it to tasks or projects. **Mentions are still in-app only** —
+also choose between mail as it happens and a daily or weekly digest, and can
+narrow it to tasks or projects. Digests are assembled by the scheduled
+`notifications:send-digests` command, so they need both the scheduler and the
+queue worker; a weekly subscriber is skipped until seven days have passed. **Mentions are still in-app only** —
 nothing turns those into mail yet.
 
 ## Settings worth knowing
