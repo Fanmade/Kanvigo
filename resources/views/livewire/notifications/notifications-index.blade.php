@@ -12,11 +12,7 @@
                 icon="bell"
                 data-test="tab-subscriptions"
             >{{ __('Subscriptions') }}</flux:tab>
-            <flux:tab
-                name="delivery"
-                icon="envelope"
-                data-test="tab-delivery"
-            >{{ __('Delivery') }}</flux:tab>
+            <flux:tab name="delivery" icon="envelope" data-test="tab-delivery">{{ __('Delivery') }}</flux:tab>
         </flux:tabs>
 
         <flux:tab.panel name="inbox">
