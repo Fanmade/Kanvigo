@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Permission;
+use App\Livewire\Activity\GlobalActivityFeed;
 use App\Livewire\Admin\UserManagement;
 use App\Models\Project;
 use App\Models\Task;
@@ -168,6 +169,32 @@ it('marks everything recorded during the window with the administrator behind it
 
     expect($created['metadata']['impersonator_id'])->toBe($administrator->id)
         ->and($created['tags'])->toContain('impersonated');
+});
+
+it('does not consume the impersonated account\'s unread activity', function () {
+    $administrator = User::factory()->canImpersonateUsers()->create();
+    $target = User::factory()->create();
+    $target->forceFill(['activities_seen_at' => now()->subWeek()])->save();
+
+    $before = $target->fresh()->activities_seen_at;
+
+    actingAs($administrator)->post(route('impersonation.store', $target));
+
+    Livewire::test(GlobalActivityFeed::class);
+
+    expect($target->fresh()->activities_seen_at->eq($before))->toBeTrue();
+});
+
+it('still marks the feed seen for a reader who is not being impersonated', function () {
+    $reader = User::factory()->create();
+    $reader->forceFill(['activities_seen_at' => now()->subWeek()])->save();
+
+    $before = $reader->fresh()->activities_seen_at;
+
+    actingAs($reader);
+    Livewire::test(GlobalActivityFeed::class);
+
+    expect($reader->fresh()->activities_seen_at->gt($before))->toBeTrue();
 });
 
 it('shows the banner and the account-menu exit only while impersonating', function () {

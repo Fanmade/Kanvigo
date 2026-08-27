@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Variable;
 use App\Support\ActivityDescriber;
+use App\Support\Impersonation;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -104,7 +105,15 @@ class GlobalActivityFeed extends Component
 
     public function mount(): void
     {
-        $this->seenAt = Auth::user()->markActivitiesSeen()?->toIso8601String();
+        $user = Auth::user();
+
+        // Looking at somebody else's session must not consume their unread
+        // activity: an administrator opening this page would otherwise clear the
+        // reader's "new since your last visit" line and their sidebar badge, for
+        // them, permanently. Read the mark instead of moving it (KAN-578).
+        $this->seenAt = Impersonation::isImpersonating()
+            ? $user->activities_seen_at?->toIso8601String()
+            : $user->markActivitiesSeen()?->toIso8601String();
     }
 
     /**
