@@ -65,7 +65,7 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `POST`   | `/projects/{short_name}/tasks`                        | write   | Create a task. |
 | `GET`    | `/tasks/{reference}`                                  | read    | A single task with its description, assignees, dependencies, links, subtasks and attachments. |
 | `GET`    | `/tasks/{reference}/export`                           | read    | The task as a document — Markdown, an HTML page, or a ZIP. Needs `export-content`. |
-| `PATCH`  | `/tasks/{reference}`                                  | write   | Update a task's fields, status, type or tags. |
+| `PATCH`  | `/tasks/{reference}`                                  | write   | Update a task's fields, status, type, tags or `waiting_on` (a member's stable user id, `null` to stop waiting). |
 | `POST`   | `/tasks/{reference}/cancel`                           | write   | Cancel a task (`cancel_reason` + optional `cancel_message`). |
 | `POST`   | `/tasks/{reference}/reopen`                           | write   | Reopen a canceled task. |
 | `PUT`    | `/tasks/{reference}/assignees`                        | write   | Replace a task's assignees (`assignee_ids`: the stable user ids from the task's `assignees`). |

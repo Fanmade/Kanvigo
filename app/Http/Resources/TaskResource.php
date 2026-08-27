@@ -33,6 +33,11 @@ class TaskResource extends JsonResource
             'cancel_reason' => $this->cancel_reason?->name,
             'tags' => $this->tags->pluck('name')->values()->all(),
             'is_blocked' => $this->isBlocked(),
+            'waiting_on' => $this->waitingOn === null ? null : [
+                'id' => $this->waitingOn->public_id,
+                'name' => $this->waitingOn->name,
+                'since' => $this->waiting_since?->toIso8601String(),
+            ],
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

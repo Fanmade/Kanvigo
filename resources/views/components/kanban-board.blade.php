@@ -174,6 +174,7 @@
                                     </flux:badge>
                                 </flux:tooltip>
                             @endif
+                            <x-waiting-on-badge :task="$task" />
                             <x-task-type-badge :type="$task->taskType" />
                             <x-priority-badge :priority="$task->priority" />
                             <x-due-date-badge :date="$task->due_date" />

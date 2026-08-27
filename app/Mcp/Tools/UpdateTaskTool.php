@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
+use App\Actions\SetWaitingOn;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -21,7 +22,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Updates a task\'s title, description, priority, status and/or tags, identified by its reference (e.g. "PROJ-42"). Can also cancel the task with a reason (cancel_reason, optionally cancel_message) — which cancels its open subtasks too — or reopen a canceled task (reopen=true). All changes are recorded in the audit trail. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Updates a task\'s title, description, priority, status, tags and/or the member it is waiting on, identified by its reference (e.g. "PROJ-42"). Can also cancel the task with a reason (cancel_reason, optionally cancel_message) — which cancels its open subtasks too — or reopen a canceled task (reopen=true). All changes are recorded in the audit trail. Requires a write-access token; the user must be a member of the project.')]
 class UpdateTaskTool extends Tool
 {
     use NormalizesPlainText;
@@ -52,6 +53,7 @@ class UpdateTaskTool extends Tool
             'reopen' => ['nullable', 'boolean'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
+            'waiting_on' => ['nullable', 'string'],
         ], [
             'reference.required' => 'You must provide the task reference (e.g. "PROJ-42").',
             'priority' => 'The priority must be one of: '.implode(', ', Priority::names()).'.',
@@ -90,6 +92,7 @@ class UpdateTaskTool extends Tool
         $messageProvided = $request->has('cancel_message') && isset($validated['cancel_message']);
         $tagsProvided = $request->has('tags');
         $typeProvided = $request->has('type');
+        $waitingOnProvided = $request->has('waiting_on');
 
         if ($typeProvided) {
             $type = $this->resolveTaskType($task->project, $validated['type'] ?? null);
@@ -108,8 +111,20 @@ class UpdateTaskTool extends Tool
             return Response::error('cancel_message can only be used together with cancel_reason.');
         }
 
-        if ($updates === [] && ! $statusProvided && ! $cancelProvided && ! $reopenRequested && ! $tagsProvided && ! $typeProvided) {
-            return Response::error('Provide a title, description, priority, due date, status, type, tags, a cancel_reason or reopen to update.');
+        if ($updates === [] && ! $statusProvided && ! $cancelProvided && ! $reopenRequested && ! $tagsProvided && ! $typeProvided && ! $waitingOnProvided) {
+            return Response::error('Provide a title, description, priority, due date, status, type, tags, waiting_on, a cancel_reason or reopen to update.');
+        }
+
+        $awaited = null;
+
+        if ($waitingOnProvided && isset($validated['waiting_on'])) {
+            $awaited = $task->project->members()
+                ->where('users.public_id', $validated['waiting_on'])
+                ->first();
+
+            if ($awaited === null) {
+                return Response::error('No member of project "'.$task->project->short_name.'" has the user id "'.$validated['waiting_on'].'". Only project members can be awaited; pass null to stop waiting.');
+            }
         }
 
         if ($statusProvided && $task->isCanceled()) {
@@ -155,6 +170,10 @@ class UpdateTaskTool extends Tool
 
         if ($tagsProvided) {
             $task->recordTagSync($task->syncTags($validated['tags'] ?? []));
+        }
+
+        if ($waitingOnProvided) {
+            app(SetWaitingOn::class)->handle($task, $awaited);
         }
 
         $task->refresh();
@@ -211,6 +230,9 @@ class UpdateTaskTool extends Tool
             'tags' => $schema->array()
                 ->items($schema->string())
                 ->description('The complete set of tags for the task, as an array of tag names (e.g. ["UI/UX", "bug"]). Replaces the existing tags; pass [] to clear them. Tags that do not exist yet are created.'),
+
+            'waiting_on' => $schema->string()
+                ->description('Mark the task as waiting on a project member, by their stable user id (the "id" from get-task assignees or get-user). Pass null to stop waiting. The awaited member is subscribed to the task, and their next comment on it clears the wait automatically.'),
         ];
     }
 

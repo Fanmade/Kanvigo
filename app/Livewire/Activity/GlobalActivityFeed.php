@@ -51,7 +51,7 @@ class GlobalActivityFeed extends Component
     public const array ACTION_CATEGORIES = [
         'comments' => ['commented', 'comment_deleted'],
         'progress' => ['created', 'status_changed', 'parent_changed', 'archived', 'unarchived', 'canceled', 'reopened'],
-        'assignments' => ['assignee_changed'],
+        'assignments' => ['assignee_changed', 'waiting_on_changed'],
         'details' => ['priority_changed', 'type_changed', 'tags_changed', 'dependency_changed'],
         'attachments' => ['attachment_added', 'attachment_removed'],
         'tags' => ['tag_renamed', 'tag_recolored', 'tag_deleted', 'tag_merged'],

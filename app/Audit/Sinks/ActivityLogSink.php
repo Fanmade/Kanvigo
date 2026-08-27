@@ -39,6 +39,7 @@ class ActivityLogSink implements AuditSink
         'type_changed',
         'parent_changed',
         'assignee_changed',
+        'waiting_on_changed',
         'tags_changed',
         'dependency_changed',
         'commented',

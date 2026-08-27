@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\SetWaitingOn;
 use App\Concerns\HasMentions;
 use App\Concerns\HasSubscribers;
 use App\Concerns\IndexesVariableUsages;
@@ -48,8 +49,18 @@ class Comment extends Model implements Mentionable, UsesVariables
     protected static function booted(): void
     {
         static::created(static function (Comment $comment): void {
-            if ($comment->user_id !== null) {
-                $comment->inlineAttachmentOwner()->autoSubscribe([$comment->user_id]);
+            if ($comment->user_id === null) {
+                return;
+            }
+
+            $commentable = $comment->inlineAttachmentOwner();
+            $commentable->autoSubscribe([$comment->user_id]);
+
+            // Replying is the answer the task was waiting for, so the wait ends
+            // itself. Hooked here (rather than in each comment path) so the UI,
+            // the REST API and MCP all behave the same.
+            if ($commentable instanceof Task && $commentable->waiting_on_user_id === $comment->user_id) {
+                app(SetWaitingOn::class)->handle($commentable, null);
             }
         });
     }

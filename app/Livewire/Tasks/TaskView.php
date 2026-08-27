@@ -4,6 +4,7 @@ namespace App\Livewire\Tasks;
 
 use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
+use App\Actions\SetWaitingOn;
 use App\Concerns\ExportsContent;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\HasLiveUpdates;
@@ -135,7 +136,7 @@ class TaskView extends Component
 
         $task = Task::query()
             ->with([
-                'assignees', 'tags', 'taskType', 'project', 'parent', 'ancestors', 'children', 'descendants',
+                'assignees', 'waitingOn', 'tags', 'taskType', 'project', 'parent', 'ancestors', 'children', 'descendants',
                 ...Task::referenceItemsEagerLoad(),
             ])
             ->where('project_id', $project->id)
@@ -669,6 +670,44 @@ class TaskView extends Component
         $task->recordAssigneeChange($changes['attached'], $changes['detached']);
 
         unset($this->task);
+    }
+
+    /**
+     * Mark the task as waiting on a project member — someone whose reply or
+     * decision the work needs. Only members are valid targets, so a tampered id
+     * is simply ignored.
+     */
+    public function setWaitingOn(int $userId): void
+    {
+        $task = $this->task;
+        $this->authorize('update', $task);
+
+        $member = $task->project->members()->whereKey($userId)->first();
+
+        if ($member === null) {
+            return;
+        }
+
+        app(SetWaitingOn::class)->handle($task, $member);
+
+        unset($this->task);
+        Flux::toast(text: __('Waiting on :name.', ['name' => $member->name]), variant: 'success');
+    }
+
+    /**
+     * Stop waiting: clear the awaited member and the stamp.
+     */
+    public function clearWaitingOn(): void
+    {
+        $task = $this->task;
+        $this->authorize('update', $task);
+
+        if (! app(SetWaitingOn::class)->handle($task, null)) {
+            return;
+        }
+
+        unset($this->task);
+        Flux::toast(text: __('No longer waiting.'), variant: 'success');
     }
 
     /**

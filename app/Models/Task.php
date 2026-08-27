@@ -57,12 +57,15 @@ use Illuminate\Support\Collection;
  * @property Carbon|null $canceled_at
  * @property CancelReason|null $cancel_reason
  * @property string|null $cancel_message
+ * @property int|null $waiting_on_user_id
+ * @property Carbon|null $waiting_since
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
  * @property-read Project $project
  * @property-read TaskType|null $taskType
  * @property-read Task|null $parent
+ * @property-read User|null $waitingOn
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Task> $children
  */
 #[Fillable(['title', 'description', 'priority', 'due_date'])]
@@ -151,6 +154,7 @@ class Task extends Model implements Dependable, Mentionable, Referenceable, Subs
             'archived_at' => 'datetime',
             'completed_at' => 'datetime',
             'canceled_at' => 'datetime',
+            'waiting_since' => 'datetime',
             'cancel_reason' => CancelReason::class,
         ];
     }
@@ -192,6 +196,37 @@ class Task extends Model implements Dependable, Mentionable, Referenceable, Subs
     public function taskType(): BelongsTo
     {
         return $this->belongsTo(TaskType::class);
+    }
+
+    /**
+     * The single project member this task is waiting on — someone whose input,
+     * decision or reply the work needs before it can go on. Null when the task
+     * is not waiting on anybody.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function waitingOn(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'waiting_on_user_id');
+    }
+
+    /**
+     * Whether the task is currently waiting on somebody.
+     */
+    public function isWaiting(): bool
+    {
+        return $this->waiting_on_user_id !== null;
+    }
+
+    /**
+     * How many whole days the task has been waiting, or null when no wait has
+     * been stamped.
+     */
+    public function waitingDays(): ?int
+    {
+        $since = $this->waiting_since;
+
+        return $since === null ? null : (int) $since->diffInDays(Carbon::now());
     }
 
     /**

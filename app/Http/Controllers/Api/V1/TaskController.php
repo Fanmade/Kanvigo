@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
 use App\Actions\CreateTask;
+use App\Actions\SetWaitingOn;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -15,6 +16,7 @@ use App\Http\Resources\TaskResource;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskType;
+use App\Models\User;
 use App\Support\ReferenceResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,7 +36,7 @@ class TaskController extends Controller
      *
      * @var list<string>
      */
-    private const RESOURCE_RELATIONS = ['tags', 'project', 'parent', 'taskType', 'dependencyLinks.blocker'];
+    private const RESOURCE_RELATIONS = ['tags', 'project', 'parent', 'taskType', 'waitingOn', 'dependencyLinks.blocker'];
 
     /**
      * List a project's tasks, paginated, optionally filtered by status and/or
@@ -63,7 +65,7 @@ class TaskController extends Controller
         }
 
         $tasks = $project->tasks()
-            ->with(['tags', 'project', 'taskType', 'dependencyLinks.blocker'])
+            ->with(['tags', 'project', 'taskType', 'waitingOn', 'dependencyLinks.blocker'])
             ->when(isset($validated['status']), fn ($query) => $query->where('status', Status::from($validated['status'])))
             ->when($parentId !== null, fn ($query) => $query->where('parent_id', $parentId))
             ->orderBy('task_number')
@@ -156,6 +158,7 @@ class TaskController extends Controller
             'type' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
+            'waiting_on' => ['nullable', 'string'],
         ]);
 
         if ($task->isCanceled() && $request->has('status')) {
@@ -201,6 +204,10 @@ class TaskController extends Controller
 
         if ($request->has('tags')) {
             $task->recordTagSync($task->syncTags($validated['tags'] ?? []));
+        }
+
+        if ($request->has('waiting_on')) {
+            app(SetWaitingOn::class)->handle($task, $this->resolveAwaitedMember($task, $validated['waiting_on'] ?? null));
         }
 
         $task->refresh()->loadMissing(self::RESOURCE_RELATIONS);
@@ -298,11 +305,34 @@ class TaskController extends Controller
     private function detail(Task $task): TaskDetailResource
     {
         $task->loadMissing([
-            'tags', 'project', 'parent', 'taskType', 'children', 'assignees', 'attachments',
+            'tags', 'project', 'parent', 'taskType', 'children', 'assignees', 'attachments', 'waitingOn',
             ...Task::dependencyTargetsEagerLoad(),
         ]);
 
         return new TaskDetailResource($task);
+    }
+
+    /**
+     * Resolve the public id of the member a task is to wait on, or null to stop
+     * waiting. Only members of the task's project are valid targets — anyone else
+     * is a validation error rather than a silently ignored id, since the field
+     * holds exactly one person.
+     */
+    private function resolveAwaitedMember(Task $task, ?string $publicId): ?User
+    {
+        if ($publicId === null) {
+            return null;
+        }
+
+        $member = $task->project->members()->where('users.public_id', $publicId)->first();
+
+        if ($member === null) {
+            throw ValidationException::withMessages([
+                'waiting_on' => __('That user is not a member of this project.'),
+            ]);
+        }
+
+        return $member;
     }
 
     /**

@@ -121,6 +121,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Profiles & avatars** — upload a profile picture (initials as the fallback);
   a profile page shows the projects you share with someone and their recent
   activity, visible only to people who share a project with them.
+- **Waiting on someone** — mark a task as waiting on one project member; the
+  board card shows who is awaited and for how long, they are notified and
+  subscribed, and their next comment on the task clears the wait automatically.
 - **Multi-assignee tasks** — for pairing and ensemble work, with a one-click
   "assign to me".
 

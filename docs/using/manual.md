@@ -121,8 +121,9 @@ The project board adds a **Filters** popover — priority, task type, assignee
 board keeps only "Show archived" and the per-column search.
 
 Cards show what you need to triage at a glance: the breadcrumb of parent tasks,
-tags, type, priority, assignees, an overdue due date, and a **Blocked** marker
-while something it depends on is still open.
+tags, type, priority, assignees, an overdue due date, a **Blocked** marker while
+something it depends on is still open, and a **waiting on** badge naming the
+person the task is waiting for and how long it has waited.
 
 **Live updates** keep the board current — it refreshes itself every few seconds,
 and never in the middle of a drag. The toggle in the header turns it off, and
@@ -137,8 +138,16 @@ rather than changing things behind your back.
 A task is the unit of work, addressed as `ABC-42`. It carries a title, a
 rich-text description, and in the side rail: **status**, **priority** (five
 levels; a subtask inherits its parent's), **type**, **assignees** (several
-people can share one task — "Assign to me" is one click), **due date**,
-**tags**, its **parent**, its **relationships** and its **links**.
+people can share one task — "Assign to me" is one click), **waiting on**,
+**due date**, **tags**, its **parent**, its **relationships** and its **links**.
+
+### Waiting on someone
+
+When a task can't go on until a particular person answers, mark it as **waiting
+on** them from the rail. The board card then shows who is awaited and for how
+long, they are subscribed to the task and notified, and the wait clears itself
+the moment they comment on it. A task waits on one person at a time; "Not
+waiting" clears it by hand.
 
 ### Moving work along
 

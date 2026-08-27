@@ -18,6 +18,7 @@ use Laravel\Mcp\Response;
 trait PresentsTasks
 {
     use ExposesUrls;
+    use ExposesWaitingOn;
 
     /**
      * The core task write payload, shared by the create and update tools.
@@ -36,6 +37,7 @@ trait PresentsTasks
             'status' => $task->status->value,
             'type' => $task->taskType?->name,
             'tags' => $task->tags()->pluck('name')->all(),
+            ...$this->waitingOnPayload($task),
         ];
     }
 
@@ -56,6 +58,7 @@ trait PresentsTasks
             'status' => $schema->string()->description('The task status.')->required(),
             'type' => $schema->string()->nullable()->description('The task type name, or null when the task is untyped.'),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
+            ...$this->waitingOnSchema($schema),
         ];
     }
 

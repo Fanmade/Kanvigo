@@ -37,6 +37,7 @@ class ActivityDescriber
             ]),
             'type_changed' => self::typeDescription($activity->old_value, $activity->new_value),
             'assignee_changed' => self::assigneeDescription($newValues, $oldValues),
+            'waiting_on_changed' => self::waitingOnDescription($activity->old_value, $activity->new_value),
             'dependency_changed' => self::dependencyDescription($newValues, $oldValues),
             'tags_changed' => self::tagDescription($newValues, $oldValues),
             'tag_renamed' => __('renamed the tag :old to :new', ['old' => (string) $activity->old_value, 'new' => (string) $activity->new_value]),
@@ -101,6 +102,19 @@ class ActivityDescriber
             $new !== null && $old !== null => __('changed the value from :old to :new', ['old' => $old, 'new' => $new]),
             $new !== null => __('set the value to :new', ['new' => $new]),
             default => __('cleared the value, leaving it undecided'),
+        };
+    }
+
+    /**
+     * Describe a waiting-on change from the old and new member names (either may
+     * be null — the task started waiting, or stopped).
+     */
+    private static function waitingOnDescription(?string $old, ?string $new): string
+    {
+        return match (true) {
+            $new !== null && $old !== null => __('is now waiting on :new instead of :old', ['old' => $old, 'new' => $new]),
+            $new !== null => __('marked this as waiting on :new', ['new' => $new]),
+            default => __('is no longer waiting on anyone'),
         };
     }
 

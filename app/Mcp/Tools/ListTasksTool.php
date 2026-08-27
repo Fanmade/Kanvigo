@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Enums\Status;
 use App\Mcp\Concerns\ExposesUrls;
+use App\Mcp\Concerns\ExposesWaitingOn;
 use App\Mcp\Concerns\PagesResults;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
@@ -22,6 +23,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 class ListTasksTool extends Tool
 {
     use ExposesUrls;
+    use ExposesWaitingOn;
     use PagesResults;
 
     /**
@@ -73,7 +75,7 @@ class ListTasksTool extends Tool
         // Fetch one extra row beyond the limit so the slice can tell whether more
         // remain. With no limit the whole set is returned (the uncapped default).
         $fetched = $project->tasks()
-            ->with(['tags', 'project', 'taskType', 'dependencyLinks.blocker'])
+            ->with(['tags', 'project', 'taskType', 'waitingOn', 'dependencyLinks.blocker'])
             ->when($parent !== null, static fn ($builder) => $builder->where('parent_id', $parent->id))
             ->when(isset($validated['status']), static fn ($builder) => $builder->where('status', Status::from($validated['status'])))
             ->orderBy('task_number')
@@ -97,6 +99,7 @@ class ListTasksTool extends Tool
                 'cancel_reason' => $task->cancel_reason?->name,
                 'tags' => $task->tags->pluck('name')->all(),
                 'is_blocked' => $task->isBlocked(),
+                ...$this->waitingOnPayload($task),
             ])
             ->values();
 
@@ -149,6 +152,7 @@ class ListTasksTool extends Tool
                 'cancel_reason' => $schema->string()->nullable()->description('Why the task was canceled (WontFix, Duplicate or Deprecated) when its status is Canceled; null otherwise. Use the get-task tool for the cancellation message.'),
                 'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
                 'is_blocked' => $schema->boolean()->description('Whether the task has a blocker that is not yet complete. Use the get-task tool for the specific blocking/blocked references.')->required(),
+                ...$this->waitingOnSchema($schema),
             ]))->description('The tasks in the project.')->required(),
             'page' => $this->pageSchema($schema),
         ];

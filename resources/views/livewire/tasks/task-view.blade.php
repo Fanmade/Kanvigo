@@ -351,6 +351,14 @@
                         />
                     </x-rail-row>
 
+                    <x-rail-row :label="__('Waiting on')">
+                        <x-waiting-on-control
+                            :task="$this->task"
+                            :members="$this->members"
+                            :can-edit="$this->canUpdate"
+                        />
+                    </x-rail-row>
+
                     <flux:separator variant="subtle" />
 
                     @include('partials.parent')

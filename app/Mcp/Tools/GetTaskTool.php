@@ -7,6 +7,7 @@ use App\Mcp\Concerns\ExposesDependencies;
 use App\Mcp\Concerns\ExposesReferences;
 use App\Mcp\Concerns\ExposesUrls;
 use App\Mcp\Concerns\ExposesVariables;
+use App\Mcp\Concerns\ExposesWaitingOn;
 use App\Mcp\Concerns\ResolvesAuthenticatedUser;
 use App\Models\Attachment;
 use App\Models\Task;
@@ -30,6 +31,7 @@ class GetTaskTool extends Tool
     use ExposesReferences;
     use ExposesUrls;
     use ExposesVariables;
+    use ExposesWaitingOn;
     use ResolvesAuthenticatedUser;
 
     /**
@@ -49,7 +51,7 @@ class GetTaskTool extends Tool
             return Response::error('No task with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ-42".');
         }
 
-        $task->loadMissing(['attachments', 'parent', 'children', 'ancestors', 'descendants', 'taskType']);
+        $task->loadMissing(['attachments', 'parent', 'children', 'ancestors', 'descendants', 'taskType', 'waitingOn']);
 
         $shortName = $task->project->short_name;
         $reference = static fn (Task $node): string => $shortName.'-'.$node->task_number;
@@ -83,6 +85,7 @@ class GetTaskTool extends Tool
                 'id' => $user->public_id,
                 'name' => $user->name,
             ])->all(),
+            ...$this->waitingOnPayload($task),
             'attachments' => $task->attachments->map(static fn (Attachment $attachment): array => [
                 'id' => $attachment->id,
                 'name' => $attachment->name,
@@ -148,6 +151,7 @@ class GetTaskTool extends Tool
                 'id' => $schema->string()->description('The assignee\'s stable user id; pass it to the get-user tool or the set-assignees tool.')->required(),
                 'name' => $schema->string()->description('The assignee name.')->required(),
             ]))->description('The users assigned to the task.')->required(),
+            ...$this->waitingOnSchema($schema),
             'attachments' => $schema->array()->items($schema->object([
                 'id' => $schema->integer()->description('The attachment id; pass it to the get-attachment tool to read the file.')->required(),
                 'name' => $schema->string()->description('The attachment file name.')->required(),

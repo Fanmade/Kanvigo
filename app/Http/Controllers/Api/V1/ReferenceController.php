@@ -82,6 +82,6 @@ class ReferenceController extends Controller
 
         return $item instanceof Doc
             ? new DocDetailResource($item->loadMissing(['project', 'parent', 'tags', 'children', 'attachments']))
-            : new TaskDetailResource($item->loadMissing(['project', 'parent', 'tags', 'taskType', 'children', 'assignees', 'attachments', 'dependencyLinks.blocker']));
+            : new TaskDetailResource($item->loadMissing(['project', 'parent', 'tags', 'taskType', 'children', 'assignees', 'attachments', 'waitingOn', 'dependencyLinks.blocker']));
     }
 }
