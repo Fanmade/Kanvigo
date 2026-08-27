@@ -4,7 +4,15 @@
         <flux:subheading>{{ __('Work held up on somebody — answer it here, or chase it.') }}</flux:subheading>
     </div>
 
-    <flux:tab.group>
+    {{-- Deliberately a bare <flux:tabs> with no <flux:tab.group>/<flux:tab.panel>:
+         Flux shows a panel by matching its `name` against the selected tab
+         client-side, and the panel carries `wire:key="{name}"`. Rendering only
+         the active scope's panel meant the click first deselected the panel that
+         was there, then Livewire swapped in a node with a new key that the tab
+         group never selected — a blank page in both directions until a reload
+         (KAN-574). `wire:model.live` already round-trips on every switch, so the
+         list is simply rendered below the tab strip by the server. --}}
+    <div class="flex flex-col gap-4">
         <flux:tabs wire:model.live="tab" variant="segmented">
             <flux:tab name="on-me" icon="inbox-arrow-down" data-test="tab-on-me">
                 {{ __('Waiting on me') }}
@@ -20,7 +28,7 @@
             </flux:tab>
         </flux:tabs>
 
-        <flux:tab.panel :name="$this->scope->value">
+        <div data-test="waiting-list">
             @forelse ($this->groups as $projectId => $tasks)
                 @php($project = $tasks->first()->project)
 
@@ -145,6 +153,6 @@
                     </x-empty-state>
                 @endif
             @endforelse
-        </flux:tab.panel>
-    </flux:tab.group>
+        </div>
+    </div>
 </div>
