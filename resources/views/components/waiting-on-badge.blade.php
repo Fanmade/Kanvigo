@@ -21,7 +21,8 @@
             :data-test="'waiting-on-'.$task->id"
             :data-overdue="$overdue ? 'true' : null"
         >
-            {{ $task->waitingOn->name }}@if ($days !== null)
+            {{ $task->waitingOn->name }}
+            @if ($days !== null)
                 <span class="ms-1 opacity-70">· {{ $days }}d</span>
             @endif
         </flux:badge>

@@ -232,6 +232,17 @@ a name on the **Account roles** page (`/admin/roles`) and assign that role. A
 permission held through a role is shown as such on the user's row and is taken
 away by removing the role, not by clicking the chip.
 
+A permission that nobody holds yet is still offered as a chip in user
+administration — tick it and the underlying role is created on the spot. It does
+*not* appear on the Account roles page until someone holds it, because a role can
+only be built from permissions its author has.
+
+`php artisan permissions:sync` does the same provisioning deterministically, which
+makes it a safe step in a deploy script — it only fills in what is missing.
+Adding `--grant=someone@example.com --permission=impersonate-users` also hands a
+permission to one account from the shell, audited exactly like a grant made in the
+UI. That is the way back in if no administrator can sign in.
+
 An administrator may only put permissions they hold themselves into a role, so a
 role can never be used to hand out more than its author has.
 

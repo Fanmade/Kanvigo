@@ -33,10 +33,8 @@
                 @php($project = $tasks->first()->project)
 
                 <div class="mb-6 flex flex-col gap-2" wire:key="waiting-project-{{ $projectId }}">
-                    <flux:text
-                        size="sm"
-                        class="font-medium text-zinc-500 dark:text-zinc-400"
-                    >{{ $project->short_name }} · {{ $project->title }}</flux:text>
+                    <flux:text size="sm" class="font-medium text-zinc-500 dark:text-zinc-400"
+                        >{{ $project->short_name }} · {{ $project->title }}</flux:text>
 
                     @foreach ($tasks as $task)
                         <flux:card
@@ -130,22 +128,14 @@
                 </div>
             @empty
                 @if ($this->scope === \App\Enums\WaitingScope::OnMe)
-                    <x-empty-state
-                        icon="check-circle"
-                        :heading="__('Nobody is waiting on you')"
-                        test="waiting-empty"
-                    >
+                    <x-empty-state icon="check-circle" :heading="__('Nobody is waiting on you')" test="waiting-empty">
                         <flux:text
                             size="sm"
                             class="text-zinc-500"
                         >{{ __('When someone marks a task as waiting on you, it lands here.') }}</flux:text>
                     </x-empty-state>
                 @else
-                    <x-empty-state
-                        icon="clock"
-                        :heading="__('You are not waiting on anyone')"
-                        test="waiting-empty"
-                    >
+                    <x-empty-state icon="clock" :heading="__('You are not waiting on anyone')" test="waiting-empty">
                         <flux:text
                             size="sm"
                             class="text-zinc-500"
