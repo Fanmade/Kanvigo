@@ -112,9 +112,9 @@ Unlike invitations these are **queued**, so they need the queue worker running;
 without it they sit in the queue and the in-app notification is all anyone sees.
 Mail is never sent to an address that has not been verified.
 
-**Mentions are still in-app only.** Nothing turns those into mail yet, and there
-is no screen for the per-user e-mail opt-in yet either — until it ships, the
-preference can only be set programmatically, so in practice no mail goes out.
+Users switch it on for themselves under **Notifications → Delivery**, where they
+can also narrow it to tasks or projects. **Mentions are still in-app only** —
+nothing turns those into mail yet.
 
 ## Settings worth knowing
 

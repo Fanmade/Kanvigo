@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use App\Notifications\Concerns\OptsIntoMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,6 +29,14 @@ class WaitingReminderMail extends Notification implements ShouldQueue
      * @param  Collection<int, Task>  $tasks  the overdue requests, oldest first
      */
     public function __construct(public Project $project, public Collection $tasks) {}
+
+    /**
+     * A waiting request is always a task, so it follows the task switch.
+     */
+    protected function mailLevelKey(): ?string
+    {
+        return User::EMAIL_TASKS_PREFERENCE_KEY;
+    }
 
     public function toMail(object $notifiable): MailMessage
     {

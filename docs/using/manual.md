@@ -262,8 +262,13 @@ Two pages that sound alike and are not:
 - **Notifications** is what was addressed to *you* — something happened on an
   item you follow, or someone mentioned you. The bell in the header carries the
   unread count; the page has an **Inbox** (filter by read state, project,
-  activity type and period, with bulk mark-read and dismiss) and a
-  **Subscriptions** tab listing everything you follow.
+  activity type and period, with bulk mark-read and dismiss), a
+  **Subscriptions** tab listing everything you follow, and a **Delivery** tab.
+- **Delivery** decides whether any of it also reaches your inbox. E-mail is off
+  until you switch it on, and can be narrowed to tasks only, projects only, or
+  both — the in-app notifications are unaffected either way, since the way to
+  quieten those is to stop following the item. Mail is only ever sent to a
+  confirmed address, and mentions are in-app only for now.
 - **Activity** is everything that happened across your projects, newest first and
   grouped by day. It is not addressed at you — it answers "what did I miss?".
   Filter by person, project, type and period; your own activity is left out

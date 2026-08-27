@@ -12,6 +12,11 @@
                 icon="bell"
                 data-test="tab-subscriptions"
             >{{ __('Subscriptions') }}</flux:tab>
+            <flux:tab
+                name="delivery"
+                icon="envelope"
+                data-test="tab-delivery"
+            >{{ __('Delivery') }}</flux:tab>
         </flux:tabs>
 
         <flux:tab.panel name="inbox">
@@ -20,6 +25,10 @@
 
         <flux:tab.panel name="subscriptions">
             <livewire:notifications.subscription-settings />
+        </flux:tab.panel>
+
+        <flux:tab.panel name="delivery">
+            <livewire:notifications.delivery-settings />
         </flux:tab.panel>
     </flux:tab.group>
 </div>

@@ -224,6 +224,16 @@ class User extends Authenticatable implements HasLocalePreference, PasskeyUser
     public const string EMAIL_PREFERENCE_KEY = 'notifications.email';
 
     /**
+     * The `preferences` keys narrowing the mail opt-in to a kind of item, so
+     * somebody can be mailed about their own tasks without every project-level
+     * change. Both default to true and only apply once
+     * {@see EMAIL_PREFERENCE_KEY} is on.
+     */
+    public const string EMAIL_PROJECTS_PREFERENCE_KEY = 'notifications.email_projects';
+
+    public const string EMAIL_TASKS_PREFERENCE_KEY = 'notifications.email_tasks';
+
+    /**
      * The language this user has chosen for the interface, or null to follow the
      * application default. Read by Laravel when a notification is localized —
      * a queued mail has no session to take the interface language from, so the

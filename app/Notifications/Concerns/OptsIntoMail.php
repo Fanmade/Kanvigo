@@ -40,11 +40,30 @@ trait OptsIntoMail
 
     /**
      * Whether this recipient has asked to be e-mailed and can be.
+     *
+     * The master switch decides first; a notification then also has to survive
+     * the per-level narrowing ({@see mailLevelKey()}), which lets someone follow
+     * their own tasks by mail without hearing about every project-level change.
      */
     protected function wantsMail(object $notifiable): bool
     {
-        return $notifiable instanceof User
-            && $notifiable->email_verified_at !== null
-            && (bool) $notifiable->preference(User::EMAIL_PREFERENCE_KEY, false);
+        if (! $notifiable instanceof User
+            || $notifiable->email_verified_at === null
+            || ! $notifiable->preference(User::EMAIL_PREFERENCE_KEY, false)) {
+            return false;
+        }
+
+        $level = $this->mailLevelKey();
+
+        return $level === null || (bool) $notifiable->preference($level, true);
+    }
+
+    /**
+     * The per-level preference this notification is governed by, or null when it
+     * is not narrowed by level at all. Notifications override it.
+     */
+    protected function mailLevelKey(): ?string
+    {
+        return null;
     }
 }

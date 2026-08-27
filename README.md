@@ -112,6 +112,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   The notifications page keeps the full history in an **Inbox** tab — filterable
   by read state, project, activity type and period, with bulk mark-read and
   dismiss — next to a **Subscriptions** tab for what you follow.
+- **E-mail updates** — off until you ask for them: a **Delivery** tab turns
+  notifications into e-mail as well, narrowed to tasks, projects or both. Mail
+  goes only to a confirmed address; mentions stay in-app for now.
 - **Activity feed** — one page with everything that happened across all your
   projects, newest first and grouped by day. Unlike notifications it isn't
   addressed at you: it answers "what did I miss?". Filter by person, project,

@@ -5,6 +5,8 @@ namespace App\Notifications;
 use App\Audit\Sinks\ActivityLogSink;
 use App\Concerns\ResolvesSubjectUrl;
 use App\Models\Activity;
+use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use App\Notifications\Concerns\OptsIntoMail;
 use App\Support\ActivityDescriber;
@@ -57,6 +59,20 @@ class ItemActivityMail extends Notification implements ShouldQueue
                 'title' => $subject->title ?? null,
                 'url' => $this->activityUrl(),
             ]);
+    }
+
+    /**
+     * Activity is narrowed by the kind of item it happened on: a task (and
+     * anything hanging off one) against the task switch, a project against the
+     * project switch. Anything else is not narrowed.
+     */
+    protected function mailLevelKey(): ?string
+    {
+        return match ($this->activity->subject_type) {
+            (new Task)->getMorphClass() => User::EMAIL_TASKS_PREFERENCE_KEY,
+            (new Project)->getMorphClass() => User::EMAIL_PROJECTS_PREFERENCE_KEY,
+            default => null,
+        };
     }
 
     /**
