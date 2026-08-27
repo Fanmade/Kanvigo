@@ -5,11 +5,13 @@ namespace App\Models;
 use App\Authorization\AccountPermissionProvisioner;
 use App\Enums\Permission;
 use App\Enums\WaitingScope;
+use App\Notifications\Concerns\OptsIntoMail;
 use App\Queries\WaitingTasks;
 use App\Support\Facades\Audit;
 use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Fanmade\DelegatedPermissions\Concerns\HasRoles;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -57,7 +59,7 @@ use Laravel\Sanctum\HasApiTokens;
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements HasLocalePreference, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
@@ -211,6 +213,27 @@ class User extends Authenticatable implements PasskeyUser
     public function preference(string $key, mixed $default = null): mixed
     {
         return data_get($this->preferences, $key, $default);
+    }
+
+    /**
+     * The `preferences` key holding the mail opt-in: whether this user wants
+     * notifications by e-mail as well as in the app. Absent (or false) means
+     * database-only, which is the default for everybody — see
+     * {@see OptsIntoMail}.
+     */
+    public const string EMAIL_PREFERENCE_KEY = 'notifications.email';
+
+    /**
+     * The language this user has chosen for the interface, or null to follow the
+     * application default. Read by Laravel when a notification is localized —
+     * a queued mail has no session to take the interface language from, so the
+     * choice made in the account menu is mirrored onto the user.
+     */
+    public function preferredLocale(): ?string
+    {
+        $locale = $this->preference('locale');
+
+        return is_string($locale) && $locale !== '' ? $locale : null;
     }
 
     /**

@@ -24,6 +24,11 @@ class LocaleController extends Controller
 
         $request->session()->put('locale', $validated['locale']);
 
+        // Mirrored onto the user so notifications sent outside a request — a
+        // queued mail, a scheduled reminder — are written in the same language
+        // ({@see \App\Models\User::preferredLocale()}).
+        $request->user()?->setPreference('locale', $validated['locale']);
+
         return back();
     }
 }

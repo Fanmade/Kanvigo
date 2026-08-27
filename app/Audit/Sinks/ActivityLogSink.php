@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\Task;
 use App\Models\User;
 use App\Notifications\ItemActivity;
+use App\Notifications\ItemActivityMail;
 use App\Support\BoardCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -158,12 +159,21 @@ class ActivityLogSink implements AuditSink
 
     /**
      * Notify the subject's subscribers (excluding the actor) about an update.
+     *
+     * The in-app record is written here and now — the activity feed is meant to
+     * work whether or not a queue worker is running. The mail counterpart is a
+     * separate, queued notification that yields no channels for anyone who has
+     * not opted in, so opted-out recipients cost nothing and a slow mail host
+     * cannot stall the request this sink is running inside.
      */
     protected function notifySubscribers(Subscribable $subject, Activity $activity, int|string|null $actorId): void
     {
         $subject->notificationAudience()
             ->unique('id')
             ->reject(static fn (User $user): bool => $user->id === $actorId)
-            ->each(static fn (User $user) => $user->notify(new ItemActivity($activity)));
+            ->each(static function (User $user) use ($activity): void {
+                $user->notify(new ItemActivity($activity));
+                $user->notify(new ItemActivityMail($activity));
+            });
     }
 }

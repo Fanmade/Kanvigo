@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Notifications\WaitingReminder;
+use App\Notifications\WaitingReminderMail;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -47,6 +48,7 @@ class NudgeWaitingRequests extends Command
                     }
 
                     $awaited->notify(new WaitingReminder($project, $tasks));
+                    $awaited->notify(new WaitingReminderMail($project, $tasks));
 
                     $tasks->each(static fn (Task $task) => $task->forceFill([
                         'waiting_nudged_at' => Carbon::now(),

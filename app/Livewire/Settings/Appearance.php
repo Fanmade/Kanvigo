@@ -36,6 +36,11 @@ class Appearance extends Component
 
         session(['locale' => $value]);
 
+        // Mirrored onto the user so notifications sent outside a request — a
+        // queued mail, a scheduled reminder — are written in the same language
+        // ({@see \App\Models\User::preferredLocale()}).
+        Auth::user()?->setPreference('locale', $value);
+
         // Reload so the locale middleware re-applies the new language.
         $this->redirectRoute('appearance.edit', navigate: true);
     }

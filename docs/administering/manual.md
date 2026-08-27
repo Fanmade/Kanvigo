@@ -81,9 +81,10 @@ Kanvigo needs two background processes.
 | `model:prune` (notifications) | daily | Deletes dismissed and read notifications past retention |
 
 Without it: no backups, nothing auto-archives, nobody is reminded about stale
-input requests, orphaned attachments accumulate,
-and queued audit sinks never receive anything. The default audit sink is
-synchronous, so the in-app activity feed keeps working regardless.
+input requests, orphaned attachments accumulate, and queued audit sinks never
+receive anything. The default audit sink is synchronous, so the in-app activity
+feed keeps working regardless — but notification e-mail is queued, so a stopped
+worker silently withholds it.
 
 **A queue worker** — `QUEUE_CONNECTION=database` by default. Only the
 variable-usage indexing jobs are queued, so without a worker variable search and
@@ -105,8 +106,15 @@ are absolute and signature-checked, so a wrong value produces links that 404 or
 fail verification. Invitations expire after seven days, which is not
 configurable.
 
-**There is no email for in-app notifications or mentions.** Those are delivered
-inside the application only, and no configuration turns them into mail.
+Activity notifications and waiting reminders **can** go out by mail, but only to
+users who have switched it on for themselves — nobody is mailed by default.
+Unlike invitations these are **queued**, so they need the queue worker running;
+without it they sit in the queue and the in-app notification is all anyone sees.
+Mail is never sent to an address that has not been verified.
+
+**Mentions are still in-app only.** Nothing turns those into mail yet, and there
+is no screen for the per-user e-mail opt-in yet either — until it ships, the
+preference can only be set programmatically, so in practice no mail goes out.
 
 ## Settings worth knowing
 
