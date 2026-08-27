@@ -124,6 +124,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Waiting on someone** — mark a task as waiting on one project member; the
   board card shows who is awaited and for how long, they are notified and
   subscribed, and their next comment on the task clears the wait automatically.
+- **"Waiting on" page** — one cross-project list with two sides: what is waiting
+  on you, and what you are waiting on others for. Each entry carries the full
+  description and a quick reply, so most answers never need the task page; the
+  sidebar badge counts what is waiting on you.
 - **Multi-assignee tasks** — for pairing and ensemble work, with a one-click
   "assign to me".
 

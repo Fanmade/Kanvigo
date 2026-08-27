@@ -149,6 +149,13 @@ long, they are subscribed to the task and notified, and the wait clears itself
 the moment they comment on it. A task waits on one person at a time; "Not
 waiting" clears it by hand.
 
+The **Waiting on** page in the sidebar collects all of it across projects, in two
+tabs: *Waiting on me* — what other people need from you, oldest wait first — and
+*I'm waiting on* — what you are chasing. Entries are grouped by project and show
+the task's full description, so you can usually answer straight from the list:
+the inline **Reply** posts an ordinary task comment, which clears the wait and
+drops the entry. The sidebar badge counts what is waiting on you.
+
 ### Moving work along
 
 Set the status from the rail, or step it with the ◀ ▶ buttons next to it. When

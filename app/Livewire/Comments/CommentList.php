@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Comments;
 
+use App\Actions\PostComment;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ResolvesMorphSubject;
 use App\Concerns\TogglesCollapsedPreference;
@@ -13,7 +14,6 @@ use App\Support\Facades\Audit;
 use App\Support\ReferenceResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -387,13 +387,7 @@ class CommentList extends Component
 
         $this->authorize('create-comment', $project);
 
-        $comment = $commentable->comments()->create([
-            'user_id' => Auth::id(),
-            'body' => $body,
-            'parent_id' => $parentId,
-        ]);
-
-        Audit::record($commentable->contentAuditEvent('commented'));
+        $comment = app(PostComment::class)->handle($commentable, $body, $parentId);
 
         unset($this->comments, $this->commentCount, $this->hasMoreComments);
 

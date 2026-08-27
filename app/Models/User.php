@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Authorization\AccountPermissionProvisioner;
 use App\Enums\Permission;
+use App\Enums\WaitingScope;
+use App\Queries\WaitingTasks;
 use App\Support\Facades\Audit;
 use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
@@ -533,6 +535,15 @@ class User extends Authenticatable implements PasskeyUser
      * an overview, not an inbox, so a badge that lags by a minute costs nothing,
      * while recounting on every recorded activity would not.
      */
+    /**
+     * How many tasks are waiting on this user to answer — the sidebar badge,
+     * rendered on every page, so it shares the one query the page uses.
+     */
+    public function waitingOnMeCount(): int
+    {
+        return app(WaitingTasks::class)->handle($this, WaitingScope::OnMe)->count();
+    }
+
     public function unseenActivityCount(): int
     {
         $seenAt = $this->activities_seen_at;

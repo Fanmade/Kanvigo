@@ -59,6 +59,7 @@ use Illuminate\Support\Collection;
  * @property string|null $cancel_message
  * @property int|null $waiting_on_user_id
  * @property Carbon|null $waiting_since
+ * @property int|null $waiting_by_user_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
@@ -66,6 +67,7 @@ use Illuminate\Support\Collection;
  * @property-read TaskType|null $taskType
  * @property-read Task|null $parent
  * @property-read User|null $waitingOn
+ * @property-read User|null $waitingBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Task> $children
  */
 #[Fillable(['title', 'description', 'priority', 'due_date'])]
@@ -208,6 +210,18 @@ class Task extends Model implements Dependable, Mentionable, Referenceable, Subs
     public function waitingOn(): BelongsTo
     {
         return $this->belongsTo(User::class, 'waiting_on_user_id');
+    }
+
+    /**
+     * Who put the task into the waiting state — the person owed the answer, and
+     * so the one the "I'm waiting on" list belongs to. Null when the task is not
+     * waiting (or the asker's account is gone).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function waitingBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'waiting_by_user_id');
     }
 
     /**

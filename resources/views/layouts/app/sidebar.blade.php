@@ -62,6 +62,18 @@
                 >
                     {{ __('Activity') }}
                 </flux:sidebar.item>
+                @php($waitingOnMe = auth()->user()->waitingOnMeCount())
+                <flux:sidebar.item
+                    icon="inbox-arrow-down"
+                    :href="route('waiting.index')"
+                    :current="request()->routeIs('waiting.index')"
+                    :badge="$waitingOnMe > 0 ? $waitingOnMe : null"
+                    badge-color="amber"
+                    wire:navigate
+                    data-test="nav-waiting"
+                >
+                    {{ __('Waiting on') }}
+                </flux:sidebar.item>
                 <flux:sidebar.item
                     icon="bell"
                     :href="route('notifications.index')"

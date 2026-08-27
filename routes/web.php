@@ -32,6 +32,7 @@ use App\Livewire\Projects\ProjectTaskTypes;
 use App\Livewire\Projects\ProjectVariables;
 use App\Livewire\Tasks\TaskView;
 use App\Livewire\Users\UserProfile;
+use App\Livewire\Waiting\WaitingIndex;
 use Illuminate\Routing\Middleware\ValidateSignature;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -79,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('board', Board::class)->name('board');
     Route::livewire('notes', NoteList::class)->name('notes.index');
     Route::livewire('notifications', NotificationsIndex::class)->name('notifications.index');
+    Route::livewire('waiting', WaitingIndex::class)->name('waiting.index');
     Route::livewire('activity', GlobalActivityFeed::class)->name('activity.index');
     Route::livewire('invite', InviteUser::class)->name('invitations.create');
 

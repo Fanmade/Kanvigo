@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Support\Facades\Audit;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * The single source of truth for putting a task into — or out of — the "waiting
@@ -33,10 +34,14 @@ class SetWaitingOn
             return false;
         }
 
+        $actorId = Auth::id();
+
         $task->waiting_on_user_id = $user?->getKey();
         $task->waiting_since = $user === null ? null : Carbon::now();
+        $task->waiting_by_user_id = $user === null || $actorId === null ? null : (int) $actorId;
         $task->save();
         $task->setRelation('waitingOn', $user);
+        $task->unsetRelation('waitingBy');
 
         // Awaiting someone's input implies interest on their side; the feed
         // notification then reaches them through the ordinary subscriber fan-out.
