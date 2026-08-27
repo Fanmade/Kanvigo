@@ -78,6 +78,24 @@
 
 <flux:menu.separator />
 
+{{-- Only while acting as someone else. Placed next to Log out because it is the
+     other way out of the current session, and rendered here so both the header
+     and sidebar account menus offer it. --}}
+@if (\App\Support\Impersonation::isImpersonating())
+    <form method="POST" action="{{ route('impersonation.stop') }}" class="w-full">
+        @csrf
+        <flux:menu.item
+            as="button"
+            type="submit"
+            icon="eye-slash"
+            class="w-full cursor-pointer"
+            :data-test="$testPrefix ? $testPrefix.'-stop-impersonating' : null"
+        >
+            {{ __('Stop impersonating') }}
+        </flux:menu.item>
+    </form>
+@endif
+
 <form method="POST" action="{{ route('logout') }}" class="w-full">
     @csrf
     <flux:menu.item

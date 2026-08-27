@@ -215,7 +215,7 @@ Registration is closed; there is no sign-up page. People join by invitation from
 
 ### Account permissions
 
-Six permissions govern what an account may do outside any single project:
+Seven permissions govern what an account may do outside any single project:
 
 | Permission | Gates |
 | --- | --- |
@@ -225,6 +225,7 @@ Six permissions govern what an account may do outside any single project:
 | `create-api-tokens` | Minting personal API tokens |
 | `manage-users` | User administration, invitation resend/revoke, and half the audit-stream check |
 | `manage-account-roles` | The account roles page |
+| `impersonate-users` | Acting as another account (see [Impersonation](#impersonation)) |
 
 Grant them per user as chips in **user administration**, or bundle several under
 a name on the **Account roles** page (`/admin/roles`) and assign that role. A
@@ -233,6 +234,21 @@ away by removing the role, not by clicking the chip.
 
 An administrator may only put permissions they hold themselves into a role, so a
 role can never be used to hand out more than its author has.
+
+### Impersonation
+
+`impersonate-users` lets an administrator act as another account — useful for
+seeing what a member or viewer actually sees without keeping a shelf of test
+logins. **Impersonate** on a row in user administration starts it; a banner sits
+below the header for the whole window, and either it or the account menu ends it.
+
+It is a full session: anything done while impersonating is done as that person
+and is attributed to them. Two guards bound it. Accounts that could hand out
+permissions — anyone holding `impersonate-users` or `manage-account-roles` — and
+deactivated accounts cannot be impersonated, and password-confirmed pages
+(Security settings, API tokens) stay out of reach, because the impersonator
+cannot supply the target's password. Starting and stopping are both audited, and
+every event recorded in between names the administrator behind it.
 
 ### The system role
 

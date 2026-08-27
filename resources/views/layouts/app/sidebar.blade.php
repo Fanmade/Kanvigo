@@ -203,6 +203,8 @@
         })();
     </script>
 
+    <x-impersonation-banner />
+
     {{ $slot }}
 
     <livewire:tasks.create-task-modal />

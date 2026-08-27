@@ -93,6 +93,21 @@
                                 </flux:button>
                             @endif
 
+                            @can('impersonate', $user)
+                                <form method="POST" action="{{ route('impersonation.store', $user) }}">
+                                    @csrf
+                                    <flux:button
+                                        size="sm"
+                                        variant="ghost"
+                                        icon="eye"
+                                        type="submit"
+                                        data-test="impersonate-{{ $user->id }}"
+                                    >
+                                        {{ __('Impersonate') }}
+                                    </flux:button>
+                                </form>
+                            @endcan
+
                             <flux:tooltip :content="__('Remove account')">
                                 <flux:button
                                     size="sm"

@@ -295,6 +295,11 @@ Account-level permissions — creating projects, inviting users, seeing every
 project — are managed by administrators in user administration, either
 individually or bundled into named **account roles**.
 
+Administrators with the right permission can also **impersonate** an account from
+user administration — acting as that person to check what they see. A banner
+stays visible for the whole time, and both ends of it are recorded in the audit
+trail.
+
 ## Getting things out
 
 Any task or doc can be **exported** from its ⋯ menu, as Markdown or a standalone

@@ -176,9 +176,14 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   permissions, manage memberships, resend or revoke invitations, and deactivate
   or remove accounts. Removed accounts are soft-deleted; comments they wrote stay
   as the work of a "deleted user".
+- **Impersonation** — with the `impersonate-users` permission an administrator can
+  act as another account to see the app with that person's real access, then step
+  back from a banner that stays visible throughout. Both ends of the window are
+  audited, and everything done inside it names the administrator behind it.
 - **Authorization** — native Gates (`create-projects`, `access-all-projects`,
-  `invite-users`, `create-api-tokens`, `manage-users`) over policies that resolve
-  project access through inheritance-based delegated permissions.
+  `invite-users`, `create-api-tokens`, `manage-users`, `impersonate-users`) over
+  policies that resolve project access through inheritance-based delegated
+  permissions.
 
 ### Audit & compliance
 

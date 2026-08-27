@@ -10,6 +10,7 @@ enum Permission: string
     case CreateApiTokens = 'create-api-tokens';
     case ManageUsers = 'manage-users';
     case ManageAccountRoles = 'manage-account-roles';
+    case ImpersonateUsers = 'impersonate-users';
 
     /**
      * The human-readable, translatable label for the permission.
@@ -23,6 +24,7 @@ enum Permission: string
             self::CreateApiTokens => __('Create API tokens'),
             self::ManageUsers => __('Manage users'),
             self::ManageAccountRoles => __('Manage account roles'),
+            self::ImpersonateUsers => __('Impersonate users'),
         };
     }
 }

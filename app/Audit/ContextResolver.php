@@ -3,6 +3,7 @@
 namespace App\Audit;
 
 use App\Models\User;
+use App\Support\Impersonation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Kanvigo\Audit\Contracts\AuditContext;
@@ -50,7 +51,28 @@ class ContextResolver
             $event = $event->withContext($this->resolve());
         }
 
-        return $event;
+        return $this->markImpersonation($event);
+    }
+
+    /**
+     * While an administrator is impersonating, every event is attributed to the
+     * account they are acting as — that is who performed the action as far as
+     * the application is concerned. Add the administrator behind it, so the
+     * trail never loses the human who actually clicked, and tag the event so a
+     * consumer can filter the whole window without joining on the start/stop
+     * pair. Explicit values win, as everywhere else in {@see stamp()}.
+     */
+    protected function markImpersonation(AuditEvent $event): AuditEvent
+    {
+        $impersonatorId = Impersonation::impersonatorId();
+
+        if ($impersonatorId === null || array_key_exists('impersonator_id', $event->metadata)) {
+            return $event;
+        }
+
+        return $event
+            ->withMetadata([...$event->metadata, 'impersonator_id' => $impersonatorId])
+            ->withTags(...[...$event->tags, 'impersonated']);
     }
 
     public function resolve(): AuditContext

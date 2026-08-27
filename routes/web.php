@@ -5,6 +5,7 @@ use App\Http\Controllers\AttachmentThumbnailController;
 use App\Http\Controllers\AttachmentViewController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DocPreviewController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MentionSuggestionsController;
 use App\Http\Controllers\NoteAttachmentController;
@@ -73,6 +74,13 @@ Route::get('attachments/{attachment}/download/{user}', SignedAttachmentDownloadC
     ->whereNumber('attachment')
     ->name('attachments.signed-download');
 
+// Stopping an impersonation deliberately sits outside the 'verified' group: the
+// impersonated account may have an unverified email, and the way back to your own
+// account must not be gated on the account you are trying to leave.
+Route::post('impersonation/stop', [ImpersonationController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('impersonation.stop');
+
 Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('dashboard', Dashboard::class)->name('dashboard');
 
@@ -88,6 +96,12 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     // the same session value.
     Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
     Route::livewire('admin/users', UserManagement::class)->name('admin.users');
+
+    // Impersonation swaps the session identity, which regenerates the CSRF
+    // token — so it lives on plain POST endpoints that redirect, not on a
+    // Livewire action that would have to answer with a stale token.
+    Route::post('admin/users/{user}/impersonate', [ImpersonationController::class, 'store'])
+        ->name('impersonation.store');
     Route::livewire('admin/roles', AccountRoles::class)->name('admin.roles');
 
     // Avatars are stored privately and streamed only to authenticated viewers.

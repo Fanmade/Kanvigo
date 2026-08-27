@@ -71,6 +71,14 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user can act as another account.
+     */
+    public function canImpersonateUsers(): static
+    {
+        return $this->withPermission(Permission::ImpersonateUsers);
+    }
+
+    /**
      * Indicate that the user is an administrator with all capabilities.
      */
     public function admin(): static

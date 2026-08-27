@@ -3,8 +3,10 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\Impersonation;
 use Illuminate\Database\Eloquent\Builder;
 
 class UserPolicy
@@ -75,6 +77,30 @@ class UserPolicy
     public function deactivate(User $user, User $target): bool
     {
         return $user->hasPermission(Permission::ManageUsers) && ! $user->is($target);
+    }
+
+    /**
+     * Determine whether the user can act as another account.
+     *
+     * Impersonation hands over a full session, so it may not be used to step
+     * sideways into an account that could hand out permissions: a target who
+     * can impersonate or manage account roles is off limits, as is your own
+     * account and anyone already impersonating. A deactivated target is refused
+     * too — {@see EnsureUserIsActive} would sign the session out on the next
+     * request and take the impersonator with it.
+     */
+    public function impersonate(User $user, User $target): bool
+    {
+        if ($user->is($target) || Impersonation::isImpersonating()) {
+            return false;
+        }
+
+        if ($target->isDeactivated() || ! $user->hasPermission(Permission::ImpersonateUsers)) {
+            return false;
+        }
+
+        return ! $target->hasPermission(Permission::ImpersonateUsers)
+            && ! $target->hasPermission(Permission::ManageAccountRoles);
     }
 
     /**
