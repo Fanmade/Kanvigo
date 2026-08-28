@@ -4,6 +4,7 @@ use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -25,7 +26,13 @@ function tinyPng(): string
     return base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
 }
 
-function makeImageAttachment(Task $task, string $name): Attachment
+/**
+ * An image attachment on the task. Pass $createdAt whenever the test asserts a
+ * gallery position: the gallery lists newest first, and unstamped fixtures all
+ * land in the same second, so their order would depend on where the clock falls
+ * during the run.
+ */
+function makeImageAttachment(Task $task, string $name, ?CarbonInterface $createdAt = null): Attachment
 {
     $path = 'attachments/'.fake()->uuid().'.png';
     Storage::disk('attachments')->put($path, tinyPng());
@@ -37,13 +44,16 @@ function makeImageAttachment(Task $task, string $name): Attachment
         'path' => $path,
         'name' => $name,
         'mime_type' => 'image/png',
+        'created_at' => $createdAt ?? now(),
+        'updated_at' => $createdAt ?? now(),
     ]);
 }
 
 it('browses image attachments in a lightbox gallery', function () {
-    $first = makeImageAttachment($this->task, 'alpha.png');
-    makeImageAttachment($this->task, 'beta.png');
-    makeImageAttachment($this->task, 'gamma.png');
+    // Newest first, so alpha is the newest: the gallery reads alpha, beta, gamma.
+    $first = makeImageAttachment($this->task, 'alpha.png', now());
+    makeImageAttachment($this->task, 'beta.png', now()->subMinute());
+    makeImageAttachment($this->task, 'gamma.png', now()->subMinutes(2));
 
     $this->actingAs($this->member);
 
@@ -65,8 +75,8 @@ it('browses image attachments in a lightbox gallery', function () {
 });
 
 it('navigates the lightbox with arrow keys and closes on escape', function () {
-    $first = makeImageAttachment($this->task, 'alpha.png');
-    makeImageAttachment($this->task, 'beta.png');
+    $first = makeImageAttachment($this->task, 'alpha.png', now());
+    makeImageAttachment($this->task, 'beta.png', now()->subMinute());
 
     $this->actingAs($this->member);
 

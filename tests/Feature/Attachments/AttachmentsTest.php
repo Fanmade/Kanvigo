@@ -332,3 +332,33 @@ it('identifies image attachments for the lightbox gallery', function () {
         ->and(Attachment::factory()->make(['mime_type' => 'application/pdf'])->isImage())->toBeFalse()
         ->and(Attachment::factory()->make(['mime_type' => null])->isImage())->toBeFalse();
 });
+
+it('lists attachments newest first, breaking a same-second tie by id', function () {
+    $task = Task::factory()->for($this->project)->create();
+
+    // Three files uploaded in one batch: identical second-precision timestamps,
+    // so only the id keeps the order stable.
+    foreach (['first.pdf', 'second.pdf', 'third.pdf'] as $name) {
+        Attachment::factory()->create([
+            'attachable_id' => $task->id,
+            'attachable_type' => $task->getMorphClass(),
+            'disk' => 'attachments',
+            'name' => $name,
+            'created_at' => '2026-01-01 12:00:00',
+            'updated_at' => '2026-01-01 12:00:00',
+        ]);
+    }
+
+    // An older upload stays behind the whole batch.
+    Attachment::factory()->create([
+        'attachable_id' => $task->id,
+        'attachable_type' => $task->getMorphClass(),
+        'disk' => 'attachments',
+        'name' => 'yesterday.pdf',
+        'created_at' => '2025-12-31 12:00:00',
+        'updated_at' => '2025-12-31 12:00:00',
+    ]);
+
+    expect($task->attachments()->pluck('name')->all())
+        ->toBe(['third.pdf', 'second.pdf', 'first.pdf', 'yesterday.pdf']);
+});
