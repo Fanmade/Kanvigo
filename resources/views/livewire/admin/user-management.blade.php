@@ -1,8 +1,8 @@
 <div class="flex flex-col gap-6">
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-4">
         <flux:heading size="xl">{{ __('User administration') }}</flux:heading>
 
-        <div class="flex items-center gap-2">
+        <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             @can('manage-account-roles')
                 <flux:button
                     size="sm"
@@ -18,7 +18,7 @@
                 wire:model.live.debounce.300ms="search"
                 icon="magnifying-glass"
                 :placeholder="__('Search name or email')"
-                class="max-w-xs"
+                class="min-w-0 flex-1 sm:max-w-xs"
                 data-test="user-search"
             />
         </div>
@@ -29,20 +29,20 @@
         @foreach ($this->users as $user)
             <flux:card class="flex flex-col gap-4" wire:key="user-{{ $user->id }}" data-test="user-row-{{ $user->id }}">
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
+                    <div class="flex min-w-0 items-center gap-3">
                         <x-user-avatar :user="$user" size="sm" />
-                        <div class="flex flex-col">
+                        <div class="flex min-w-0 flex-col">
                             <span class="font-medium text-zinc-800 dark:text-zinc-100">
                                 {{ $user->name }}
                                 @if ($user->is(auth()->user()))
                                     <flux:badge size="sm" color="zinc">{{ __('You') }}</flux:badge>
                                 @endif
                             </span>
-                            <flux:text size="sm" class="text-zinc-500">{{ $user->email }}</flux:text>
+                            <flux:text size="sm" class="truncate text-zinc-500">{{ $user->email }}</flux:text>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
                         @if ($user->pendingInvitations->isNotEmpty())
                             <flux:tooltip :content="__('Pending invitations sent by this user')">
                                 <flux:badge size="sm" color="blue" data-test="pending-invites-{{ $user->id }}">
@@ -202,14 +202,14 @@
                     wire:key="invitation-{{ $invitation->id }}"
                     data-test="invitation-row-{{ $invitation->id }}"
                 >
-                    <div class="flex flex-col">
-                        <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $invitation->email }}</span>
+                    <div class="flex min-w-0 flex-col">
+                        <span class="truncate font-medium text-zinc-800 dark:text-zinc-100">{{ $invitation->email }}</span>
                         <flux:text size="sm" class="text-zinc-500">
                             {{ __('Invited by :name · expires :when', ['name' => $invitation->inviter?->name ?? __('Deleted user'), 'when' => $invitation->expires_at->diffForHumans()]) }}
                         </flux:text>
                     </div>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                         <flux:button
                             size="sm"
                             variant="ghost"

@@ -13,7 +13,7 @@
          (KAN-574). `wire:model.live` already round-trips on every switch, so the
          list is simply rendered below the tab strip by the server. --}}
     <div class="flex flex-col gap-4">
-        <flux:tabs wire:model.live="tab" variant="segmented">
+        <flux:tabs wire:model.live="tab" variant="segmented" class="max-w-full overflow-x-auto">
             <flux:tab name="on-me" icon="inbox-arrow-down" data-test="tab-on-me">
                 {{ __('Waiting on me') }}
                 @if ($this->onMeCount > 0)

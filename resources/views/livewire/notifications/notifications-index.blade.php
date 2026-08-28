@@ -5,7 +5,7 @@
     </div>
 
     <flux:tab.group>
-        <flux:tabs wire:model.live="tab" variant="segmented">
+        <flux:tabs wire:model.live="tab" variant="segmented" class="max-w-full overflow-x-auto">
             <flux:tab name="inbox" icon="inbox" data-test="tab-inbox">{{ __('Inbox') }}</flux:tab>
             <flux:tab
                 name="subscriptions"
