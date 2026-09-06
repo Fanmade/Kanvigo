@@ -145,7 +145,7 @@ uncomment what you need to change.
 | --- | --- | --- |
 | `ATTACHMENTS_DISK` | `local` | Where files go. Each attachment records its own disk, so changing this does not break existing files |
 | `ATTACHMENTS_DIRECTORY` | `attachments` | Path within the disk |
-| `ATTACHMENTS_MAX_SIZE` | 12288 (KB) | Per-file cap. Raising it means also raising Livewire's temporary-upload rule, PHP's `upload_max_filesize` and `post_max_size`, and any reverse-proxy body limit |
+| `ATTACHMENTS_MAX_SIZE` | 12288 (KB) | Per-file cap. The effective limit is the lower of this and PHP's `upload_max_filesize` / `post_max_size`, and the upload UI shows and enforces that effective value. Raising the cap means also raising those PHP settings, Livewire's temporary-upload rule and any reverse-proxy body limit |
 | `ATTACHMENTS_SIGNED_URL_TTL` | 30 (minutes) | Lifetime of signed download links |
 | `ATTACHMENTS_GHOSTSCRIPT` | `gs` | Binary used for PDF thumbnails |
 

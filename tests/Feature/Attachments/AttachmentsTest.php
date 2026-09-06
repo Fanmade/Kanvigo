@@ -6,6 +6,7 @@ use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\Attachments\UploadLimit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -361,4 +362,26 @@ it('lists attachments newest first, breaking a same-second tie by id', function 
 
     expect($task->attachments()->pluck('name')->all())
         ->toBe(['third.pdf', 'second.pdf', 'first.pdf', 'yesterday.pdf']);
+});
+
+it('renders the dropzone with the limit PHP actually accepts, not just the configured cap', function () {
+    config()->set('attachments.max_size', 12288);
+    app()->instance(UploadLimit::class, new UploadLimit(uploadMaxFilesize: 2 * 1024 * 1024, postMaxSize: 8 * 1024 * 1024));
+
+    Livewire::actingAs($this->member)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->assertSee('maxBytes: '.(2 * 1024 * 1024), false)
+        ->assertSee('The maximum file size is 2 MB.');
+});
+
+it('rejects files larger than the limit PHP actually accepts', function () {
+    config()->set('attachments.max_size', 12288);
+    app()->instance(UploadLimit::class, new UploadLimit(uploadMaxFilesize: 100 * 1024, postMaxSize: 8 * 1024 * 1024));
+
+    Livewire::actingAs($this->member)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('newFiles', [UploadedFile::fake()->create('big.pdf', 500)])
+        ->assertHasErrors('newFiles.*');
+
+    expect($this->project->attachments()->count())->toBe(0);
 });

@@ -11,6 +11,7 @@ use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Attachments\UploadLimit;
 use App\Support\Facades\Audit;
 use App\Support\Images\ImageTransformer;
 use App\Support\Images\RasterImageTypes;
@@ -146,7 +147,7 @@ class AttachmentController extends Controller
     {
         abort_if(Auth::user()->cannot('create', [Attachment::class, $attachable]), 403);
 
-        $maxSize = (int) config('attachments.max_size');
+        $maxSize = app(UploadLimit::class)->kilobytes();
 
         $request->validate([
             'file' => ['required', 'file', "max:{$maxSize}"],

@@ -1,18 +1,18 @@
-@props(['enabled' => false, 'property' => 'newFiles', 'maxSize' => null])
+@props(['enabled' => false, 'property' => 'newFiles'])
 
 @php
-    $maxSizeKb = (int) ($maxSize ?? config('attachments.max_size'));
-
-    $maxSizeLabel = $maxSizeKb >= 1024
-        ? rtrim(rtrim(number_format($maxSizeKb / 1024, 1, '.', ''), '0'), '.').' MB'
-        : $maxSizeKb.' KB';
+    // The effective limit already accounts for PHP's post_max_size and
+    // upload_max_filesize, so batches never exceed what the server accepts.
+    $uploadLimit = app(\App\Support\Attachments\UploadLimit::class);
+    $maxSizeLabel = $uploadLimit->label();
+    $maxBytes = $uploadLimit->bytes();
 @endphp
 
 @if ($enabled)
     <div
         x-data="{
             depth: 0,
-            maxBytes: {{ $maxSizeKb * 1024 }},
+            maxBytes: {{ $maxBytes }},
             // Greedily pack files into batches whose combined size stays within
             // the per-file limit: uploadMultiple() sends a whole batch as one
             // POST, so an unchunked multi-file drop can exceed the web server's

@@ -8,6 +8,7 @@ use App\Models\Doc;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\Attachments\UploadLimit;
 use App\Support\Facades\Audit;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
@@ -48,7 +49,7 @@ trait HandlesAttachments
         $attachable = $this->attachable();
         $this->authorize('create', [Attachment::class, $attachable]);
 
-        $maxSize = (int) config('attachments.max_size');
+        $maxSize = app(UploadLimit::class)->kilobytes();
 
         $this->validate([
             'newFiles' => ['array'],
@@ -86,7 +87,7 @@ trait HandlesAttachments
         $attachable = $this->attachable();
         $this->authorize('create', [Attachment::class, $attachable]);
 
-        $maxSize = (int) config('attachments.max_size');
+        $maxSize = app(UploadLimit::class)->kilobytes();
 
         // A rejected file (e.g. a HEIC/AVIF phone photo, which the `image` rule
         // doesn't accept) must not leave the editor stuck on its "Uploading…"
