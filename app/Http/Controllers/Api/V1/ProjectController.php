@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Concerns\ResolvesApiReferences;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Support\RichTextSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -42,7 +43,7 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'short_name' => Project::shortNameRules(),
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
         ]);
 
         $project = app(CreateProject::class)->handle(
@@ -87,7 +88,7 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'short_name' => ['sometimes', ...Project::shortNameRules($project->id)],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
         ]);
 
         $updates = [];

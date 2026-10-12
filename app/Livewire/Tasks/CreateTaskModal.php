@@ -14,6 +14,7 @@ use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
 use App\Queries\TagSuggestions;
+use App\Support\RichTextSanitizer;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
@@ -451,7 +452,7 @@ class CreateTaskModal extends Component
             'projectId' => ['required', 'integer'],
             'parentId' => ['nullable', 'integer'],
             'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'priority' => ['required', new Enum(Priority::class)],
             'status' => ['required', 'string', 'in:'.collect(Status::columns())->map->value->implode(',')],
             'typeId' => ['nullable', 'integer', Rule::exists('task_types', 'id')->where('project_id', $this->projectId)],

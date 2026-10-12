@@ -8,6 +8,7 @@ use App\Mcp\Tools\UpdateDocTool;
 use App\Models\Doc;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\RichTextSanitizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 
@@ -187,6 +188,31 @@ it('decodes an HTML-escaped ampersand in the doc title', function () {
     KanvigoServer::tool(CreateDocTool::class, ['reference' => 'ABC', 'title' => 'Ben &amp; Jerry'])->assertOk();
 
     assertDatabaseHas('docs', ['title' => 'Ben & Jerry']);
+});
+
+it('stores a long doc body in full', function () {
+    Sanctum::actingAs($this->editor, ['read', 'write']);
+    $body = '<p>'.str_repeat('a', 25_000).'</p><h2>Last section</h2>';
+
+    KanvigoServer::tool(CreateDocTool::class, [
+        'reference' => 'ABC',
+        'title' => 'Long doc',
+        'body' => $body,
+    ])->assertOk();
+
+    expect(Doc::sole()->body)->toBe($body);
+});
+
+it('errors creating a doc whose body exceeds the length limit', function () {
+    Sanctum::actingAs($this->editor, ['read', 'write']);
+
+    KanvigoServer::tool(CreateDocTool::class, [
+        'reference' => 'ABC',
+        'title' => 'Too long',
+        'body' => str_repeat('a', RichTextSanitizer::MAX_LENGTH + 1),
+    ])->assertHasErrors();
+
+    expect(Doc::count())->toBe(0);
 });
 
 it('errors creating a doc with a parent from another project', function () {

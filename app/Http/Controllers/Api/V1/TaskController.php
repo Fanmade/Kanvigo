@@ -18,6 +18,7 @@ use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
 use App\Support\ReferenceResolver;
+use App\Support\RichTextSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -90,7 +91,7 @@ class TaskController extends Controller
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'priority' => ['nullable', Rule::in(Priority::names())],
             'status' => ['nullable', Rule::in($workingStatuses)],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
@@ -151,7 +152,7 @@ class TaskController extends Controller
 
         $validated = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', Rule::in($workingStatuses)],

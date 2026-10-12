@@ -9,6 +9,7 @@ use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\PresentsTasks;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Mcp\Concerns\ResolvesTaskCreationReferences;
+use App\Support\RichTextSanitizer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\Rule;
@@ -46,7 +47,7 @@ class CreateTaskTool extends Tool
             'reference' => ['required', 'string'],
             'parent' => ['nullable', 'string'],
             'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', Rule::in($workingStatuses)],

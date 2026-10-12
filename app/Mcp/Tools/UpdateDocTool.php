@@ -6,6 +6,7 @@ use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\PresentsDocs;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Mcp\Concerns\ResolvesDocReferences;
+use App\Support\RichTextSanitizer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use InvalidArgumentException;
@@ -32,7 +33,7 @@ class UpdateDocTool extends Tool
         $validated = $request->validate([
             'reference' => ['required', 'string'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'body' => ['nullable', 'string'],
+            'body' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'parent' => ['nullable', 'string'],
             'public' => ['nullable', 'boolean'],
         ], [

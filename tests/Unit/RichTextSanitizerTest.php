@@ -29,3 +29,9 @@ it('still strips scripts from around a table', function () {
         ->not->toContain('<script')
         ->not->toContain('onclick');
 });
+
+it('never truncates a long body', function () {
+    $html = '<p>'.str_repeat('a', 30_000).'</p><p>The end</p>';
+
+    expect((new RichTextSanitizer)->sanitize($html))->toBe($html);
+});

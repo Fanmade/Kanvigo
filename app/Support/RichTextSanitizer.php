@@ -15,9 +15,20 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  * editor produces — including tables, which come through Symfony's safe
  * elements with their colspan/rowspan intact — plus the inline-image markup (a
  * thumbnail linking to the full-size attachment via relative routes).
+ *
+ * The sanitizer never truncates: Symfony's default input cap (20,000 bytes)
+ * would silently cut long docs off mid-document. Length is bounded instead by
+ * validation against MAX_LENGTH on every write path, so an oversized value is
+ * rejected with an error rather than stored short.
  */
 class RichTextSanitizer
 {
+    /**
+     * The longest rich-text value (in characters) a description, doc or note
+     * body may hold.
+     */
+    public const int MAX_LENGTH = 100_000;
+
     private readonly HtmlSanitizer $sanitizer;
 
     public function __construct()
@@ -41,7 +52,8 @@ class RichTextSanitizer
             ->allowElement('mark')
             ->allowRelativeLinks()
             ->allowRelativeMedias()
-            ->forceAttribute('a', 'rel', 'noopener noreferrer');
+            ->forceAttribute('a', 'rel', 'noopener noreferrer')
+            ->withMaxInputLength(-1);
 
         $this->sanitizer = new HtmlSanitizer($config);
     }

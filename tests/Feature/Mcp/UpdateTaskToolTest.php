@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
+use App\Support\RichTextSanitizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 
@@ -189,4 +190,18 @@ it('replaces a task\'s tags and records the activity via MCP', function () {
     $activity = $task->activities()->where('action', 'tags_changed')->first();
     expect(json_decode((string) $activity->new_value, true))->toBe(['design'])
         ->and(json_decode((string) $activity->old_value, true))->toBe(['old']);
+});
+
+it('errors updating a task description past the length limit and keeps the old one', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create(['description' => '<p>Original</p>']);
+
+    KanvigoServer::tool(UpdateTaskTool::class, [
+        'reference' => $task->reference,
+        'description' => str_repeat('a', RichTextSanitizer::MAX_LENGTH + 1),
+    ])->assertHasErrors();
+
+    expect($task->fresh()->description)->toBe('<p>Original</p>');
 });

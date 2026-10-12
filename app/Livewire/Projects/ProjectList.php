@@ -4,6 +4,7 @@ namespace App\Livewire\Projects;
 
 use App\Actions\CreateProject;
 use App\Models\Project;
+use App\Support\RichTextSanitizer;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -63,7 +64,7 @@ class ProjectList extends Component
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'short_name' => Project::shortNameRules(),
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
         ]);
 
         $project = app(CreateProject::class)->handle(

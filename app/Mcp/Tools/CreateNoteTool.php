@@ -7,6 +7,7 @@ use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\PresentsNotes;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
+use App\Support\RichTextSanitizer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -30,7 +31,7 @@ class CreateNoteTool extends Tool
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['nullable', 'string'],
+            'body' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'project' => ['nullable', 'string'],
             'public' => ['nullable', 'boolean'],
         ], [

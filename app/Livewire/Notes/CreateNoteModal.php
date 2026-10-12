@@ -9,6 +9,7 @@ use App\Livewire\Tasks\CreateTaskModal;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\RichTextSanitizer;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -119,7 +120,7 @@ class CreateNoteModal extends Component
     {
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['nullable', 'string'],
+            'body' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'projectId' => ['nullable', 'integer'],
             'isPublic' => ['boolean'],
         ]);

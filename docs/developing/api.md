@@ -42,7 +42,9 @@ everything its owner can. The same restriction applies to the MCP server.
 A request without a valid token is `401`. A read-only token calling a write
 endpoint is `403`. A reference that does not exist *or* belongs to a project you
 cannot see is `404` — the API never reveals the existence of others' data.
-Validation failures are `422` with a standard `{ "message", "errors" }` body.
+Validation failures are `422` with a standard `{ "message", "errors" }` body —
+including rich text over its length limit (100,000 characters for descriptions
+and doc/note bodies, 5,000 for comments), which is rejected rather than truncated.
 Requests are rate-limited to 60/minute per token.
 
 ## Endpoints

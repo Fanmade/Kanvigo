@@ -22,6 +22,7 @@ use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
 use App\Support\Facades\Audit;
+use App\Support\RichTextSanitizer;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -743,7 +744,7 @@ class TaskView extends Component
 
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
         ]);
 
         $task->update([

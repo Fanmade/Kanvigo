@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\DocDetailResource;
 use App\Http\Resources\DocResource;
 use App\Models\Doc;
+use App\Support\RichTextSanitizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -79,7 +80,7 @@ class DocController extends Controller
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['nullable', 'string'],
+            'body' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'parent' => ['nullable', 'string'],
             'is_public' => ['sometimes', 'boolean'],
         ]);
@@ -120,7 +121,7 @@ class DocController extends Controller
 
         $validated = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'body' => ['sometimes', 'nullable', 'string'],
+            'body' => ['sometimes', 'nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'parent' => ['sometimes', 'nullable', 'string'],
             'is_public' => ['sometimes', 'boolean'],
         ]);

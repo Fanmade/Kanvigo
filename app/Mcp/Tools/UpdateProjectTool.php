@@ -6,6 +6,7 @@ use App\Mcp\Concerns\ExposesUrls;
 use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
+use App\Support\RichTextSanitizer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -33,7 +34,7 @@ class UpdateProjectTool extends Tool
         $validated = $request->validate([
             'short_name' => ['required', 'string'],
             'title' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
         ], [
             'short_name.required' => 'You must provide the project short_name (e.g. "PROJ").',
         ]);

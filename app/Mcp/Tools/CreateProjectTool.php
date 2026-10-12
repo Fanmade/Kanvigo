@@ -8,6 +8,7 @@ use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\RichTextSanitizer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Support\Facades\Validator;
@@ -45,7 +46,7 @@ class CreateProjectTool extends Tool
         $validated = Validator::validate($data, [
             'title' => ['required', 'string', 'max:255'],
             'short_name' => Project::shortNameRules(),
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
         ], [
             'title.required' => 'You must provide a project title.',
             'short_name.required' => 'You must provide a short_name: 2-4 letters used to reference the project (e.g. "PROJ").',

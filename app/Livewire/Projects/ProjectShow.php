@@ -16,6 +16,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Support\BoardCache;
 use App\Support\Facades\Audit;
+use App\Support\RichTextSanitizer;
 use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Flux\Flux;
@@ -429,7 +430,7 @@ class ProjectShow extends Component
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'short_name' => Project::shortNameRules($project->id),
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'autoArchiveDays' => ['nullable', 'integer', 'min:0', 'max:3650'],
             'waitingNudgeDays' => ['nullable', 'integer', 'min:0', 'max:3650'],
         ]);

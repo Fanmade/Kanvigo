@@ -11,6 +11,7 @@ use App\Http\Resources\NoteResource;
 use App\Models\Note;
 use App\Models\Project;
 use App\Support\ReferenceResolver;
+use App\Support\RichTextSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -156,7 +157,7 @@ class NoteController extends Controller
     {
         return $request->validate([
             'title' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
-            'body' => ['sometimes', 'nullable', 'string'],
+            'body' => ['sometimes', 'nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'project' => ['sometimes', 'nullable', 'string'],
             'is_public' => ['sometimes', 'boolean'],
         ]);

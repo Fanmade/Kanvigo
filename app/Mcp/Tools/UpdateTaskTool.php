@@ -13,6 +13,7 @@ use App\Mcp\Concerns\PresentsTasks;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\Facades\Audit;
 use App\Support\ReferenceResolver;
+use App\Support\RichTextSanitizer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\Rule;
@@ -43,7 +44,7 @@ class UpdateTaskTool extends Tool
         $validated = $request->validate([
             'reference' => ['required', 'string'],
             'title' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', Rule::in($workingStatuses)],

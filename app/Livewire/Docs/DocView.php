@@ -8,6 +8,7 @@ use App\Concerns\ShowsReferences;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Doc;
 use App\Models\Project;
+use App\Support\RichTextSanitizer;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -208,7 +209,7 @@ class DocView extends Component
 
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['nullable', 'string'],
+            'body' => ['nullable', 'string', 'max:'.RichTextSanitizer::MAX_LENGTH],
             'parentId' => [
                 'nullable',
                 'integer',
