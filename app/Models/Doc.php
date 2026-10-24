@@ -139,13 +139,15 @@ class Doc extends Model implements Mentionable, Referenceable, UsesVariables
     }
 
     /**
-     * The query scoping the per-project doc number sequence.
+     * The query scoping the per-project doc number sequence. Soft-deleted docs
+     * still hold their number in the unique index, so they count too — a number
+     * is never reused.
      *
      * @return Builder<static>
      */
     public function scopedNumberQuery(): Builder
     {
-        return static::query()->where('project_id', $this->project_id);
+        return static::withTrashed()->where('project_id', $this->project_id);
     }
 
     /**

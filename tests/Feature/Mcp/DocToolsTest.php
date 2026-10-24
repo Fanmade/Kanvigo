@@ -182,6 +182,20 @@ it('creates a published doc nested under a parent', function () {
     assertDatabaseHas('docs', ['title' => 'Storage', 'parent_id' => $parent->id, 'is_public' => true]);
 });
 
+it('creates a doc after the newest doc in the project was deleted', function () {
+    Sanctum::actingAs($this->editor, ['read', 'write']);
+    Doc::factory()->for($this->project)->create();
+    Doc::factory()->for($this->project)->create()->delete();
+
+    KanvigoServer::tool(CreateDocTool::class, [
+        'reference' => 'ABC',
+        'title' => 'After a deletion',
+        'public' => true,
+    ])->assertOk()->assertSee('ABC-D3');
+
+    assertDatabaseHas('docs', ['title' => 'After a deletion', 'doc_number' => 3]);
+});
+
 it('decodes an HTML-escaped ampersand in the doc title', function () {
     Sanctum::actingAs($this->editor, ['read', 'write']);
 
