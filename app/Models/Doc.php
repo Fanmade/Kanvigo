@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
@@ -147,7 +148,7 @@ class Doc extends Model implements Mentionable, Referenceable, UsesVariables
      */
     public function scopedNumberQuery(): Builder
     {
-        return static::withTrashed()->where('project_id', $this->project_id);
+        return static::query()->withoutGlobalScope(SoftDeletingScope::class)->where('project_id', $this->project_id);
     }
 
     /**
