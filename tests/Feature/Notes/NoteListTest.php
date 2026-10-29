@@ -4,7 +4,6 @@ use App\Livewire\Notes\NoteList;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\User;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -80,8 +79,8 @@ it('keeps reordering within the pin group — an unpinned note cannot jump above
 it('cannot reorder a note owned by someone else', function () {
     $foreign = Note::factory()->create(['title' => 'Not yours']);
 
-    expect(fn () => Livewire::actingAs($this->user)->test(NoteList::class)->call('moveNoteUp', $foreign->id))
-        ->toThrow(ModelNotFoundException::class);
+    Livewire::actingAs($this->user)->test(NoteList::class)->call('moveNoteUp', $foreign->id)
+        ->assertNotFound();
 });
 
 it('deletes one of the user\'s own notes from the page', function () {
@@ -108,8 +107,8 @@ it('pins and unpins one of the user\'s own notes', function () {
 it('cannot pin a note owned by someone else', function () {
     $foreign = Note::factory()->create(['title' => 'Not yours']);
 
-    expect(fn () => Livewire::actingAs($this->user)->test(NoteList::class)->call('togglePin', $foreign->id))
-        ->toThrow(ModelNotFoundException::class);
+    Livewire::actingAs($this->user)->test(NoteList::class)->call('togglePin', $foreign->id)
+        ->assertNotFound();
 
     expect($foreign->refresh()->is_pinned)->toBeFalse();
 });

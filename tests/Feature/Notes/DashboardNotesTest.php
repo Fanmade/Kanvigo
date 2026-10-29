@@ -5,7 +5,6 @@ use App\Livewire\Dashboard;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\User;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -50,8 +49,8 @@ it('deletes the user\'s own note', function () {
 it('cannot delete another user\'s note', function () {
     $note = Note::factory()->create();
 
-    expect(fn () => Livewire::actingAs($this->user)->test(Dashboard::class)->call('deleteNote', $note->id))
-        ->toThrow(ModelNotFoundException::class);
+    Livewire::actingAs($this->user)->test(Dashboard::class)->call('deleteNote', $note->id)
+        ->assertNotFound();
 
     expect(Note::find($note->id))->not->toBeNull();
 });

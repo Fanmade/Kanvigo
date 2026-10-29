@@ -6,7 +6,6 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Variable;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -184,9 +183,9 @@ it('refuses to touch a variable from another project', function () {
     $other = Project::factory()->create(['short_name' => 'OTH']);
     $foreign = Variable::factory()->for($other)->create(['name' => 'hero']);
 
-    expect(fn () => variablesPage()->call('deleteVariable', $foreign->id))
-        ->toThrow(ModelNotFoundException::class)
-        ->and(Variable::query()->count())->toBe(1);
+    variablesPage()->call('deleteVariable', $foreign->id)->assertNotFound();
+
+    expect(Variable::query()->count())->toBe(1);
 });
 
 it('keeps the page from members who cannot manage variables', function () {

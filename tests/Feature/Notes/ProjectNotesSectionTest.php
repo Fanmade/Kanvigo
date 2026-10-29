@@ -4,7 +4,6 @@ use App\Livewire\Projects\ProjectShow;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\User;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -42,8 +41,8 @@ it('shows a public note to members but hides private attached notes', function (
 it('forbids a non-owner from deleting a public note', function () {
     $note = Note::factory()->for($this->owner)->publicTo($this->project)->create();
 
-    expect(fn () => ($this->view)($this->member)->call('deleteNote', $note->id))
-        ->toThrow(ModelNotFoundException::class);
+    ($this->view)($this->member)->call('deleteNote', $note->id)
+        ->assertNotFound();
 
     expect(Note::find($note->id))->not->toBeNull();
 });
@@ -51,8 +50,8 @@ it('forbids a non-owner from deleting a public note', function () {
 it('forbids a non-owner from changing a public note\'s visibility', function () {
     $note = Note::factory()->for($this->owner)->publicTo($this->project)->create();
 
-    expect(fn () => ($this->view)($this->member)->call('toggleNoteVisibility', $note->id))
-        ->toThrow(ModelNotFoundException::class);
+    ($this->view)($this->member)->call('toggleNoteVisibility', $note->id)
+        ->assertNotFound();
 
     expect($note->fresh()->is_public)->toBeTrue();
 });

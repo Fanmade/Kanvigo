@@ -89,12 +89,13 @@ trait HandlesAttachments
 
         $maxSize = app(UploadLimit::class)->kilobytes();
 
-        // A rejected file (e.g. a HEIC/AVIF phone photo, which the `image` rule
-        // doesn't accept) must not leave the editor stuck on its "Uploading…"
-        // spinner with no feedback: surface a toast and bail instead of throwing.
+        // A rejected file (e.g. a HEIC/AVIF phone photo — the `image` rule alone
+        // accepts those, so the formats are listed explicitly) must not leave the
+        // editor stuck on its "Uploading…" spinner with no feedback: surface a
+        // toast and bail instead of throwing.
         try {
             $this->validate([
-                'inlineImage' => ['image', "max:{$maxSize}"],
+                'inlineImage' => ['image', 'mimes:jpeg,png,gif,webp', "max:{$maxSize}"],
             ]);
         } catch (ValidationException) {
             $this->reset('inlineImage');

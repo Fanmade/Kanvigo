@@ -2,7 +2,6 @@
 
 use App\Livewire\Settings\Passkeys;
 use App\Models\User;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Fortify\Features;
 use Laravel\Passkeys\Passkey;
@@ -87,8 +86,8 @@ test('a user cannot delete another users passkey', function () {
 
     $this->actingAs($user);
 
-    expect(static fn () => Livewire::test(Passkeys::class)->call('confirmDelete', $otherPasskey->id))
-        ->toThrow(ModelNotFoundException::class);
+    Livewire::test(Passkeys::class)->call('confirmDelete', $otherPasskey->id)
+        ->assertNotFound();
 
     $this->assertDatabaseHas('passkeys', ['id' => $otherPasskey->id]);
 });
