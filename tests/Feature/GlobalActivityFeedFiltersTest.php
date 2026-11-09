@@ -53,6 +53,52 @@ it('leaves the reader own activity out by default and includes it on request', f
     expect($actorIds())->toContain($this->member->id);
 });
 
+/**
+ * Mark an activity as performed through an API token or OAuth-connected agent.
+ */
+function viaAgent(Activity $activity, string $tokenName = 'Claude'): Activity
+{
+    $activity->forceFill(['token_name' => $tokenName])->save();
+
+    return $activity;
+}
+
+it('keeps what an agent did on the reader\'s behalf while leaving their own clicks out', function () {
+    $task = Task::factory()->for($this->project)->create();
+
+    $this->actingAs($this->member);
+    $manual = seedActivity($task, 'status_changed', 'status', 'planned', 'todo');
+    $agent = viaAgent(seedActivity($task, 'status_changed', 'status', 'todo', 'done'));
+
+    $ids = collect(Livewire::actingAs($this->member)->test(GlobalActivityFeed::class)
+        ->instance()->activities()->items())->pluck('id');
+
+    expect($ids)->toContain($agent->id)
+        ->and($ids)->not->toContain($manual->id);
+});
+
+it('filters by source: people or agents', function () {
+    $task = Task::factory()->for($this->project)->create();
+
+    $this->actingAs($this->other);
+    $manual = seedActivity($task, 'status_changed', 'status', 'planned', 'todo');
+    $agent = viaAgent(seedActivity($task, 'status_changed', 'status', 'todo', 'done'));
+
+    $component = Livewire::actingAs($this->member)->test(GlobalActivityFeed::class);
+    $ids = fn () => collect($component->instance()->activities()->items())->pluck('id');
+
+    expect($ids())->toContain($manual->id)->toContain($agent->id);
+
+    $component->set('source', 'agents')->assertSet('isFiltered', true);
+    expect($ids())->toContain($agent->id)->not->toContain($manual->id);
+
+    $component->set('source', 'people');
+    expect($ids())->toContain($manual->id)->not->toContain($agent->id);
+
+    $component->call('clearFilters')->assertSet('source', 'all');
+    expect($ids())->toContain($manual->id)->toContain($agent->id);
+});
+
 it('filters by person', function () {
     $task = Task::factory()->for($this->project)->create();
     $third = User::factory()->create(['name' => 'Third']);

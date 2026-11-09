@@ -121,6 +121,16 @@ it('counts only unseen activity by other people, within the visible projects', f
     expect($this->member->fresh()->unseenActivityCount())->toBe(1);
 });
 
+it('counts what an agent did on the reader\'s behalf as something to catch up on', function () {
+    $this->member->forceFill(['activities_seen_at' => Carbon::parse('2026-08-10 12:00')])->save();
+
+    activityAt($this->project, $this->member, '2026-08-11 10:00');  // the reader's own, by hand
+    activityAt($this->project, $this->member, '2026-08-11 11:00')   // the reader's agent
+        ->forceFill(['token_name' => 'Claude'])->save();
+
+    expect($this->member->fresh()->unseenActivityCount())->toBe(1);
+});
+
 it('counts everything visible when the feed has never been opened', function () {
     activityAt($this->project, $this->other, '2026-08-09 09:00');
     activityAt($this->project, $this->other, '2026-08-11 09:00');

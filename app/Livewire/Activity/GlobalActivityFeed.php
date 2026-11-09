@@ -4,15 +4,18 @@ namespace App\Livewire\Activity;
 
 use App\Audit\Sinks\ActivityLogSink;
 use App\Concerns\ResolvesSubjectUrl;
+use App\Enums\Status;
 use App\Models\Activity;
 use App\Models\Doc;
 use App\Models\Project;
+use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Variable;
 use App\Support\ActivityDescriber;
 use App\Support\Impersonation;
 use Illuminate\Contracts\Pagination\CursorPaginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -31,7 +34,13 @@ use Livewire\WithPagination;
  * notifications inbox — nothing here is addressed at you, it is simply
  * everything that happened, newest first.
  *
+ * Two views over the same filters: the event stream ("events") lists every
+ * change; the task overview ("tasks") collapses it to one row per task, the
+ * most recently changed first, showing its latest change (KAN-586).
+ *
  * @property-read CursorPaginator<int, Activity> $activities
+ * @property-read LengthAwarePaginator<int, Activity> $updatedTasks
+ * @property-read list<string> $tagOptions
  */
 #[Title('Activity')]
 class GlobalActivityFeed extends Component
@@ -60,6 +69,30 @@ class GlobalActivityFeed extends Component
     ];
 
     /**
+     * Which view to render: 'events' (the stream) or 'tasks' (one row per task).
+     */
+    #[Url]
+    public string $view = 'events';
+
+    /**
+     * Restrict to tasks currently in this status (a {@see Status} value), or ''.
+     */
+    #[Url]
+    public string $status = '';
+
+    /**
+     * Restrict to tasks carrying a tag of this name (any project), or ''.
+     */
+    #[Url]
+    public string $tag = '';
+
+    /**
+     * Restrict to tasks whose reference or title contains this text, or ''.
+     */
+    #[Url]
+    public string $search = '';
+
+    /**
      * The public id of the person whose activity to show, or '' for everyone.
      * The opaque id rather than the numeric one: the filter lives in a URL that
      * gets shared.
@@ -86,9 +119,17 @@ class GlobalActivityFeed extends Component
     public string $range = 'all';
 
     /**
-     * Whether the reader's own activity is included. Off by default: on a feed
-     * you visit to see what others did, your own trail is the loudest thing on
-     * the page and the least informative.
+     * Who performed the activity: 'all', 'people' (by hand in the app) or
+     * 'agents' (through an API token or an OAuth-connected agent).
+     */
+    #[Url]
+    public string $source = 'all';
+
+    /**
+     * Whether the reader's own manual activity is included. Off by default: on
+     * a feed you visit to see what others did, your own clicks are the loudest
+     * thing on the page and the least informative. Changes an agent made on the
+     * reader's behalf are not "own" in that sense and always show (KAN-591).
      */
     #[Url]
     public bool $mine = false;
@@ -122,9 +163,9 @@ class GlobalActivityFeed extends Component
      */
     public function updated(string $property): void
     {
-        if (in_array($property, ['actor', 'project', 'category', 'range', 'mine'], true)) {
+        if (in_array($property, ['view', 'actor', 'project', 'category', 'range', 'source', 'mine', 'status', 'tag', 'search'], true)) {
             $this->resetPage();
-            unset($this->activities, $this->days, $this->descriptions);
+            unset($this->activities, $this->updatedTasks, $this->days, $this->descriptions);
         }
     }
 
@@ -158,6 +199,25 @@ class GlobalActivityFeed extends Component
     }
 
     /**
+     * The tag names offered by the tag filter: every tag in the reader's
+     * projects, deduplicated by name — the same name in two projects is one
+     * option, and filtering by it matches both.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function tagOptions(): array
+    {
+        return array_values(Tag::query()
+            ->whereIn('project_id', Auth::user()->projectIdsWithPermission('view-activity-log'))
+            ->orderBy('name')
+            ->get(['name'])
+            ->map(static fn (Tag $tag): string => $tag->name)
+            ->unique(static fn (string $name): string => mb_strtolower($name))
+            ->all());
+    }
+
+    /**
      * The label for an activity-type category.
      */
     public function categoryLabel(string $category): string
@@ -182,15 +242,22 @@ class GlobalActivityFeed extends Component
     #[Computed]
     public function isFiltered(): bool
     {
-        return $this->actor !== '' || $this->project !== '' || $this->category !== 'all' || $this->range !== 'all';
+        return $this->actor !== ''
+            || $this->project !== ''
+            || $this->category !== 'all'
+            || $this->range !== 'all'
+            || $this->source !== 'all'
+            || $this->status !== ''
+            || $this->tag !== ''
+            || $this->search !== '';
     }
 
     public function clearFilters(): void
     {
-        $this->reset(['actor', 'project', 'category', 'range']);
+        $this->reset(['actor', 'project', 'category', 'range', 'source', 'status', 'tag', 'search']);
 
         $this->resetPage();
-        unset($this->activities, $this->days, $this->descriptions);
+        unset($this->activities, $this->updatedTasks, $this->days, $this->descriptions);
     }
 
     /**
@@ -224,6 +291,39 @@ class GlobalActivityFeed extends Component
     }
 
     /**
+     * The task overview: one row per task, the most recently changed first,
+     * each represented by its latest activity that passes the filters.
+     *
+     * The grouping happens in SQL (the newest matching activity id per task),
+     * so a page costs the same few queries however long each task's history is.
+     * Offset pagination is fine here: a task that changes while you page moves
+     * to the top rather than duplicating a row the way a growing stream would.
+     *
+     * @return LengthAwarePaginator<int, Activity>
+     */
+    #[Computed]
+    public function updatedTasks(): LengthAwarePaginator
+    {
+        $latestPerTask = $this->filtered(Activity::query()->visibleTo(Auth::user()))
+            ->where('activities.subject_type', (new Task)->getMorphClass())
+            // A deleted task has nothing left to open; it does not belong in an
+            // overview of what to look at.
+            ->whereHasMorph('subject', [Task::class])
+            ->selectRaw('max(activities.id)')
+            ->groupBy('activities.subject_id');
+
+        return Activity::query()
+            ->whereIn('id', $latestPerTask)
+            ->with(['user', 'project'])
+            ->with(['subject' => static fn (Relation $subject): Relation => $subject instanceof MorphTo
+                ? $subject->morphWith([Task::class => ['project']])
+                : $subject])
+            ->latest('created_at')
+            ->latest('id')
+            ->paginate(self::PER_PAGE);
+    }
+
+    /**
      * Apply the current filters to the (already authorized) feed query.
      *
      * The filters only ever narrow what the visibility scope allows: an actor or
@@ -236,10 +336,14 @@ class GlobalActivityFeed extends Component
     protected function filtered(Builder $query): Builder
     {
         if (! $this->mine) {
-            $query->where(static fn (Builder $others): Builder => $others
-                ->whereNull('activities.user_id')
-                ->orWhere('activities.user_id', '!=', Auth::id()));
+            $query->withoutManualActivityBy(Auth::user());
         }
+
+        if ($this->source === 'people' || $this->source === 'agents') {
+            $query->viaAgent($this->source === 'agents');
+        }
+
+        $this->filterBySubjectTask($query);
 
         if ($this->actor !== '') {
             $query->whereHas('user', fn (Builder $user) => $user->where('public_id', $this->actor));
@@ -268,6 +372,40 @@ class GlobalActivityFeed extends Component
     }
 
     /**
+     * The task-level filters (status, tag, text): they narrow the activity to
+     * that recorded on tasks matching them, in either view.
+     *
+     * @param  Builder<Activity>  $query
+     */
+    protected function filterBySubjectTask(Builder $query): void
+    {
+        $status = Status::tryFrom($this->status);
+        $tag = mb_strtolower(trim($this->tag));
+        $search = mb_strtolower(trim($this->search));
+
+        if ($status === null && $tag === '' && $search === '') {
+            return;
+        }
+
+        $query->whereHasMorph('subject', [Task::class], static function (Builder $task) use ($status, $tag, $search): void {
+            if ($status !== null) {
+                $task->where('status', $status);
+            }
+
+            if ($tag !== '') {
+                $task->whereHas('tags', static fn (Builder $tags): Builder => $tags->whereRaw('lower(tags.name) = ?', [$tag]));
+            }
+
+            if ($search !== '') {
+                $task->where(static fn (Builder $match): Builder => $match
+                    ->whereRaw('lower(tasks.title) like ?', ['%'.$search.'%'])
+                    ->orWhereHas('project', static fn (Builder $project): Builder => $project
+                        ->whereRaw("lower(projects.short_name || '-' || tasks.task_number) like ?", ['%'.$search.'%'])));
+            }
+        });
+    }
+
+    /**
      * The current page grouped by calendar day, in display order. Grouping in
      * the component keeps the view a plain nested loop.
      *
@@ -289,7 +427,9 @@ class GlobalActivityFeed extends Component
     #[Computed]
     public function descriptions(): array
     {
-        return collect($this->activities->items())
+        $items = $this->view === 'tasks' ? $this->updatedTasks->items() : $this->activities->items();
+
+        return collect($items)
             ->mapWithKeys(static fn (Activity $activity): array => [
                 $activity->id => ActivityDescriber::describe($activity),
             ])
@@ -318,6 +458,24 @@ class GlobalActivityFeed extends Component
         }
 
         return $items->first(static fn (Activity $activity): bool => $activity->created_at?->lessThanOrEqualTo($seenAt) ?? false)?->id;
+    }
+
+    /**
+     * Whether the activity arrived after the reader's previous visit — marks a
+     * task-overview row as new.
+     */
+    public function isNew(Activity $activity): bool
+    {
+        return $this->seenAt !== null
+            && ($activity->created_at?->greaterThan(Carbon::parse($this->seenAt)) ?? false);
+    }
+
+    /**
+     * The task URL for a task-overview row.
+     */
+    public function taskUrl(Activity $activity): ?string
+    {
+        return $this->subjectUrl($activity->subject);
     }
 
     /**

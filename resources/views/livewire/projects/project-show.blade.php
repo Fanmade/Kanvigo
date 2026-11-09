@@ -14,6 +14,20 @@
                 :subscribable="$this->project"
                 :wire:key="'sub-project-'.$this->project->id"
             />
+            @can('view-activity-log', $this->project)
+                {{-- The cross-project activity page's task overview, narrowed to
+                     this project: what changed here most recently (KAN-586). --}}
+                <flux:button
+                    size="sm"
+                    variant="ghost"
+                    icon="clock"
+                    :href="route('activity.index', ['project' => $this->project->short_name, 'view' => 'tasks'])"
+                    wire:navigate
+                    data-test="project-recent-updates-link"
+                >
+                    {{ __('Recent updates') }}
+                </flux:button>
+            @endcan
             <flux:button
                 size="sm"
                 variant="ghost"

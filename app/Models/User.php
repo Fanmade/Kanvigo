@@ -644,9 +644,7 @@ class User extends Authenticatable implements HasLocalePreference, PasskeyUser
             fn (): int => Activity::query()
                 ->visibleTo($this)
                 ->when($seenAt !== null, static fn (Builder $query) => $query->where('created_at', '>', $seenAt))
-                ->where(fn (Builder $others) => $others
-                    ->whereNull('activities.user_id')
-                    ->orWhere('activities.user_id', '!=', $this->getKey()))
+                ->withoutManualActivityBy($this)
                 ->count(),
         );
     }

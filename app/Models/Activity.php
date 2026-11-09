@@ -79,6 +79,37 @@ class Activity extends Model
     }
 
     /**
+     * Leave out what the given user did by hand. Activity they performed through
+     * an API token or an OAuth-connected agent stays: that is work an agent did
+     * on their behalf, which they want to see in an overview just like other
+     * people's changes (KAN-591). System activity (no user) always stays.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function withoutManualActivityBy(Builder $query, User $user): void
+    {
+        $query->where(static fn (Builder $others): Builder => $others
+            ->whereNull('activities.user_id')
+            ->orWhere('activities.user_id', '!=', $user->getKey())
+            ->orWhereNotNull('activities.token_name'));
+    }
+
+    /**
+     * Only activity performed through an API token or OAuth-connected agent
+     * (true), or only activity performed by hand in the app (false).
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function viaAgent(Builder $query, bool $viaAgent = true): void
+    {
+        $viaAgent
+            ? $query->whereNotNull('activities.token_name')
+            : $query->whereNull('activities.token_name');
+    }
+
+    /**
      * Siblings sharing the same subject — the scope the {@see $sequence} numbers
      * within (see {@see HasScopedNumber}).
      *

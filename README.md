@@ -119,11 +119,15 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   goes only to a confirmed address; mentions stay in-app for now.
 - **Activity feed** — one page with everything that happened across all your
   projects, newest first and grouped by day. Unlike notifications it isn't
-  addressed at you: it answers "what did I miss?". Filter by person, project,
-  activity type and period; your own activity is left out unless you ask for it,
-  and a filtered feed keeps its state in the URL, so it can be shared.
-  A line marks what arrived since your last visit, and the sidebar carries a
-  count of what you haven't seen.
+  addressed at you: it answers "what did I miss?". Switch between every single
+  event and a **task overview** — one row per task, most recently changed first,
+  with its status and latest change; each project page links to its own overview.
+  Filter by task (reference or title), person, project, activity type, period,
+  source (people or agents & API), task status and tag; your own manual changes
+  are left out unless you ask for them, while changes an agent made on your
+  behalf always show. A filtered feed keeps its state in the URL, so it can be
+  shared. New activity since your last visit is marked, and the sidebar carries
+  a count of what you haven't seen.
 - **Profiles & avatars** — upload a profile picture (initials as the fallback);
   a profile page shows the projects you share with someone and their recent
   activity, visible only to people who share a project with them.
