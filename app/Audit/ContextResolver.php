@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Context;
 use Kanvigo\Audit\Contracts\AuditContext;
 use Kanvigo\Audit\Contracts\AuditEvent;
 use Kanvigo\Audit\Contracts\AuditSource;
-use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Stamps actor, occurred-at and request/runtime context onto every event
@@ -107,15 +106,14 @@ class ContextResolver
     }
 
     /**
-     * The name of the API/MCP token the current action is being performed
-     * with, or null for a direct web-session action. A transient (session)
-     * token has no name, so only real personal access tokens are attributed.
+     * The name of the credential the current action is performed with — a
+     * personal access token's name or an OAuth client's name (MCP agents such
+     * as Claude Desktop) — or null for a direct web-session action.
      */
     protected function tokenName(): ?string
     {
         $user = Auth::user();
-        $token = $user instanceof User ? $user->currentAccessToken() : null;
 
-        return $token instanceof PersonalAccessToken ? $token->name : null;
+        return $user instanceof User ? $user->currentAccessCredentialName() : null;
     }
 }

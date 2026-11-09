@@ -194,7 +194,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 
 - **Activity log** — a polymorphic trail of creations, status, priority,
   assignment, tag and dependency changes, cancellations and reopenings, naming
-  exactly what changed and flagging actions taken through an API or MCP token.
+  exactly what changed and flagging actions taken through an API or MCP token,
+  including agents connected via OAuth (e.g. Claude Desktop).
   Any entry can be discussed: **Discuss** drops a reference to it into the
   comment composer, and the posted comment links back to the entry.
 - **Complete coverage** — beyond content changes, every security-relevant action

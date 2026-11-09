@@ -37,6 +37,7 @@ use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Passport\AccessToken;
+use Laravel\Passport\Passport;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
@@ -80,6 +81,14 @@ class User extends Authenticatable implements HasLocalePreference, PasskeyUser
     private bool $oauthGrantResolved = false;
 
     private ?McpClientGrant $oauthGrant = null;
+
+    /**
+     * Memoised OAuth client name for the current request, so attributing
+     * several audit events in one request looks the client up only once.
+     */
+    private bool $oauthClientNameResolved = false;
+
+    private ?string $oauthClientName = null;
 
     /**
      * Per-instance memo for {@see projectIdsWithPermission()}, keyed by permission.
@@ -372,6 +381,37 @@ class User extends Authenticatable implements HasLocalePreference, PasskeyUser
             }
 
             return $this->oauthGrant?->restrictsProjects() === true ? $this->oauthGrant : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * The name the current request's credential is attributed to in the
+     * activity and audit trail: a personal access token's own name, or — for
+     * an OAuth connection (an MCP client such as Claude Desktop) — the name
+     * the OAuth client registered with. Null for a web session or a
+     * transient (session-derived) token, i.e. a direct, manual action.
+     */
+    public function currentAccessCredentialName(): ?string
+    {
+        $token = $this->currentAccessCredential();
+
+        if ($token instanceof PersonalAccessToken) {
+            return $token->name;
+        }
+
+        if ($token instanceof AccessToken) {
+            if (! $this->oauthClientNameResolved) {
+                $client = Passport::clientModel()::query()->find($token->oauth_client_id);
+
+                // Never fall back to null here: that would make an agent's
+                // change look like a manual one.
+                $this->oauthClientName = $client?->name ?: 'OAuth client';
+                $this->oauthClientNameResolved = true;
+            }
+
+            return $this->oauthClientName;
         }
 
         return null;
