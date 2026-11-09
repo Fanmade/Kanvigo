@@ -149,7 +149,10 @@
                  as the command palette, so the create-task modal infers the project
                  from the current route, auto-selects a sole project, or falls back to
                  its project picker. Dispatched via Livewire.dispatch (not wire:click)
-                 because the header layout is not itself a Livewire component. Only
+                 because the header layout is not itself a Livewire component. The
+                 bare x-data makes the button its own Alpine scope: the header is not
+                 one, and Alpine never binds x-on outside a scope, so without it the
+                 click silently does nothing (KAN-587). Only
                  shown when the user has a project to add a task to, mirroring the
                  command palette's gate. The label collapses to an icon on mobile,
                  where the search bar claims the header width. --}}
@@ -159,6 +162,7 @@
                 icon="plus"
                 size="sm"
                 class="me-3"
+                x-data
                 x-on:click="Livewire.dispatch('open-create-task')"
                 :aria-label="__('New task')"
                 data-test="toolbar-new-task"
