@@ -366,11 +366,14 @@ it('reveals every icon as a labelled overview and collapses it again', function 
         ->test(ProjectTags::class, ['short_name' => $project->short_name])
         ->call('startEdit', $tag->id)
         ->assertSeeHtml('data-test="edit-tag-icon-show-all"')
-        ->assertDontSeeHtml('data-test="edit-tag-icon-'.$last.'"');
+        ->assertDontSeeHtml('data-test="edit-tag-icon-'.$last.'"')
+        ->assertDontSeeHtml('data-icon-overview="1"');
 
+    // The overview marks itself so the surrounding modal widens to full width.
     $component->call('toggleAllIcons')
         ->assertSet('showAllIcons', true)
-        ->assertSeeHtml('data-test="edit-tag-icon-'.$last.'"');
+        ->assertSeeHtml('data-test="edit-tag-icon-'.$last.'"')
+        ->assertSeeHtml('data-icon-overview="1"');
 
     expect($component->instance()->iconOptions())->toHaveCount($total);
 

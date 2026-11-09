@@ -44,9 +44,11 @@
         @class([
             'overflow-y-auto rounded-lg border border-zinc-200 p-2 dark:border-white/10',
             'flex max-h-44 flex-wrap gap-2' => ! $showAll,
-            'grid max-h-96 grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-1.5' => $showAll,
+            'grid max-h-[60vh] grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-1.5' => $showAll,
         ])
         data-test="{{ $test }}-icon-picker"
+        {{-- Marker the surrounding modal widens on via has-[[data-icon-overview]]: --}}
+        @if ($showAll) data-icon-overview="1" @endif
     >
         <button
             type="button"

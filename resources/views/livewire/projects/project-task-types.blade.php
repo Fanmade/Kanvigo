@@ -86,7 +86,7 @@
     @endif
 
     {{-- Create / edit modal --}}
-    <flux:modal wire:model="editing" class="md:w-96" data-test="edit-task-type-modal">
+    <flux:modal wire:model="editing" class="md:w-96 has-[[data-icon-overview]]:w-[calc(100vw-2rem)] has-[[data-icon-overview]]:max-w-none" data-test="edit-task-type-modal">
         <form wire:submit="save" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ $editingTypeId ? __('Edit type') : __('New type') }}</flux:heading>
 

@@ -91,7 +91,7 @@
         </div>
 
         {{-- Create-tag modal --}}
-        <flux:modal wire:model="showTagModal" class="md:w-96" data-test="create-tag-modal">
+        <flux:modal wire:model="showTagModal" class="md:w-96 has-[[data-icon-overview]]:w-[calc(100vw-2rem)] has-[[data-icon-overview]]:max-w-none" data-test="create-tag-modal">
             <form wire:submit="createTag" class="flex flex-col gap-4">
                 <flux:heading size="lg">{{ __('New tag') }}</flux:heading>
 

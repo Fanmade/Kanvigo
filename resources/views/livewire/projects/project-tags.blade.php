@@ -131,7 +131,7 @@
     @endif
 
     {{-- Edit-tag modal --}}
-    <flux:modal wire:model="editing" class="md:w-96" data-test="edit-tag-modal">
+    <flux:modal wire:model="editing" class="md:w-96 has-[[data-icon-overview]]:w-[calc(100vw-2rem)] has-[[data-icon-overview]]:max-w-none" data-test="edit-tag-modal">
         <form wire:submit="saveEdit" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ $editingTagId === null ? __('New tag') : __('Edit tag') }}</flux:heading>
 

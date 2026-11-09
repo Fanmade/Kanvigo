@@ -260,7 +260,7 @@
     </flux:modal>
 
     {{-- Choose a color for a brand-new tag --}}
-    <flux:modal wire:model="showTagColorModal" class="md:w-96" data-test="create-task-tag-color-modal">
+    <flux:modal wire:model="showTagColorModal" class="md:w-96 has-[[data-icon-overview]]:w-[calc(100vw-2rem)] has-[[data-icon-overview]]:max-w-none" data-test="create-task-tag-color-modal">
         <form wire:submit.prevent="confirmNewTag" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ __('New tag') }}</flux:heading>
 
