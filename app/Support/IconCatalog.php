@@ -32,24 +32,42 @@ class IconCatalog
     }
 
     /**
-     * The icons whose name contains the query, capped at $limit so the picker
-     * never renders hundreds of buttons. A blank query returns the first $limit
-     * icons, giving the picker something to show before anything is typed.
+     * The icons whose name contains the query, capped at $limit so the compact
+     * picker never renders hundreds of buttons. A blank query returns the first
+     * $limit icons, giving the picker something to show before anything is
+     * typed. A null $limit returns every match (the picker's "show all" view).
      *
      * @return list<string>
      */
-    public static function search(?string $query, int $limit = 60): array
+    public static function search(?string $query, ?int $limit = 60): array
+    {
+        return array_slice(self::matching($query), 0, $limit);
+    }
+
+    /**
+     * How many icons match the query before any cap — lets the picker say how
+     * many more the "show all" view would reveal.
+     */
+    public static function countMatching(?string $query): int
+    {
+        return count(self::matching($query));
+    }
+
+    /**
+     * Every icon whose name contains the query; the whole catalog for a blank one.
+     *
+     * @return list<string>
+     */
+    protected static function matching(?string $query): array
     {
         $needle = mb_strtolower(trim((string) $query));
 
-        $matches = $needle === ''
+        return $needle === ''
             ? self::available()
             : array_values(array_filter(
                 self::available(),
                 static fn (string $icon): bool => str_contains($icon, $needle),
             ));
-
-        return array_slice($matches, 0, $limit);
     }
 
     /**
@@ -88,7 +106,9 @@ class IconCatalog
             }
         }
 
-        $icons = array_values(array_unique($icons));
+        // `icon/index` is Flux's own <flux:icon> dispatcher, not an icon:
+        // rendering it as one recurses until PHP segfaults.
+        $icons = array_values(array_diff(array_unique($icons), ['index']));
         sort($icons);
 
         return $icons;

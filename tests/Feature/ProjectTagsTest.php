@@ -5,6 +5,7 @@ use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\IconCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -354,6 +355,46 @@ it('filters the icon picker by the typed query and resets it when reopening', fu
         ->assertSeeHtml('data-test="edit-tag-icon-empty"')
         ->call('startEdit', $tag->id)
         ->assertSet('iconQuery', '');
+});
+
+it('reveals every icon as a labelled overview and collapses it again', function () {
+    [$user, $project, $tag] = memberProjectTag();
+    $total = count(IconCatalog::available());
+    $last = IconCatalog::available()[$total - 1];
+
+    $component = Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startEdit', $tag->id)
+        ->assertSeeHtml('data-test="edit-tag-icon-show-all"')
+        ->assertDontSeeHtml('data-test="edit-tag-icon-'.$last.'"');
+
+    $component->call('toggleAllIcons')
+        ->assertSet('showAllIcons', true)
+        ->assertSeeHtml('data-test="edit-tag-icon-'.$last.'"');
+
+    expect($component->instance()->iconOptions())->toHaveCount($total);
+
+    // The overview still narrows by the search field.
+    $component->set('iconQuery', 'trophy');
+    expect($component->instance()->iconOptions())->toBe(['trophy']);
+
+    $component->call('toggleAllIcons')
+        ->assertSet('showAllIcons', false)
+        ->call('toggleAllIcons')
+        // Reopening the picker starts from the compact view again.
+        ->call('startEdit', $tag->id)
+        ->assertSet('showAllIcons', false)
+        ->assertDontSeeHtml('data-test="edit-tag-icon-'.$last.'"');
+});
+
+it('hides the show-all toggle when every match already fits', function () {
+    [$user, $project, $tag] = memberProjectTag();
+
+    Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startEdit', $tag->id)
+        ->set('iconQuery', 'trophy')
+        ->assertDontSeeHtml('data-test="edit-tag-icon-show-all"');
 });
 
 it('rejects a tag icon outside the allowed set', function () {

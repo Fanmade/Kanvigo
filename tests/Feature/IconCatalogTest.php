@@ -8,6 +8,7 @@ it('discovers every icon Flux can render, including app-published ones', functio
     expect($icons)
         ->toContain('tag')                 // bundled with Flux
         ->toContain('folder-git-2')        // published into resources/views/flux/icon
+        ->not->toContain('index')          // Flux's <flux:icon> dispatcher, not an icon
         ->and(count($icons))->toBeGreaterThan(300)
         ->and($icons)->toBe(array_values(array_unique($icons)))
         ->and($icons)->toBe(collect($icons)->sort()->values()->all());
@@ -32,4 +33,11 @@ it('keeps a known icon and rejects an unknown or null one', function () {
     expect(IconCatalog::validOrNull('tag'))->toBe('tag')
         ->and(IconCatalog::validOrNull('not-a-real-icon'))->toBeNull()
         ->and(IconCatalog::validOrNull(null))->toBeNull();
+});
+
+it('returns every match uncapped and counts matches beyond the cap', function () {
+    expect(IconCatalog::search('', limit: null))->toBe(IconCatalog::available())
+        ->and(IconCatalog::countMatching(''))->toBe(count(IconCatalog::available()))
+        ->and(IconCatalog::countMatching('arrow'))->toBe(count(IconCatalog::search('arrow', limit: null)))
+        ->and(IconCatalog::countMatching('surely-not-an-icon'))->toBe(0);
 });
