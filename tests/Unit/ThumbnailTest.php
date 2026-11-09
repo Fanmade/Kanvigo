@@ -24,13 +24,7 @@ it('creates a downscaled PNG thumbnail from a large image', function () {
 });
 
 it('rasterizes the first page of a PDF into a thumbnail', function () {
-    $pdf = new Imagick;
-    $pdf->newImage(800, 1000, new ImagickPixel('skyblue'));
-    $pdf->setImageFormat('pdf');
-    $bytes = $pdf->getImageBlob();
-    $pdf->clear();
-
-    $thumbnail = Thumbnail::generate($bytes, 'application/pdf');
+    $thumbnail = Thumbnail::generate(pdfFixture(), 'application/pdf');
 
     expect($thumbnail)->not->toBeNull();
 

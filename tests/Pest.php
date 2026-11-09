@@ -245,12 +245,17 @@ function noisyImageFixture(int $width, int $height): string
  * tests guarding "PDFs must 422 on transform" need to exercise — undecodable
  * garbage would 422 for the wrong reason (it can't be read at all) and let a
  * missing MIME-type guard slip through unnoticed.
+ *
+ * Zip-compressed: an uncompressed page embeds the raw raster (~2.4 MB at the
+ * default size), which exceeds PHP's default 2M upload_max_filesize on CI and
+ * fails upload validation. Compressed it is a few KB.
  */
 function pdfFixture(int $width = 800, int $height = 1000): string
 {
     $pdf = new Imagick;
     $pdf->newImage($width, $height, new ImagickPixel('skyblue'));
     $pdf->setImageFormat('pdf');
+    $pdf->setImageCompression(Imagick::COMPRESSION_ZIP);
     $bytes = $pdf->getImageBlob();
     $pdf->clear();
 

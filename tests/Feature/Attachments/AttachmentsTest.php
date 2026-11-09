@@ -115,13 +115,7 @@ it('does not generate a thumbnail for unsupported uploads', function () {
 });
 
 it('generates a thumbnail for PDF uploads', function () {
-    $pdf = new Imagick;
-    $pdf->newImage(800, 1000, new ImagickPixel('skyblue'));
-    $pdf->setImageFormat('pdf');
-    $bytes = $pdf->getImageBlob();
-    $pdf->clear();
-
-    $file = UploadedFile::fake()->createWithContent('report.pdf', $bytes);
+    $file = UploadedFile::fake()->createWithContent('report.pdf', pdfFixture());
 
     Livewire::actingAs($this->member)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
